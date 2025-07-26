@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "category": "Liquor",
+    "sub_category": "Beer",
+    "InventoryCode": "BYGL1220",
+    "ItemName": "HOEGARDEN",
+    "Packagename": "330ML BOT"
+  },
+  {
+    "id": 2,
+    "category": "Liquor",
+    "sub_category": "Beer",
+    "InventoryCode": "BYGL1220",
+    "ItemName": "HOEGARDEN",
+    "Packagename": "500ML CAN"
+  },
+  {
+    "id": 3,
+    "category": "Liquor",
+    "sub_category": "Beer",
+    "InventoryCode": "BYGL4722",
+    "ItemName": "CORONA",
+    "Packagename": "330ML BOT"
+  },
+  {
+    "id": 4,
+    "category": "Liquor",
+    "sub_category": "Blended Whisky",
+    "InventoryCode": "BYGL1364",
+    "ItemName": "TEACHERS HC",
+    "Packagename": "750ML BOT"
+  },
+  {
+    "id": 5,
+    "category": "Liquor",
+    "sub_category": "Blended Whisky",
+    "InventoryCode": "BYGL1364",
+    "ItemName": "TEACHERS HC",
+    "Packagename": "1LT BOT"
+  },
+  {
+    "id": 6,
+    "category": "Liquor",
+    "sub_category": "Blended Whisky",
+    "InventoryCode": "BYGL1364",
+    "ItemName": "TEACHERS HC",
+    "Packagename": "375ML BOT"
+  },
+  {
+    "id": 7,
+    "category": "Liquor",
+    "sub_category": "Blended Whisky",
+    "InventoryCode": "BYGL4316",
+    "ItemName": "OAKSMITH GOLD",
+    "Packagename": "750ML BOT"
+  }
+]

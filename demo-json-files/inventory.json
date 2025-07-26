@@ -1,0 +1,34 @@
+[
+  {
+    "category": "Liquor",
+    "sub_category": "Beer",
+    "ItemCode": "BYGL1220",
+    "ItemName": "HOEGARDEN",
+    "closingUOM": "NOS",
+    "barcode": "240-0000314"
+  },
+  {
+    "category": "Liquor",
+    "sub_category": "Beer",
+    "ItemCode": "BYGL4722",
+    "ItemName": "CORONA",
+    "closingUOM": "NOS",
+    "barcode": "8907234504224"
+  },
+  {
+    "category": "Liquor",
+    "sub_category": "Blended Whisky",
+    "ItemCode": "BYGL1364",
+    "ItemName": "TEACHERS HC",
+    "closingUOM": "Open/KG",
+    "barcode": "5010327105215"
+  },
+  {
+    "category": "Liquor",
+    "sub_category": "Blended Whisky",
+    "ItemCode": "BYGL4316",
+    "ItemName": "OAKSMITH GOLD",
+    "closingUOM": "Open/KG",
+    "barcode": "8901216812079"
+  }
+]

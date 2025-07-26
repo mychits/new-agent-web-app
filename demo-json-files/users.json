@@ -1,0 +1,37 @@
+[
+  {
+    "tenant_id": 11,
+    "first_name": "Ramesh",
+    "last_name": "Vardha",
+    "email": "test@gmail.com",
+    "mobile": "9090909090",
+    "password": "123",
+    "category": ["Chit Collection", "Bring Veges", "Pay Bills", "Take Xerox"],
+    "areas": ["BSK", "BSK 1", "BSK 2"],
+    "customers": ["Rajesh", "Mahesh", "Suresh", "Manoj"],
+    "sub_category": ["Beer", "Blended Whisky"],
+    "items": ["HOEGARDEN", "CORONA", "TEACHERS HC", "OAKSMITH GOLD"]
+  },
+  {
+    "tenant_id": 100002,
+    "first_name": "Ramya",
+    "last_name": "Bavan",
+    "email": "ramyabavan@digitory.com",
+    "mobile": "8080808080",
+    "password": "123123",
+    "category": ["Liquor"],
+    "sub_category": ["Beer"],
+    "items": ["HOEGARDEN"]
+  },
+  {
+    "tenant_id": 100003,
+    "first_name": "Divya",
+    "last_name": "Barathi",
+    "email": "divyabarathi@digitory.com",
+    "mobile": "7070707070",
+    "password": "456456",
+    "category": ["Liquor"],
+    "sub_category": ["Blended Whisky"],
+    "items": ["TEACHERS HC", "OAKSMITH GOLD"]
+  }
+]

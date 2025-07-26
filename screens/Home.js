@@ -1,0 +1,346 @@
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView, // Make sure ScrollView is imported
+  TouchableOpacity,
+  Alert, // Keep Alert for other potential uses, but it won't be used for Targets anymore
+  Dimensions,
+  Image,
+  Animated,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import COLORS from "../constants/color";
+import Header from "../components/Header";
+
+import baseUrl from "../constants/baseUrl";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
+import { LinearGradient } from "expo-linear-gradient"; // Ensure this is the correct import for your LinearGradient setup
+
+const { width } = Dimensions.get("window");
+
+// Define image paths for each card. Ensure these paths are correct relative to Home.js.
+const cardImagePaths = {
+  collections: [
+    require('../assets/Collection1.png'),
+    require('../assets/Collection2.png')
+  ],
+  daybook: [
+    require('../assets/Daybook1.png'),
+    require('../assets/Daybook2.png')
+  ],
+  targets: [
+    require('../assets/Target1.png'),
+    require('../assets/Target2.png')
+  ],
+  myLeads: [
+    require('../assets/Lead1.png'),
+    require('../assets/Lead2.png')
+  ],
+  addCustomers: [
+    require('../assets/AddCutomer1.png'),
+    require('../assets/AddCutomer2.png')
+  ],
+  myCustomers: [
+    require('../assets/Mycustomers1.png'),
+    require('../assets/Mycustomers2.png'),
+  ],
+  myTasks: [
+    require('../assets/Target1.png'),
+    require('../assets/Target2.png')
+  ],
+  reports: [
+    require('../assets/Reports1.png'),
+    require('../assets/Reports2.png')
+  ],
+  commission: [
+    require('../assets/commissions1.png'),
+    require('../assets/commission2.png')
+  ],
+};
+
+// Component to handle individual card image animations
+const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
+  // Use initialImageIndex to set the starting image
+  const [currentImageIndex, setCurrentImageIndex] = useState(initialImageIndex || 0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Only start interval if there's more than one image to animate
+    if (card.imagePaths.length > 1) {
+      const interval = setInterval(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => {
+          setCurrentImageIndex((prevIndex) => (prevIndex + 1) % card.imagePaths.length);
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }).start();
+        });
+      }, 20000);
+
+      return () => clearInterval(interval);
+    }
+  }, [fadeAnim, card.imagePaths.length]);
+
+  return (
+    <TouchableOpacity
+      key={card.id}
+      style={[cardStyles.gridCard, { backgroundColor: card.backgroundColor }]}
+      onPress={card.onPress}
+    >
+      <Animated.Image
+        source={card.imagePaths[currentImageIndex]}
+        style={[cardStyles.cardImage, { opacity: fadeAnim }]}
+        resizeMode="contain"
+      />
+      <Text style={cardStyles.gridCardText}>{card.name}</Text>
+    </TouchableOpacity>
+  );
+};
+
+const Home = ({ route, navigation }) => {
+  const { user = {}, agentInfo = {} } = route.params || {};
+  const [agent, setAgent] = useState({});
+  const [initialVisit, setInitialVisit] = useState(true); // State to track initial visit
+
+  // Effect to fetch agent data
+  useEffect(() => {
+    const fetchAgent = async () => {
+      if (user && user.userId) {
+        console.log(agentInfo, "agentInfo");
+        try {
+          const response = await axios.get(
+            `${baseUrl}/agent/get-agent-by-id/${user.userId}`
+          );
+
+          if (response.data) {
+            setAgent(response.data);
+          } else {
+            console.error("Unexpected API response format:", response.data);
+            setAgent({});
+          }
+        } catch (error) {
+          console.error("Error fetching agent data:", error);
+          setAgent({});
+        }
+      } else {
+        console.warn("User ID not available, skipping agent data fetch.");
+        setAgent({});
+      }
+    };
+
+    fetchAgent();
+  }, [user.userId, agentInfo]); // Added agentInfo to dependencies
+
+  // Effect to manage initial visit flag using AsyncStorage
+  useEffect(() => {
+    const checkFirstVisit = async () => {
+      try {
+        const hasVisited = await AsyncStorage.getItem('hasVisitedHome');
+        if (hasVisited === null) {
+          // First visit
+          setInitialVisit(true);
+          await AsyncStorage.setItem('hasVisitedHome', 'true');
+        } else {
+          // Subsequent visit
+          setInitialVisit(false);
+        }
+      } catch (error) {
+        console.error("Error managing AsyncStorage for initial visit:", error);
+        // Default to initial visit if there's an error
+        setInitialVisit(true);
+      }
+    };
+
+    checkFirstVisit();
+  }, []); // Run only once on component mount
+
+  const getInitialImageIndex = useCallback(() => {
+    return initialVisit ? 0 : 1;
+  }, [initialVisit]);
+
+
+  // Define the cards data dynamically based on permissions and include image paths
+  const cardsData = [
+    agentInfo?.designation_id?.permission?.collection === "true" && {
+      id: 'collections',
+      name: 'Collections',
+      imagePaths: cardImagePaths.collections,
+      onPress: () => navigation.navigate("PaymentNavigator"),
+      backgroundColor: '#FFEBEE',
+    },
+    agentInfo?.designation_id?.permission?.daybook === "true" && {
+      id: 'daybook',
+      name: 'Daybook',
+      imagePaths: cardImagePaths.daybook,
+      onPress: () => navigation.navigate("PayNavigation", { user: user }),
+      backgroundColor: '#E8F5E9',
+    },
+    agentInfo?.designation_id?.permission?.targets === "true" && {
+      id: 'targets',
+      name: 'Targets',
+      imagePaths: cardImagePaths.targets,
+      onPress: () => navigation.navigate("Target"), // Changed from Alert to navigation
+      backgroundColor: '#FFFDE7',
+    },
+    agentInfo?.designation_id?.permission?.leads === "true" && {
+      id: 'myLeads',
+      name: 'My Leads',
+      imagePaths: cardImagePaths.myLeads,
+      onPress: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user: user } }),
+      backgroundColor: '#E3F2FD',
+    },
+    {
+      id: 'addCustomers',
+      name: 'Add Customers',
+      imagePaths: cardImagePaths.addCustomers,
+      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Customer", params: { user } }),
+      backgroundColor: '#F3E5F5',
+    },
+    {
+      id: 'myCustomers',
+      name: 'My Customers',
+      imagePaths: cardImagePaths.myCustomers,
+      onPress: () => navigation.navigate("CustomerNavigation", { screen: "ViewEnrollments", params: { user } }),
+      backgroundColor: '#FFECB3',
+    },
+    {
+      id: 'myTasks',
+      name: 'My Tasks',
+      imagePaths: cardImagePaths.myTasks,
+      onPress: () => navigation.navigate("MyTasks", { employeeId: user.userId, agentName: agent.name }),
+      backgroundColor: '#E0F7FA',
+    },
+    agentInfo?.designation_id?.permission?.reports === "true" && {
+      id: 'reports',
+      name: 'Reports',
+      imagePaths: cardImagePaths.reports,
+      onPress: () => navigation.navigate("PayNavigation", { screen: "Reports", params: { user: user } }),
+      backgroundColor: '#FCE4EC',
+    },
+    agentInfo?.designation_id?.permission?.commission === "true" && {
+      id: 'commission',
+      name: 'Commission',
+      imagePaths: cardImagePaths.commission,
+      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Commissions", params: { user: user } }),
+      backgroundColor: '#DCEDC8',
+    },
+  ].filter(Boolean);
+
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      {/* Linear Gradient added here */}
+      <LinearGradient
+        colors={['rgba(151, 228, 250, 0.7)', 'rgba(250, 221, 168, 0.7)']}
+        style={styles.gradientOverlay}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.mainContentArea}>
+          <Header />
+
+          <View style={styles.introSection}>
+            <Text style={styles.welcomeText}>Hello {agent.name || 'Agent'},</Text>
+            <Text style={styles.questionText}>Welcome to MyChits Agent App</Text>
+           
+          </View>
+
+          <ScrollView contentContainerStyle={styles.cardsScrollViewContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.cardsGridContainer}>
+              {cardsData.map((card) => (
+                <CardWithAnimatedImage
+                  key={card.id}
+                  card={card}
+                  cardStyles={styles}
+                  initialImageIndex={getInitialImageIndex()} // Pass the initial image index
+                />
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      </LinearGradient>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  mainContentArea: {
+    flex: 1,
+    marginHorizontal: 22,
+    marginTop: 12,
+  },
+  introSection: {
+    marginTop: 20,
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
+  welcomeText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: '#333',
+    marginBottom: 5,
+  },
+  questionText: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: '#555',
+    marginBottom: 10,
+  },
+  instructionText: {
+    fontSize: 16,
+    color: '#777',
+  },
+  cardsScrollViewContent: {
+    paddingBottom: 50, // Increased padding to add space at the bottom
+  },
+  cardsGridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+gridCard: {
+  width: (width - 22 * 2 - 20) / 2,
+  height: (width - 22 * 2 - 20) / 2,
+  borderRadius: 15,
+  borderColor: "gold", // ✅ changed from "orange" to "gold"
+  borderWidth: 1, // 🔔 make sure border is visible
+  justifyContent: "center",
+  alignItems: "center",
+  marginBottom: 20,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+  elevation: 5,
+  padding: 10,
+},
+
+  cardImage: {
+    width: 195,
+    height: 90,
+    marginBottom: 5,
+  },
+    gradientOverlay: {
+    flex: 1, 
+  },
+  gridCardText: {
+    marginTop: 10,
+    fontSize: 17,
+    fontWeight: "900",
+    color: COLORS.black,
+    textAlign: "center",
+  },
+  gradientOverlay: {
+    flex: 1, // Ensures the gradient covers the full available space
+  },
+});
+
+export default Home;
