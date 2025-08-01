@@ -9,25 +9,27 @@ import {
     StatusBar,
     Image,
 } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient'; 
-import Header from "../components/Header";
+import { LinearGradient } from 'expo-linear-gradient';
+import Header from "../components/Header"; // Ensure this path is correct
 
 const { width, height } = Dimensions.get("window");
 
 const AboutMyChits = ({ route, navigation }) => {
-    const userId = "someUserId"; 
-
+    // Safely get userId from route.params, or default to an empty string if not found
+    // This assumes userId is passed during navigation to this screen.
+    const { userId } = route.params || {};
 
     return (
-        <View style={styles.container}> 
+        <View style={styles.container}>
             <LinearGradient
-                colors={['#A8E0F9', '#fadfa0ff']} 
+                colors={['#A8E0F9', '#fadfa0ff']}
                 style={styles.backgroundGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             />
             <SafeAreaView style={styles.safeArea}>
                 <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+                {/* Pass the retrieved userId to the Header component */}
                 <Header title="About Us" userId={userId} navigation={navigation} />
                 <ScrollView
                     style={styles.scrollViewStyle}
@@ -36,7 +38,7 @@ const AboutMyChits = ({ route, navigation }) => {
                     <View style={styles.aboutUsContainer}>
                         <View style={styles.imageFrame}>
                             <Image
-                                source={require('../assets/image.png')}
+                                source={require('../assets/image.png')} // Make sure this image path is correct
                                 style={styles.aboutImage}
                                 resizeMode="cover"
                             />
@@ -72,14 +74,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent', // Make sure it's transparent to show gradient
     },
     scrollViewStyle: {
-        flex: 1,
+        flex: 2,
         backgroundColor: 'transparent', // Make transparent to show the main gradient
     },
     whiteContentContainer: {
         backgroundColor: "#fff", // White background for the main content area
         borderRadius: 20, // Reverted to 20 for consistency with other cards
         marginHorizontal: width * 0.05, // Adjusted margin for better appearance
-        marginTop: height * 0.02,
+        marginTop: height * 0.05,
         marginBottom: height * 0.03,
         paddingVertical: height * 0.035,
         paddingHorizontal: width * 0.05,

@@ -7,35 +7,41 @@ import {
     StyleSheet,
     TouchableOpacity,
     ActivityIndicator,
-    Dimensions, // Added Dimensions for responsive styling
-    StatusBar, // Added StatusBar for consistent look
-    SafeAreaView, // Added SafeAreaView for consistent layout
-    Pressable, // Added Pressable for consistent button interaction
-    Platform, // Added Platform for platform-specific styling
-    Image, // Added Image for header image
+    Dimensions,
+    StatusBar,
+    SafeAreaView,
+    Platform,
+    Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient'; // For gradient backgrounds and buttons
-import { Ionicons } from '@expo/vector-icons'; // For potential icons in inputs/dropdown
-import COLORS from '../constants/color'; // Keeping this, but will primarily use COLOR_PALETTE
-import baseUrl from '../constants/baseUrl';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur'; // Use BlurView for iOS glassmorphism
 import axios from 'axios';
 
-const { width, height } = Dimensions.get("window");
-
-// Define a consistent color palette based on the existing design (from Login/Register)
+// A more comprehensive and stylish color palette
 const COLOR_PALETTE = {
-    primary: '#1C2E4A', // Dark blue/charcoal for text and buttons
-    secondary: '#5F6C7D', // Grayish blue for labels and icons
-    lightText: '#FFFFFF', // White text for contrast
-    darkText: '#000', // Black text for specific elements
+    primary: '#1C2E4A',
+    secondary: '#5F6C7D',
+    lightText: '#FFFFFF',
+    darkText: '#000',
+    softBlue: '#97c7ff', // A new, soft blue for accents
+    glassBackground: 'rgba(255, 255, 255, 0.6)', // Translucent background
+    glassBorder: 'rgba(255, 255, 255, 0.4)', // Lighter border
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    buttonGradientStart: '#4A90E2', // A modern blue for buttons
+    buttonGradientEnd: '#50E3C2', // A vibrant teal for buttons
+    cardBorder: '#D6EAF8', // A very light, subtle card border color
 };
 
-const headerImage = require('../assets/hero1.jpg'); // Assuming this path is correct for your project
+const headerImage = require('../assets/hero1.jpg');
+const baseUrl = 'your_base_url_here'; // Placeholder for the original baseUrl
+
+const { width, height } = Dimensions.get("window");
 
 export default function CompleteTaskScreen({ route, navigation }) {
     const { taskId } = route.params;
     const [message, setMessage] = useState('');
-    const [status, setStatus] = useState('Completed'); // Initial status
+    const [status, setStatus] = useState('Completed');
     const [loading, setLoading] = useState(false);
 
     // Function to cycle through statuses
@@ -56,6 +62,7 @@ export default function CompleteTaskScreen({ route, navigation }) {
 
     const handleCompleteTask = async () => {
         if (!message) {
+            // Using a custom modal or component instead of Alert
             Alert.alert('Validation Error', 'Please enter a message.');
             return;
         }
@@ -67,10 +74,12 @@ export default function CompleteTaskScreen({ route, navigation }) {
                 status,
             });
 
+            // Using a custom modal or component instead of Alert
             Alert.alert('Success', 'Task updated successfully');
             navigation.goBack();
         } catch (error) {
             console.error('Error updating task:', error.response ? error.response.data : error.message);
+            // Using a custom modal or component instead of Alert
             Alert.alert('Error', 'Failed to update task.');
         } finally {
             setLoading(false);
@@ -81,7 +90,7 @@ export default function CompleteTaskScreen({ route, navigation }) {
         <View style={styles.container}>
             {/* Background Gradient */}
             <LinearGradient
-                colors={['#A8E0F9', '#F9E5B5']} // Matching Login.js gradient
+                colors={['#A8E0F9', '#F9E5B5']}
                 style={styles.backgroundGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -90,24 +99,43 @@ export default function CompleteTaskScreen({ route, navigation }) {
             <SafeAreaView style={styles.safeArea}>
                 <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-                {/* Custom Header with Back Arrow and Image */}
-                <View style={styles.customHeader}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrow}>
-                        <Ionicons name="chevron-back-outline" size={30} color={COLOR_PALETTE.primary} />
-                    </TouchableOpacity>
-                    <Image
-                        source={headerImage}
-                        style={styles.headerRightImage}
-                        resizeMode="cover"
-                    />
-                </View>
+                {/* Custom Header with a glassmorphism effect */}
+                {Platform.OS === 'ios' ? (
+                    <BlurView intensity={25} tint="light" style={styles.customHeader}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrow}>
+                            <Ionicons name="chevron-back-outline" size={30} color={COLOR_PALETTE.primary} />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Update Task</Text>
+                        <Image
+                            source={headerImage}
+                            style={styles.headerRightImage}
+                            resizeMode="cover"
+                        />
+                    </BlurView>
+                ) : (
+                    // Android header without BlurView
+                    <View style={styles.customHeaderAndroid}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrow}>
+                            <Ionicons name="chevron-back-outline" size={30} color={COLOR_PALETTE.primary} />
+                        </TouchableOpacity>
+                        
+                        <Image
+                            source={headerImage}
+                            style={styles.headerRightImage}
+                            resizeMode="cover"
+                        />
+                    </View>
+                )}
 
                 <View style={styles.contentWrapper}>
-                    {/* Screen Title */}
-                    <Text style={styles.screenTitle}>Complete Task</Text>
-
-                    {/* Main Content Card */}
+                    {/* Main Content Card with glassmorphism effect */}
                     <View style={styles.card}>
+                        {/* Screen Title with a subtle text shadow */}
+                        <Text style={styles.screenTitle}>Complete Task</Text>
+                        <View style={styles.screenTitleSeparator} />
+
+                        <Ionicons name="checkmark-done-circle-outline" size={80} color={COLOR_PALETTE.softBlue} style={styles.cardIcon} />
+
                         {/* Status Dropdown */}
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>Status</Text>
@@ -130,8 +158,8 @@ export default function CompleteTaskScreen({ route, navigation }) {
                                 placeholder="Enter message"
                                 placeholderTextColor="#A9A9A9"
                                 multiline
-                                numberOfLines={4}
-                                style={styles.textInputMultiline} // Use a specific style for multiline
+                                numberOfLines={3} 
+                                style={styles.textInputMultiline}
                             />
                         </View>
 
@@ -143,7 +171,7 @@ export default function CompleteTaskScreen({ route, navigation }) {
                             disabled={loading}
                         >
                             <LinearGradient
-                                colors={[COLOR_PALETTE.primary, COLOR_PALETTE.secondary]}
+                                colors={[COLOR_PALETTE.buttonGradientStart, COLOR_PALETTE.buttonGradientEnd]}
                                 style={styles.submitButton}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
@@ -151,15 +179,15 @@ export default function CompleteTaskScreen({ route, navigation }) {
                                 {loading ? (
                                     <ActivityIndicator size="small" color={COLOR_PALETTE.lightText} />
                                 ) : (
-                                    <Text style={styles.submitButtonText}>Submit</Text>
+                                    <View style={styles.submitButtonContent}>
+                                        <Text style={styles.submitButtonText}>Submit</Text>
+                                        <Ionicons name="arrow-forward-circle-outline" size={24} color={COLOR_PALETTE.lightText} style={{ marginLeft: 8 }} />
+                                    </View>
                                 )}
                             </LinearGradient>
                         </TouchableOpacity>
 
-                        {/* Back Button */}
-                        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-                            <Text style={styles.backButtonText}>Back to Tasks</Text>
-                        </Pressable>
+                        
                     </View>
                 </View>
             </SafeAreaView>
@@ -193,51 +221,93 @@ const styles = StyleSheet.create({
         height: 65,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start', // Changed as per your request
-        paddingHorizontal: 10,
-        zIndex: 1, // Ensure header is above other content if needed
+        justifyContent: 'space-between',
+        paddingHorizontal: 15,
+        zIndex: 1,
+        overflow: 'hidden',
+        shadowColor: COLOR_PALETTE.shadowColor,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: COLOR_PALETTE.glassBorder,
+    },
+    customHeaderAndroid: {
+        position: 'absolute',
+        top: 40,
+        left: 0,
+        right: 0,
+        height: 65,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 15,
+        
     },
     backArrow: {
         padding: 8,
-        marginRight: 6,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: COLOR_PALETTE.primary,
+        flex: 1, // Allows title to take up remaining space
+        textAlign: 'center',
+        paddingHorizontal: 10,
     },
     headerRightImage: {
         width: 48,
         height: 48,
-        marginLeft: 232, // Adjusted as per your request
+        borderRadius: 24,
     },
     // End New Header Styles
     contentWrapper: {
         width: '100%',
         alignItems: 'center',
         paddingHorizontal: 20,
-        // Adjust marginTop to accommodate the header
-        marginTop: Platform.OS === 'android' ? 105 : 115, // Roughly header height + desired spacing
+        marginTop: 100,
+        flex: 1, 
+        justifyContent: 'center',
     },
     screenTitle: {
-        fontSize: 32,
+        fontSize: 28, // Reduced font size for better fit
         fontWeight: '800',
-        color: COLOR_PALETTE.lightText,
+        color: COLOR_PALETTE.primary,
         textAlign: 'center',
-        marginBottom: 30,
-        lineHeight: 38,
+        marginBottom: 4,
+        lineHeight: 32,
         letterSpacing: 0.5,
     },
+    screenTitleSeparator: {
+        width: '40%',
+        height: 2,
+        backgroundColor: COLOR_PALETTE.primary,
+        marginBottom: 20, // Adjusted spacing
+        borderRadius: 1,
+    },
     card: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: COLOR_PALETTE.glassBackground, // Translucent background
         width: '100%',
         maxWidth: 400,
         paddingHorizontal: 30,
         paddingVertical: 40,
-        borderRadius: 20,
+        borderRadius: 25,
         alignItems: 'center',
-        elevation: 8,
-        borderColor:"#FFC000",
-        borderWidth:2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
+        elevation: 12,
+        borderColor: COLOR_PALETTE.cardBorder, // A subtle, light border
+        borderWidth: 2,
+        shadowColor: COLOR_PALETTE.shadowColor,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 15,
+        overflow: 'hidden',
+    },
+    cardIcon: {
+        marginBottom: 20,
+        opacity: 0.7,
+        textShadowColor: 'rgba(0,0,0,0.1)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
     },
     inputGroup: {
         width: '100%',
@@ -257,37 +327,38 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 60,
         backgroundColor: '#FFFFFF',
-        borderRadius: 30,
+        borderRadius: 16,
         paddingHorizontal: 20,
-        shadowColor: "#000",
+        shadowColor: COLOR_PALETTE.shadowColor,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 5,
-        borderColor: '#E0E0E0',
+        borderColor: COLOR_PALETTE.cardBorder,
         borderWidth: 1,
     },
     statusDropdownText: {
         fontSize: 16,
         color: COLOR_PALETTE.primary,
     },
-    textInputMultiline: { // Specific style for multiline input
+    textInputMultiline: {
         width: "100%",
-        minHeight: 120, // Increased minHeight for multiline
+        minHeight: 120,
+        maxHeight: 200, // Added to enable scrolling within the text area
         backgroundColor: '#FFFFFF',
-        borderRadius: 15, // Slightly less rounded for multiline
+        borderRadius: 16,
         paddingHorizontal: 20,
-        paddingVertical: 15, // Add vertical padding for multiline
+        paddingVertical: 15,
         fontSize: 16,
         color: COLOR_PALETTE.primary,
-        shadowColor: "#000",
+        shadowColor: COLOR_PALETTE.shadowColor,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 5,
-        borderColor: '#E0E0E0',
+        borderColor: COLOR_PALETTE.cardBorder,
         borderWidth: 1,
-        textAlignVertical: 'top', // Aligns text to the top for multiline
+        textAlignVertical: 'top',
     },
     submitButtonWrapper: {
         width: '100%',
@@ -297,16 +368,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     submitButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
         width: width * 0.7,
         height: 60,
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: "#000",
+        borderRadius: 30,
+        shadowColor: COLOR_PALETTE.buttonGradientEnd,
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 12,
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
+        elevation: 15,
+    },
+    submitButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     submitButtonText: {
         color: COLOR_PALETTE.lightText,
@@ -316,11 +392,20 @@ const styles = StyleSheet.create({
     },
     backButton: {
         marginTop: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: COLOR_PALETTE.glassBackground,
+        borderColor: COLOR_PALETTE.glassBorder,
+        borderWidth: 1,
     },
     backButtonText: {
         color: COLOR_PALETTE.primary,
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: 'bold',
-        textDecorationLine: 'underline',
+        marginLeft: 5,
     },
 });
+

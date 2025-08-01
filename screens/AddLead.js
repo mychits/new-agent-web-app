@@ -1,14 +1,14 @@
 import {
-	View,
-	Text,
-	StyleSheet,
-	TextInput,
-	Alert,
-	KeyboardAvoidingView,
-	Platform,
-	ScrollView,
-	TouchableOpacity,
-	ActivityIndicator
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    Alert, // Keep Alert for now, but consider custom modals for production
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    TouchableOpacity,
+    ActivityIndicator
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,7 +18,6 @@ import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
 
-
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
@@ -26,345 +25,348 @@ import chitBaseUrl from "../constants/baseUrl";
 import goldBaseUrl from "../constants/goldBaseUrl";
 
 const AddLead = ({ route, navigation }) => {
-	const { user } = route.params; // 'customer' is not used, so it's removed for clarity
+    const { user } = route.params;
 
-	const [currentDate, setCurrentDate] = useState("");
-	const [receipt, setReceipt] = useState({});
-	const [paymentDetails, setPaymentDetails] = useState("");
-	const [amount, setAmount] = useState("");
-	const [transactionId, setTransactionId] = useState("");
-	const [additionalInfo, setAdditionalInfo] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
+    const [currentDate, setCurrentDate] = useState("");
+    const [receipt, setReceipt] = useState({});
+    // Removed unused states: paymentDetails, amount, transactionId, additionalInfo
+    const [isLoading, setIsLoading] = useState(false);
 
-	const [customerInfo, setCustomerInfo] = useState({
-		full_name: "",
-		phone_number: "",
-		profession: "", // This is now the source of profession data
-	});
+    const [customerInfo, setCustomerInfo] = useState({
+        full_name: "",
+        phone_number: "",
+        profession: "", // Initial state for profession
+    });
 
-	const [groups, setGroups] = useState([]);
-	const [tickets, setTickets] = useState([]);
-	const [selectedGroup, setSelectedGroup] = useState("");
-	const [selectedTicket, setSelectedTicket] = useState("chit"); // Set an initial value for the active tab
+    const [groups, setGroups] = useState([]);
+    // Removed unused state: tickets (selectedTicket is used directly)
+    const [selectedGroup, setSelectedGroup] = useState("");
+    const [selectedTicket, setSelectedTicket] = useState("chit"); // Set an initial value for the active tab
 
-	// The `selectedProfession` and `allData` states were unused or used incorrectly.
-	// We will use `customerInfo.profession` and `groups` directly.
+    useEffect(() => {
+        const fetchGroups = async () => {
+            const currentUrl =
+                selectedTicket === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
 
-	useEffect(() => {
-		const fetchGroups = async () => {
-			const currentUrl =
-				selectedTicket === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
+            try {
+                const response = await axios.get(`${currentUrl}/group/get-group`);
+                if (response.data) {
+                    setGroups(response.data || []);
+                    // Reset selected group when ticket type changes to avoid invalid selection
+                    setSelectedGroup("");
+                } else {
+                    console.error("No data in response");
+                    setGroups([]);
+                }
+            } catch (error) {
+                console.error("Error fetching groups:", error.message);
+                setGroups([]);
+            }
+        };
 
-			try {
-				const response = await axios.get(`${currentUrl}/group/get-group`);
-				if (response.data) {
-					setGroups(response.data || []);
-				} else {
-					console.error("No data in response");
-				}
-			} catch (error) {
-				console.error("Error fetching groups:", error.message);
-			}
-		};
+        if (selectedTicket) {
+            fetchGroups();
+        }
+    }, [selectedTicket]);
 
-		if (selectedTicket) {
-			fetchGroups();
-		}
-	}, [selectedTicket]);
+    useEffect(() => {
+        const today = moment().format("DD-MM-YYYY");
+        setCurrentDate(today);
+    }, []);
 
-	useEffect(() => {
-		const today = moment().format("DD-MM-YYYY");
-		setCurrentDate(today);
-	}, []);
+    useEffect(() => {
+        const fetchAgentData = async () => {
+            try {
+                const response = await axios.get(
+                    `${chitBaseUrl}/agent/get-agent-by-id/${user.userId}`
+                );
+                setReceipt(response.data);
+            } catch (error) {
+                console.error("Error fetching agent data:", error);
+            }
+        };
+        fetchAgentData();
+    }, [user.userId]);
 
-	useEffect(() => {
-		const fetchReceipt = async () => {
-			try {
-				const response = await axios.get(
-					`${chitBaseUrl}/agent/get-agent-by-id/${user.userId}`
-				);
+    const handleInputChange = (field, value) => {
+        setCustomerInfo({ ...customerInfo, [field]: value });
+    };
 
-				setReceipt(response.data);
-			} catch (error) {
-				console.error("Error fetching agent data:", error);
-			}
-		};
-		fetchReceipt();
-	}, []);
+    const handleAddLead = async () => {
+        setIsLoading(true);
+        const baseUrl =
+            selectedTicket === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
 
-	const handleInputChange = (field, value) => {
-		setCustomerInfo({ ...customerInfo, [field]: value });
-	};
+        if (
+            !customerInfo.full_name ||
+            !customerInfo.phone_number ||
+            !customerInfo.profession || // Added validation for profession
+            !selectedTicket ||
+            !selectedGroup
+        ) {
+            // Using Alert.alert as per original code, but consider a custom modal for better UX
+            Alert.alert("Required", "Please fill out all fields!");
+            setIsLoading(false);
+            return;
+        }
 
-	const handleAddLead = async () => {
-		setIsLoading(true);
-		const baseUrl =
-			selectedTicket === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
+        try {
+            const data = {
+                lead_name: customerInfo.full_name,
+                lead_phone: customerInfo.phone_number,
+                lead_profession: customerInfo.profession, // Uses the selected profession
+                group_id: selectedGroup,
+                lead_type: "agent",
+                scheme_type: selectedTicket,
+                lead_agent: selectedTicket === "chit" ? user.userId : receipt.name,
+                agent_number: receipt.phone_number,
+            };
 
-		if (
-			!customerInfo.full_name ||
-			!customerInfo.phone_number ||
-			!selectedTicket ||
-			!selectedGroup
-		) {
-			Alert.alert("Required", "Please fill out all fields!");
-			setIsLoading(false);
-			return;
-		}
+            const response = await axios.post(`${baseUrl}/lead/add-lead`, data);
 
-		try {
-			const data = {
-				lead_name: customerInfo.full_name,
-				lead_phone: customerInfo.phone_number,
-				lead_profession: customerInfo.profession, // Corrected to use customerInfo state
-				group_id: selectedGroup, // Selected group is the ID directly from the picker
-				lead_type: "agent",
-				scheme_type: selectedTicket,
-				lead_agent: selectedTicket === "chit" ? user.userId : receipt.name,
-				agent_number: receipt.phone_number,
-			};
+            if (response.status === 201) {
+                Alert.alert("Success", "Lead added successfully!");
+                setCustomerInfo({
+                    full_name: "",
+                    phone_number: "",
+                    profession: "", // Reset profession after successful submission
+                });
+                setSelectedGroup("");
+                setSelectedTicket("chit"); // Reset the active tab
+                navigation.navigate("ViewLeads", { user: user });
+            } else {
+                console.log("Error:", response.data);
+                Alert.alert("Error", response.data?.message || "Error adding lead.");
+            }
+        } catch (error) {
+            console.error("Error adding lead:", error);
+            Alert.alert("Error", "Error adding lead. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-			const response = await axios.post(`${baseUrl}/lead/add-lead`, data);
+    return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+            <LinearGradient
+                colors={['#A8E0F9', '#F9E5B5']}
+                style={styles.gradientOverlay}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.container}
+                >
+                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                        <View style={{ marginHorizontal: 22, marginTop: 12 }}>
+                            <Header />
+                            <View style={styles.titleContainer}>
+                                <Text style={styles.title}>Add Lead</Text>
+                                <TouchableOpacity
+                                    style={styles.myLeadsButton}
+                                    onPress={() => navigation.navigate("ViewLeads", { user: user })}
+                                >
+                                    <Text style={styles.myLeadsButtonText}>My Leads</Text>
+                                </TouchableOpacity>
+                            </View>
 
-			if (response.status === 201) {
-				Alert.alert("Success", "Lead added successfully!");
-				setCustomerInfo({
-					full_name: "",
-					phone_number: "",
-					profession: "",
-				});
-				setSelectedGroup("");
-				setSelectedTicket("chit"); // Reset the active tab
-				navigation.navigate("ViewLeads", { user: user });
-			} else {
-				console.log("Error:", response.data);
-			}
-		} catch (error) {
-			console.error("Error adding lead:", error);
-			Alert.alert("Error", "Error adding lead. Please try again.");
-		} finally {
-			setIsLoading(false);
-		}
-	};
+                            <View style={styles.contentContainer}>
+                                <Text style={styles.label}>Name</Text>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Enter Name"
+                                    keyboardType="default"
+                                    value={customerInfo.full_name}
+                                    onChangeText={(value) =>
+                                        handleInputChange("full_name", value)
+                                    }
+                                />
 
-	return (
-		<SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-			<LinearGradient
-				colors={['#A8E0F9', '#F9E5B5']}
-				style={styles.gradientOverlay}
-				start={{ x: 0, y: 0 }}
-				end={{ x: 1, y: 1 }}
-			>
-				<KeyboardAvoidingView
-					behavior={Platform.OS === "ios" ? "padding" : "height"}
-					style={styles.container}
-				>
-					<ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-						<View style={{ marginHorizontal: 22, marginTop: 12 }}>
-							<Header />
-							<View style={styles.titleContainer}>
-								<Text style={styles.title}>Add Lead</Text>
-								<TouchableOpacity
-									style={styles.myLeadsButton}
-									onPress={() => navigation.navigate("ViewLeads", { user: user })}
-								>
-									<Text style={styles.myLeadsButtonText}>My Leads</Text>
-								</TouchableOpacity>
-							</View>
+                                <Text style={styles.label}>Phone Number</Text>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Enter Phone Number"
+                                    keyboardType="phone-pad"
+                                    value={customerInfo.phone_number}
+                                    onChangeText={(value) =>
+                                        handleInputChange("phone_number", value)
+                                    }
+                                />
 
-							<View style={styles.contentContainer}>
-								<Text style={styles.label}>Name</Text>
-								<TextInput
-									style={styles.textInput}
-									placeholder="Enter Name"
-									keyboardType="default"
-									value={customerInfo.full_name}
-									onChangeText={(value) =>
-										handleInputChange("full_name", value)
-									}
-								/>
+                                <Text style={styles.label}>Profession</Text>
+                                <View style={styles.pickerContainer}>
+                                    <Picker
+                                        selectedValue={customerInfo.profession}
+                                        onValueChange={(itemValue) =>
+                                            handleInputChange("profession", itemValue)
+                                        }
+                                    >
+                                        <Picker.Item label="Select Profession" value="" />
+                                        <Picker.Item label="Employed" value="Employed" />
+                                        <Picker.Item label="Self-Employed" value="Self-Employed" />
+                                    </Picker>
+                                </View>
 
-								<Text style={styles.label}>Phone Number</Text>
-								<TextInput
-									style={styles.textInput}
-									placeholder="Enter Phone Number"
-									keyboardType="phone-pad"
-									value={customerInfo.phone_number}
-									onChangeText={(value) =>
-										handleInputChange("phone_number", value)
-									}
-								/>
+                                {/* Corrected tab rendering to use selectedTicket state */}
+                                <View style={styles.tabContainer}>
+                                    <TouchableOpacity
+                                        style={[styles.tab, selectedTicket === "chit" && styles.activeTab]}
+                                        onPress={() => setSelectedTicket("chit")}
+                                    >
+                                        <Text style={[styles.tabText, selectedTicket === "chit" && styles.activeTabText]}>
+                                            Chit
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.tab, selectedTicket === "gold" && styles.activeTab]}
+                                        onPress={() => setSelectedTicket("gold")}
+                                    >
+                                        <Text style={[styles.tabText, selectedTicket === "gold" && styles.activeTabText]}>
+                                            Gold
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
 
-								<Text style={styles.label}>Profession</Text>
-								<TextInput
-									style={styles.textInput}
-									placeholder="Enter Profession"
-									keyboardType="default"
-									value={customerInfo.profession}
-									onChangeText={(value) =>
-										handleInputChange("profession", value)
-									}
-								/>
+                                <Text style={styles.label}>Group</Text>
+                                <View style={styles.pickerContainer}>
+                                    <Picker
+                                        selectedValue={selectedGroup}
+                                        onValueChange={(value) => setSelectedGroup(value)}
+                                    >
+                                        <Picker.Item label="Select Group" value="" />
+                                        {groups.map((group) => (
+                                            <Picker.Item
+                                                key={group._id}
+                                                label={group.group_name}
+                                                value={group._id}
+                                            />
+                                        ))}
+                                    </Picker>
+                                </View>
 
-								{/* Corrected tab rendering to use selectedTicket state */}
-								<View style={styles.tabContainer}>
-									<TouchableOpacity
-										style={[styles.tab, selectedTicket === "chit" && styles.activeTab]}
-										onPress={() => setSelectedTicket("chit")}
-									>
-										<Text style={[styles.tabText, selectedTicket === "chit" && styles.activeTabText]}>
-											Chit
-										</Text>
-									</TouchableOpacity>
-									<TouchableOpacity
-										style={[styles.tab, selectedTicket === "gold" && styles.activeTab]}
-										onPress={() => setSelectedTicket("gold")}
-									>
-										<Text style={[styles.tabText, selectedTicket === "gold" && styles.activeTabText]}>
-											Gold
-										</Text>
-									</TouchableOpacity>
-								</View>
-
-								<Text style={styles.label}>Group</Text>
-								<View style={styles.pickerContainer}>
-									<Picker
-										selectedValue={selectedGroup}
-										onValueChange={(value) => setSelectedGroup(value)}
-									>
-										<Picker.Item label="Select Group" value="" />
-										{groups.map((group) => ( // Corrected data source to use `groups`
-											<Picker.Item
-												key={group._id}
-												label={group.group_name}
-												value={group._id}
-											/>
-										))}
-									</Picker>
-								</View>
-
-								<Button
-									title={isLoading ? "Please wait..." : "Add Lead"}
-									filled
-									style={{
-										marginTop: 18,
-										marginBottom: 4,
-										backgroundColor: isLoading ? "gray" : COLORS.third,
-									}}
-									onPress={handleAddLead}
-								/>
-							</View>
-						</View>
-					</ScrollView>
-				</KeyboardAvoidingView>
-			</LinearGradient>
-		</SafeAreaView>
-	);
+                                <Button
+                                    title={isLoading ? "Please wait..." : "Add Lead"}
+                                    filled
+                                    style={{
+                                        marginTop: 18,
+                                        marginBottom: 4,
+                                        backgroundColor: isLoading ? "gray" : COLORS.third,
+                                    }}
+                                    onPress={handleAddLead}
+                                />
+                            </View>
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </LinearGradient>
+        </SafeAreaView>
+    );
 };
 
 const styles = StyleSheet.create({
-	gradientOverlay: {
-		flex: 1,
-	},
-	container: {
-		flex: 1,
-	},
-	titleContainer: {
-		display: "flex",
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		padding: 10,
-		marginTop: 20,
-		marginBottom: 20,
-	},
-	title: {
-		fontSize: 26,
-		fontWeight: 'bold',
-		color: '#333',
-	},
-	myLeadsButton: {
-		paddingVertical: 8,
-		paddingHorizontal: 16,
-		borderRadius: 20,
-		backgroundColor: COLORS.primary,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.2,
-		shadowRadius: 5,
-		elevation: 5,
-	},
-	myLeadsButtonText: {
-		color: COLORS.white,
-		fontWeight: 'bold',
-	},
-	label: {
-		fontSize: 16,
-		fontWeight: 'bold',
-		color: '#333',
-		marginTop: 10,
-	},
-	textInput: {
-		height: 50,
-		width: "100%",
-		backgroundColor: COLORS.white,
-		borderColor: "#d0d0d0",
-		borderWidth: 1,
-		borderRadius: 15,
-		paddingHorizontal: 15,
-		marginVertical: 10,
-		color: "#000",
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 5,
-		elevation: 3,
-	},
-	contentContainer: {
-		marginTop: -4,
-	},
-	tabContainer: {
-		flexDirection: "row",
-		backgroundColor: "rgba(255, 255, 255, 0.7)",
-		borderRadius: 15,
-		marginBottom: 10,
-		padding: 5,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 5,
-		marginTop: 10,
-	},
-	tab: {
-		flex: 1,
-		paddingVertical: 10,
-		alignItems: "center",
-		borderRadius: 12,
-	},
-	activeTab: {
-		backgroundColor: '#FFC000',
-	},
-	tabText: {
-		fontSize: 16,
-		color: "#666",
-		fontWeight: "500",
-	},
-	activeTabText: {
-		color: '#333',
-		fontWeight: 'bold',
-	},
-	pickerContainer: {
-		backgroundColor: COLORS.white,
-		borderRadius: 15,
-		borderWidth: 1,
-		borderColor: "#d0d0d0",
-		marginVertical: 10,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 5,
-		elevation: 3,
-	},
+    gradientOverlay: {
+        flex: 1,
+    },
+    container: {
+        flex: 1,
+    },
+    titleContainer: {
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: 10,
+        marginTop: 20,
+        marginBottom: 20,
+    },
+    title: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    myLeadsButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: COLORS.primary,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 5,
+    },
+    myLeadsButtonText: {
+        color: COLORS.white,
+        fontWeight: 'bold',
+    },
+    label: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginTop: 10,
+    },
+    textInput: {
+        height: 50,
+        width: "100%",
+        backgroundColor: COLORS.white,
+        borderColor: "#d0d0d0",
+        borderWidth: 1,
+        borderRadius: 15,
+        paddingHorizontal: 15,
+        marginVertical: 10,
+        color: "#000",
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    contentContainer: {
+        marginTop: -4,
+    },
+    tabContainer: {
+        flexDirection: "row",
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        borderRadius: 15,
+        marginBottom: 10,
+        padding: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        marginTop: 10,
+    },
+    tab: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: "center",
+        borderRadius: 12,
+    },
+    activeTab: {
+        backgroundColor: '#FFC000',
+    },
+    tabText: {
+        fontSize: 16,
+        color: "#666",
+        fontWeight: "500",
+    },
+    activeTabText: {
+        color: '#333',
+        fontWeight: 'bold',
+    },
+    pickerContainer: {
+        backgroundColor: COLORS.white,
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: "#d0d0d0",
+        marginVertical: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
 });
 
 export default AddLead;

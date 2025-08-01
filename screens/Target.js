@@ -35,7 +35,7 @@ const COLOR_PALETTE = {
     accentOrange: '#F39C12', // More vivid orange for attention
     backgroundLight: '#DFF6FC', // Very light, cool blue
     backgroundDark: '#BDE0F3',  // Slightly deeper, cool blue
-    softBorder: '#CCDDEE', // Soft blue for general borders
+    softBorder: '#c2b9f3ff', // Soft blue for general borders
 };
 
 const backgroundImage = require('../assets/hero1.jpg'); // Your background image
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontWeight: "800",
-        fontSize: 34, // Larger, more impactful title
+        fontSize: 30, // Larger, more impactful title
         color: COLOR_PALETTE.primary,
         letterSpacing: 0.2,
         textShadowColor: 'rgba(0, 0, 0, 0.1)', // Subtle text shadow
@@ -529,6 +529,7 @@ const styles = StyleSheet.create({
         shadowRadius: 10, // Softer shadow
         borderLeftWidth: 8, // Thicker border
         borderColor: COLOR_PALETTE.softBorder, // Default border color
+        
     },
     cardHeader: {
         flexDirection: 'row',
