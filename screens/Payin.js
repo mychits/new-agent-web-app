@@ -65,6 +65,7 @@ const Payin = ({ route, navigation }) => {
                 const response = await axios.post(
                     `${baseUrl}/enroll/get-user-tickets/${customer}`
                 );
+                console.log(response.data,"test jsghsg");
 
                 setAllData(response.data);
 
@@ -90,14 +91,10 @@ const Payin = ({ route, navigation }) => {
 
         fetchEnrollDetails();
     }, [customer]);
-
-    // Set current date
     useEffect(() => {
         const today = moment().format("DD-MM-YYYY");
         setCurrentDate(today);
     }, []);
-
-    // Fetch latest receipt number
     useEffect(() => {
         const fetchReceipt = async () => {
             try {
@@ -112,14 +109,11 @@ const Payin = ({ route, navigation }) => {
         };
         fetchReceipt();
     }, []);
-
-    // Handle group selection change
     const handleGroupChange = (groupId) => {
         setSelectedGroup(groupId);
-        setSelectedTicket(""); // Reset ticket when group changes
+        setSelectedTicket("");
 
         if (groupId) {
-            // Filter tickets belonging to the selected group
             const groupTickets = allData
                 .filter((item) => item.group_id && item.group_id._id === groupId)
                 .map((item) => item.tickets);
@@ -128,8 +122,6 @@ const Payin = ({ route, navigation }) => {
             setTickets([]);
         }
     };
-
-    // Handle payment type change (cash, online, cheque)
     const handlePaymentTypeChange = (type) => {
         setPaymentDetails(type);
         if (type === "online") {
@@ -139,18 +131,15 @@ const Payin = ({ route, navigation }) => {
         } else {
             setAdditionalInfo("");
         }
-        setTransactionId(""); // Clear transaction ID when payment type changes
+        setTransactionId("");
     };
-
-    // Handle adding payment
     const handleAddPayment = async () => {
-        // Validation checks
         if (
             !customerInfo.full_name ||
             !selectedGroup ||
             !selectedTicket ||
             !currentDate ||
-            !(receipt.receipt_no || receipt.receipt_no === 0) || // Ensure receipt_no is not null/undefined, and allow 0
+            !(receipt.receipt_no || receipt.receipt_no === 0) || 
             !paymentDetails ||
             !amount ||
             (additionalInfo !== "" && !transactionId)
@@ -166,7 +155,6 @@ const Payin = ({ route, navigation }) => {
                 group_id: selectedGroup,
                 ticket: selectedTicket,
                 pay_date: new Date().toISOString().split("T")[0],
-                // FIX: Ensure receipt_no is sent as a string, especially when it's 0
                 receipt_no: (receipt.receipt_no === 0) ? "0" : (receipt.receipt_no ? String(receipt.receipt_no) : ""),
                 pay_type: paymentDetails,
                 amount: amount,
@@ -187,17 +175,13 @@ const Payin = ({ route, navigation }) => {
             console.error("Error adding payment:", error);
             let errorMessage = "Error adding payment. Please try again.";
             if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
                 console.error("Error response data:", error.response.data);
                 console.error("Error response status:", error.response.status);
                 errorMessage = error.response.data.message || JSON.stringify(error.response.data) || errorMessage;
             } else if (error.request) {
-                // The request was made but no response was received
                 console.error("Error request:", error.request);
                 errorMessage = "No response from server. Please check your network connection.";
             } else {
-                // Something happened in setting up the request that triggered an Error
                 console.error("Error message:", error.message);
                 errorMessage = error.message;
             }

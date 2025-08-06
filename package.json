@@ -21,6 +21,7 @@
     "esc-pos-encoder": "^3.0.0",
     "expo": "~51.0.39",
     "expo-blur": "^14.1.5",
+    "expo-image-picker": "~15.1.0",
     "expo-linear-gradient": "^13.0.2",
     "expo-status-bar": "~1.12.1",
     "lottie-react-native": "^7.2.4",

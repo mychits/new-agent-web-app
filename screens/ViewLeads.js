@@ -34,7 +34,7 @@ const ViewLeads = ({ route, navigation }) => {
     const [chitLoaded, setChitLoaded] = useState(false);
     const [goldLoaded, setGoldLoaded] = useState(false);
     const [activeTab, setActiveTab] = useState("CHIT");
-    const [expandedLeadId, setExpandedLeadId] = useState(null); // State to manage expanded lead
+    const [expandedLeadId, setExpandedLeadId] = useState(null);
 
     useEffect(() => {
         setCurrentDate(moment().format("DD-MM-YYYY"));
@@ -104,28 +104,27 @@ const ViewLeads = ({ route, navigation }) => {
         }, [receipt.phone_number])
     );
 
-    // Function to handle direct calls
     const handleCall = (phoneNumber) => {
         Linking.openURL(`tel:${phoneNumber}`);
     };
 
-    // Function to handle WhatsApp messaging
     const handleWhatsApp = (phoneNumber) => {
         Linking.openURL(`whatsapp://send?phone=${phoneNumber}`);
     };
 
-    // Function to toggle expanded state
+    const handleEditLead = (lead) => {
+        navigation.navigate("EditLead", { user: user, lead: lead });
+    };
+
     const toggleExpand = (id) => {
         setExpandedLeadId(expandedLeadId === id ? null : id);
     };
 
-    // Checks if the lead was created today
     const isFreshLead = (createdAt) => {
         const leadDate = moment(createdAt);
         return leadDate.isSame(moment(), "day");
     };
 
-    // Checks if the lead was created within the last 10 days (excluding today)
     const isNewLead = (createdAt) => {
         const leadDate = moment(createdAt);
         const tenDaysAgo = moment().subtract(10, "days").startOf("day");
@@ -133,13 +132,14 @@ const ViewLeads = ({ route, navigation }) => {
     };
 
     const renderLeadCard = ({ item }) => {
-        const isExpanded = expandedLeadId === item._id; // Use _id or unique identifier
-        let cardStyle = styles.card; // Default card style
+        const isExpanded = expandedLeadId === item._id;
+        const freshLead = isFreshLead(item.createdAt);
+        let cardStyle = styles.card;
         let badgeText = null;
-        let badgeContainerStyle = null; // Style for the badge container
-        let badgeTextStyle = null; // Style for the badge text itself
+        let badgeContainerStyle = null;
+        let badgeTextStyle = null;
 
-        if (isFreshLead(item.createdAt)) {
+        if (freshLead) {
             cardStyle = { ...styles.card, ...styles.freshLeadCard };
             badgeText = "FRESH";
             badgeContainerStyle = styles.freshLeadBadgeContainer;
@@ -151,7 +151,6 @@ const ViewLeads = ({ route, navigation }) => {
             badgeTextStyle = styles.newLeadBadgeText;
         }
 
-        // Format the date and time separately for display
         const createdDate = moment(item.createdAt).format("DD-MM-YYYY");
         const createdTime = moment(item.createdAt).format("HH:mm");
 
@@ -164,7 +163,6 @@ const ViewLeads = ({ route, navigation }) => {
                             {item.group_id ? item.group_id.group_name : "No Group"}
                         </Text>
                     </View>
-                    {/* The right section contains the scheme type and the expand icon */}
                     <View style={styles.rightSection}>
                         <Text style={styles.schemeType}>
                             {item.scheme_type.charAt(0).toUpperCase() +
@@ -182,10 +180,13 @@ const ViewLeads = ({ route, navigation }) => {
                 {isExpanded && (
                     <View style={styles.expandedContent}>
                         <Text style={styles.phoneNumber}>Phone: {item.lead_phone}</Text>
-                        {/* Display created date and time separately on the same line */}
                         <Text style={styles.createdAt}>
                             Created: {createdDate} at {createdTime}
                         </Text>
+
+                        {item.lead_image && (
+                            <Image source={{ uri: item.lead_image }} style={styles.leadImage} />
+                        )}
 
                         <View style={styles.contactButtons}>
                             <TouchableOpacity
@@ -202,6 +203,15 @@ const ViewLeads = ({ route, navigation }) => {
                                 <Icon name="whatsapp" size={18} color={COLORS.white} />
                                 <Text style={styles.buttonText}>WhatsApp</Text>
                             </TouchableOpacity>
+                            {freshLead && ( // Only show edit button for fresh leads
+                                <TouchableOpacity
+                                    onPress={() => handleEditLead(item)}
+                                    style={styles.editButton}
+                                >
+                                    <Icon name="edit" size={18} color={COLORS.white} />
+                                    <Text style={styles.buttonText}>Edit</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </View>
                 )}
@@ -295,6 +305,7 @@ const ViewLeads = ({ route, navigation }) => {
                                         data={leads}
                                         keyExtractor={(item, index) => item._id || index.toString()}
                                         renderItem={renderLeadCard}
+                                        contentContainerStyle={styles.flatListContent}
                                     />
                                 )}
                                 {!isLoading && dataLoaded && leads.length === 0 && (
@@ -406,7 +417,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        // Removed paddingRight to allow expandIcon to position freely relative to rightSection
     },
     freshLeadCard: {
         borderColor: "green",
@@ -420,9 +430,8 @@ const styles = StyleSheet.create({
     rightSection: {
         flexDirection: "row",
         alignItems: "center",
-        // Add some right padding to this container so the icon doesn't go off the edge of the card
         paddingRight: 10,
-        position: 'relative', // Ensure this is relative for absolute children
+        position: 'relative',
     },
     name: {
         fontSize: 18,
@@ -438,15 +447,13 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#000",
         fontWeight: "500",
-        // Adjust this margin based on your desired spacing from the right edge of the card,
-        // considering the space taken by the icon.
-        marginRight: 25, // Slightly reduced to give more space for the icon if needed
+        marginRight: 25,
     },
     expandIcon: {
         position: 'absolute',
-        right: 0, // Position at the right edge of its parent (rightSection)
-        top: '50%', // Vertically center the icon
-        transform: [{ translateY: -9 }], // Adjust for half of the icon's height (18/2)
+        right: 0,
+        top: '50%',
+        transform: [{ translateY: -9 }],
     },
     expandedContent: {
         marginTop: 10,
@@ -479,7 +486,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     whatsappButton: {
-        backgroundColor: "#25D366", // WhatsApp green
+        backgroundColor: "#25D366",
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    editButton: { // Style for edit button - changed background color to make it brighter
+        backgroundColor: COLORS.primary, // Changed from COLORS.secondary to COLORS.primary
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 20,
@@ -491,17 +506,14 @@ const styles = StyleSheet.create({
         marginLeft: 5,
         fontWeight: "bold",
     },
-    // Badge styles adjusted for better positioning
     freshLeadBadgeContainer: {
         position: "absolute",
-        top: 0,    // Adjusted from 15
-        right: 0,  // Adjusted from -25
+        top: 0,
+        right: 0,
         backgroundColor: "green",
-        // Removed borderRadius, width, height, justifyContent, alignItems, zIndex, transform, shadow styles
-        // to simplify positioning and avoid overlap with the main card content and icon.
-        paddingHorizontal: 8, // Add padding for better visual
+        paddingHorizontal: 8,
         paddingVertical: 4,
-        borderBottomLeftRadius: 15, // Curve the bottom-left corner
+        borderBottomLeftRadius: 15,
     },
     freshLeadBadgeText: {
         color: COLORS.white,
@@ -510,10 +522,9 @@ const styles = StyleSheet.create({
     },
     newLeadBadgeContainer: {
         position: "absolute",
-        top: 0,    // Adjusted from 15
-        right: 0,  // Adjusted from -25
+        top: 0,
+        right: 0,
         backgroundColor: "orange",
-        // Removed borderRadius, width, height, justifyContent, alignItems, zIndex, transform, shadow styles
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderBottomLeftRadius: 15,
@@ -539,6 +550,17 @@ const styles = StyleSheet.create({
         height: 150,
         resizeMode: "contain",
         marginBottom: 20,
+    },
+    flatListContent: {
+        paddingBottom: 100,
+    },
+    leadImage: { // Style for displaying lead image
+        width: '100%',
+        height: 150,
+        borderRadius: 10,
+        marginTop: 10,
+        marginBottom: 10,
+        resizeMode: 'cover',
     },
 });
 

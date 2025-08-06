@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AntDesign } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar'; // Import StatusBar
 
 const { width, height } = Dimensions.get('window');
 
@@ -61,40 +62,35 @@ const motivationalTexts = [
   },
 ];
 
-const Welcome = ({ navigation }) => { // Corrected: Added 'navigation' prop
+const Welcome = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const slideAnim = useRef(new Animated.Value(0)).current; // For right-to-left slide animation
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // Animate out (slide to left)
       Animated.timing(slideAnim, {
-        toValue: -width, // Slide off screen to the left
-        duration: 1500, // Corrected: Slower animation duration
+        toValue: -width,
+        duration: 1500,
         useNativeDriver: true,
       }).start(() => {
-        // After sliding out, update text index
         setCurrentIndex((prevIndex) =>
           (prevIndex + 1) % motivationalTexts.length
         );
-        // Reset position instantly to the right (off-screen)
         slideAnim.setValue(width);
         
-        // Animate in (slide from right to center)
         Animated.timing(slideAnim, {
-          toValue: 0, // Slide back to original position
-          duration: 1500, // Corrected: Slower animation duration
+          toValue: 0,
+          duration: 1500,
           useNativeDriver: true,
         }).start();
       });
-    }, 5000); // Corrected: Increased interval to 4 seconds to accommodate slower animation
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [slideAnim]);
 
   const currentText = motivationalTexts[currentIndex];
 
-  // Logic for 3 pagination dots
   const totalTexts = motivationalTexts.length;
   const segmentSize = totalTexts / 3; 
 
@@ -111,7 +107,7 @@ const Welcome = ({ navigation }) => { // Corrected: Added 'navigation' prop
 
   const handleNextPress = () => {
     if (navigation) {
-      navigation.navigate('Login'); // Navigates to the 'Login' screen
+      navigation.navigate('Login');
     } else {
       console.warn("Navigation prop not found. Cannot navigate to Login page.");
     }
@@ -125,6 +121,7 @@ const Welcome = ({ navigation }) => { // Corrected: Added 'navigation' prop
       end={{ x: 1, y: 1 }}
     >
       <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" backgroundColor="#A8E0F9" translucent={true} />
         {/* Image Section */}
         <View style={styles.imageContainer}>
           <Image
@@ -134,14 +131,14 @@ const Welcome = ({ navigation }) => { // Corrected: Added 'navigation' prop
           />
         </View>
 
-        {/* Content Section (now transparent and positioned for merge) */}
+        {/* Content Section */}
         <View style={styles.contentContainer}>
           <Animated.View style={[{ transform: [{ translateX: slideAnim }] }, styles.animatedTextContainer]}>
             <Text style={styles.title}>{currentText.title}</Text>
             <Text style={styles.description}>{currentText.description}</Text>
           </Animated.View>
           
-          {/* Navigation/Pagination Section - NOT Animated */}
+          {/* Navigation/Pagination Section */}
           <View style={styles.navigationContainer}>
             {/* Back Button */}
             <TouchableOpacity style={styles.navButton}>
@@ -150,7 +147,7 @@ const Welcome = ({ navigation }) => { // Corrected: Added 'navigation' prop
 
             {/* Pagination Dots */}
             <View style={styles.paginationDots}>
-              {[0, 1, 2].map((dotIndex) => ( // Render exactly 3 dots
+              {[0, 1, 2].map((dotIndex) => (
                 <View
                   key={dotIndex}
                   style={[
@@ -164,7 +161,7 @@ const Welcome = ({ navigation }) => { // Corrected: Added 'navigation' prop
             {/* Next Button */}
             <TouchableOpacity 
               style={[styles.navButton, styles.nextButton]} 
-              onPress={handleNextPress} // Corrected: Added onPress handler
+              onPress={handleNextPress}
             >
               <AntDesign name="arrowright" size={24} color="#fff" />
             </TouchableOpacity>
@@ -221,21 +218,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32, 
-    fontWeight: '800', // Corrected: Stylist text
-    color: '#1C2E4A', // Corrected: Stylist text
-    lineHeight: 42, // Corrected: Stylist text
+    fontWeight: '800',
+    color: '#1C2E4A',
+    lineHeight: 42,
     marginBottom: 10,
     textAlign: 'center',
-    letterSpacing: 0.5, // Corrected: Stylist text
+    letterSpacing: 0.5,
   },
   description: {
     fontSize: 17, 
-    color: '#5F6C7D', // Corrected: Stylist text
+    color: '#5F6C7D',
     textAlign: 'center',
-    lineHeight: 28, // Corrected: Stylist text
+    lineHeight: 28,
     marginBottom: 20,
     paddingHorizontal: 10, 
-    letterSpacing: 0.2, // Corrected: Stylist text
+    letterSpacing: 0.2,
   },
   navigationContainer: {
     flexDirection: 'row',

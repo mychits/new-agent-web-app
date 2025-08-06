@@ -36,7 +36,7 @@ const ChitPayments = ({ route, navigation }) => {
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
   const [selectedGroupName, setSelectedGroupName] = useState('');
   const [activeChitId, setActiveChitId] = useState(null);
-  const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false); // New state for total collection details modal
+  const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false); 
 
 
   const formatDate = (date) => {
