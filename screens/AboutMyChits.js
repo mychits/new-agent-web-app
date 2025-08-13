@@ -22,7 +22,7 @@ const AboutMyChits = ({ route, navigation }) => {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={['#A8E0F9', '#fadfa0ff']}
+                 colors={['#dbf6faff', '#90dafcff']}
                 style={styles.backgroundGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}

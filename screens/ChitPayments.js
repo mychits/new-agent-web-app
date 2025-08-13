@@ -24,7 +24,7 @@ const ChitPayments = ({ route, navigation }) => {
   const [customers, setCustomers] = useState([]);
   const [cus, setCus] = useState([]);
   const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [agent, setAgent] = useState({})
 
   const [selectedFilter, setSelectedFilter] = useState(null);
@@ -36,7 +36,7 @@ const ChitPayments = ({ route, navigation }) => {
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
   const [selectedGroupName, setSelectedGroupName] = useState('');
   const [activeChitId, setActiveChitId] = useState(null);
-  const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false); 
+  const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false);
 
 
   const formatDate = (date) => {
@@ -61,15 +61,15 @@ const ChitPayments = ({ route, navigation }) => {
     { id: 'customer', title: 'Customer', value: 'All', icon: 'user' },
     { id: 'group', title: 'Group', value: 'All', icon: 'users' },
     { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'money' },
-    { id: 'totalCollection', title: 'Total Collection', value: '₹ 0.00', icon: 'money' },
+    { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'money' },
   ]);
 
   const paymentModes = ['cash', 'online'];
 
   const handleFilterPress = (filterId) => {
     if (filterId === 'totalCollection') {
-      setSelectedFilter(filterId); // To highlight the card if needed
-      setShowTotalCollectionDetails(true); // Show the dedicated total collection modal
+      setSelectedFilter(filterId);
+      setShowTotalCollectionDetails(true);
     } else {
       setSelectedFilter(filterId);
       setShowPicker(true);
@@ -92,7 +92,6 @@ const ChitPayments = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        setLoading(true)
         const response = await axios.get(
           `${baseUrl}/payment/get-payment-agent/${user.userId}`
         );
@@ -114,7 +113,6 @@ const ChitPayments = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCus = async () => {
       try {
-        setLoading(true)
         const response = await axios.get(
           `${baseUrl}/user/get-user`
         );
@@ -126,7 +124,7 @@ const ChitPayments = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching customer data:", error);
       } finally {
-        setLoading(false)
+        // You only need one place to set loading to false after all initial fetches are complete
       }
     };
 
@@ -136,7 +134,6 @@ const ChitPayments = ({ route, navigation }) => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        setLoading(true);
         const response = await axios.get(
           `${baseUrl}/group/get-group`
         );
@@ -149,7 +146,7 @@ const ChitPayments = ({ route, navigation }) => {
         Alert.alert("Network Error", "Failed to fetch groups. Please check your network connection.");
         console.error("Error fetching group data:", error);
       } finally {
-        setLoading(false);
+        // You only need one place to set loading to false after all initial fetches are complete
       }
     };
 
@@ -190,8 +187,10 @@ const ChitPayments = ({ route, navigation }) => {
 
   // Update total collection filter value whenever totalAmount changes
   useEffect(() => {
-    updateFilterValue('totalCollection', `₹ ${totalAmount.toFixed(2)}`);
-  }, [totalAmount]);
+    if (!loading) {
+      updateFilterValue('totalCollection', `₹ ${totalAmount.toFixed(2)}`);
+    }
+  }, [totalAmount, loading]);
 
   const renderPicker = () => {
     switch (selectedFilter) {
@@ -449,220 +448,216 @@ const ChitPayments = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-        colors={['#A8E0F9', '#F9E5B5']}
+        colors={['#dbf6faff', '#90dafcff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <View style={{ marginHorizontal: 22, marginTop: 12 }}>
-          <Header />
-          {/* Modified titleContainer: Removed Today's Collection Card */}
-          <View style={styles.titleCollectionContainer}>
-            <View>
-              <Text style={styles.title}>Chit Payments</Text>
-              <Text style={styles.totalAmountText}>₹ {totalAmount.toFixed(2)}</Text>
-            </View>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#f7f7f7ff" />
+           
           </View>
-
-          {/* Total Collection Details Modal */}
-          <Modal
-            visible={showTotalCollectionDetails}
-            transparent={false}
-            animationType="slide"
-            onRequestClose={() => setShowTotalCollectionDetails(false)}
-          >
-            <LinearGradient
-              colors={['#A8E0F9', '#F9E5B5']}
-              style={styles.fullScreenModalGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <SafeAreaView style={styles.fullScreenModalContainer}>
-                <TouchableOpacity
-                  style={styles.modalCloseButton}
-                  onPress={() => {
-                    setShowTotalCollectionDetails(false);
-                    setSelectedFilter(null); // Deselect the filter when closing
-                  }}
-                >
-                  <Icon name="times-circle" size={30} color={COLORS.darkGray} />
-                </TouchableOpacity>
-
-                <View style={styles.totalDetailsCard}>
-                  <Text style={styles.totalDetailsTitle}>Total Collection</Text>
-                  <Text style={styles.totalDetailsAmount}>₹ {totalAmount.toFixed(2)}</Text>
-                  <Text style={styles.totalDetailsAgent}>Agent: {agent.name || 'N/A'}</Text>
-                  <Text style={styles.totalDetailsDate}>Date: {formatDate(selectedDate)}</Text>
-
-                  {/* New section for individual payment details */}
-                  <Text style={styles.paymentDetailsHeader}>Individual Payments:</Text>
-                  <ScrollView style={styles.paymentDetailsScrollView}>
-                    {filteredCustomers.length > 0 ? (
-                      filteredCustomers.map((customer, index) => (
-                        <View key={index} style={styles.paymentDetailItem}>
-                          <Text style={styles.paymentDetailText}>
-                            <Text style={styles.paymentDetailLabel}>Customer:</Text> {customer?.user_id?.full_name || 'N/A'}
-                          </Text>
-                          <Text style={styles.paymentDetailText}>
-                            <Text style={styles.paymentDetailLabel}>Amount:</Text> ₹ {parseFloat(customer.amount || 0).toFixed(2)}
-                          </Text>
-                          <Text style={styles.paymentDetailText}>
-                            <Text style={styles.paymentDetailLabel}>Mode:</Text> {customer.pay_type || 'N/A'}
-                          </Text>
-                          <Text style={styles.paymentDetailText}>
-                            <Text style={styles.paymentDetailLabel}>Receipt No:</Text> {customer.receipt_no || 'N/A'}
-                          </Text>
-                        </View>
-                      ))
-                    ) : (
-                      <Text style={styles.noPaymentsText}>No payments for selected date.</Text>
-                    )}
-                  </ScrollView>
-
-                
-                </View>
-              </SafeAreaView>
-            </LinearGradient>
-          </Modal>
-
-          {/* Conditionally render main content if total collection details are not shown */}
-          {!showTotalCollectionDetails && (
-            <>
-              <View style={styles.searchContainer}>
-                <Icon
-                  name="search"
-                  size={20}
-                  color="#ccc"
-                  style={styles.searchIcon}
-                />
-                <TextInput
-                  value={search}
-                  onChangeText={(text) => setSearch(text)}
-                  placeholder="Search chit payments..."
-                  placeholderTextColor={COLORS.darkGray}
-                  style={styles.searchInput}
-                />
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* Conditionally render filters and payment list */}
-        {!showTotalCollectionDetails && (
+        ) : (
           <>
-            <View style={styles.filterContainer}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContainer}>
-                {filters.map((filter) => (
-                  <TouchableOpacity
-                    key={filter.id}
-                    style={[
-                      styles.card,
-                      selectedFilter === filter.id && styles.activeCard,
-                      filter.id === 'totalCollection' && styles.totalCollectionCard
-                    ]}
-                    onPress={() => handleFilterPress(filter.id)}
-                    // Removed activeOpacity override to make it interactive
-                  >
-                    <View style={styles.cardContent}>
-                      {filter.id !== 'totalCollection' && (
-                        <View style={[styles.radioCircle, selectedFilter === filter.id && styles.radioCircleActive]} />
-                      )}
-                      <View style={styles.cardTextContainer}>
-                        <View style={styles.cardIconContainer}>
-                          <Icon name={filter.icon} size={20} color={selectedFilter === filter.id ? COLORS.darkGray : '#666'} />
-                          <Text style={[styles.cardTitle, selectedFilter === filter.id && styles.activeCardTitle]}>
-                            {filter.title}
-                          </Text>
+            <View style={{ marginHorizontal: 22, marginTop: 12 }}>
+              <Header />
+              <View style={styles.titleCollectionContainer}>
+                <View>
+                  <Text style={styles.title}>Chit Payments</Text>
+                  <Text style={styles.totalAmountText}>₹ {totalAmount.toFixed(2)}</Text>
+                </View>
+              </View>
+
+              <Modal
+                visible={showTotalCollectionDetails}
+                transparent={false}
+                animationType="slide"
+                onRequestClose={() => setShowTotalCollectionDetails(false)}
+              >
+                <LinearGradient
+                  colors={['#dbf6faff', '#90dafcff']}
+                  style={styles.fullScreenModalGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <SafeAreaView style={styles.fullScreenModalContainer}>
+                    <TouchableOpacity
+                      style={styles.modalCloseButton}
+                      onPress={() => {
+                        setShowTotalCollectionDetails(false);
+                        setSelectedFilter(null);
+                      }}
+                    >
+                      <Icon name="times-circle" size={30} color={COLORS.darkGray} />
+                    </TouchableOpacity>
+
+                    <View style={styles.totalDetailsCard}>
+                      <Text style={styles.totalDetailsTitle}>Total Collection</Text>
+                      <Text style={styles.totalDetailsAmount}>₹ {totalAmount.toFixed(2)}</Text>
+                      <Text style={styles.totalDetailsAgent}>Agent: {agent.name || 'N/A'}</Text>
+                      <Text style={styles.totalDetailsDate}>Date: {formatDate(selectedDate)}</Text>
+
+                      <Text style={styles.paymentDetailsHeader}>Individual Payments:</Text>
+                      <ScrollView style={styles.paymentDetailsScrollView}>
+                        {filteredCustomers.length > 0 ? (
+                          filteredCustomers.map((customer, index) => (
+                            <View key={index} style={styles.paymentDetailItem}>
+                              <Text style={styles.paymentDetailText}>
+                                <Text style={styles.paymentDetailLabel}>Customer:</Text> {customer?.user_id?.full_name || 'N/A'}
+                              </Text>
+                              <Text style={styles.paymentDetailText}>
+                                <Text style={styles.paymentDetailLabel}>Amount:</Text> ₹ {parseFloat(customer.amount || 0).toFixed(2)}
+                              </Text>
+                              <Text style={styles.paymentDetailText}>
+                                <Text style={styles.paymentDetailLabel}>Mode:</Text> {customer.pay_type || 'N/A'}
+                              </Text>
+                              <Text style={styles.paymentDetailText}>
+                                <Text style={styles.paymentDetailLabel}>Receipt No:</Text> {customer.receipt_no || 'N/A'}
+                              </Text>
+                            </View>
+                          ))
+                        ) : (
+                          <Text style={styles.noPaymentsText}>No payments for selected date.</Text>
+                        )}
+                      </ScrollView>
+                    </View>
+                  </SafeAreaView>
+                </LinearGradient>
+              </Modal>
+
+              {!showTotalCollectionDetails && (
+                <>
+                  <View style={styles.searchContainer}>
+                    <Icon
+                      name="search"
+                      size={20}
+                      color="#ccc"
+                      style={styles.searchIcon}
+                    />
+                    <TextInput
+                      value={search}
+                      onChangeText={(text) => setSearch(text)}
+                      placeholder="Search chit payments..."
+                      placeholderTextColor={COLORS.darkGray}
+                      style={styles.searchInput}
+                    />
+                  </View>
+                </>
+              )}
+            </View>
+
+            {!showTotalCollectionDetails && (
+              <>
+                <View style={styles.filterContainer}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContainer}>
+                    {filters.map((filter) => (
+                      <TouchableOpacity
+                        key={filter.id}
+                        style={[
+                          styles.card,
+                          selectedFilter === filter.id && styles.activeCard,
+                          filter.id === 'totalCollection' && styles.totalCollectionCard
+                        ]}
+                        onPress={() => handleFilterPress(filter.id)}
+                      >
+                        <View style={styles.cardContent}>
+                          {filter.id !== 'totalCollection' && (
+                            <View style={[styles.radioCircle, selectedFilter === filter.id && styles.radioCircleActive]} />
+                          )}
+                          <View style={styles.cardTextContainer}>
+                            <View style={styles.cardIconContainer}>
+                              <Icon name={filter.icon} size={20} color={selectedFilter === filter.id ? COLORS.darkGray : '#666'} />
+                              <Text style={[styles.cardTitle, selectedFilter === filter.id && styles.activeCardTitle]}>
+                                {filter.title}
+                              </Text>
+                            </View>
+                            <Text style={styles.cardValue}>{filter.value}</Text>
+                          </View>
                         </View>
-                        <Text style={styles.cardValue}>{filter.value}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                  <TouchableOpacity onPress={printPDF} style={styles.printButton}>
+                    <Text style={styles.printButtonText}>Print PDF</Text>
+                  </TouchableOpacity>
+                  <Modal
+                    visible={showPicker}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowPicker(false)}>
+                    {/* The `DateTimePicker` component itself provides the "OK" and "Cancel" buttons.
+                        Removing the custom view that contained the "X" button and placing the picker directly. */}
+                    <View style={styles.modalContainer}>
+                      <View style={styles.pickerContainer}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShowPicker(false);
+                            setSelectedFilter(null);
+                          }}
+                          style={styles.closeButton}
+                        >
+                          <Text style={styles.closeButtonText}>Close</Text>
+                        </TouchableOpacity>
+                        {renderPicker()}
                       </View>
                     </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <TouchableOpacity onPress={printPDF} style={styles.printButton}>
-                <Text style={styles.printButtonText}>Print PDF</Text>
-              </TouchableOpacity>
-              <Modal
-                visible={showPicker}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowPicker(false)}>
-                <View style={styles.modalContainer}>
-                  <View style={styles.pickerContainer}>
-                    <TouchableOpacity
-                      style={styles.closeButton}
-                      onPress={() => setShowPicker(false)}>
-                      <Text style={styles.closeButtonText}>X</Text>
-                    </TouchableOpacity>
-                    {renderPicker()}
-                  </View>
+                  </Modal>
                 </View>
-              </Modal>
-            </View>
-            {
-              loading ? (
-                <>
-                  <View style={{ marginTop: 30, alignItems: "center" }}>
-                    <ActivityIndicator size="large" color="#0000ff" />
-                  </View>
-                </>
-              ) : (
-                <>
-                  <ScrollView
-                    style={{ flex: 1, marginHorizontal: 22, marginTop: 0 }}
-                    contentContainerStyle={{ paddingBottom: 80 }}
-                    showsVerticalScrollIndicator={false}
-                  >
-                    {Array.isArray(customers) && customers.filter((customer) => {
-                      const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
-                      const dateMatch = isSameDate(customer.pay_date, selectedDate);
-                      const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                      const groupMatch = !selectedGroup || customer?.group_id?._id === selectedGroup;
-                      const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-                      return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
-                    }).length === 0 ? (
-                      <View style={styles.noDataContainer}>
-                        <Image source={noImage} style={styles.noImage} />
-                        <Text style={styles.noDataText}>No Payments are available</Text>
-                      </View>
-                    ) : (
-                      customers
-                        .filter((customer) => {
-                          const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
-                          const dateMatch = isSameDate(customer.pay_date, selectedDate);
-                          const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                          const groupMatch = !selectedGroup || customer?.group_id?._id === selectedGroup;
-                          const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-                          return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
-                        })
-                        .map((customer, index) => (
-                          <PaymentChitList
-                            key={index}
-                            idx={index}
-                            name={customer?.user_id?.full_name || 'N/A'}
-                            cus_id={customer._id}
-                            phone={customer?.user_id?.phone_number || 'N/A'}
-                            receipt={customer.receipt_no}
-                            date={customer.pay_date}
-                            amount={customer.amount}
-                            group={customer?.group_id?.group_name || 'N/A'}
-                            type={customer.pay_type}
-                            navigation={navigation}
-                            user={user}
-                            onPress={() => handleChitPress(customer._id)}
-                            customer={customer}
-                            isActive={customer._id === activeChitId}
-                          />
-                        ))
-                    )}
-                  </ScrollView>
-                </>
-              )
-            }
+
+                <ScrollView
+                  style={{ flex: 1, marginHorizontal: 22, marginTop: 0 }}
+                  contentContainerStyle={{ paddingBottom: 80 }}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {Array.isArray(customers) && customers.filter((customer) => {
+                    const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
+                    const dateMatch = isSameDate(customer.pay_date, selectedDate);
+                    const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
+                    const groupMatch = !selectedGroup || customer?.group_id?._id === selectedGroup;
+                    const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
+                    return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
+                  }).length === 0 ? (
+                    <View style={styles.noDataContainer}>
+                      <Image source={noImage} style={styles.noImage} />
+                      <Text style={styles.noDataText}>No Payments are available</Text>
+                    </View>
+                  ) : (
+                    customers
+                      .filter((customer) => {
+                        const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
+                        const dateMatch = isSameDate(customer.pay_date, selectedDate);
+                        const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
+                        const groupMatch = !selectedGroup || customer?.group_id?._id === selectedGroup;
+                        const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
+                        return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
+                      })
+                      .map((customer, index) => (
+                        <PaymentChitList
+                          key={index}
+                          idx={index}
+                          name={customer?.user_id?.full_name || 'N/A'}
+                          cus_id={customer._id}
+                          phone={customer?.user_id?.phone_number || 'N/A'}
+                          receipt={customer.receipt_no}
+                          date={customer.pay_date}
+                          amount={customer.amount}
+                          group={customer?.group_id?.group_name || 'N/A'}
+                          type={customer.pay_type}
+                          navigation={navigation}
+                          user={user}
+                          onPress={() => handleChitPress(customer._id)}
+                          customer={customer}
+                          isActive={customer._id === activeChitId}
+                        />
+                      ))
+                  )}
+                </ScrollView>
+              </>
+            )}
           </>
         )}
       </LinearGradient>
@@ -674,12 +669,17 @@ const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   titleCollectionContainer: {
     display: "flex",
     flexDirection: "row",
-   alignItems: 'center',     // vertically centers children in the row
-  justifyContent: 'center', // horizontally centers content within the container
-    alignItems: "flex-start",
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 10,
     marginTop: 20,
     marginBottom: 20,
@@ -688,8 +688,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: 'bold',
     color: '#333',
-    alignItems: 'center',     // vertically centers children in the row
-  justifyContent: 'center', // horizontally centers content within the container
   },
   totalAmountText: {
     fontSize: 25,
@@ -697,7 +695,6 @@ const styles = StyleSheet.create({
     color: '#555',
     marginTop: 5,
   },
-  // Removed todaysCollectionCard styles as it's no longer used here
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -712,7 +709,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    width: '100%', // Adjusted width
+    width: '100%',
   },
   searchIcon: {
     marginLeft: 10,
@@ -794,8 +791,8 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
   },
   totalCollectionCard: {
-    backgroundColor: '#E0F7FA', // A lighter blue for distinction
-    borderColor: '#00BCD4', // Cyan border
+    backgroundColor: '#E0F7FA',
+    borderColor: '#00BCD4',
   },
   printButton: {
     marginHorizontal: 22,
@@ -835,7 +832,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 5,
-    width: '90%', // Adjusted width for slightly bigger feel
+    width: '90%',
   },
   closeButton: {
     alignSelf: 'flex-end',
@@ -846,7 +843,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // New styles for the full-screen total collection modal
   fullScreenModalGradient: {
     flex: 1,
   },
@@ -854,11 +850,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding:32,
+    padding: 32,
   },
   modalCloseButton: {
     position: 'absolute',
-    top: 30, // Adjust as needed for better positioning within SafeAreaView
+    top: 30,
     right: 20,
     zIndex: 1,
   },
@@ -872,10 +868,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 8,
-    width: '110%', // Adjusted width to take more space
+    width: '110%',
     maxWidth: 500,
     height: '100%',
-    maxHeight: '110%', // Added to prevent modal from overflowing if many payments
+    maxHeight: '110%',
   },
   totalDetailsTitle: {
     fontSize: 28,
@@ -897,9 +893,8 @@ const styles = StyleSheet.create({
   totalDetailsDate: {
     fontSize: 16,
     color: '#888',
-    marginBottom: 20, // Added margin for spacing before individual payments
+    marginBottom: 20,
   },
-  // New styles for the Print Summary button in the total collection modal
   printDetailsButton: {
     marginTop: 20,
     paddingVertical: 12,
@@ -934,19 +929,18 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     marginBottom: 20,
   },
-  // Styles for individual payment details
   paymentDetailsHeader: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#053B90',
     marginBottom: 10,
-    alignSelf: 'flex-start', // Align to start of the card
+    alignSelf: 'flex-start',
     width: '100%',
     textAlign: 'center',
   },
   paymentDetailsScrollView: {
     width: '100%',
-    maxHeight: 300,// Limit height to make it scrollable
+    maxHeight: 500,
     marginBottom: 15,
   },
   paymentDetailItem: {

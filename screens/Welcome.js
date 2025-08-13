@@ -115,7 +115,7 @@ const Welcome = ({ navigation }) => {
 
   return (
     <LinearGradient
-     colors={['#A8E0F9', '#F9E5B5']}
+      colors={['#dbf6faff', '#90dafcff']}
       style={styles.fullScreenGradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}

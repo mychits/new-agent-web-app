@@ -195,7 +195,7 @@ const Becomeanagent = ({ navigation, route }) => {
     >
       {/* The main gradient background for the entire safe area */}
       <LinearGradient
-        colors={['#A8E0F9', '#F9E5B5']}
+         colors={['#dbf6faff', '#90dafcff']}
         style={styles.safeAreaGradientBackground}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -213,13 +213,13 @@ const Becomeanagent = ({ navigation, route }) => {
           <ScrollView contentContainerStyle={styles.scrollViewContent}>
             {/* Existing gradientOverlay wrapping the formContainer */}
             <LinearGradient
-              colors={['#A8E0F9', '#F9E5B5']}
+               colors={['#dbf6faff', '#90dafcff']}
               style={styles.gradientOverlay}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
               <LinearGradient
-                colors={["#FFFFFF", "#E0F2F7"]}
+                 colors={['#dbf6faff', '#90dafcff']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={styles.formContainer}

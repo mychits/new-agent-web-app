@@ -3,343 +3,425 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView, // Make sure ScrollView is imported
+  ScrollView,
   TouchableOpacity,
-  Alert, // Keep Alert for other potential uses, but it won't be used for Targets anymore
   Dimensions,
-  Image,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
-
 import baseUrl from "../constants/baseUrl";
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
-import { LinearGradient } from "expo-linear-gradient"; // Ensure this is the correct import for your LinearGradient setup
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import moment from "moment";
+import Svg, { G, Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get("window");
 
-// Define image paths for each card. Ensure these paths are correct relative to Home.js.
-const cardImagePaths = {
-  collections: [
-    require('../assets/Collection1.png'),
-    require('../assets/Collection2.png')
-  ],
-  daybook: [
-    require('../assets/Daybook1.png'),
-    require('../assets/Daybook2.png')
-  ],
-  targets: [
-    require('../assets/Target1.png'),
-    require('../assets/Target2.png')
-  ],
-  myLeads: [
-    require('../assets/Lead1.png'),
-    require('../assets/Lead2.png')
-  ],
-  addCustomers: [
-    require('../assets/AddCutomer1.png'),
-    require('../assets/AddCutomer2.png')
-  ],
-  myCustomers: [
-    require('../assets/Mycustomers1.png'),
-    require('../assets/Mycustomers2.png'),
-  ],
-  myTasks: [
-    require('../assets/Target1.png'),
-    require('../assets/Target2.png')
-  ],
-  reports: [
-    require('../assets/Reports1.png'),
-    require('../assets/Reports2.png')
-  ],
-  commission: [
-    require('../assets/commissions1.png'),
-    require('../assets/commission2.png')
-  ],
-};
+const Home = ({ route, navigation }) => {
+  const { user = {} } = route.params || {};
+  const [agent, setAgent] = useState({});
+  const [targetData, setTargetData] = useState({ total: 0, achieved: 0, remaining: 0 });
+  const [loadingTarget, setLoadingTarget] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
-// Component to handle individual card image animations
-const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
-  // Use initialImageIndex to set the starting image
-  const [currentImageIndex, setCurrentImageIndex] = useState(initialImageIndex || 0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  // Animation for circular progress bar
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  // Use this state to trigger the animation
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Only start interval if there's more than one image to animate
-    if (card.imagePaths.length > 1) {
-      const interval = setInterval(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(() => {
-          setCurrentImageIndex((prevIndex) => (prevIndex + 1) % card.imagePaths.length);
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }).start();
-        });
-      }, 20000);
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: 1000,
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
 
-      return () => clearInterval(interval);
-    }
-  }, [fadeAnim, card.imagePaths.length]);
-
-  return (
-    <TouchableOpacity
-      key={card.id}
-      style={[cardStyles.gridCard, { backgroundColor: card.backgroundColor }]}
-      onPress={card.onPress}
-    >
-      <Animated.Image
-        source={card.imagePaths[currentImageIndex]}
-        style={[cardStyles.cardImage, { opacity: fadeAnim }]}
-        resizeMode="contain"
-      />
-      <Text style={cardStyles.gridCardText}>{card.name}</Text>
-    </TouchableOpacity>
-  );
-};
-
-const Home = ({ route, navigation }) => {
-  const { user = {}, agentInfo = {} } = route.params || {};
-  const [agent, setAgent] = useState({});
-  const [initialVisit, setInitialVisit] = useState(true); // State to track initial visit
-
-  // Effect to fetch agent data
   useEffect(() => {
     const fetchAgent = async () => {
       if (user && user.userId) {
-        console.log(agentInfo, "agentInfo");
         try {
           const response = await axios.get(
             `${baseUrl}/agent/get-agent-by-id/${user.userId}`
           );
-
           if (response.data) {
             setAgent(response.data);
           } else {
-            console.error("Unexpected API response format:", response.data);
             setAgent({});
           }
         } catch (error) {
-          console.error("Error fetching agent data:", error);
           setAgent({});
         }
       } else {
-        console.warn("User ID not available, skipping agent data fetch.");
         setAgent({});
       }
     };
-
     fetchAgent();
-  }, [user.userId, agentInfo]); // Added agentInfo to dependencies
+  }, [user.userId]);
 
-  // Effect to manage initial visit flag using AsyncStorage
-  useEffect(() => {
-    const checkFirstVisit = async () => {
-      try {
-        const hasVisited = await AsyncStorage.getItem('hasVisitedHome');
-        if (hasVisited === null) {
-          // First visit
-          setInitialVisit(true);
-          await AsyncStorage.setItem('hasVisitedHome', 'true');
-        } else {
-          // Subsequent visit
-          setInitialVisit(false);
-        }
-      } catch (error) {
-        console.error("Error managing AsyncStorage for initial visit:", error);
-        // Default to initial visit if there's an error
-        setInitialVisit(true);
+  const fetchTargetDetails = async () => {
+    setLoadingTarget(true);
+    setIsLoading(true);
+    try {
+      const agentInfoJson = await AsyncStorage.getItem("agentInfo");
+      const agentInfoData = agentInfoJson ? JSON.parse(agentInfoJson) : null;
+      const agentId = agentInfoData?._id;
+      const designationId = agentInfoData?.designation_id;
+
+      if (!agentId) {
+        console.error("User ID not found.");
+        setLoadingTarget(false);
+        setIsLoading(false);
+        return;
       }
-    };
 
-    checkFirstVisit();
-  }, []); // Run only once on component mount
+      const startOfMonth = moment().startOf("month").format("YYYY-MM-DD");
+      const endOfMonth = moment().endOf("month").format("YYYY-MM-DD");
 
-  const getInitialImageIndex = useCallback(() => {
-    return initialVisit ? 0 : 1;
-  }, [initialVisit]);
+      const res = await axios.get(`${baseUrl}/target/get-targets`, {
+        params: { fromDate: startOfMonth, toDate: endOfMonth },
+      });
 
+      const allTargets = res.data || [];
+      const selectedTarget = allTargets.find(
+        (t) => (t.agentId && (t.agentId._id === agentId || t.agentId === agentId)) ||
+        (!t.agentId && t.designationId === designationId)
+      );
 
-  // Define the cards data dynamically based on permissions and include image paths
+      if (!selectedTarget) {
+        setLoadingTarget(false);
+        setIsLoading(false);
+        return;
+      }
+
+      const commRes = await axios.get(`${baseUrl}/enroll/get-detailed-commission-per-month`, {
+        params: {
+          agent_id: agentId,
+          from_date: startOfMonth,
+          to_date: endOfMonth,
+        },
+      });
+
+      const actualBusiness = commRes.data?.summary?.actual_business || 0;
+      const cleanActual = typeof actualBusiness === "string"
+        ? Number(actualBusiness.replace(/[^0-9.-]+/g, ""))
+        : actualBusiness;
+
+      const totalTarget = selectedTarget.totalTarget || 0;
+      const achievedAmount = cleanActual;
+      const remainingAmount = totalTarget > achievedAmount ? totalTarget - achievedAmount : 0;
+
+      setTargetData({
+        total: totalTarget,
+        achieved: achievedAmount,
+        remaining: remainingAmount,
+      });
+
+      const newProgress = totalTarget > 0 ? (achievedAmount / totalTarget) * 100 : 0;
+      setProgress(newProgress);
+
+    } catch (err) {
+      console.error("Error fetching target or commission:", err.response?.data || err.message);
+    } finally {
+      setLoadingTarget(false);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTargetDetails();
+  }, []);
+
+  const getStrokeDashoffset = (radius, circumference) => {
+    const progress = progressAnim.interpolate({
+      inputRange: [0, 100],
+      outputRange: [circumference, 0],
+    });
+    return progress;
+  };
+
+  const circumference = 2 * Math.PI * 65;
+
   const cardsData = [
-    agentInfo?.designation_id?.permission?.collection === "true" && {
-      id: 'collections',
-      name: 'Collections',
-      imagePaths: cardImagePaths.collections,
-      onPress: () => navigation.navigate("PaymentNavigator"),
-      backgroundColor: '#FFEBEE',
-    },
-    agentInfo?.designation_id?.permission?.daybook === "true" && {
-      id: 'daybook',
-      name: 'Daybook',
-      imagePaths: cardImagePaths.daybook,
-      onPress: () => navigation.navigate("PayNavigation", { user: user }),
-      backgroundColor: '#E8F5E9',
-    },
-    agentInfo?.designation_id?.permission?.targets === "true" && {
-      id: 'targets',
-      name: 'Targets',
-      imagePaths: cardImagePaths.targets,
-      onPress: () => navigation.navigate("Target"), // Changed from Alert to navigation
-      backgroundColor: '#FFFDE7',
-    },
-    agentInfo?.designation_id?.permission?.leads === "true" && {
-      id: 'myLeads',
-      name: 'My Leads',
-      imagePaths: cardImagePaths.myLeads,
-      onPress: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user: user } }),
-      backgroundColor: '#E3F2FD',
-    },
-    {
-      id: 'addCustomers',
-      name: 'Add Customers',
-      imagePaths: cardImagePaths.addCustomers,
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Customer", params: { user } }),
-      backgroundColor: '#F3E5F5',
-    },
-    {
-      id: 'myCustomers',
-      name: 'My Customers',
-      imagePaths: cardImagePaths.myCustomers,
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "ViewEnrollments", params: { user } }),
-      backgroundColor: '#FFECB3',
-    },
-    {
-      id: 'myTasks',
-      name: 'My Tasks',
-      imagePaths: cardImagePaths.myTasks,
-      onPress: () => navigation.navigate("MyTasks", { employeeId: user.userId, agentName: agent.name }),
-      backgroundColor: '#E0F7FA',
-    },
-    agentInfo?.designation_id?.permission?.reports === "true" && {
-      id: 'reports',
-      name: 'Reports',
-      imagePaths: cardImagePaths.reports,
-      onPress: () => navigation.navigate("PayNavigation", { screen: "Reports", params: { user: user } }),
-      backgroundColor: '#FCE4EC',
-    },
-    agentInfo?.designation_id?.permission?.commission === "true" && {
-      id: 'commission',
-      name: 'Commission',
-      imagePaths: cardImagePaths.commission,
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Commissions", params: { user: user } }),
-      backgroundColor: '#DCEDC8',
-    },
+    { id: 'addCustomers', name: 'Add Customers', icon: <Feather name="user-plus" size={30} color="#fff" />, onPress: () => navigation.navigate("CustomerNavigation", { screen: "Customer", params: { user } }), bgColor: '#7ab7f3ff', textColor: '#fff' },
+    { id: 'myCustomers', name: 'My Customers', icon: <Feather name="users" size={30} color="#fff" />, onPress: () => navigation.navigate("CustomerNavigation", { screen: "ViewEnrollments", params: { user } }), bgColor: '#4CAF50', textColor: '#fff' },
+    { id: 'myLeads', name: 'My Leads', icon: <Feather name="share" size={30} color="#fff" />, onPress: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user: user } }), bgColor: '#FF8C00', textColor: '#fff' },
+    { id: 'targets', name: 'Targets', icon: <MaterialCommunityIcons name="bullseye-arrow" size={30} color="#fff" />, onPress: () => navigation.navigate("Target"), bgColor: '#9370DB', textColor: '#fff' },
+    { id: 'daybook', name: 'Daybook', icon: <Feather name="book" size={30} color="#fff" />, onPress: () => navigation.navigate("PayNavigation", { user: user }), bgColor: '#00CED1', textColor: '#fff' },
+    { id: 'collections', name: 'Collections', icon: <Feather name="credit-card" size={30} color="#fff" />, onPress: () => navigation.navigate("PaymentNavigator"), bgColor: '#DC143C', textColor: '#fff' },
+    { id: 'reports', name: 'Reports', icon: <Feather name="bar-chart-2" size={30} color="#fff" />, onPress: () => navigation.navigate("PayNavigation", { screen: "Reports", params: { user: user } }), bgColor: '#696969', textColor: '#fff' },
+    { id: 'commission', name: 'Commission', icon: <Feather name="dollar-sign" size={30} color="#fff" />, onPress: () => navigation.navigate("CustomerNavigation", { screen: "Commissions", params: { user: user } }), bgColor: '#20B2AA', textColor: '#fff' },
+    { id: 'myTasks', name: 'My Tasks', icon: <Feather name="check-square" size={30} color="#fff" />, onPress: () => navigation.navigate("MyTasks", { employeeId: user.userId, agentName: agent.name }), bgColor: '#999049ff', textColor: '#fff' },
   ].filter(Boolean);
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      {/* Linear Gradient added here */}
-      <LinearGradient
-        colors={['rgba(151, 228, 250, 0.7)', 'rgba(250, 221, 168, 0.7)']}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.mainContentArea}>
-          <Header />
-
-          <View style={styles.introSection}>
-            <Text style={styles.welcomeText}>Hello {agent.name || 'Agent'},</Text>
-            <Text style={styles.questionText}>Welcome to MyChits Agent App</Text>
-           
+    <LinearGradient
+      colors={['#dbf6faff', '#90dafcff']}
+      style={styles.gradientOverlay}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <SafeAreaView style={{ flex: 1 }}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
-
-          <ScrollView contentContainerStyle={styles.cardsScrollViewContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.cardsGridContainer}>
-              {cardsData.map((card) => (
-                <CardWithAnimatedImage
-                  key={card.id}
-                  card={card}
-                  cardStyles={styles}
-                  initialImageIndex={getInitialImageIndex()} // Pass the initial image index
-                />
-              ))}
+        ) : (
+          <View style={styles.mainContentArea}>
+            <Header />
+            <View style={styles.introSection}>
+              <View style={styles.greetingContainer}>
+                <Text style={styles.welcomeText}>Dear {agent.name || 'Agent'},</Text>
+              </View>
             </View>
-          </ScrollView>
-        </View>
-      </LinearGradient>
-    </SafeAreaView>
+            <View style={styles.topSection}>
+              <LinearGradient
+                colors={['#64B5F6', '#2196F3']}
+                style={styles.performanceCard}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <View style={styles.performanceContent}>
+                  <View style={styles.circularProgressContainer}>
+                    <Text style={styles.performanceValue}>
+                      {loadingTarget ? '...' : `${(targetData.achieved / targetData.total * 100).toFixed(0)}%`}
+                    </Text>
+                    <Animated.View style={StyleSheet.absoluteFillObject}>
+                      <AnimatedSvg width="100%" height="100%" viewBox="0 0 150 150">
+                        <G rotation="-90" origin="75, 75">
+                          <Circle
+                            cx="75"
+                            cy="75"
+                            r="65"
+                            stroke="#E0E0E0"
+                            strokeWidth="10"
+                            fill="transparent"
+                          />
+                          <Circle
+                            cx="75"
+                            cy="75"
+                            r="65"
+                            stroke="#FFD700"
+                            strokeWidth="10"
+                            fill="transparent"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={getStrokeDashoffset(65, circumference)}
+                            strokeLinecap="round"
+                          />
+                        </G>
+                      </AnimatedSvg>
+                    </Animated.View>
+                  </View>
+                  <Text style={styles.performanceLabel}>Target Achieved</Text>
+                </View>
+              </LinearGradient>
+              <LinearGradient
+                colors={['#81C784', '#4CAF50']}
+                style={styles.metricsCard}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <View style={styles.metricItem}>
+                  <View style={styles.metricHeader}>
+                    <Text style={styles.metricLabel}>Total Target</Text>
+                    <Text style={styles.metricValue}>
+                      {loadingTarget ? '...' : `₹${targetData.total.toLocaleString('en-IN')}`}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.metricItem}>
+                  <View style={styles.metricHeader}>
+                    <Text style={styles.metricLabel}>Achieved Business</Text>
+                    <Text style={styles.metricValue}>
+                      {loadingTarget ? '...' : `₹${targetData.achieved.toLocaleString('en-IN')}`}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.metricItem}>
+                  <View style={styles.metricHeader}>
+                    <Text style={styles.metricLabel}>Remaining to Achieve</Text>
+                    <Text style={styles.metricValue}>
+                      {loadingTarget ? '...' : `₹${targetData.remaining.toLocaleString('en-IN')}`}
+                    </Text>
+                  </View>
+                </View>
+              </LinearGradient>
+            </View>
+            <Text style={styles.gridSectionTitle}>Services</Text>
+            <ScrollView contentContainerStyle={styles.cardsScrollViewContent} showsVerticalScrollIndicator={false}>
+              <View style={styles.cardsGridContainer}>
+                {cardsData.map((card) => (
+                  <TouchableOpacity
+                    key={card.id}
+                    style={styles.gridCardWrapper}
+                    onPress={card.onPress}
+                  >
+                    <View style={[styles.gridCard, { backgroundColor: card.bgColor }]}>
+                      {card.icon}
+                      <Text style={[styles.gridCardText, { color: card.textColor }]}>{card.name}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
+const AnimatedSvg = Animated.createAnimatedComponent(Svg);
+
 const styles = StyleSheet.create({
+  gradientOverlay: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   mainContentArea: {
     flex: 1,
-    marginHorizontal: 22,
-    marginTop: 12,
+    paddingHorizontal: 22,
+    paddingTop: 12,
   },
   introSection: {
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 1,
+    marginBottom: 15,
     paddingHorizontal: 5,
   },
+  greetingContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginBottom: 5,
+  },
   welcomeText: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "bold",
     color: '#333',
-    marginBottom: 5,
   },
   questionText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: '#555',
-    marginBottom: 10,
-  },
-  instructionText: {
     fontSize: 16,
-    color: '#777',
+    fontWeight: "500",
+    color: '#555',
+    marginTop: 5,
   },
-  cardsScrollViewContent: {
-    paddingBottom: 50, // Increased padding to add space at the bottom
+  topSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
-  cardsGridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+  performanceCard: {
+    width: '48%',
+    borderRadius: 20,
+    height: 200,
+    padding: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  performanceContent: {
+    alignItems: 'center',
+  },
+  circularProgressContainer: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  performanceValue: {
+    position: 'absolute',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  performanceLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
     marginTop: 10,
   },
-gridCard: {
-  width: (width - 22 * 2 - 20) / 2,
-  height: (width - 22 * 2 - 20) / 2,
-  borderRadius: 15,
-  borderColor: "gold", // ✅ changed from "orange" to "gold"
-  borderWidth: 1, // 🔔 make sure border is visible
-  justifyContent: "center",
-  alignItems: "center",
-  marginBottom: 20,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.1,
-  shadowRadius: 8,
-  elevation: 5,
-  padding: 10,
-},
-
-  cardImage: {
-    width: 195,
-    height: 90,
+  metricsCard: {
+    width: '48%',
+    borderRadius: 20,
+    height: 200,
+    padding: 20,
+    justifyContent: 'space-around',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  metricItem: {
     marginBottom: 5,
   },
-    gradientOverlay: {
-    flex: 1, 
+  metricHeader: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  metricLabel: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    opacity: 0.8,
+  },
+  metricValue: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  gridSectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    marginTop: 1,
+  },
+  cardsScrollViewContent: {
+    paddingBottom: 50,
+  },
+  cardsGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  gridCardWrapper: {
+    width: '30%',
+    aspectRatio: 1,
+    borderRadius: 15,
+    marginBottom: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    overflow: 'hidden',
+  },
+  gridCard: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
   },
   gridCardText: {
-    marginTop: 10,
-    fontSize: 17,
-    fontWeight: "900",
-    color: COLORS.black,
-    textAlign: "center",
-  },
-  gradientOverlay: {
-    flex: 1, // Ensures the gradient covers the full available space
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

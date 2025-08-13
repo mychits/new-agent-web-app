@@ -29,7 +29,7 @@ const Routes = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-        colors={['#A8E0F9', '#F9E5B5']} // Refined gradient colors for a more modern, cohesive look
+         colors={['#dbf6faff', '#90dafcff']} // Refined gradient colors for a more modern, cohesive look
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

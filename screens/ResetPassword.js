@@ -92,8 +92,7 @@ export default function ResetPassword({ route, navigation }) {
 
   return (
     <LinearGradient
-      // Updated gradient colors and direction to match ForgotPassword.js
-      colors={['rgba(151, 228, 250, 0.7)', 'rgba(250, 221, 168, 0.7)']}
+       colors={['#dbf6faff', '#90dafcff']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.backgroundGradient}

@@ -154,7 +154,7 @@ const EditLead = ({ route, navigation }) => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
             <LinearGradient
-                colors={['#A8E0F9', '#F9E5B5']}
+                colors={['#dbf6faff', '#90dafcff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}

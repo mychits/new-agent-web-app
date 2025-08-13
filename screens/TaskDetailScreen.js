@@ -53,7 +53,7 @@ export default function TaskDetailScreen({ navigation, route }) {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={['#A8E0F9', '#F9E5B5']}
+                colors={['#dbf6faff', '#90dafcff']}
                 style={styles.backgroundGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
