@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import Home from "../screens/Home";
+import Dashboard from "../screens/Dashboard"; // Import the new Dashboard screen
 import COLORS from "../constants/color";
 import PaymentNavigator from "./PaymentNavigator";
 import ProfileNavigator from "./ProfileNavigator";
@@ -38,6 +39,21 @@ const BottomNavigation = ({ route }) => {
 						<MaterialCommunityIcons
 							name={focused ? "home" : "home-outline"}
 							size={34}
+							color={COLORS.black}
+						/>
+					),
+				}}
+			/>
+            {/* Added the new Dashboard screen */}
+			<Tab.Screen
+				name="Dashboard"
+				component={Dashboard}
+				initialParams={{ user, agentInfo }}
+				options={{
+					tabBarIcon: ({ focused }) => (
+						<MaterialCommunityIcons
+							name={focused ? "view-dashboard" : "view-dashboard-outline"}
+							size={26}
 							color={COLORS.black}
 						/>
 					),

@@ -24,6 +24,7 @@ import AboutMyChits from "../screens/AboutMyChits";
 import HelpAndSupport from "../screens/HelpAndSupport";
 import Commissions from "../screens/Commissions";
 import Target from "../screens/Target";
+import Dashboard from "../screens/Dashboard";
 
 // Import the EditLead screen
 import EditLead from "../screens/EditLead"; // <--- ADDED: Ensure this path is correct for your project
@@ -92,6 +93,8 @@ export default function AppNavigation() {
         <Stack.Screen name="HelpAndSupport" component={HelpAndSupport} options={{ headerShown: false }} />
         <Stack.Screen name="Target" component={Target} options={{ headerShown: false }} />
         <Stack.Screen name="EditLead" component={EditLead} options={{ headerShown: false }} />
+          <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );
