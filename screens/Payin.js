@@ -3,33 +3,38 @@ import {
     Text,
     StyleSheet,
     TextInput,
-    Alert, // Keep Alert for now as it's part of the original code, but note it's not ideal for production React Native apps.
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    TouchableOpacity,
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import COLORS from "../constants/color";
-import Header from "../components/Header"; // Assuming Header component exists
-import Button from "../components/Button"; // Assuming Button component exists
-import baseUrl from "../constants/baseUrl"; // Assuming baseUrl constant exists
+import Header from "../components/Header";
+import Button from "../components/Button";
+import baseUrl from "../constants/baseUrl";
+import { AgentContext } from "../context/AgentContextProvider";
 
 const Payin = ({ route, navigation }) => {
     const { user, customer } = route.params;
+    const {modifyPayment} = useContext(AgentContext);
 
-    const [currentDate, setCurrentDate] = useState("");
+    const [currentDate, setCurrentDate] = useState(new Date());
     const [receipt, setReceipt] = useState({});
     const [paymentDetails, setPaymentDetails] = useState("cash");
     const [amount, setAmount] = useState("");
     const [transactionId, setTransactionId] = useState("");
     const [additionalInfo, setAdditionalInfo] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
     const [customerInfo, setCustomerInfo] = useState({});
     const [groups, setGroups] = useState([]);
@@ -65,7 +70,7 @@ const Payin = ({ route, navigation }) => {
                 const response = await axios.post(
                     `${baseUrl}/enroll/get-user-tickets/${customer}`
                 );
-                console.log(response.data,"test jsghsg");
+                console.log(response.data, "test jsghsg");
 
                 setAllData(response.data);
 
@@ -91,10 +96,7 @@ const Payin = ({ route, navigation }) => {
 
         fetchEnrollDetails();
     }, [customer]);
-    useEffect(() => {
-        const today = moment().format("DD-MM-YYYY");
-        setCurrentDate(today);
-    }, []);
+
     useEffect(() => {
         const fetchReceipt = async () => {
             try {
@@ -109,6 +111,13 @@ const Payin = ({ route, navigation }) => {
         };
         fetchReceipt();
     }, []);
+
+    const handleDateChange = (event, selectedDate) => {
+        const newDate = selectedDate || currentDate;
+        setShowDatePicker(Platform.OS === "ios");
+        setCurrentDate(newDate);
+    };
+
     const handleGroupChange = (groupId) => {
         setSelectedGroup(groupId);
         setSelectedTicket("");
@@ -139,7 +148,7 @@ const Payin = ({ route, navigation }) => {
             !selectedGroup ||
             !selectedTicket ||
             !currentDate ||
-            !(receipt.receipt_no || receipt.receipt_no === 0) || 
+            !(receipt.receipt_no || receipt.receipt_no === 0) ||
             !paymentDetails ||
             !amount ||
             (additionalInfo !== "" && !transactionId)
@@ -154,7 +163,7 @@ const Payin = ({ route, navigation }) => {
                 user_id: customer,
                 group_id: selectedGroup,
                 ticket: selectedTicket,
-                pay_date: new Date().toISOString().split("T")[0],
+                pay_date: moment(currentDate).format("YYYY-MM-DD"), // Corrected line
                 receipt_no: (receipt.receipt_no === 0) ? "0" : (receipt.receipt_no ? String(receipt.receipt_no) : ""),
                 pay_type: paymentDetails,
                 amount: amount,
@@ -201,7 +210,7 @@ const Payin = ({ route, navigation }) => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
             <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
+                colors={['#dbf6faff', '#90dafcff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -256,7 +265,7 @@ const Payin = ({ route, navigation }) => {
                                             selectedValue={selectedTicket}
                                             onValueChange={(itemValue) => setSelectedTicket(itemValue)}
                                             style={styles.picker}
-                                            enabled={selectedGroup !== ""} // Enable ticket picker only if a group is selected
+                                            enabled={selectedGroup !== ""}
                                         >
                                             <Picker.Item label="Select Ticket" value="" />
                                             {tickets.map((ticket, index) => (
@@ -273,13 +282,24 @@ const Payin = ({ route, navigation }) => {
                                             <Text style={styles.label}>
                                                 Date<Text style={styles.star}>*</Text>
                                             </Text>
-                                            <TextInput
-                                                style={styles.textInput}
-                                                placeholder="Select Date"
-                                                keyboardType="default"
-                                                value={currentDate}
-                                                editable={false}
-                                            />
+                                            <TouchableOpacity onPress={() => setShowDatePicker((modifyPayment===true)?true:false)}>
+                                                <TextInput
+                                                    style={styles.textInput}
+                                                    placeholder="Select Date"
+                                                    keyboardType="default"
+                                                    value={moment(currentDate).format("DD-MM-YYYY")}
+                                                    editable={false}
+                                                />
+                                            </TouchableOpacity>
+                                            {showDatePicker && (
+                                                <DateTimePicker
+                                                    testID="dateTimePicker"
+                                                    value={currentDate}
+                                                    mode="date"
+                                                    display="default"
+                                                    onChange={handleDateChange}
+                                                />
+                                            )}
                                         </View>
                                         <View style={styles.column}>
                                             <Text style={styles.label}>
@@ -399,7 +419,7 @@ const styles = StyleSheet.create({
     textInput: {
         height: 40,
         width: "100%",
-        borderColor: "#d0d0d0", // Light gray border
+        borderColor: "#d0d0d0",
         borderWidth: 1,
         borderRadius: 15,
         paddingHorizontal: 10,
@@ -412,11 +432,9 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 3,
     },
-    contentContainer: {
-        // marginTop: 20, this style is no longer needed
-    },
+    contentContainer: {},
     pickerContainer: {
-        borderColor: "#d0d0d0", // Light gray border
+        borderColor: "#d0d0d0",
         borderWidth: 1,
         borderRadius: 15,
         backgroundColor: COLORS.white,
@@ -443,7 +461,7 @@ const styles = StyleSheet.create({
     button: {
         marginTop: 18,
         marginBottom: 50,
-        backgroundColor: '#FFC000', // Gold color for consistency
+        backgroundColor: '#FFC000',
     }
 });
 

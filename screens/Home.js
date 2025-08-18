@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useContext,
+} from "react";
 import {
   View,
   Text,
@@ -18,48 +24,42 @@ import baseUrl from "../constants/baseUrl";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 import { LinearGradient } from "expo-linear-gradient"; // Ensure this is the correct import for your LinearGradient setup
+import { AgentContext } from "../context/AgentContextProvider";
 
 const { width } = Dimensions.get("window");
 const cardImagePaths = {
   collections: [
-    require('../assets/Collection1.png'),
-    require('../assets/Collection2.png')
+    require("../assets/Collection1.png"),
+    require("../assets/Collection2.png"),
   ],
   daybook: [
-    require('../assets/Daybook1.png'),
-    require('../assets/Daybook2.png')
+    require("../assets/Daybook1.png"),
+    require("../assets/Daybook2.png"),
   ],
-  targets: [
-    require('../assets/Target1.png'),
-    require('../assets/Target2.png')
-  ],
-  myLeads: [
-    require('../assets/Lead1.png'),
-    require('../assets/Lead2.png')
-  ],
+  targets: [require("../assets/Target1.png"), require("../assets/Target2.png")],
+  myLeads: [require("../assets/Lead1.png"), require("../assets/Lead2.png")],
   addCustomers: [
-    require('../assets/AddCutomer1.png'),
-    require('../assets/AddCutomer2.png')
+    require("../assets/AddCutomer1.png"),
+    require("../assets/AddCutomer2.png"),
   ],
   myCustomers: [
-    require('../assets/Mycustomers1.png'),
-    require('../assets/Mycustomers2.png'),
+    require("../assets/Mycustomers1.png"),
+    require("../assets/Mycustomers2.png"),
   ],
-  myTasks: [
-    require('../assets/Target1.png'),
-    require('../assets/Target2.png')
-  ],
+  myTasks: [require("../assets/Target1.png"), require("../assets/Target2.png")],
   reports: [
-    require('../assets/Reports1.png'),
-    require('../assets/Reports2.png')
+    require("../assets/Reports1.png"),
+    require("../assets/Reports2.png"),
   ],
   commission: [
-    require('../assets/commissions1.png'),
-    require('../assets/commission2.png')
+    require("../assets/commissions1.png"),
+    require("../assets/commission2.png"),
   ],
 };
 const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(initialImageIndex || 0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(
+    initialImageIndex || 0
+  );
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -70,7 +70,9 @@ const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
           duration: 500,
           useNativeDriver: true,
         }).start(() => {
-          setCurrentImageIndex((prevIndex) => (prevIndex + 1) % card.imagePaths.length);
+          setCurrentImageIndex(
+            (prevIndex) => (prevIndex + 1) % card.imagePaths.length
+          );
           Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 500,
@@ -102,11 +104,14 @@ const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
   const [agent, setAgent] = useState({});
-  const [initialVisit, setInitialVisit] = useState(true); 
+  const [initialVisit, setInitialVisit] = useState(true);
+  const { modifyPayment, setModifyPayment } = useContext(AgentContext);
+  setModifyPayment(
+    agentInfo.designation_id?.permission?.modify_payments === "true"
+  );
   useEffect(() => {
     const fetchAgent = async () => {
       if (user && user.userId) {
-        console.log(agentInfo, "agentInfo");
         try {
           const response = await axios.get(
             `${baseUrl}/agent/get-agent-by-id/${user.userId}`
@@ -129,14 +134,14 @@ const Home = ({ route, navigation }) => {
     };
 
     fetchAgent();
-  }, [user.userId, agentInfo]); 
+  }, [user.userId, agentInfo]);
   useEffect(() => {
     const checkFirstVisit = async () => {
       try {
-        const hasVisited = await AsyncStorage.getItem('hasVisitedHome');
+        const hasVisited = await AsyncStorage.getItem("hasVisitedHome");
         if (hasVisited === null) {
           setInitialVisit(true);
-          await AsyncStorage.setItem('hasVisitedHome', 'true');
+          await AsyncStorage.setItem("hasVisitedHome", "true");
         } else {
           setInitialVisit(false);
         }
@@ -154,74 +159,98 @@ const Home = ({ route, navigation }) => {
   }, [initialVisit]);
   const cardsData = [
     agentInfo?.designation_id?.permission?.collection === "true" && {
-      id: 'collections',
-      name: 'Collections',
+      id: "collections",
+      name: "Collections",
       imagePaths: cardImagePaths.collections,
       onPress: () => navigation.navigate("PaymentNavigator"),
-      backgroundColor: '#FFEBEE',
+      backgroundColor: "#FFEBEE",
     },
     agentInfo?.designation_id?.permission?.daybook === "true" && {
-      id: 'daybook',
-      name: 'Daybook',
+      id: "daybook",
+      name: "Daybook",
       imagePaths: cardImagePaths.daybook,
       onPress: () => navigation.navigate("PayNavigation", { user: user }),
-      backgroundColor: '#E8F5E9',
+      backgroundColor: "#E8F5E9",
     },
     agentInfo?.designation_id?.permission?.targets === "true" && {
-      id: 'targets',
-      name: 'Targets',
+      id: "targets",
+      name: "Targets",
       imagePaths: cardImagePaths.targets,
       onPress: () => navigation.navigate("Target"), // Changed from Alert to navigation
-      backgroundColor: '#FFFDE7',
+      backgroundColor: "#FFFDE7",
     },
     agentInfo?.designation_id?.permission?.leads === "true" && {
-      id: 'myLeads',
-      name: 'My Leads',
+      id: "myLeads",
+      name: "My Leads",
       imagePaths: cardImagePaths.myLeads,
-      onPress: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user: user } }),
-      backgroundColor: '#E3F2FD',
+      onPress: () =>
+        navigation.navigate("PayNavigation", {
+          screen: "ViewLeads",
+          params: { user: user },
+        }),
+      backgroundColor: "#E3F2FD",
     },
     {
-      id: 'addCustomers',
-      name: 'Add Customers',
+      id: "addCustomers",
+      name: "Add Customers",
       imagePaths: cardImagePaths.addCustomers,
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Customer", params: { user } }),
-      backgroundColor: '#F3E5F5',
+      onPress: () =>
+        navigation.navigate("CustomerNavigation", {
+          screen: "Customer",
+          params: { user },
+        }),
+      backgroundColor: "#F3E5F5",
     },
     {
-      id: 'myCustomers',
-      name: 'My Customers',
+      id: "myCustomers",
+      name: "My Customers",
       imagePaths: cardImagePaths.myCustomers,
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "ViewEnrollments", params: { user } }),
-      backgroundColor: '#FFECB3',
+      onPress: () =>
+        navigation.navigate("CustomerNavigation", {
+          screen: "ViewEnrollments",
+          params: { user },
+        }),
+      backgroundColor: "#FFECB3",
     },
     {
-      id: 'myTasks',
-      name: 'My Tasks',
+      id: "myTasks",
+      name: "My Tasks",
       imagePaths: cardImagePaths.myTasks,
-      onPress: () => navigation.navigate("MyTasks", { employeeId: user.userId, agentName: agent.name }),
-      backgroundColor: '#E0F7FA',
+      onPress: () =>
+        navigation.navigate("MyTasks", {
+          employeeId: user.userId,
+          agentName: agent.name,
+        }),
+      backgroundColor: "#E0F7FA",
     },
     agentInfo?.designation_id?.permission?.reports === "true" && {
-      id: 'reports',
-      name: 'Reports',
+      id: "reports",
+      name: "Reports",
       imagePaths: cardImagePaths.reports,
-      onPress: () => navigation.navigate("PayNavigation", { screen: "Reports", params: { user: user } }),
-      backgroundColor: '#FCE4EC',
+      onPress: () =>
+        navigation.navigate("PayNavigation", {
+          screen: "Reports",
+          params: { user: user },
+        }),
+      backgroundColor: "#FCE4EC",
     },
     agentInfo?.designation_id?.permission?.commission === "true" && {
-      id: 'commission',
-      name: 'Commission',
+      id: "commission",
+      name: "Commission",
       imagePaths: cardImagePaths.commission,
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Commissions", params: { user: user } }),
-      backgroundColor: '#DCEDC8',
+      onPress: () =>
+        navigation.navigate("CustomerNavigation", {
+          screen: "Commissions",
+          params: { user: user },
+        }),
+      backgroundColor: "#DCEDC8",
     },
   ].filter(Boolean);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']}
+        colors={["#dbf6faff", "#90dafcff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -230,19 +259,25 @@ const Home = ({ route, navigation }) => {
           <Header />
 
           <View style={styles.introSection}>
-            <Text style={styles.welcomeText}>Hello {agent.name || 'Agent'},</Text>
-            <Text style={styles.questionText}>Welcome to MyChits Agent App</Text>
-           
+            <Text style={styles.welcomeText}>
+              Hello {agent.name || "Agent"},
+            </Text>
+            <Text style={styles.questionText}>
+              Welcome to MyChits Agent App
+            </Text>
           </View>
 
-          <ScrollView contentContainerStyle={styles.cardsScrollViewContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.cardsScrollViewContent}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.cardsGridContainer}>
               {cardsData.map((card) => (
                 <CardWithAnimatedImage
                   key={card.id}
                   card={card}
                   cardStyles={styles}
-                  initialImageIndex={getInitialImageIndex()} 
+                  initialImageIndex={getInitialImageIndex()}
                 />
               ))}
             </View>
@@ -267,21 +302,21 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 28,
     fontWeight: "bold",
-    color: '#333',
+    color: "#333",
     marginBottom: 5,
   },
   questionText: {
     fontSize: 20,
     fontWeight: "600",
-    color: '#555',
+    color: "#555",
     marginBottom: 10,
   },
   instructionText: {
     fontSize: 16,
-    color: '#777',
+    color: "#777",
   },
   cardsScrollViewContent: {
-    paddingBottom: 50, 
+    paddingBottom: 50,
   },
   cardsGridContainer: {
     flexDirection: "row",
@@ -289,30 +324,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 10,
   },
-gridCard: {
-  width: (width - 22 * 2 - 20) / 2,
-  height: (width - 22 * 2 - 20) / 2,
-  borderRadius: 15,
-  borderColor: "gold", // ✅ changed from "orange" to "gold"
-  borderWidth: 1, // 🔔 make sure border is visible
-  justifyContent: "center",
-  alignItems: "center",
-  marginBottom: 20,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.1,
-  shadowRadius: 8,
-  elevation: 5,
-  padding: 10,
-},
+  gridCard: {
+    width: (width - 22 * 2 - 20) / 2,
+    height: (width - 22 * 2 - 20) / 2,
+    borderRadius: 15,
+    borderColor: "gold", // ✅ changed from "orange" to "gold"
+    borderWidth: 1, // 🔔 make sure border is visible
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    padding: 10,
+  },
 
   cardImage: {
     width: 155,
     height: 90,
     marginBottom: 5,
   },
-    gradientOverlay: {
-    flex: 1, 
+  gradientOverlay: {
+    flex: 1,
   },
   gridCardText: {
     marginTop: 10,
@@ -322,7 +357,7 @@ gridCard: {
     textAlign: "center",
   },
   gradientOverlay: {
-    flex: 1, 
+    flex: 1,
   },
 });
 

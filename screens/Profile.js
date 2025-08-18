@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
 		marginTop: 20,
 	},
 	headerTitle: {
-		fontSize: 32,
+		fontSize: 22,
 		fontWeight: "900",
 		color: "#1d1d1d",
 		letterSpacing: 0.8,
@@ -291,8 +291,8 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	profileAvatar: {
-		width: 120,
-		height: 120,
+		width: 80,
+		height: 80,
 		borderRadius: 9999,
 		borderWidth: 4,
 		borderColor: "#fff",
