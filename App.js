@@ -7,13 +7,12 @@ import { AgentContextProvider } from "./context/AgentContextProvider";
 enableScreens();
 
 export default function App() {
-  
+
   return (
     <AgentContextProvider>
-
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppNavigation />
-    </GestureHandlerRootView>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AppNavigation />
+      </GestureHandlerRootView>
     </AgentContextProvider>
   );
 }
