@@ -8,6 +8,13 @@ class BlePrinter {
     this.stableData = null;
     this.latestWeight = "";
     this.connectedDevice = null;
+    this.dataSubscription = null;
+    // ✅ Array of MAC addresses
+    this.targetMacs = [
+      "66:32:60:5D:D4:CD",
+      "66:32:D9:CC:DB:5F",
+      "86:67:7A:96:91:75"
+    ];
   }
 
   async requestPermissions() {
@@ -37,81 +44,85 @@ class BlePrinter {
   }
 
   async scanAndConnect(onConnectedCallback) {
-    if (Platform.OS === "android") {
-      const permissionsGranted = await this.requestPermissions();
-      if (!permissionsGranted) {
-        Alert.alert("Permission Error", "Required permissions are not granted");
-        return;
+    if (Platform.OS !== "android") return;
+
+    const permissionsGranted = await this.requestPermissions();
+    if (!permissionsGranted) {
+      Alert.alert("Permission Error", "Required permissions are not granted");
+      return;
+    }
+
+    try {
+      const isEnabled = await RNBluetoothClassic.isBluetoothEnabled();
+      if (!isEnabled) {
+        await RNBluetoothClassic.requestBluetoothEnabled();
+        console.log("Bluetooth enabled");
       }
 
-      try {
-        const isEnabled = await RNBluetoothClassic.isBluetoothEnabled();
-        if (!isEnabled) {
-          await RNBluetoothClassic.requestBluetoothEnabled();
-          console.log("Bluetooth enabled");
+      await RNBluetoothClassic.cancelDiscovery();
+      console.log("Previous discovery cancelled");
+
+      // Start discovery and get devices
+      const discoveredDevices = await RNBluetoothClassic.startDiscovery();
+      console.log("Discovered devices:", discoveredDevices);
+
+      // ✅ Look for any of the allowed MACs
+      let device =
+        discoveredDevices.find((d) => this.targetMacs.includes(d.id)) ||
+        (await RNBluetoothClassic.getBondedDevices()).find((d) =>
+          this.targetMacs.includes(d.id)
+        );
+
+      if (device) {
+        await RNBluetoothClassic.cancelDiscovery();
+        console.log("Discovery cancelled before connecting");
+
+        this.connectedDevice = await RNBluetoothClassic.connectToDevice(
+          device.id
+        );
+        console.log("Connected to", this.connectedDevice);
+
+        if (onConnectedCallback) onConnectedCallback();
+
+        Alert.alert(
+          "Success",
+          `Bluetooth connected successfully to ${device.name}`
+        );
+
+        // Clean old subscription if exists
+        if (this.dataSubscription) {
+          this.dataSubscription.remove();
+          this.dataSubscription = null;
         }
 
-        await RNBluetoothClassic.cancelDiscovery();
-        console.log("Previous discovery cancelled");
+        // Listen for data
+        this.dataSubscription = this.connectedDevice.onDataReceived((data) => {
+          const weightData = this.extractWeight(data);
+          if (weightData) {
+            this.latestWeight = weightData;
+            this.dataBuffer.push(weightData);
 
-        await RNBluetoothClassic.startDiscovery();
-        console.log("Discovery started");
-
-        setTimeout(async () => {
-          const bondedDevices = await RNBluetoothClassic.getBondedDevices();
-          //console.log("Bonded devices:", bondedDevices);
-
-          if (bondedDevices.length === 0) {
-            Alert.alert("No Devices Found", "No bonded devices found.");
-            return;
-          }
-
-          const device = bondedDevices.find(
-            (d) => d.id === "66:32:60:5D:D4:CD"
-          );
-          if (device) {
-            await RNBluetoothClassic.cancelDiscovery();
-            console.log("Discovery cancelled before connecting");
-
-            this.connectedDevice = await RNBluetoothClassic.connectToDevice(device.id);
-            console.log("Connected to", this.connectedDevice);
-            if (onConnectedCallback) {
-              onConnectedCallback();
+            if (this.dataBuffer.length > 10) {
+              this.dataBuffer.shift();
             }
-            Alert.alert(
-              "Success",
-              `Bluetooth is connected successfully to ${device.name}`
-            );
 
-            this.connectedDevice.onDataReceived((data) => {
-              const weightData = this.extractWeight(data);
-              this.latestWeight = weightData;
-              this.dataBuffer.push(weightData);
-
-              if (this.dataBuffer.length > 10) {
-                this.dataBuffer.shift();
-              }
-
-              this.checkStability();
-            });
-          } else {
-            Alert.alert("Error", "Device not found. Please pair the device.");
+            this.checkStability();
           }
-        }, 10000);
-      } catch (error) {
-        console.error("Connection error", error);
-        Alert.alert(
-          "Error",
-          `Failed to connect to the device: ${error.message}`
-        );
+        });
+      } else {
+        Alert.alert("Error", "Device not found. Please pair the device.");
       }
+    } catch (error) {
+      console.error("Connection error", error);
+      Alert.alert("Error", `Failed to connect to the device: ${error.message}`);
     }
   }
 
   extractWeight(data) {
     const rawData = data.data || "";
-    const match = rawData.match(/(\d+\.\d+ kg)/);
-    return match ? match[0] : "";
+    // More flexible regex: matches "12", "12.3", "12.3 kg", "12 kg"
+    const match = rawData.match(/(\d+(\.\d+)?)( ?kg)?/i);
+    return match ? match[0].trim() : "";
   }
 
   checkStability() {
@@ -125,18 +136,18 @@ class BlePrinter {
   }
 
   async printText(text) {
-    if (this.connectedDevice) {
-      try {
-        // ESC/POS commands for text printing
-        const command = `\x1B\x40${text}\n\x1D\x56\x00`; // Initialize printer + print text + cut paper
-        await this.connectedDevice.write(command);
-        console.log("Print command sent successfully");
-      } catch (error) {
-        console.error("Print error", error);
-        Alert.alert("Print Error", "Failed to print text.");
-      }
-    } else {
+    if (!this.connectedDevice) {
       Alert.alert("Error", "No device connected.");
+      return;
+    }
+
+    try {
+      const command = `\x1B\x40${text}\n`; // Initialize + text
+      await this.connectedDevice.write(command);
+      console.log("Print command sent successfully");
+    } catch (error) {
+      console.error("Print error", error);
+      Alert.alert("Print Error", "Failed to print text.");
     }
   }
 
@@ -144,7 +155,19 @@ class BlePrinter {
     await RNBluetoothClassic.cancelDiscovery();
     console.log("Discovery cancelled");
   }
+
+  async disconnect() {
+    if (this.dataSubscription) {
+      this.dataSubscription.remove();
+      this.dataSubscription = null;
+    }
+    if (this.connectedDevice) {
+      await this.connectedDevice.disconnect();
+      console.log("Device disconnected");
+      this.connectedDevice = null;
+    }
+  }
 }
 
-const blePrinter = new BlePrinter(); // Create an instance of BlePrinter
+const blePrinter = new BlePrinter();
 export default blePrinter;
