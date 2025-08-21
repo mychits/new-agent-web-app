@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "center",
     padding: 10,
-    backgroundColor: '#FFC000',
+    backgroundColor: '#da8201',
     borderRadius: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

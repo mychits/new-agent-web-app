@@ -55,6 +55,11 @@ const Routes = ({ route, navigation }) => {
               icon="diamond"
               onPress={() => navigation.navigate("RouteCustomerGold", { user, areaId: "gold-chits" })}
             />
+            <CustomRouteCard
+              name="Loan Customer"
+              icon="money"
+              onPress={() => navigation.navigate("RouteCustomerLoan", { user, areaId: "loan-customer" })}
+            />
           </View>
         </ScrollView>
       </LinearGradient>
@@ -95,7 +100,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between', // Distributes content and arrow evenly
     borderLeftWidth: 5, // Added a prominent left border for a stylish accent
-    borderColor: '#FFC000', // Gold color for the accent border
+    borderColor: '#da8201', // Gold color for the accent border
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 }, // Deeper shadow for a "floating" effect
     shadowOpacity: 0.15,
@@ -121,11 +126,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 32, // Increased icon size for more visual impact
-    color: '#FFC000', // Gold color for consistency
+    color: '#da8201', // Gold color for consistency
   },
   arrowIcon: {
     fontSize: 22, // Adjusted size to fit the new card design
-    color: '#FFC000',
+    color: '#da8201',
   },
 });
 

@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
         borderRightWidth: 5,
          borderTopWidth: 5,
         borderButtonWidth: 5,
-        borderColor: '#FFC000',
+        borderColor: '#da8201',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.25,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     },
     cardIcon: {
         fontSize: 24,
-        color: '#FFC000',
+        color: '#da8201',
     },
     textContainer: {
         marginLeft: 15,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     },
     arrowIcon: {
         fontSize: 22,
-        color: '#FFC000',
+        color: '#da8201',
     },
     tabContainer: {
         flexDirection: "row",
@@ -326,8 +326,8 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     activeTab: {
-        backgroundColor: '#FFC000',
-        shadowColor: '#FFC000',
+        backgroundColor: '#da8201',
+        shadowColor: '#da8201',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.6,
         shadowRadius: 8,

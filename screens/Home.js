@@ -9,9 +9,9 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView, // Make sure ScrollView is imported
+  ScrollView,
   TouchableOpacity,
-  Alert, // Keep Alert for other potential uses, but it won't be used for Targets anymore
+  Alert,
   Dimensions,
   Image,
   Animated,
@@ -19,14 +19,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
-
 import baseUrl from "../constants/baseUrl";
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
-import { LinearGradient } from "expo-linear-gradient"; // Ensure this is the correct import for your LinearGradient setup
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { AgentContext } from "../context/AgentContextProvider";
 
 const { width } = Dimensions.get("window");
+
 const cardImagePaths = {
   collections: [
     require("../assets/Collection1.png"),
@@ -55,7 +55,12 @@ const cardImagePaths = {
     require("../assets/commissions1.png"),
     require("../assets/commission2.png"),
   ],
+  groups: [
+    require("../assets/groups.png"),
+    require("../assets/groups1.png"),
+  ],
 };
+
 const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(
     initialImageIndex || 0
@@ -106,9 +111,11 @@ const Home = ({ route, navigation }) => {
   const [agent, setAgent] = useState({});
   const [initialVisit, setInitialVisit] = useState(true);
   const { modifyPayment, setModifyPayment } = useContext(AgentContext);
+
   setModifyPayment(
     agentInfo.designation_id?.permission?.modify_payments === "true"
   );
+
   useEffect(() => {
     const fetchAgent = async () => {
       if (user && user.userId) {
@@ -116,7 +123,6 @@ const Home = ({ route, navigation }) => {
           const response = await axios.get(
             `${baseUrl}/agent/get-agent-by-id/${user.userId}`
           );
-
           if (response.data) {
             setAgent(response.data);
           } else {
@@ -132,9 +138,9 @@ const Home = ({ route, navigation }) => {
         setAgent({});
       }
     };
-
     fetchAgent();
   }, [user.userId, agentInfo]);
+
   useEffect(() => {
     const checkFirstVisit = async () => {
       try {
@@ -150,13 +156,13 @@ const Home = ({ route, navigation }) => {
         setInitialVisit(true);
       }
     };
-
     checkFirstVisit();
   }, []);
 
   const getInitialImageIndex = useCallback(() => {
     return initialVisit ? 0 : 1;
   }, [initialVisit]);
+
   const cardsData = [
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
@@ -176,7 +182,7 @@ const Home = ({ route, navigation }) => {
       id: "targets",
       name: "Targets",
       imagePaths: cardImagePaths.targets,
-      onPress: () => navigation.navigate("Target"), // Changed from Alert to navigation
+      onPress: () => navigation.navigate("Target"),
       backgroundColor: "#FFFDE7",
     },
     agentInfo?.designation_id?.permission?.leads === "true" && {
@@ -245,6 +251,18 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#DCEDC8",
     },
+    // This is the correct navigation for the 'Groups' card, assuming 'Enrollment.jsx' is mapped to the 'MyGroups' screen.
+    {
+      id: "groups",
+      name: "Groups",
+      imagePaths: cardImagePaths.groups,
+      onPress: () =>
+        navigation.navigate("Enrollment", {
+          screen: "Enrollment",
+          params: { user: user },
+        }),
+      backgroundColor: "#D1C4E9",
+    },
   ].filter(Boolean);
 
   return (
@@ -257,7 +275,6 @@ const Home = ({ route, navigation }) => {
       >
         <View style={styles.mainContentArea}>
           <Header />
-
           <View style={styles.introSection}>
             <Text style={styles.welcomeText}>
               Hello {agent.name || "Agent"},
@@ -266,7 +283,6 @@ const Home = ({ route, navigation }) => {
               Welcome to MyChits Agent App
             </Text>
           </View>
-
           <ScrollView
             contentContainerStyle={styles.cardsScrollViewContent}
             showsVerticalScrollIndicator={false}
@@ -328,8 +344,8 @@ const styles = StyleSheet.create({
     width: (width - 22 * 2 - 20) / 2,
     height: (width - 22 * 2 - 20) / 2,
     borderRadius: 15,
-    borderColor: "gold", // ✅ changed from "orange" to "gold"
-    borderWidth: 1, // 🔔 make sure border is visible
+    borderColor: "gold",
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
@@ -340,7 +356,6 @@ const styles = StyleSheet.create({
     elevation: 5,
     padding: 10,
   },
-
   cardImage: {
     width: 155,
     height: 90,

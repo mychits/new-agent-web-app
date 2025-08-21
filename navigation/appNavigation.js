@@ -5,6 +5,7 @@ import Welcome from "../screens/Welcome";
 import Login from "../screens/Login";
 import BottomNavigation from "./BottomNavigation";
 import PaymentNavigator from "./PaymentNavigator";
+import Enrollment from "../screens/Enrollment";
 import Print from "../screens/Print";
 import { enableScreens } from "react-native-screens";
 import PaymentList from "../screens/PaymentList";
@@ -94,6 +95,7 @@ export default function AppNavigation() {
         <Stack.Screen name="Target" component={Target} options={{ headerShown: false }} />
         <Stack.Screen name="EditLead" component={EditLead} options={{ headerShown: false }} />
           <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
+           <Stack.Screen name="Enrollment" component={Enrollment} options={{ headerShown: false }} /> 
 
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,14 +1,15 @@
+
 import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
+
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
-import axios from "axios";
 
-// This is the new, self-contained Card component
+import axios from "axios";
 const CustomerCard = ({ name, phone, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.card}>
     <View style={styles.cardContent}>
@@ -22,7 +23,8 @@ const CustomerCard = ({ name, phone, onPress }) => (
   </TouchableOpacity>
 );
 
-const RouteCustomer = ({ route, navigation }) => {
+
+const RouteCustomerLoan = ({ route, navigation }) => {
   const { user, areaId } = route.params;
 
   const [search, setSearch] = useState("");
@@ -32,8 +34,10 @@ const RouteCustomer = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        setLoading(true);
-        const response = await axios.get(`${baseUrl}/user/get-user`);
+        setLoading(true)
+        const response = await axios.get(
+          `http://13.51.87.99:3000/api/user/get-user`
+        );
         if (response.data) {
           setCustomers(response.data);
         } else {
@@ -42,7 +46,7 @@ const RouteCustomer = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching customer data:", error);
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     };
 
@@ -52,7 +56,7 @@ const RouteCustomer = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']}
+         colors={['#dbf6faff', '#90dafcff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -64,8 +68,8 @@ const RouteCustomer = ({ route, navigation }) => {
         >
           <Header />
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Chit Customers</Text>
-            <Text style={styles.subtitle}>Manage customer accounts</Text>
+            <Text style={styles.title}>Loan Customers</Text>
+            <Text style={styles.subtitle}>Manage Loan accounts</Text>
           </View>
           <View style={styles.searchContainer}>
             <Icon
@@ -77,36 +81,36 @@ const RouteCustomer = ({ route, navigation }) => {
             <TextInput
               value={search}
               onChangeText={(text) => setSearch(text)}
-              placeholder="Search chit customers..."
+              placeholder="Search Loan customers..."
               placeholderTextColor="#888"
               style={styles.searchInput}
             />
           </View>
-          {loading ? (
-            <View style={{ marginTop: 30, alignItems: "center" }}>
-              <ActivityIndicator size="large" color="#da8201" />
-            </View>
-          ) : (
-            <>
-              {Array.isArray(customers) &&
-                customers
-                  .filter((customer) =>
-                    customer.full_name
-                      ?.toLowerCase()
-                      .includes(search.toLowerCase())
-                  )
-                  .map((customer, index) => (
-                    <CustomerCard
-                      key={index}
-                      name={customer.full_name}
-                      phone={customer.phone_number}
-                      onPress={() =>
-                        navigation.navigate("Payin", { customer: customer._id })
-                      }
-                    />
-                  ))}
-            </>
-          )}
+          {
+            loading ? (
+              <View style={{ marginTop: 30, alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#da8201" />
+              </View>
+            ) : (
+              <>
+                {Array.isArray(customers) &&
+                  customers
+                    .filter((customer) =>
+                      customer.full_name?.toLowerCase().includes(search.toLowerCase())
+                    )
+                    .map((customer, index) => (
+                      <CustomerCard
+                        key={index}
+                        name={customer.full_name}
+                        phone={customer.phone_number}
+                        onPress={() =>
+                          navigation.navigate("GoldPayin", { customer: customer._id })
+                        }
+                      />
+                    ))}
+              </>
+            )
+          }
         </ScrollView>
       </LinearGradient>
     </SafeAreaView>
@@ -200,4 +204,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RouteCustomer;
+export default RouteCustomerLoan;

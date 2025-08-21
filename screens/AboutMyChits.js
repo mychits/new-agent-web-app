@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     tagline: {
         fontSize: width * 0.05,
         fontWeight: "600",
-        color: "#FF9933",
+        color: "#da8201",
         marginBottom: height * 0.035,
         textAlign: 'center',
         fontStyle: 'italic',

@@ -1,4 +1,7 @@
-import { View, Text, ScrollView, StyleSheet, TextInput, Modal, TouchableOpacity, Alert, ActivityIndicator, Image, Dimensions} from "react-native";
+import { View, 
+  Text, ScrollView, 
+  StyleSheet, TextInput, Modal, TouchableOpacity, 
+  Alert, ActivityIndicator, Image, Dimensions} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -802,7 +805,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "center",
     padding: 10,
-    backgroundColor: '#FFC000',
+    backgroundColor: '#da8201',
     borderRadius: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

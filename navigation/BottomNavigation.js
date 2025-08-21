@@ -21,7 +21,7 @@ const screenOptions = {
 		left: 0,
 		elevation: 0,
 		height: 45,
-		 backgroundColor: '#f1d88bff',
+		 backgroundColor: '#e29f39ff',
 	},
 };
 

@@ -89,7 +89,7 @@ const RouteCustomerGold = ({ route, navigation }) => {
           {
             loading ? (
               <View style={{ marginTop: 30, alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#FFC000" />
+                <ActivityIndicator size="large" color="#da8201" />
               </View>
             ) : (
               <>
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderLeftWidth: 5,
-    borderColor: '#FFC000',
+    borderColor: '#da8201',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -196,11 +196,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 32,
-    color: '#FFC000',
+    color: '#da8201',
   },
   arrowIcon: {
     fontSize: 22,
-    color: '#FFC000',
+    color: '#da8201',
   },
 });
 

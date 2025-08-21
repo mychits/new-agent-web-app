@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderLeftWidth: 5,
-    borderColor: '#FFC000',
+    borderColor: '#da8201',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -129,11 +129,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 24,
-    color: '#FFC000', // Changed to gold color for consistency with the routes page
+    color: '#da8201', // Changed to gold color for consistency with the routes page
   },
   arrowIcon: {
     fontSize: 20,
-    color: '#FFC000', // Changed to gold color for consistency with the routes page
+    color: '#da8201', // Changed to gold color for consistency with the routes page
   },
 });
 

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Routes from "../screens/Routes";
 import RouteCustomerChit from "../screens/RouteCustomerChit";
 import RouteCustomerGold from "../screens/RouteCustomerGold";
+import RouteCustomerLoan from "../screens/RouteCustomerLoan";
 import Payin from "../screens/Payin";
 import { enableScreens } from "react-native-screens";
 import Print from "../screens/Print";
@@ -33,6 +34,13 @@ const ScannerNavigator = ({ route }) => {
 				initialParams={{ user }}
 				options={{ headerShown: false }}
 			/>
+			<stack.Screen
+			name="RouteCustomerLoan"
+			component={RouteCustomerLoan}
+			initialParams={{ user }}
+			options={{ headerShown:false}}
+			 />
+
 			<stack.Screen
 				name="RouteCustomerGold"
 				component={RouteCustomerGold}

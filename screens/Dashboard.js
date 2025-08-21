@@ -181,11 +181,11 @@ const Dashboard = ({ route, navigation }) => {
   }, []);
 
   const getStrokeDashoffset = () => {
-    const progress = progressAnim.interpolate({
+    const dashoffset = progressAnim.interpolate({
       inputRange: [0, 100],
       outputRange: [circumference, 0],
     });
-    return progress;
+    return dashoffset;
   };
 
   return (
@@ -245,7 +245,7 @@ const Dashboard = ({ route, navigation }) => {
                               cx="75"
                               cy="75"
                               r="65"
-                              stroke="#FFD700"
+                              stroke="#da8201"
                               strokeWidth="10"
                               fill="transparent"
                               strokeDasharray={circumference}
@@ -297,7 +297,7 @@ const Dashboard = ({ route, navigation }) => {
               <View style={styles.collectionSection}>
                 <View style={styles.collectionCard}>
                   <LinearGradient
-                    colors={["#FFD54F", "#FFC107"]}
+                    colors={["#ecc281ff", "#da8201"]}
                     style={styles.collectionGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}

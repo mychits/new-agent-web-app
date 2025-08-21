@@ -9,26 +9,26 @@ import {
     ScrollView,
     TouchableOpacity,
     ToastAndroid,
-    ActivityIndicator // Added ActivityIndicator import
+    ActivityIndicator
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import chitBaseUrl from "../constants/baseUrl";
-import goldBaseUrl from "../constants/goldBaseUrl";
-import { Picker } from "@react-native-picker/picker";
-import { LinearGradient } from "expo-linear-gradient"; // Added LinearGradient import
-import Icon from "react-native-vector-icons/FontAwesome"; // Added Icon import
-
+import { LinearGradient } from "expo-linear-gradient";
+import Icon from "react-native-vector-icons/FontAwesome";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
 
 const AddCustomer = ({ route, navigation }) => {
-    const { user, customer } = route.params;
-    const [receipt, setReceipt] = useState({});
+    const { user } = route.params;
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedCustomerType, setSelectedCustomerType] = useState("chit");
+    const [step, setStep] = useState(1);
+    const [aadhaarFile, setAadhaarFile] = useState(null);
+    const [panFile, setPanFile] = useState(null);
 
     const [customerInfo, setCustomerInfo] = useState({
         full_name: "",
@@ -40,21 +40,39 @@ const AddCustomer = ({ route, navigation }) => {
         aadhaar_no: "",
         pan_no: "",
     });
-    useEffect(() => {
-        const fetchReceipt = async () => {
-            try {
-                // Mocking axios for web compatibility
-                const response = { data: { /* Mock agent data here if needed */ } }; // await axios.get(`${chitBaseUrl}/agent/get-agent-by-id/${user.userId}`);
-                setReceipt(response.data);
-            } catch (error) {
-                console.error("Error fetching agent data:", error);
-            }
-        };
-        fetchReceipt();
-    }, []);
 
     const handleInputChange = (field, value) => {
         setCustomerInfo({ ...customerInfo, [field]: value });
+    };
+
+    const handleAadhaarPick = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: "image/*,application/pdf",
+                copyToCacheDirectory: false,
+            });
+
+            if (!result.canceled) {
+                setAadhaarFile(result.assets[0]);
+            }
+        } catch (err) {
+            console.log("Error picking document: ", err);
+        }
+    };
+
+    const handlePanPick = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: "image/*,application/pdf",
+                copyToCacheDirectory: false,
+            });
+
+            if (!result.canceled) {
+                setPanFile(result.assets[0]);
+            }
+        } catch (err) {
+            console.log("Error picking document: ", err);
+        }
     };
 
     const handleAddCustomer = async () => {
@@ -64,7 +82,7 @@ const AddCustomer = ({ route, navigation }) => {
             !customerInfo.address ||
             !customerInfo.pincode
         ) {
-            Alert.alert("Required Fields Missing", "Please fill out all mandatory fields (Full Name, Phone Number, Address, Pincode).");
+            Alert.alert("Required Fields Missing", "Please fill out all mandatory fields.");
             return;
         }
 
@@ -74,21 +92,39 @@ const AddCustomer = ({ route, navigation }) => {
         }
 
         setIsLoading(true);
+
         try {
-            const customerData = {
-                ...customerInfo,
-                agent: user.userId, // Ensure user.userId is correctly passed from previous screen
-                customer_type: selectedCustomerType,
-            };
+            const formData = new FormData();
+            for (const key in customerInfo) {
+                if (customerInfo[key]) {
+                    formData.append(key, customerInfo[key]);
+                }
+            }
+            formData.append('agent', user.userId);
 
-            // Log the data being sent for debugging
-            console.log("Customer data being sent:", customerData);
+            if (aadhaarFile) {
+                formData.append('aadhaar_card', {
+                    uri: aadhaarFile.uri,
+                    name: aadhaarFile.name,
+                    type: aadhaarFile.mimeType,
+                });
+            }
 
-            const baseUrl =
-                selectedCustomerType === "chit" ? chitBaseUrl : goldBaseUrl;
+            if (panFile) {
+                formData.append('pan_card', {
+                    uri: panFile.uri,
+                    name: panFile.name,
+                    type: panFile.mimeType,
+                });
+            }
 
-            // Mocking axios for web compatibility
-            const response = { status: 201, data: { customer: { _id: "mockCustomerId123" } } }; // await axios.post(`${baseUrl}/user/add-user`, customerData);
+            console.log("FormData being sent:", formData);
+
+            const response = await axios.post(`${chitBaseUrl}/user/add-user`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
 
             if (response.status === 201) {
                 ToastAndroid.show("Customer Added Successfully!", ToastAndroid.SHORT);
@@ -103,14 +139,8 @@ const AddCustomer = ({ route, navigation }) => {
         } catch (error) {
             console.error("Error adding customer:", error);
             let errorMessage = "Something went wrong while adding customer. Please try again.";
-
             if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
                 console.error("Server Response Data:", error.response.data);
-                console.error("Server Response Status:", error.response.status);
-                console.error("Server Response Headers:", error.response.headers);
-
                 if (error.response.data && error.response.data.message) {
                     errorMessage = `Error: ${error.response.data.message}`;
                 } else if (typeof error.response.data === 'string') {
@@ -119,15 +149,163 @@ const AddCustomer = ({ route, navigation }) => {
                     errorMessage = `Server Error (Status ${error.response.status}): An unexpected error occurred on the server.`;
                 }
             } else if (error.request) {
-                // The request was made but no response was received
                 errorMessage = "No response from server. Please check your network connection.";
             } else {
-                // Something happened in setting up the request that triggered an Error
                 errorMessage = `Request Error: ${error.message}`;
             }
             Alert.alert("Error Adding Customer", errorMessage);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const renderStepContent = () => {
+        switch (step) {
+            case 1:
+                return (
+                    <>
+                        <Text style={styles.label}>
+                            Full Name<Text style={{ color: 'red' }}>*</Text>
+                        </Text>
+                        <TextInput
+                            placeholder="Enter Full Name"
+                            style={styles.textInput}
+                            value={customerInfo.full_name}
+                            onChangeText={(value) => handleInputChange("full_name", value)}
+                        />
+                        <Text style={styles.label}>
+                            Phone Number<Text style={{ color: 'red' }}>*</Text>
+                        </Text>
+                        <TextInput
+                            placeholder="Enter Phone Number"
+                            style={styles.textInput}
+                            value={customerInfo.phone_number}
+                            keyboardType="phone-pad"
+                            maxLength={10}
+                            onChangeText={(value) => handleInputChange("phone_number", value)}
+                        />
+                        <Text style={styles.label}>
+                            Address<Text style={{ color: 'red' }}>*</Text>
+                        </Text>
+                        <TextInput
+                            placeholder="Enter Address"
+                            style={styles.textInput}
+                            value={customerInfo.address}
+                            onChangeText={(value) => handleInputChange("address", value)}
+                        />
+                        <Text style={styles.label}>
+                            Pincode<Text style={{ color: 'red' }}>*</Text>
+                        </Text>
+                        <TextInput
+                            placeholder="Enter Pincode"
+                            style={styles.textInput}
+                            value={customerInfo.pincode}
+                            keyboardType="number-pad"
+                            onChangeText={(value) => handleInputChange("pincode", value)}
+                        />
+                        <View style={styles.singleButtonContainer}>
+                            <Button
+                                title="Next"
+                                filled
+                                style={styles.nextButton}
+                                onPress={() => setStep(2)}
+                            />
+                        </View>
+                    </>
+                );
+            case 2:
+                return (
+                    <>
+                        <Text style={styles.label}>
+                            Email
+                        </Text>
+                        <TextInput
+                            placeholder="Enter Email"
+                            style={styles.textInput}
+                            value={customerInfo.email}
+                            keyboardType="email-address"
+                            onChangeText={(value) => handleInputChange("email", value)}
+                        />
+                        <Text style={styles.label}>
+                            Password
+                        </Text>
+                        <TextInput
+                            placeholder="Enter Password"
+                            style={styles.textInput}
+                            value={customerInfo.password}
+                            onChangeText={(value) => handleInputChange("password", value)}
+                        />
+                        <Text style={styles.label}>
+                            Aadhaar Number
+                        </Text>
+                        <TextInput
+                            placeholder="Enter Aadhaar Number"
+                            style={styles.textInput}
+                            value={customerInfo.aadhaar_no}
+                            keyboardType="number-pad"
+                            onChangeText={(value) => handleInputChange("aadhaar_no", value)}
+                        />
+                        <Text style={styles.label}>
+                            PAN Number
+                        </Text>
+                        <TextInput
+                            placeholder="Enter PAN Number"
+                            style={styles.textInput}
+                            value={customerInfo.pan_no}
+                            onChangeText={(value) => handleInputChange("pan_no", value)}
+                        />
+                        <View style={styles.buttonContainer}>
+                            <Button
+                                title="Back"
+                                style={styles.secondaryButton}
+                                onPress={() => setStep(1)}
+                            />
+                            <Button
+                                title="Next"
+                                filled
+                                style={styles.nextButton}
+                                onPress={() => setStep(3)}
+                            />
+                        </View>
+                    </>
+                );
+            case 3:
+                return (
+                    <>
+                        <View style={styles.uploadContainer}>
+                            <Text style={styles.label}>Aadhaar Card Upload</Text>
+                            <TouchableOpacity style={styles.uploadButton} onPress={handleAadhaarPick}>
+                                <Text style={styles.uploadButtonText}>
+                                    <Icon name="upload" size={16} color="#fff" /> Choose File
+                                </Text>
+                            </TouchableOpacity>
+                            {aadhaarFile && <Text style={styles.fileName}>{aadhaarFile.name}</Text>}
+                        </View>
+                        <View style={styles.uploadContainer}>
+                            <Text style={styles.label}>PAN Card Upload</Text>
+                            <TouchableOpacity style={styles.uploadButton} onPress={handlePanPick}>
+                                <Text style={styles.uploadButtonText}>
+                                    <Icon name="upload" size={16} color="#fff" /> Choose File
+                                </Text>
+                            </TouchableOpacity>
+                            {panFile && <Text style={styles.fileName}>{panFile.name}</Text>}
+                        </View>
+                        <Button
+                            title="Back"
+                            style={styles.finalBackButton}
+                            onPress={() => setStep(2)}
+                        />
+                        <Button
+                            title={isLoading ? "Please wait..." : "Add Customer"}
+                            filled
+                            disabled={isLoading}
+                            style={styles.finalAddCustomerButton}
+                            onPress={handleAddCustomer}
+                        />
+                    </>
+                );
+            default:
+                return null;
         }
     };
 
@@ -146,8 +324,7 @@ const AddCustomer = ({ route, navigation }) => {
                 >
                     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                         <View style={{ marginHorizontal: 22, marginTop: 12 }}>
-                            {/* Assuming Header component is defined elsewhere */}
-                            {/* <Header /> */}
+                            <Header />
                             <View style={styles.titleContainer}>
                                 <Text style={styles.title}>
                                     Add Customer
@@ -160,115 +337,7 @@ const AddCustomer = ({ route, navigation }) => {
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.formBox}>
-                                <Text style={styles.label}>
-                                    Customer Type
-                                </Text>
-                                <View style={styles.tabContainer}>
-                                    <TouchableOpacity
-                                        style={[styles.tab, selectedCustomerType === "chit" && styles.activeTab]}
-                                        onPress={() => setSelectedCustomerType("chit")}
-                                    >
-                                        <Text style={[styles.tabText, selectedCustomerType === "chit" && styles.activeTabText]}>
-                                            Chit
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.tab, selectedCustomerType === "gold_chit" && styles.activeTab]}
-                                        onPress={() => setSelectedCustomerType("gold_chit")}
-                                    >
-                                        <Text style={[styles.tabText, selectedCustomerType === "gold_chit" && styles.activeTabText]}>
-                                            Gold Chit
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <Text style={styles.label}>
-                                    Full Name
-                                </Text>
-                                <TextInput
-                                    placeholder="Enter Full Name"
-                                    style={styles.textInput}
-                                    value={customerInfo.full_name}
-                                    onChangeText={(value) => handleInputChange("full_name", value)}
-                                />
-                                <Text style={styles.label}>
-                                    Phone Number
-                                </Text>
-                                <TextInput
-                                    placeholder="Enter Phone Number"
-                                    style={styles.textInput}
-                                    value={customerInfo.phone_number}
-                                    keyboardType="phone-pad"
-                                    maxLength={10}
-                                    onChangeText={(value) => handleInputChange("phone_number", value)}
-                                />
-                                <Text style={styles.label}>
-                                    Email
-                                </Text>
-                                <TextInput
-                                    placeholder="Enter Email"
-                                    style={styles.textInput}
-                                    value={customerInfo.email}
-                                    keyboardType="email-address"
-                                    onChangeText={(value) => handleInputChange("email", value)}
-                                />
-                                <Text style={styles.label}>
-                                    Password
-                                </Text>
-                                <TextInput
-                                    placeholder="Enter Password"
-                                    style={styles.textInput}
-                                    value={customerInfo.password}
-                                    onChangeText={(value) => handleInputChange("password", value)}
-                                />
-                                <Text style={styles.label}>
-                                    Address
-                                </Text>
-                                <TextInput
-                                    placeholder="Enter Address"
-                                    style={styles.textInput}
-                                    value={customerInfo.address}
-                                    onChangeText={(value) => handleInputChange("address", value)}
-                                />
-                                <Text style={styles.label}>
-                                    Pincode
-                                </Text>
-                                <TextInput
-                                    placeholder="Enter Pincode"
-                                    style={styles.textInput}
-                                    value={customerInfo.pincode}
-                                    keyboardType="number-pad"
-                                    onChangeText={(value) => handleInputChange("pincode", value)}
-                                />
-                                <Text style={styles.label}>
-                                    Aadhaar Number
-                                </Text>
-                                <TextInput
-                                    placeholder="Enter Aadhaar Number"
-                                    style={styles.textInput}
-                                    value={customerInfo.aadhaar_no}
-                                    keyboardType="number-pad"
-                                    onChangeText={(value) => handleInputChange("aadhaar_no", value)}
-                                />
-                                <Text style={styles.label}>
-                                    PAN Number
-                                </Text>
-                                <TextInput
-                                    placeholder="Enter PAN Number"
-                                    style={styles.textInput}
-                                    value={customerInfo.pan_no}
-                                    onChangeText={(value) => handleInputChange("pan_no", value)}
-                                />
-                                <Button
-                                    title={isLoading ? "Please wait..." : "Add Customer"}
-                                    filled
-                                    disabled={isLoading}
-                                    style={{
-                                        marginTop: 18,
-                                        marginBottom: 4,
-                                        backgroundColor: isLoading ? "gray" : COLORS.third, // Assuming COLORS.third exists
-                                    }}
-                                    onPress={handleAddCustomer}
-                                />
+                                {renderStepContent()}
                             </View>
                         </View>
                     </ScrollView>
@@ -346,54 +415,53 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 3,
     },
-    contentContainer: {
-        // marginTop: -4, This style is no longer needed
-    },
-    tabContainer: {
-        flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
-        borderRadius: 15,
-        marginBottom: 10,
-        padding: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
+    uploadContainer: {
         marginTop: 10,
+        marginBottom: 10,
     },
-    tab: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: "center",
-        borderRadius: 12,
+    uploadButton: {
+        backgroundColor: COLORS.primary,
+        borderRadius: 15,
+        paddingVertical: 15,
+        alignItems: 'center',
+        marginTop: 5,
     },
-    activeTab: {
-        backgroundColor: '#FFC000',
-    },
-    tabText: {
-        fontSize: 16,
-        color: "#666",
-        fontWeight: "500",
-    },
-    activeTabText: {
-        color: '#333',
+    uploadButtonText: {
+        color: COLORS.white,
         fontWeight: 'bold',
     },
-    pickerContainer: {
-        backgroundColor: COLORS.white,
-        borderRadius: 15,
-        borderWidth: 1,
-        borderColor: "#d0d0d0",
-        marginVertical: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
+    fileName: {
+        marginTop: 5,
+        fontStyle: 'italic',
+        color: '#555',
+        textAlign: 'center',
     },
-    picker: {
-        height: 50,
-        width: "100%",
+    singleButtonContainer: {
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20,
+    },
+    nextButton: {
+        width: '48%',
+        backgroundColor: COLORS.primary,
+    },
+    secondaryButton: {
+        width: '48%',
+        backgroundColor: COLORS.secondary, // Changed from primary to secondary
+    },
+    finalBackButton: {
+        width: '100%',
+        backgroundColor: COLORS.secondary, // Changed from primary to secondary
+        marginTop: 20,
+        marginBottom: 10,
+    },
+    finalAddCustomerButton: {
+        width: '100%',
+        backgroundColor: COLORS.third,
     },
 });
 

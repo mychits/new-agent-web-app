@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     activeTab: {
-        backgroundColor: '#FFC000',
+        backgroundColor: '#da8201',
     },
     tabText: {
         fontSize: 16,
@@ -252,13 +252,13 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         marginTop: 10,
-        borderColor: "#FFC000",
+        borderColor: "#da8201",
     },
     summaryBox: {
         backgroundColor: "rgba(255, 255, 255, 0.7)",
         padding: 15,
         borderRadius: 15,
-       borderColor: "#FFC000",
+       borderColor: "#da8201",
        borderWidth:2,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
         marginVertical: 5,
         borderRadius: 15,
         borderLeftWidth: 5,
-        borderColor: '#FFC000',
+        borderColor: '#da8201',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     },
     arrowIcon: {
         fontSize: 22,
-        color: '#FFC000',
+        color: '#da8201',
     },
     noLeadsText: {
         textAlign: "center",

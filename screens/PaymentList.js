@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderLeftWidth: 5,
-    borderColor: '#FFD700',
+    borderColor: '#da8201',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -122,11 +122,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 32,
-    color: '#FFC000',
+    color: '#da8201',
   },
   arrowIcon: {
     fontSize: 22,
-    color: '#FFC000',
+    color: '#da8201',
   },
 });
 

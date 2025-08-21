@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     activeTab: {
-        backgroundColor: "#FFC000",
+        backgroundColor: "#da8201",
     },
     tabText: {
         fontSize: 16,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
         marginVertical: 5,
         borderRadius: 15,
         borderLeftWidth: 5,
-        borderColor: "#FFC000",
+        borderColor: "#da8201",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,

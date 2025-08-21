@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
 	button: {
 		marginTop: 18,
 		marginBottom: 50,
-		backgroundColor: '#FFC000',
+		backgroundColor: '#da8201',
 	}
 });
 
