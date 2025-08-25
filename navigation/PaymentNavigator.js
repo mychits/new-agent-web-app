@@ -5,8 +5,11 @@ import Routes from "../screens/Routes";
 import RouteCustomerChit from "../screens/RouteCustomerChit";
 import RouteCustomerGold from "../screens/RouteCustomerGold";
 import RouteCustomerLoan from "../screens/RouteCustomerLoan";
+import RouteCustomerPigme from "../screens/RouteCustomerPigme";
+import PigmePayin from "../screens/PigmePayin";
 import Payin from "../screens/Payin";
 import { enableScreens } from "react-native-screens";
+import LoanPayin from "../screens/LoanPayin";
 import Print from "../screens/Print";
 import GoldPayin from "../screens/GoldPayin";
 import GoldPrint from "../screens/GoldPrint";
@@ -25,6 +28,18 @@ const ScannerNavigator = ({ route }) => {
 			<stack.Screen
 				name="Routes"
 				component={Routes}
+				initialParams={{ user }}
+				options={{ headerShown: false }}
+			/>
+				<stack.Screen
+				name="LoanPayin"
+				component={LoanPayin}
+				initialParams={{ user }}
+				options={{ headerShown: false }}
+			/>
+				<stack.Screen
+				name="PigmePayin"
+				component={PigmePayin}
 				initialParams={{ user }}
 				options={{ headerShown: false }}
 			/>
@@ -56,6 +71,12 @@ const ScannerNavigator = ({ route }) => {
 			<stack.Screen
 				name="GoldPayin"
 				component={GoldPayin}
+				initialParams={{ user }}
+				options={{ headerShown: false }}
+			/>
+			<stack.Screen
+				name="RouteCustomerPigme"
+				component={RouteCustomerPigme}
 				initialParams={{ user }}
 				options={{ headerShown: false }}
 			/>

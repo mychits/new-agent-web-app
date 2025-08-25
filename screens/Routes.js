@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 
 // Assuming COLORS constant exists and has a 'white' property.
 // You might want to define a 'gold' color in it as well for consistency.
-import COLORS from "../constants/color"; 
+import COLORS from "../constants/color";
 import Header from "../components/Header";
 
 // Custom Card Component with a more attractive, balanced layout
@@ -29,7 +29,7 @@ const Routes = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-         colors={['#dbf6faff', '#90dafcff']} // Refined gradient colors for a more modern, cohesive look
+        colors={['#dbf6faff', '#90dafcff']} // Refined gradient colors for a more modern, cohesive look
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -59,6 +59,11 @@ const Routes = ({ route, navigation }) => {
               name="Loan Customer"
               icon="money"
               onPress={() => navigation.navigate("RouteCustomerLoan", { user, areaId: "loan-customer" })}
+            />
+            <CustomRouteCard
+              name="Pigme Customer"
+              icon="credit-card"
+              onPress={() => navigation.navigate("RouteCustomerPigme", { user, areaId: "Pigme-customer" })}
             />
           </View>
         </ScrollView>

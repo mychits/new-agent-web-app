@@ -24,7 +24,7 @@ const CustomerCard = ({ name, phone, onPress }) => (
 );
 
 
-const RouteCustomerLoan = ({ route, navigation }) => {
+const RouteCustomerPigme = ({ route, navigation }) => {
   const { user, areaId } = route.params;
 
   const [search, setSearch] = useState("");
@@ -32,13 +32,13 @@ const RouteCustomerLoan = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchLoanCustomers = async () => {
+    const fetchPigmeCustomers = async () => {
       try {
         setLoading(true)
         const response = await axios.get(
-          `https://mychits.online/api/loans/get-all-borrowers`
+          `https://mychits.online/api/pigme/get-all-pigme-customers`
         );
-        
+        console.log(response.data, "checking");
         if (response.data) {
           setCustomers(response.data);
         } else {
@@ -51,7 +51,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
       }
     };
 
-    fetchLoanCustomers();
+    fetchPigmeCustomers();
   }, []);
 
   return (
@@ -69,8 +69,8 @@ const RouteCustomerLoan = ({ route, navigation }) => {
         >
           <Header />
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Loan Customers</Text>
-            <Text style={styles.subtitle}>Manage Loan accounts</Text>
+            <Text style={styles.title}>Pigme Customers</Text>
+            <Text style={styles.subtitle}>Manage Pigme accounts</Text>
           </View>
           <View style={styles.searchContainer}>
             <Icon
@@ -82,7 +82,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
             <TextInput
               value={search}
               onChangeText={(text) => setSearch(text)}
-              placeholder="Search Loan customers..."
+              placeholder="Search Pigme customers..."
               placeholderTextColor="#888"
               style={styles.searchInput}
             />
@@ -96,21 +96,25 @@ const RouteCustomerLoan = ({ route, navigation }) => {
               <>
                 {Array.isArray(customers) &&
   customers
-    .filter((customer) =>
-      customer.borrower?.full_name
-        ?.toLowerCase()
-        .includes(search.toLowerCase())
-    )
-    .map((customer, index) => (
+    .filter((item) => {
+      const name = item.customer?.full_name?.toLowerCase() || "";
+      const phone = item.customer?.phone_number || "";
+      return (
+        name.includes(search.toLowerCase()) ||
+        phone.includes(search)
+      );
+    })
+    .map((item, index) => (
       <CustomerCard
         key={index}
-        name={customer.borrower.full_name}
-        phone={customer.borrower.phone_number}
+        name={item.customer?.full_name || "Unknown Customer"}
+        phone={item.customer?.phone_number || "N/A"}
         onPress={() =>
-          navigation.navigate("LoanPayin", { customer: customer._id })
+          navigation.navigate("PigmePayin", { customer: item._id })
         }
       />
     ))}
+
               </>
             )
           }
@@ -207,4 +211,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RouteCustomerLoan;
+export default RouteCustomerPigme;
