@@ -15,6 +15,8 @@ import GoldPayments from "../screens/GoldPayments";
 import AddLead from "../screens/AddLead";
 import ViewLeads from "../screens/ViewLeads";
 import Reports from "../screens/Reports";
+import LoanPrint from "../screens/LoanPrint";
+import PigmePrint from "../screens/PigmePrint";
 enableScreens();
 
 const stack = createNativeStackNavigator();
@@ -60,6 +62,18 @@ const PayNavigation = ({ route }) => {
         initialParams={{ user }}
         options={{ headerShown: false }}
       />
+      <stack.Screen
+                name="LoanPrint"
+                component={LoanPrint}
+                // REMOVE initialParams
+                options={{ headerShown: false }}
+            />
+			<stack.Screen
+				name="PigmePrint"
+				component={PigmePrint}
+				initialParams={{ user, store_id }}
+				options={{ headerShown: false }}
+			/>
     </stack.Navigator>
   );
 };

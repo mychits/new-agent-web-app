@@ -19,6 +19,7 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
+import url from "../constants/baseUrl";
 
 const PigmePayin = ({ route, navigation }) => {
     const { user, customer } = route.params;
@@ -143,23 +144,21 @@ const PigmePayin = ({ route, navigation }) => {
 
             const data = {
                 user_id: selectedPigme?.customer?._id,
-                pigme_id: selectedPigme.pigme_id,
-                payable_amount: selectedPigme.payable_amount,
                 pay_date: new Date().toISOString().split("T")[0],
                 receipt_no: receipt.receipt_no ? receipt.receipt_no.toString() : "",
                 pay_type: paymentDetails,
                 amount: amount,
                 transaction_id: transactionId,
-                collected_name: agent.name,
-                collected_phone: agent.phone_number,
+                collected_by: agent._id,
+
             };
             const response = await axios.post(
-                `http://13.51.87.99:3000/api/payment/add-payment`,
+                `${url}/payment/add-payments`,
                 data
             );
             if (response.status === 201) {
                 Alert.alert("Success", "Payment added successfully!");
-                navigation.navigate("GoldPrint", { store_id: response.data._id });
+                navigation.navigate("PigmePrint", { store_id: response.data._id });
             } else {
                 console.log("Error:", response.data);
             }

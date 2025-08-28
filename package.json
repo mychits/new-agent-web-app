@@ -21,8 +21,12 @@
     "esc-pos-encoder": "^3.0.0",
     "expo": "~51.0.39",
     "expo-blur": "~13.0.3",
+    "expo-document-picker": "~12.0.2",
+    "expo-font": "~12.0.10",
     "expo-image-picker": "~15.1.0",
     "expo-linear-gradient": "^13.0.2",
+    "expo-modules-core": "~1.12.26",
+    "expo-splash-screen": "~0.27.7",
     "expo-status-bar": "~1.12.1",
     "lottie-react-native": "6.7.0",
     "moment": "^2.30.1",
@@ -41,11 +45,7 @@
     "react-native-screens": "3.31.1",
     "react-native-svg": "15.2.0",
     "react-native-toast-message": "^2.3.3",
-    "react-native-vector-icons": "^10.2.0",
-    "expo-font": "~12.0.10",
-    "expo-splash-screen": "~0.27.7",
-    "expo-modules-core": "~1.12.26",
-    "expo-document-picker": "~12.0.2"
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

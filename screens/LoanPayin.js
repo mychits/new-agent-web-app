@@ -19,6 +19,7 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
+import url from "../constants/baseUrl";
 
 const LoanPayin = ({ route, navigation }) => {
 	const { user, customer } = route.params;
@@ -42,7 +43,7 @@ const LoanPayin = ({ route, navigation }) => {
 				const response = await axios.get(
 					`https://mychits.online/api/loans/get-borrower/${customer}`
 				);
-                console.log(response.data,"checking");
+				console.log(response.data, "checking");
 				if (response.data) {
 					setCustomerInfo(response.data.borrower);
 					setLoanData([response.data]);
@@ -120,27 +121,46 @@ const LoanPayin = ({ route, navigation }) => {
 				setIsLoading(false);
 				return;
 			}
-			
+
+
 			const data = {
 				user_id: customer,
-				loan_id: selectedLoan.loan_id,
-				loan_amount: selectedLoan.loan_amount,
+				receipt_no: receipt?.receipt_no ? receipt.receipt_no.toString() : "",
 				pay_date: new Date().toISOString().split("T")[0],
-				receipt_no: receipt.receipt_no ? receipt.receipt_no.toString() : "",
-				pay_type: paymentDetails,
 				amount: amount,
+				payment_group_tickets: [`loan-${selectedLoan?._id}`],
+				pay_type: paymentDetails,
 				transaction_id: transactionId,
-				collected_name: agent.name,
-				collected_phone: agent.phone_number,
+				collected_by: agent._id
 			};
+			console.log(data,"hurray thisi sdata")
 
 			const response = await axios.post(
-				`http://13.51.87.99:3000/api/payment/add-payment`,
+				`${url}/payment/add-payments`,
 				data
 			);
 			if (response.status === 201) {
 				Alert.alert("Success", "Payment added successfully!");
-				navigation.navigate("GoldPrint", { store_id: response.data._id });
+				//navigation.navigate("LoanPrint", { store_id: response.data._id });
+				  const paymentResponse = await axios.get(`${baseUrl}/payment/get-payment-by-id/${response.data._id}`);
+            
+            // 2. Fetch the agent's details.
+            const agentResponse = await axios.get(`${baseUrl}/agent/get-agent-by-id/${user.userId}`);
+            
+            // 3. Get the updated total loan amount.
+            const loanId = paymentResponse.data.payment_group_tickets[0].split('-')[1];
+            const totalAmountResponse = await axios.post(
+                `${baseUrl}/payment/get-total-amount`,
+                { user_id: paymentResponse.data.user_id._id, loan_id: loanId }
+            );
+
+            // 4. Navigate, passing all the fetched data.
+            navigation.navigate("LoanPrint", {
+                payInfo: paymentResponse.data,
+                agent: agentResponse.data,
+                totalAmount: totalAmountResponse.data.totalAmount,
+                isLoanPayment: true
+            });
 			} else {
 				console.log("Error:", response.data);
 			}
@@ -155,7 +175,7 @@ const LoanPayin = ({ route, navigation }) => {
 	return (
 		<SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
 			<LinearGradient
-				 colors={['#dbf6faff', '#90dafcff']}
+				colors={['#dbf6faff', '#90dafcff']}
 				style={styles.gradientOverlay}
 				start={{ x: 0, y: 0 }}
 				end={{ x: 1, y: 1 }}

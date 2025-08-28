@@ -8,6 +8,7 @@ import {
     ActivityIndicator,
     Image,
     Linking,
+    Modal
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -35,6 +36,8 @@ const ViewLeads = ({ route, navigation }) => {
     const [goldLoaded, setGoldLoaded] = useState(false);
     const [activeTab, setActiveTab] = useState("CHIT");
     const [expandedLeadId, setExpandedLeadId] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedDateFilter, setSelectedDateFilter] = useState("all");
 
     useEffect(() => {
         setCurrentDate(moment().format("DD-MM-YYYY"));
@@ -131,6 +134,27 @@ const ViewLeads = ({ route, navigation }) => {
         return leadDate.isAfter(tenDaysAgo) && !isFreshLead(createdAt);
     };
 
+    const getFilteredLeads = (leads, filter) => {
+        if (filter === "all") {
+            return leads;
+        }
+
+        const today = moment();
+        let daysToSubtract = 0;
+
+        if (filter === "7 days") {
+            daysToSubtract = 7;
+        } else if (filter === "10 days") {
+            daysToSubtract = 10;
+        } else if (filter === "1 month") {
+            daysToSubtract = 30;
+        }
+
+        const cutoffDate = today.subtract(daysToSubtract, 'days').startOf('day');
+
+        return leads.filter(lead => moment(lead.createdAt).isAfter(cutoffDate));
+    };
+
     const renderLeadCard = ({ item }) => {
         const isExpanded = expandedLeadId === item._id;
         const freshLead = isFreshLead(item.createdAt);
@@ -203,7 +227,7 @@ const ViewLeads = ({ route, navigation }) => {
                                 <Icon name="whatsapp" size={18} color={COLORS.white} />
                                 <Text style={styles.buttonText}>WhatsApp</Text>
                             </TouchableOpacity>
-                            {freshLead && ( // Only show edit button for fresh leads
+                            {freshLead && (
                                 <TouchableOpacity
                                     onPress={() => handleEditLead(item)}
                                     style={styles.editButton}
@@ -227,14 +251,17 @@ const ViewLeads = ({ route, navigation }) => {
 
     const isLoading = activeTab === "CHIT" ? isChitLoading : isGoldLoading;
     const dataLoaded = activeTab === "CHIT" ? chitLoaded : goldLoaded;
-    const leads = activeTab === "CHIT" ? chitLeads : goldLeads;
+    const allLeads = activeTab === "CHIT" ? chitLeads : goldLeads;
+
+    const leads = getFilteredLeads(allLeads, selectedDateFilter);
+    
     const noDataMessage =
         activeTab === "CHIT" ? "No chit leads found" : "No gold leads found";
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
             <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
+                colors={['#dbf6faff', '#90dafcff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -242,11 +269,21 @@ const ViewLeads = ({ route, navigation }) => {
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                     <View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
                         <Header />
+
                         <View style={styles.titleContainer}>
-                            <Text style={styles.title}>Leads</Text>
-                            <Text style={styles.totalAmountText}>
-                                {chitLeads.length + goldLeads.length || 0}
-                            </Text>
+                            <View style={styles.titleAndCountRow}>
+                                <Text style={styles.title}>Leads</Text>
+                                <Text style={styles.totalAmountText}>
+                                    {chitLeads.length + goldLeads.length || 0}
+                                </Text>
+                            </View>
+                            <TouchableOpacity 
+                                style={styles.filterBox} 
+                                onPress={() => setModalVisible(true)}
+                            >
+                                <Text style={styles.filterText}>Leads Report: {selectedDateFilter === "all" ? "All" : selectedDateFilter}</Text>
+                                <Icon name="caret-down" size={20} color="#000" />
+                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.container}>
@@ -339,6 +376,90 @@ const ViewLeads = ({ route, navigation }) => {
                     + Add
                 </Text>
             </TouchableOpacity>
+
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    setModalVisible(!modalVisible);
+                }}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalTitle}>Leads Report</Text>
+
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => {
+                                setSelectedDateFilter("all");
+                                setModalVisible(false);
+                            }}
+                        >
+                            <Icon
+                                name={selectedDateFilter === "all" ? "check-square-o" : "square-o"}
+                                size={20}
+                                color="#333"
+                            />
+                            <Text style={styles.optionText}>All</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => {
+                                setSelectedDateFilter("7 days");
+                                setModalVisible(false);
+                            }}
+                        >
+                            <Icon
+                                name={selectedDateFilter === "7 days" ? "check-square-o" : "square-o"}
+                                size={20}
+                                color="#333"
+                            />
+                            <Text style={styles.optionText}>7 days</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => {
+                                setSelectedDateFilter("10 days");
+                                setModalVisible(false);
+                            }}
+                        >
+                            <Icon
+                                name={selectedDateFilter === "10 days" ? "check-square-o" : "square-o"}
+                                size={20}
+                                color="#333"
+                            />
+                            <Text style={styles.optionText}>10 days</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => {
+                                setSelectedDateFilter("1 month");
+                                setModalVisible(false);
+                            }}
+                        >
+                            <Icon
+                                name={selectedDateFilter === "1 month" ? "check-square-o" : "square-o"}
+                                size={20}
+                                color="#333"
+                            />
+                            <Text style={styles.optionText}>1 month</Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.buttonContainer}>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Text style={styles.modalButtonText}>CANCEL</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Text style={styles.modalButtonText}>DONE</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -349,12 +470,19 @@ const styles = StyleSheet.create({
     },
     titleContainer: {
         display: "flex",
-        flexDirection: "row",
-        justifyContent: "space-between",
+        flexDirection: "column",
+        justifyContent: "flex-start",
         alignItems: "center",
         padding: 10,
         marginTop: 20,
         marginBottom: 20,
+    },
+    titleAndCountRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        width: "100%",
+        marginBottom: 10,
     },
     title: {
         fontSize: 26,
@@ -493,8 +621,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
     },
-    editButton: { // Style for edit button - changed background color to make it brighter
-        backgroundColor: COLORS.primary, // Changed from COLORS.secondary to COLORS.primary
+    editButton: {
+        backgroundColor: COLORS.primary,
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 20,
@@ -554,13 +682,78 @@ const styles = StyleSheet.create({
     flatListContent: {
         paddingBottom: 100,
     },
-    leadImage: { // Style for displaying lead image
+    leadImage: {
         width: '100%',
         height: 150,
         borderRadius: 10,
         marginTop: 10,
         marginBottom: 10,
         resizeMode: 'cover',
+    },
+    filterBox: {
+        backgroundColor: "rgba(192, 223, 248, 0.7)",
+        padding: 10,
+        borderRadius: 15,
+        borderColor:"rgba(192, 223, 248, 0.7)",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+       
+        minWidth: 180,
+    },
+    filterText: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginRight: 10,
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalView: {
+        backgroundColor: "white",
+        borderRadius: 20,
+        padding: 25,
+        alignItems: "flex-start",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '80%',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginBottom: 20,
+        textAlign: "left",
+    },
+    optionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    optionText: {
+        marginLeft: 15,
+        fontSize: 16,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        width: '100%',
+        marginTop: 20,
+    },
+    modalButtonText: {
+        fontSize: 16,
+        color: 'blue',
+        fontWeight: 'bold',
+        marginLeft: 20,
     },
 });
 

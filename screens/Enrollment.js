@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react"; // Import useRef for animation
 import {
     View,
     Text,
@@ -13,6 +13,8 @@ import {
     Image,
     Alert,
     ToastAndroid,
+    Animated, // Import Animated
+    Easing,   // Import Easing for animation timing
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -267,6 +269,63 @@ const Enrollment = ({ route, navigation }) => {
 
         const vacantSeatCount = vacantSeats[card._id] !== undefined ? vacantSeats[card._id] : "Loading...";
 
+        // Animated value for blinking effect
+        const opacityAnim = useRef(new Animated.Value(1)).current;
+        // Animated value for color change
+        const colorAnim = useRef(new Animated.Value(0)).current;
+
+        useEffect(() => {
+            if (vacantSeatCount > 0) {
+                // Start blinking opacity animation if vacant seats are available
+                Animated.loop(
+                    Animated.sequence([
+                        Animated.timing(opacityAnim, {
+                            toValue: 0.5,
+                            duration: 800,
+                            easing: Easing.inOut(Easing.ease),
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(opacityAnim, {
+                            toValue: 1,
+                            duration: 800,
+                            easing: Easing.inOut(Easing.ease),
+                            useNativeDriver: true,
+                        }),
+                    ])
+                ).start();
+
+                // Start color change animation
+                Animated.loop(
+                    Animated.sequence([
+                        Animated.timing(colorAnim, {
+                            toValue: 1,
+                            duration: 1000, // 1 second for color change
+                            easing: Easing.inOut(Easing.ease),
+                            useNativeDriver: false,
+                        }),
+                        Animated.timing(colorAnim, {
+                            toValue: 0,
+                            duration: 1000, // 1 second for color change
+                            easing: Easing.inOut(Easing.ease),
+                            useNativeDriver: false,
+                        }),
+                    ])
+                ).start();
+            } else {
+                // Stop all animations if no vacant seats
+                opacityAnim.setValue(1);
+                opacityAnim.stopAnimation();
+                colorAnim.setValue(0);
+                colorAnim.stopAnimation();
+            }
+        }, [vacantSeatCount]);
+
+        // Interpolate the color value
+        const animatedColor = colorAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['#FFD700', '#4CAF50'] // Yellow to Green
+        });
+
         return (
             <>
                 <View style={styles.cardHeader}>
@@ -281,12 +340,20 @@ const Enrollment = ({ route, navigation }) => {
                         {card.group_name || 'N/A'}
                     </Text>
                     <View style={styles.vacantSeatsContainer}>
-                        <Ionicons name="people-circle-outline" size={20} color={vacantSeatCount > 0 ? 'red' : colors.darkText} />
-                        <Text style={[
-                            styles.vacantSeatsText,
-                            vacantSeatCount > 0 ? styles.highlightedVacantSeats : { color: isSelected ? colors.text : colors.darkText }]}>
+                        <Ionicons
+                            name="people-outline"
+                            size={20}
+                            color={vacantSeatCount > 0 ? animatedColor : colors.darkText}
+                        />
+                        <Animated.Text // Apply animation to Animated.Text
+                            style={[
+                                styles.vacantSeatsText,
+                                vacantSeatCount > 0 && styles.highlightedVacantSeats,
+                                { color: isSelected ? colors.text : animatedColor, opacity: opacityAnim }
+                            ]}
+                        >
                             {vacantSeatCount} Vacant Seats
-                        </Text>
+                        </Animated.Text>
                     </View>
                 </View>
                 <View style={styles.cardDetailsRow}>
@@ -459,6 +526,17 @@ const Enrollment = ({ route, navigation }) => {
                                                                 },
                                                             ]}
                                                         >
+                                                            {/* Sticker logic here */}
+                                                            {primaryGroupType === 'new' && (
+                                                                <View style={[styles.stickerContainer, styles.newSticker]}>
+                                                                    <Text style={styles.stickerText}>NEW</Text>
+                                                                </View>
+                                                            )}
+                                                            {primaryGroupType === 'ongoing' && (
+                                                                <View style={[styles.stickerContainer, styles.freshSticker]}>
+                                                                    <Text style={styles.stickerText}>ONGOING</Text>
+                                                                </View>
+                                                            )}
                                                             {children}
                                                         </View>
                                                     );
@@ -736,17 +814,19 @@ const styles = StyleSheet.create({
     },
     vacantSeatsContainer: {
         flexDirection: 'row',
+         color: '#FFD700', // Changed to Yellow (Gold)
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 5,
     },
     vacantSeatsText: {
+         color: '#FFD700', // Changed to Yellow (Gold)
         fontSize: 14,
         fontWeight: 'bold',
         marginLeft: 5,
     },
     highlightedVacantSeats: {
-        color: 'red',
+        color: '#FFD700', // Changed to Yellow (Gold)
         fontWeight: 'bold',
     },
     cardDetailsRow: {
@@ -833,6 +913,28 @@ const styles = StyleSheet.create({
         color: '#fff', 
         fontSize: 16, 
         fontWeight: 'bold' 
+    },
+    // NEW STYLES FOR THE STICKERS
+    stickerContainer: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderTopRightRadius: 20,
+        borderBottomLeftRadius: 15,
+        zIndex: 1,
+    },
+    stickerText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    newSticker: {
+        backgroundColor: '#ffb300', 
+    },
+    freshSticker: {
+        backgroundColor: '#4CAF50', 
     },
 });
 
