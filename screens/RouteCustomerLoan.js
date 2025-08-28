@@ -1,5 +1,12 @@
-
-import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -23,7 +30,6 @@ const CustomerCard = ({ name, phone, onPress }) => (
   </TouchableOpacity>
 );
 
-
 const RouteCustomerLoan = ({ route, navigation }) => {
   const { user, areaId } = route.params;
 
@@ -34,11 +40,11 @@ const RouteCustomerLoan = ({ route, navigation }) => {
   useEffect(() => {
     const fetchLoanCustomers = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const response = await axios.get(
           `https://mychits.online/api/loans/get-all-borrowers`
         );
-        
+
         if (response.data) {
           setCustomers(response.data);
         } else {
@@ -47,7 +53,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching customer data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     };
 
@@ -57,7 +63,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-         colors={['#dbf6faff', '#90dafcff']}
+        colors={["#dbf6faff", "#90dafcff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -87,33 +93,39 @@ const RouteCustomerLoan = ({ route, navigation }) => {
               style={styles.searchInput}
             />
           </View>
-          {
-            loading ? (
-              <View style={{ marginTop: 30, alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#da8201" />
-              </View>
-            ) : (
-              <>
-                {Array.isArray(customers) &&
-  customers
-    .filter((customer) =>
-      customer.borrower?.full_name
-        ?.toLowerCase()
-        .includes(search.toLowerCase())
-    )
-    .map((customer, index) => (
-      <CustomerCard
-        key={index}
-        name={customer.borrower.full_name}
-        phone={customer.borrower.phone_number}
-        onPress={() =>
-          navigation.navigate("LoanPayin", { customer: customer._id })
-        }
-      />
-    ))}
-              </>
-            )
-          }
+          {loading ? (
+            <View style={{ marginTop: 30, alignItems: "center" }}>
+              <ActivityIndicator size="large" color="#da8201" />
+            </View>
+          ) : (
+            <>
+              {Array.isArray(customers) &&
+                customers
+                  .filter((customer) =>
+                    customer.borrower?.full_name
+                      ?.toLowerCase()
+                      .includes(search.toLowerCase())
+                  )
+                  .map((customer, index) => (
+                    <CustomerCard
+                      key={index}
+                      name={customer.borrower.full_name}
+                      phone={customer.borrower.phone_number}
+                      onPress={() =>
+                       
+
+                        navigation.navigate("LoanPayin", {
+                          customer: customer?.borrower?._id,
+                          loan_id:customer._id
+                        })
+
+
+                      
+                      }
+                    />
+                  ))}
+            </>
+          )}
         </ScrollView>
       </LinearGradient>
     </SafeAreaView>
@@ -127,16 +139,16 @@ const styles = StyleSheet.create({
   titleContainer: {
     marginTop: 40,
     marginBottom: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
     marginTop: 5,
   },
   searchContainer: {
@@ -145,8 +157,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 10,
-    width: '100%',
-    shadowColor: '#000',
+    width: "100%",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -167,13 +179,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 20,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderLeftWidth: 5,
-    borderColor: '#da8201',
-    shadowColor: '#000',
+    borderColor: "#da8201",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -181,29 +193,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   textContainer: {
     marginLeft: 15,
   },
   cardText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   cardSubText: {
     fontSize: 14,
-    color: '#888',
+    color: "#888",
     marginTop: 2,
   },
   cardIcon: {
     fontSize: 32,
-    color: '#da8201',
+    color: "#da8201",
   },
   arrowIcon: {
     fontSize: 22,
-    color: '#da8201',
+    color: "#da8201",
   },
 });
 

@@ -17,7 +17,6 @@ import LoanPrint from "../screens/LoanPrint";
 import PaymentList from "../screens/PaymentList";
 import ChitPayments from "../screens/ChitPayments";
 import Reprint from "../screens/Reprint";
-import LoanPrint from "../screens/LoanPrint";
 import PigmePrint from "../screens/PigmePrint";
 enableScreens();
 
