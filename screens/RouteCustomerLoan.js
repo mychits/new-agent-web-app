@@ -41,9 +41,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
     const fetchLoanCustomers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `https://mychits.online/api/loans/get-all-borrowers`
-        );
+        const response = await axios.get(`${baseUrl}/loans/get-all-borrowers`);
 
         if (response.data) {
           setCustomers(response.data);
@@ -112,17 +110,11 @@ const RouteCustomerLoan = ({ route, navigation }) => {
                       name={customer.borrower.full_name}
                       phone={customer.borrower.phone_number}
                       onPress={() =>
-                       
-
                         navigation.navigate("LoanPayin", {
                           customer: customer?.borrower?._id,
-                          loan_id:customer._id,
-                          custom_loan_id:customer.loan_id,
-
+                          loan_id: customer._id,
+                          custom_loan_id: customer.loan_id,
                         })
-
-
-                      
                       }
                     />
                   ))}

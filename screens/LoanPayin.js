@@ -168,7 +168,6 @@ const LoanPayin = ({ route, navigation }) => {
           transaction_id,
           receipt_no,
             total_amount: totalAmountResponse?.data?.totalAmount || 0,
-          total_amount: 500,
           custom_loan_id,
           isLoanPayment: true,
         });

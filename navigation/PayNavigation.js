@@ -22,7 +22,7 @@ enableScreens();
 const stack = createNativeStackNavigator();
 
 const PayNavigation = ({ route }) => {
-  const { user } = route.params;
+  const { user ,store_id} = route.params;
 
   return (
     <stack.Navigator>

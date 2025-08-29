@@ -21,7 +21,8 @@ import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
 
 const PigmePayin = ({ route, navigation }) => {
-    const { user, customer } = route.params;
+    const { user, customer ,pigme_id,custom_pigme_id} = route.params;
+   
     //const [loanData, setPigmeData] = useState([]);
     const [currentDate, setCurrentDate] = useState("");
     const [receipt, setReceipt] = useState({});
@@ -36,31 +37,13 @@ const PigmePayin = ({ route, navigation }) => {
     const [selectedPigme, setSelectedPigme] = useState(null);
     const [agent, setAgent] = useState([]);
 
-    // useEffect(() => {
-    // 	const fetchCustomer = async () => {
-    // 		try {
-    // 			const response = await axios.get(
-    // 				`https://mychits.online/api/pigme/get-pigme/${customer}`
-    // 			);
-    //             console.info(response?.data,"let fjghsfg");
-    // 			if (response.data) {
-    // 				setCustomerInfo(response.data?.customer);
-    // 			} else {
-    // 				console.error("Unexpected API response format:", response.data);
-    // 			}
-    // 		} catch (error) {
-    // 			console.error("Error fetching customer data:", error);
-    // 		}
-    // 	};
 
-    // 	fetchCustomer();
-    // }, [customer]);
 
     useEffect(() => {
         const fetchCustomerPigme = async () => {
             try {
                 const response = await axios.get(
-                    `${baseUrl}/pigme/get-pigme/${customer}`
+                    `${baseUrl}/pigme/get-pigme/${pigme_id}`
                 );
                 console.log(response.data?.customer, "checking dhf");
                 if (response.data.customer) {
@@ -86,7 +69,7 @@ const PigmePayin = ({ route, navigation }) => {
         const fetchReceipt = async () => {
             try {
                 const response = await axios.get(
-                    `${url}/payment/get-latest-receipt`
+                    `${baseUrl}/payment/get-latest-receipt`
                 );
 
                 setReceipt(response.data);
@@ -144,17 +127,17 @@ const PigmePayin = ({ route, navigation }) => {
             const data = {
                 user_id: selectedPigme?.customer?._id,
                 pay_date: new Date().toISOString().split("T")[0],
-                receipt_no: receipt.receipt_no ? receipt.receipt_no.toString() : "",
+              
                 pay_type: paymentDetails,
                 amount: amount,
                 transaction_id: transactionId,
-                collected_by: agent._id,
+                collected_by: user?.userId,
                 pay_for: "Pigme",
 
             };
             const PigmeId = selectedPigme?._id;
             const response = await axios.post(
-                `${url}/payment/pigme/${PigmeId}`,
+                `${baseUrl}/payment/pigme/${PigmeId}`,
                 data
             );
             if (response.status === 201) {
@@ -171,13 +154,12 @@ const PigmePayin = ({ route, navigation }) => {
 		console.log("level two");
 		
         const { name } = agentResponse.data;
-        // need to chnaged
-        // re format loan print page ,loan/-id
+      
         const totalAmountResponse = await axios.post(
           `${baseUrl}/payment/get-total-amount`,
-          { user_id: customer, loan: loanId }
+          { user_id: customer, pigme: pigme_id }
         );
-		console.log("level three",loanId,customer,"this sis its");
+		
 
         console.log(
           full_name,
@@ -191,7 +173,7 @@ const PigmePayin = ({ route, navigation }) => {
          
           "hejejek jhakhsakjas thjahksakjsahsjhkjsdhkjsdahkjsdhksdajhsdajksdajk"
         );
-
+console.log("level 3")
         navigation.navigate("PigmePrint", {
           customer_name: full_name,
           phone_number,
@@ -201,8 +183,8 @@ const PigmePayin = ({ route, navigation }) => {
           pay_date,
           transaction_id,
           receipt_no,
-        //   total_amount: totalAmountResponse?.data?.totalAmount,
-		total_amount:500,
+          total_amount: totalAmountResponse?.data?.totalAmount || 0,
+		custom_pigme_id,
           isPigmePayment: true,
           pigme_id: PigmeId,
         });

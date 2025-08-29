@@ -36,7 +36,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
       try {
         setLoading(true)
         const response = await axios.get(
-          `https://mychits.online/api/pigme/get-all-pigme-customers`
+          `${baseUrl}/pigme/get-all-pigme-customers`
         );
         console.log(response.data, "checking");
         if (response.data) {
@@ -106,8 +106,9 @@ const RouteCustomerPigme = ({ route, navigation }) => {
                         key={index}
                         name={item.customer?.full_name || "Unknown Customer"}
                         phone={item.customer?.phone_number || "N/A"}
-                        onPress={() =>
-                          navigation.navigate("PigmePayin", { user, customer: item.customer?._id, pigme_id: item._id })
+                        onPress={() =>{
+                          console.log("begins here \n",item,"this si skjhakjhka")
+                          navigation.navigate("PigmePayin", { user, customer: item.customer?._id, pigme_id: item._id ,custom_pigme_id:item?.pigme_id})}
                         }
                       />
                     ))}
