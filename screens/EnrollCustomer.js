@@ -198,7 +198,9 @@ const EnrollCustomer = ({ route, navigation }) => {
 									<Text style={styles.myLeadsButtonText}>Skip</Text>
 								</TouchableOpacity>
 							</View>
-							<View style={styles.contentContainer}>
+							
+							{/* New content box starts here */}
+							<View style={styles.contentBox}>
 								<Text style={styles.label}>
 									Customer Type
 								</Text>
@@ -311,6 +313,7 @@ const EnrollCustomer = ({ route, navigation }) => {
 									/>
 								)}
 							</View>
+							{/* New content box ends here */}
 						</View>
 					</ScrollView>
 				</KeyboardAvoidingView>
@@ -377,8 +380,16 @@ const styles = StyleSheet.create({
 		shadowRadius: 5,
 		elevation: 3,
 	},
-	contentContainer: {
-		marginTop: -4,
+	contentBox: {
+		backgroundColor: COLORS.white,
+		borderRadius: 20,
+		padding: 20,
+		marginBottom: 20,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.1,
+		shadowRadius: 10,
+		elevation: 5,
 	},
 	tabContainer: {
 		flexDirection: "row",

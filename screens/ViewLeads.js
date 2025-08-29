@@ -8,7 +8,8 @@ import {
     ActivityIndicator,
     Image,
     Linking,
-    Modal
+    Modal,
+    TextInput
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -38,6 +39,7 @@ const ViewLeads = ({ route, navigation }) => {
     const [expandedLeadId, setExpandedLeadId] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedDateFilter, setSelectedDateFilter] = useState("all");
+    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         setCurrentDate(moment().format("DD-MM-YYYY"));
@@ -139,20 +141,25 @@ const ViewLeads = ({ route, navigation }) => {
             return leads;
         }
 
-        const today = moment();
-        let daysToSubtract = 0;
+        let cutoffDate;
 
         if (filter === "7 days") {
-            daysToSubtract = 7;
+            cutoffDate = moment().subtract(7, 'days').startOf('day');
         } else if (filter === "10 days") {
-            daysToSubtract = 10;
+            cutoffDate = moment().subtract(10, 'days').startOf('day');
         } else if (filter === "1 month") {
-            daysToSubtract = 30;
+            cutoffDate = moment().subtract(1, 'months').startOf('day');
+        } else if (filter === "2 months") {
+            cutoffDate = moment().subtract(2, 'months').startOf('day');
+        } else if (filter === "1 year") {
+            cutoffDate = moment().subtract(1, 'years').startOf('day');
         }
 
-        const cutoffDate = today.subtract(daysToSubtract, 'days').startOf('day');
-
         return leads.filter(lead => moment(lead.createdAt).isAfter(cutoffDate));
+    };
+
+    const searchFilterFunction = (text) => {
+        setSearchQuery(text);
     };
 
     const renderLeadCard = ({ item }) => {
@@ -253,7 +260,17 @@ const ViewLeads = ({ route, navigation }) => {
     const dataLoaded = activeTab === "CHIT" ? chitLoaded : goldLoaded;
     const allLeads = activeTab === "CHIT" ? chitLeads : goldLeads;
 
-    const leads = getFilteredLeads(allLeads, selectedDateFilter);
+    // Filter leads by date and search query
+    const leadsByDate = getFilteredLeads(allLeads, selectedDateFilter);
+    const filteredLeads = searchQuery
+        ? leadsByDate.filter((item) => {
+            const itemData = `${item.lead_name.toUpperCase()} ${item.lead_phone.toUpperCase()} ${
+                item.group_id ? item.group_id.group_name.toUpperCase() : ""
+            }`;
+            const textData = searchQuery.toUpperCase();
+            return itemData.indexOf(textData) > -1;
+        })
+        : leadsByDate;
     
     const noDataMessage =
         activeTab === "CHIT" ? "No chit leads found" : "No gold leads found";
@@ -277,13 +294,26 @@ const ViewLeads = ({ route, navigation }) => {
                                     {chitLeads.length + goldLeads.length || 0}
                                 </Text>
                             </View>
-                            <TouchableOpacity 
-                                style={styles.filterBox} 
-                                onPress={() => setModalVisible(true)}
-                            >
-                                <Text style={styles.filterText}>Leads Report: {selectedDateFilter === "all" ? "All" : selectedDateFilter}</Text>
-                                <Icon name="caret-down" size={20} color="#000" />
-                            </TouchableOpacity>
+                            {/* New container for search and filter */}
+                            <View style={styles.searchAndFilterContainer}>
+                                <View style={styles.searchBarContainer}>
+                                    <Icon name="search" size={20} color="#888" style={styles.searchIcon} />
+                                    <TextInput
+                                        style={styles.searchBar}
+                                        placeholder="Search leads..."
+                                        onChangeText={searchFilterFunction}
+                                        value={searchQuery}
+                                        autoCapitalize="none"
+                                    />
+                                </View>
+                                <TouchableOpacity 
+                                    style={styles.filterBox} 
+                                    onPress={() => setModalVisible(true)}
+                                >
+                                    <Icon name="filter" size={18} color="#000" style={styles.filterIcon} />
+                                    <Text style={styles.filterText}>{selectedDateFilter === "all" ? "All" : selectedDateFilter}</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         <View style={styles.container}>
@@ -337,15 +367,15 @@ const ViewLeads = ({ route, navigation }) => {
                                         style={{ marginTop: 20 }}
                                     />
                                 )}
-                                {!isLoading && dataLoaded && leads.length > 0 && (
+                                {!isLoading && dataLoaded && filteredLeads.length > 0 && (
                                     <FlatList
-                                        data={leads}
+                                        data={filteredLeads}
                                         keyExtractor={(item, index) => item._id || index.toString()}
                                         renderItem={renderLeadCard}
                                         contentContainerStyle={styles.flatListContent}
                                     />
                                 )}
-                                {!isLoading && dataLoaded && leads.length === 0 && (
+                                {!isLoading && dataLoaded && filteredLeads.length === 0 && (
                                     <View style={styles.noDataContainer}>
                                         <Image source={noImage} style={styles.noImage} />
                                         <Text style={styles.noDataText}>{noDataMessage}</Text>
@@ -449,6 +479,36 @@ const ViewLeads = ({ route, navigation }) => {
                             <Text style={styles.optionText}>1 month</Text>
                         </TouchableOpacity>
 
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => {
+                                setSelectedDateFilter("2 months");
+                                setModalVisible(false);
+                            }}
+                        >
+                            <Icon
+                                name={selectedDateFilter === "2 months" ? "check-square-o" : "square-o"}
+                                size={20}
+                                color="#333"
+                            />
+                            <Text style={styles.optionText}>2 months</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => {
+                                setSelectedDateFilter("1 year");
+                                setModalVisible(false);
+                            }}
+                        >
+                            <Icon
+                                name={selectedDateFilter === "1 year" ? "check-square-o" : "square-o"}
+                                size={20}
+                                color="#333"
+                            />
+                            <Text style={styles.optionText}>1 year</Text>
+                        </TouchableOpacity>
+
                         <View style={styles.buttonContainer}>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <Text style={styles.modalButtonText}>CANCEL</Text>
@@ -496,7 +556,14 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        marginTop: 20,
+        marginTop: -3,
+    },
+    searchAndFilterContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 10,
     },
     tabContainer: {
         flexDirection: "row",
@@ -692,23 +759,27 @@ const styles = StyleSheet.create({
     },
     filterBox: {
         backgroundColor: "rgba(192, 223, 248, 0.7)",
-        padding: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 15,
         borderRadius: 15,
         borderColor:"rgba(192, 223, 248, 0.7)",
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "center",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 5,
-       
-        minWidth: 180,
+        flex: 3,
+        height: 50,
+    },
+    filterIcon: {
+        marginRight: 5,
+        fontSize: 16,
     },
     filterText: {
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: "bold",
-        marginRight: 10,
     },
     centeredView: {
         flex: 1,
@@ -747,13 +818,36 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-end',
         width: '100%',
-        marginTop: 20,
+        marginTop: 30,
     },
     modalButtonText: {
         fontSize: 16,
         color: 'blue',
         fontWeight: 'bold',
         marginLeft: 20,
+    },
+    searchBarContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: 25,
+        paddingHorizontal: 15,
+        flex: 7,
+        height: 50,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+        marginRight: 10,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchBar: {
+        flex: 1,
+        height: 50,
+        color: '#333'
     },
 });
 

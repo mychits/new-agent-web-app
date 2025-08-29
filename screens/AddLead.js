@@ -1,372 +1,508 @@
 import {
     View,
     Text,
+    FlatList,
     StyleSheet,
-    TextInput,
-    Alert, // Keep Alert for now, but consider custom modals for production
-    KeyboardAvoidingView,
-    Platform,
     ScrollView,
     TouchableOpacity,
-    ActivityIndicator
+    ActivityIndicator,
+    Image,
+    Linking,
+    Modal,
+    TextInput
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
-import { LinearGradient } from "expo-linear-gradient";
-import Icon from "react-native-vector-icons/FontAwesome";
-
 import COLORS from "../constants/color";
 import Header from "../components/Header";
-import Button from "../components/Button";
-import chitBaseUrl from "../constants/baseUrl";
+import baseUrl from "../constants/baseUrl";
 import goldBaseUrl from "../constants/goldBaseUrl";
+import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import Icon from "react-native-vector-icons/FontAwesome";
+const noImage = require("../assets/no.png");
 
-const AddLead = ({ route, navigation }) => {
+const ViewLeads = ({ route, navigation }) => {
     const { user } = route.params;
 
     const [currentDate, setCurrentDate] = useState("");
     const [receipt, setReceipt] = useState({});
-    // Removed unused states: paymentDetails, amount, transactionId, additionalInfo
-    const [isLoading, setIsLoading] = useState(false);
+    const [chitLeads, setChitLeads] = useState([]);
+    const [goldLeads, setGoldLeads] = useState([]);
+    const [isChitLoading, setIsChitLoading] = useState(false);
+    const [isGoldLoading, setIsGoldLoading] = useState(false);
+    const [chitLoaded, setChitLoaded] = useState(false);
+    const [goldLoaded, setGoldLoaded] = useState(false);
+    const [activeTab, setActiveTab] = useState('chit');
+    const [isFilterModalVisible, setFilterModalVisible] = useState(false);
+    const [selectedFilter, setSelectedFilter] = useState("all");
+    const [filteredChitLeads, setFilteredChitLeads] = useState([]);
+    const [filteredGoldLeads, setFilteredGoldLeads] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchChitLeads, setSearchChitLeads] = useState([]);
+    const [searchGoldLeads, setSearchGoldLeads] = useState([]);
+    const [isSearchActive, setIsSearchActive] = useState(false);
 
-    const [customerInfo, setCustomerInfo] = useState({
-        full_name: "",
-        phone_number: "",
-        profession: "", // Initial state for profession
-    });
-
-    const [groups, setGroups] = useState([]);
-    // Removed unused state: tickets (selectedTicket is used directly)
-    const [selectedGroup, setSelectedGroup] = useState("");
-    const [selectedTicket, setSelectedTicket] = useState("chit"); // Set an initial value for the active tab
-
-    useEffect(() => {
-        const fetchGroups = async () => {
-            const currentUrl =
-                selectedTicket === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
-
-            try {
-                const response = await axios.get(`${currentUrl}/group/get-group`);
-                if (response.data) {
-                    setGroups(response.data || []);
-                    // Reset selected group when ticket type changes to avoid invalid selection
-                    setSelectedGroup("");
-                } else {
-                    console.error("No data in response");
-                    setGroups([]);
-                }
-            } catch (error) {
-                console.error("Error fetching groups:", error.message);
-                setGroups([]);
-            }
-        };
-
-        if (selectedTicket) {
-            fetchGroups();
-        }
-    }, [selectedTicket]);
+    useFocusEffect(
+        useCallback(() => {
+            fetchChitLeads();
+            fetchGoldLeads();
+            setCurrentDate(moment().format("MMMM Do, YYYY"));
+        }, [])
+    );
 
     useEffect(() => {
-        const today = moment().format("DD-MM-YYYY");
-        setCurrentDate(today);
-    }, []);
+        applySearch();
+    }, [searchQuery, activeTab, filteredChitLeads, filteredGoldLeads]);
 
-    useEffect(() => {
-        const fetchAgentData = async () => {
-            try {
-                const response = await axios.get(
-                    `${chitBaseUrl}/agent/get-agent-by-id/${user.userId}`
-                );
-                setReceipt(response.data);
-            } catch (error) {
-                console.error("Error fetching agent data:", error);
-            }
-        };
-        fetchAgentData();
-    }, [user.userId]);
-
-    const handleInputChange = (field, value) => {
-        setCustomerInfo({ ...customerInfo, [field]: value });
+    const isToday = (date) => {
+        return moment(date).isSame(moment(), 'day');
     };
 
-    const handleAddLead = async () => {
-        setIsLoading(true);
-        const baseUrl =
-            selectedTicket === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
-
-        if (
-            !customerInfo.full_name ||
-            !customerInfo.phone_number ||
-            !customerInfo.profession || // Added validation for profession
-            !selectedTicket ||
-            !selectedGroup
-        ) {
-            // Using Alert.alert as per original code, but consider a custom modal for better UX
-            Alert.alert("Required", "Please fill out all fields!");
-            setIsLoading(false);
-            return;
-        }
-
+    const fetchChitLeads = async () => {
+        setIsChitLoading(true);
         try {
-            const data = {
-                lead_name: customerInfo.full_name,
-                lead_phone: customerInfo.phone_number,
-                lead_profession: customerInfo.profession, // Uses the selected profession
-                group_id: selectedGroup,
-                lead_type: "agent",
-                scheme_type: selectedTicket,
-                lead_agent: selectedTicket === "chit" ? user.userId : receipt.name,
-                agent_number: receipt.phone_number,
-            };
-
-            const response = await axios.post(`${baseUrl}/lead/add-lead`, data);
-
-            if (response.status === 201) {
-                Alert.alert("Success", "Lead added successfully!");
-                setCustomerInfo({
-                    full_name: "",
-                    phone_number: "",
-                    profession: "", // Reset profession after successful submission
-                });
-                setSelectedGroup("");
-                setSelectedTicket("chit"); // Reset the active tab
-                navigation.navigate("ViewLeads", { user: user });
-            } else {
-                console.log("Error:", response.data);
-                Alert.alert("Error", response.data?.message || "Error adding lead.");
+            const response = await axios.get(`${baseUrl}/api/chitLeads/${user._id}`);
+            const data = response.data;
+            if (data.success) {
+                setChitLeads(data.data);
+                setFilteredChitLeads(data.data);
             }
         } catch (error) {
-            console.error("Error adding lead:", error);
-            Alert.alert("Error", "Error adding lead. Please try again.");
+            console.log(error);
         } finally {
-            setIsLoading(false);
+            setIsChitLoading(false);
         }
+    };
+
+    const fetchGoldLeads = async () => {
+        setIsGoldLoading(true);
+        try {
+            const response = await axios.get(`${goldBaseUrl}/api/leads/${user._id}`);
+            const data = response.data;
+            if (data.success) {
+                setGoldLeads(data.data);
+                setFilteredGoldLeads(data.data);
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setIsGoldLoading(false);
+        }
+    };
+
+    const toggleFilterModal = () => {
+        setFilterModalVisible(!isFilterModalVisible);
+    };
+
+    const handleFilterSelection = (filter) => {
+        setSelectedFilter(filter);
+        if (activeTab === 'chit') {
+            applyChitFilter(filter);
+        } else {
+            applyGoldFilter(filter);
+        }
+        toggleFilterModal();
+    };
+
+    const applyChitFilter = (filter) => {
+        let leadsToFilter = [...chitLeads];
+        if (filter === 'today') {
+            leadsToFilter = leadsToFilter.filter(lead => isToday(lead.date));
+        } else if (filter === 'last7Days') {
+            const sevenDaysAgo = moment().subtract(7, 'days');
+            leadsToFilter = leadsToFilter.filter(lead => moment(lead.date).isSameOrAfter(sevenDaysAgo, 'day'));
+        } else if (filter === 'thisMonth') {
+            leadsToFilter = leadsToFilter.filter(lead => moment(lead.date).isSame(moment(), 'month'));
+        }
+        setFilteredChitLeads(leadsToFilter);
+    };
+
+    const applyGoldFilter = (filter) => {
+        let leadsToFilter = [...goldLeads];
+        if (filter === 'today') {
+            leadsToFilter = leadsToFilter.filter(lead => isToday(lead.date));
+        } else if (filter === 'last7Days') {
+            const sevenDaysAgo = moment().subtract(7, 'days');
+            leadsToFilter = leadsToFilter.filter(lead => moment(lead.date).isSameOrAfter(sevenDaysAgo, 'day'));
+        } else if (filter === 'thisMonth') {
+            leadsToFilter = leadsToFilter.filter(lead => moment(lead.date).isSame(moment(), 'month'));
+        }
+        setFilteredGoldLeads(leadsToFilter);
+    };
+
+    const handleSearchChange = (query) => {
+        setSearchQuery(query);
+    };
+
+    const applySearch = () => {
+        setIsSearchActive(searchQuery.length > 0);
+        if (activeTab === 'chit') {
+            const results = filteredChitLeads.filter(lead =>
+                lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                lead.contactNumber.includes(searchQuery)
+            );
+            setSearchChitLeads(results);
+        } else {
+            const results = filteredGoldLeads.filter(lead =>
+                lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                lead.contactNumber.includes(searchQuery)
+            );
+            setSearchGoldLeads(results);
+        }
+    };
+
+    const renderItem = ({ item }) => {
+        const formattedDate = isToday(item.date) ? "Today" : moment(item.date).format('DD/MM/YYYY');
+        const formattedTime = moment(item.date).format('h:mm A');
+        const currentData = activeTab === "chit" ? chitLeads : goldLeads;
+
+        return (
+            <View style={styles.leadCard}>
+                <View style={styles.cardHeader}>
+                    <Text style={styles.leadName}>{item.name}</Text>
+                    <View style={styles.dateTimeContainer}>
+                        <Text style={styles.dateTimeText}>{formattedTime}</Text>
+                        <Text style={styles.dateTimeText}>{formattedDate}</Text>
+                    </View>
+                </View>
+                <View style={styles.cardBody}>
+                    <Text style={styles.leadInfo}>
+                        <Icon name="phone" size={12} color="#000" /> {item.contactNumber}
+                    </Text>
+                    {item.email && (
+                        <Text style={styles.leadInfo}>
+                            <Icon name="envelope" size={12} color="#000" /> {item.email}
+                        </Text>
+                    )}
+                    <Text style={styles.leadInfo}>
+                        <Icon name="user" size={12} color="#000" /> {item.source}
+                    </Text>
+                    <Text style={styles.leadInfo}>
+                        <Icon name="info-circle" size={12} color="#000" /> {item.reference}
+                    </Text>
+                    {item.chitName && (
+                        <Text style={styles.leadInfo}>
+                            <Icon name="inr" size={12} color="#000" /> {item.chitName}
+                        </Text>
+                    )}
+                </View>
+                <View style={styles.cardFooter}>
+                    <TouchableOpacity
+                        style={styles.callButton}
+                        onPress={() => Linking.openURL(`tel:${item.contactNumber}`)}
+                    >
+                        <Icon name="phone" size={16} color="white" />
+                        <Text style={styles.callButtonText}>Call</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+        <SafeAreaView style={styles.safeArea}>
             <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+                colors={['#f0f0f0', '#ffffff']}
+                style={styles.gradient}
             >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={styles.container}
-                >
-                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                        <View style={{ marginHorizontal: 22, marginTop: 12 }}>
-                            <Header />
-                            <View style={styles.titleContainer}>
-                                <Text style={styles.title}>Add Lead</Text>
-                                <TouchableOpacity
-                                    style={styles.myLeadsButton}
-                                    onPress={() => navigation.navigate("ViewLeads", { user: user })}
-                                >
-                                    <Text style={styles.myLeadsButtonText}>My Leads</Text>
-                                </TouchableOpacity>
-                            </View>
+                <Header title="All Leads" />
+                <View style={styles.searchBarContainer}>
+                    <TextInput
+                        style={styles.searchBar}
+                        placeholder="Search by name or number..."
+                        value={searchQuery}
+                        onChangeText={handleSearchChange}
+                    />
+                    <TouchableOpacity onPress={toggleFilterModal}>
+                        <Icon name="filter" size={20} color="black" />
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'chit' && styles.activeTab]}
+                        onPress={() => setActiveTab('chit')}
+                    >
+                        <Text style={styles.tabText}>Chit Leads</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'gold' && styles.activeTab]}
+                        onPress={() => setActiveTab('gold')}
+                    >
+                        <Text style={styles.tabText}>Gold Leads</Text>
+                    </TouchableOpacity>
+                </View>
 
-                            <View style={styles.contentContainer}>
-                                <Text style={styles.label}>Name</Text>
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder="Enter Name"
-                                    keyboardType="default"
-                                    value={customerInfo.full_name}
-                                    onChangeText={(value) =>
-                                        handleInputChange("full_name", value)
-                                    }
-                                />
-
-                                <Text style={styles.label}>Phone Number</Text>
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder="Enter Phone Number"
-                                    keyboardType="phone-pad"
-                                    value={customerInfo.phone_number}
-                                    onChangeText={(value) =>
-                                        handleInputChange("phone_number", value)
-                                    }
-                                />
-
-                                <Text style={styles.label}>Profession</Text>
-                                <View style={styles.pickerContainer}>
-                                    <Picker
-                                        selectedValue={customerInfo.profession}
-                                        onValueChange={(itemValue) =>
-                                            handleInputChange("profession", itemValue)
-                                        }
-                                    >
-                                        <Picker.Item label="Select Profession" value="" />
-                                        <Picker.Item label="Employed" value="Employed" />
-                                        <Picker.Item label="Self-Employed" value="Self-Employed" />
-                                    </Picker>
-                                </View>
-
-                                {/* Corrected tab rendering to use selectedTicket state */}
-                                <View style={styles.tabContainer}>
-                                    <TouchableOpacity
-                                        style={[styles.tab, selectedTicket === "chit" && styles.activeTab]}
-                                        onPress={() => setSelectedTicket("chit")}
-                                    >
-                                        <Text style={[styles.tabText, selectedTicket === "chit" && styles.activeTabText]}>
-                                            Chit
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.tab, selectedTicket === "gold" && styles.activeTab]}
-                                        onPress={() => setSelectedTicket("gold")}
-                                    >
-                                        <Text style={[styles.tabText, selectedTicket === "gold" && styles.activeTabText]}>
-                                            Gold
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-
-                                <Text style={styles.label}>Group</Text>
-                                <View style={styles.pickerContainer}>
-                                    <Picker
-                                        selectedValue={selectedGroup}
-                                        onValueChange={(value) => setSelectedGroup(value)}
-                                    >
-                                        <Picker.Item label="Select Group" value="" />
-                                        {groups.map((group) => (
-                                            <Picker.Item
-                                                key={group._id}
-                                                label={group.group_name}
-                                                value={group._id}
-                                            />
-                                        ))}
-                                    </Picker>
-                                </View>
-
-                                <Button
-                                    title={isLoading ? "Please wait..." : "Add Lead"}
-                                    filled
-                                    style={{
-                                        marginTop: 18,
-                                        marginBottom: 4,
-                                        backgroundColor: isLoading ? "gray" : COLORS.third,
-                                    }}
-                                    onPress={handleAddLead}
-                                />
-                            </View>
+                {isChitLoading || isGoldLoading ? (
+                    <ActivityIndicator size="large" color={COLORS.primary} style={styles.loadingIndicator} />
+                ) : (
+                    <ScrollView style={styles.scrollView}>
+                        <View style={styles.flatListContainer}>
+                            <Text style={styles.listHeader}>
+                                Leads for {currentDate}
+                            </Text>
+                            <FlatList
+                                data={activeTab === 'chit' ? (isSearchActive ? searchChitLeads : filteredChitLeads) : (isSearchActive ? searchGoldLeads : filteredGoldLeads)}
+                                renderItem={renderItem}
+                                keyExtractor={(item, index) => item._id || index.toString()}
+                                ListEmptyComponent={
+                                    <View style={styles.noDataContainer}>
+                                        <Image source={noImage} style={styles.noImage} />
+                                        <Text style={styles.noDataText}>No leads found.</Text>
+                                    </View>
+                                }
+                            />
                         </View>
                     </ScrollView>
-                </KeyboardAvoidingView>
+                )}
             </LinearGradient>
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isFilterModalVisible}
+                onRequestClose={toggleFilterModal}
+            >
+                <View style={styles.modalView}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Filter Leads</Text>
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => handleFilterSelection('all')}
+                        >
+                            <Icon
+                                name={selectedFilter === "all" ? "check-circle" : "circle-o"}
+                                size={20}
+                                color="black"
+                            />
+                            <Text style={styles.optionText}>All</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => handleFilterSelection('today')}
+                        >
+                            <Icon
+                                name={selectedFilter === "today" ? "check-circle" : "circle-o"}
+                                size={20}
+                                color="black"
+                            />
+                            <Text style={styles.optionText}>Today</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => handleFilterSelection('last7Days')}
+                        >
+                            <Icon
+                                name={selectedFilter === "last7Days" ? "check-circle" : "circle-o"}
+                                size={20}
+                                color="black"
+                            />
+                            <Text style={styles.optionText}>Last 7 Days</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.optionItem}
+                            onPress={() => handleFilterSelection('thisMonth')}
+                        >
+                            <Icon
+                                name={selectedFilter === "thisMonth" ? "check-circle" : "circle-o"}
+                                size={20}
+                                color="black"
+                            />
+                            <Text style={styles.optionText}>This Month</Text>
+                        </TouchableOpacity>
+                        <View style={styles.buttonContainer}>
+                            <TouchableOpacity onPress={toggleFilterModal}>
+                                <Text style={styles.modalButtonText}>Close</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    gradientOverlay: {
+    safeArea: {
         flex: 1,
     },
-    container: {
+    gradient: {
         flex: 1,
+        paddingHorizontal: 20,
     },
-    titleContainer: {
-        display: "flex",
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: 10,
-        marginTop: 20,
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 26,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    myLeadsButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        backgroundColor: COLORS.primary,
+    searchBarContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: 25,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        marginBottom: 15,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
         elevation: 5,
     },
-    myLeadsButtonText: {
-        color: COLORS.white,
-        fontWeight: 'bold',
-    },
-    label: {
+    searchBar: {
+        flex: 1,
         fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-        marginTop: 10,
-    },
-    textInput: {
-        height: 50,
-        width: "100%",
-        backgroundColor: COLORS.white,
-        borderColor: "#d0d0d0",
-        borderWidth: 1,
-        borderRadius: 15,
-        paddingHorizontal: 15,
-        marginVertical: 10,
-        color: "#000",
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-    },
-    contentContainer: {
-        marginTop: -4,
     },
     tabContainer: {
-        flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
-        borderRadius: 15,
-        marginBottom: 10,
-        padding: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        marginTop: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 15,
     },
     tab: {
-        flex: 1,
         paddingVertical: 10,
-        alignItems: "center",
-        borderRadius: 12,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        backgroundColor: '#e0e0e0',
     },
     activeTab: {
-        backgroundColor: '#da8201',
+        backgroundColor: COLORS.primary,
     },
     tabText: {
         fontSize: 16,
-        color: "#666",
-        fontWeight: "500",
-    },
-    activeTabText: {
-        color: '#333',
         fontWeight: 'bold',
+        color: 'black',
     },
-    pickerContainer: {
-        backgroundColor: COLORS.white,
+    loadingIndicator: {
+        marginTop: 50,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    flatListContainer: {
+        marginBottom: 20,
+    },
+    listHeader: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: COLORS.primary,
+        textAlign: 'center',
+    },
+    leadCard: {
+        backgroundColor: 'white',
         borderRadius: 15,
-        borderWidth: 1,
-        borderColor: "#d0d0d0",
-        marginVertical: 10,
+        padding: 15,
+        marginBottom: 15,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
+        shadowRadius: 4,
+        elevation: 5,
     },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        paddingBottom: 10,
+        marginBottom: 10,
+    },
+    leadName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    dateTimeContainer: {
+        alignItems: 'flex-end',
+    },
+    dateTimeText: {
+        fontSize: 12,
+        color: '#777',
+    },
+    cardBody: {
+        marginBottom: 10,
+    },
+    leadInfo: {
+        fontSize: 14,
+        marginBottom: 5,
+        color: '#555',
+    },
+    cardFooter: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
+    callButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#4CAF50',
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderRadius: 20,
+    },
+    callButtonText: {
+        color: 'white',
+        marginLeft: 10,
+        fontWeight: 'bold',
+    },
+    noDataContainer: {
+        alignItems: 'center',
+        marginTop: 50,
+    },
+    noImage: {
+        width: 150,
+        height: 150,
+        marginBottom: 20,
+    },
+    noDataText: {
+        fontSize: 18,
+        color: '#888',
+        textAlign: 'center',
+    },
+    modalView: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 22,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        margin: 20,
+        backgroundColor: "white",
+        borderRadius: 20,
+        padding: 25,
+        alignItems: "flex-start",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '80%',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginBottom: 20,
+        textAlign: "left",
+    },
+    optionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    optionText: {
+        marginLeft: 15,
+        fontSize: 16,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        width: '100%',
+        marginTop: 30,
+    },
+    modalButtonText: {
+        fontSize: 16,
+        color: 'blue',
+        fontWeight: 'bold',
+        marginLeft: 20,
+    }
 });
 
-export default AddLead;
+export default ViewLeads;
