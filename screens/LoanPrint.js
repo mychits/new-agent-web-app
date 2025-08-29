@@ -203,7 +203,7 @@ Collected by: ${agent_name}
   };
 
   const groupOrLoanDisplay = isLoanPayment
-    ? `Loan ID: ${"loan_id"}`
+    ? `Loan ID: ${"loan"}`
     : `Loan Amount: ${"group"|| ""} `;
 
   return (

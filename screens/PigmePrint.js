@@ -14,27 +14,25 @@ import { useNavigation } from '@react-navigation/native';
 
 const PigmePrint = ({ route }) => {
   const navigation = useNavigation();
-  const { user, store_id } = route.params
+ const {
+    customer_name,
+    phone_number,
+    agent_name,
+    total_amount,
+    pay_date,
+    amount,
+    pay_type,
+    transaction_id,
+    receipt_no,
+    isPigmePayment,
+    pigme_id,
+  } = route.params;
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
   const [payInfo, setPayInfo] = useState({})
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        const response = await axios.get(
-          `${baseUrl}/payment/get-payment-by-id/${store_id}`
-        );
-        setPayInfo(response.data)
-        console.log(response.data)
-      } catch (error) {
-        console.error("Error fetching payment data:", error);
-      }
-    };
 
-    fetchDetails();
-  }, [store_id]);
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -55,35 +53,49 @@ const PigmePrint = ({ route }) => {
       return;
     }
 
+    const centerText = (text, lineWidth = 40) => {
+      const totalPadding = lineWidth - text.length;
+      const paddingStart = Math.floor(totalPadding / 3);
+      return " ".repeat(paddingStart) + text;
+    };
+
+    const receiptType = isPigmePayment ? "Pigme Receipt" : "Receipt";
+    const groupOrPigme = isPigmePayment
+  ? `Pigme ID: ${pigme_id || "N/A"}`
+  : `Group: N/A`;
+
     const receiptText = `
-Receipt Preview
+${centerText("MY CHITS")}
+${centerText("No.11/36-25,2nd Main,")}
+${centerText("Kathriguppe Main Road,")}
+${centerText("Bangalore, 560085 9483900777")}
 --------------------------------
-Receipt No: ${payInfo?.receipt_no}
-Date: ${formatDate(payInfo?.pay_date)}
+${centerText(receiptType)}
 
-MY CHIT FUND INDIA PVT LTD
-No.11/36-25,2nd Main,Kathriguppe Main Road,
-Karnataka, 9483900777
+Receipt No: ${receipt_no}
+Date: ${formatDate(pay_date)}
 
-Name: ${payInfo?.user_id?.full_name}
-Mobile No: ${payInfo?.user_id?.phone_number}
+Name: ${customer_name}
+Mobile No: ${phone_number}
+
+${groupOrPigme}
+==============================
+|   Received Amount: Rs.${amount}  |
+==============================
+Mode: ${pay_type}
+Total: Rs.${total_amount || 0}
 --------------------------------
-Group: ${payInfo?.group_id?.group_name}
-Ticket: ${payInfo?.ticket}
-Received Amount:${payInfo?.amount}
-Paid Till Date:
-Payment Mode: ${payInfo?.pay_type}
---------------------------------
-*System Generated Bill
-No Signature Needed
-
-Thank You
-    `;
+Collected by: ${agent_name}
+`;
 
     blePrinter.printText(receiptText);
   };
 
   const handlePosPrint = async () => {
+    const groupOrPigmeHtml = isPigmePayment
+  ? `<p style="margin: 0;">Pigme ID: ${pigme_id || "N/A"}</p>`
+  : `<p style="margin: 0;">Group: N/A</p>`;
+
     const htmlContent = `
       <html>
       <head>
@@ -94,7 +106,7 @@ Thank You
           }
           body {
             font-family: Arial, sans-serif;
-            font-size: 12px;
+            font-size: 14px;
             margin: 0;
             padding: 0;
             width: 58mm;
@@ -107,34 +119,48 @@ Thank You
           }
           .line {
             border-top: 1px dashed #000;
-            margin: 5mm 0;
+            margin: 2mm 0;
           }
         </style>
       </head>
       <body>
         <div class="receipt">
           <div class="header">
-            <h1>Receipt Preview</h1>
+            <h3 align="center">MY CHITS</h3>
+          </div>
+          <div>
+            <p align="center">No.11/36-25, 2nd Main,</br>
+            Kathriguppe Main Road,</br>
+            Bangalore, 560085
+            9483900777</p>
           </div>
           <div class="line"></div>
-          <p>Receipt No: ${payInfo?.receipt_no}</p>
-          <p>Date: ${formatDate(payInfo?.pay_date)}</p>
-          <p>MY CHIT FUND INDIA PVT LTD</p>
-          <p>No.11/36-25, 2nd Main, Kathriguppe Main Road, Karnataka, 9483900777</p>
-          <p>Name: ${payInfo?.user_id?.full_name}</p>
-          <p>Mobile No: ${payInfo?.user_id?.phone_number}</p>
-          <div class="line"></div>
-          <p>Group: ${payInfo?.group_id?.group_name}</p>
-          <p>Ticket: ${payInfo?.ticket}</p>
-          <p>Received Amount: ${payInfo?.amount}</p>
-          <p>Paid Till Date:</p>
-          <p>Payment Mode: ${payInfo?.pay_type}</p>
-          <div class="line"></div>
-          <p>*System Generated Bill</p>
-          <p>No Signature Needed</p>
-          <div class="footer">
-            <p>Thank You</p>
+          <p align="center" style="font-weight:bold">${
+            isPigmePayment ? "Pigme Receipt" : "Receipt"
+          }</p>
+          <p>
+          Receipt No: ${receipt_no} <br/>
+          Date: ${formatDate(pay_date)}
+          </p>
+          <p>
+          Name: ${customer_name} <br/>
+          Mobile No: ${phone_number}
+          </p>
+          <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            ${groupOrPigmeHtml}
           </div>
+          <table style="border-collapse: collapse; width: 100%;" border="1">
+            <tr>
+              <td style="padding: 5px; font-size:14px">Received Amount</td>
+              <td style="padding: 5px; font-size:14px">Rs.${
+                amount
+              }</td>
+            </tr>
+          </table>
+          <p>Mode: ${pay_type}</br>
+          Total: Rs.${total_amount || 0}</p>
+          <div class="line"></div>
+          <p>Collected By: ${agent_name}</p>
         </div>
       </body>
       </html>
@@ -167,45 +193,162 @@ Thank You
     return date.toLocaleDateString('en-US', options);
   };
 
-  return (
+   const groupOrPigmeDisplay = isPigmePayment
+  ? `Pigme ID: ${pigme_id || "N/A"}`
+  : `Group: N/A`;
+
+   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View style={{ marginHorizontal: 22, marginTop: 12 }}>
         <Header />
 
         <Button
-          title={isConnecting ? "Connecting..." : isConnected ? "Connected" : "Connect to Printer"}
+          title={
+            isConnecting
+              ? "Connecting..."
+              : isConnected
+              ? "Connected"
+              : "Connect to Printer"
+          }
           filled
           style={{ marginTop: 18, marginBottom: 4 }}
           onPress={handleConnect}
           disabled={isConnecting || isConnected}
         />
 
-        <View style={{ padding: 8, backgroundColor: "#f0eeee", borderRadius: 8, marginTop: 5 }}>
-          <Text style={{ fontWeight: 'bold', marginBottom: 0, fontSize: 13 }}>Receipt Preview</Text>
-          <Text style={styles.textStyle}>--------------------------------</Text>
-          <Text style={styles.textStyle}>Receipt No: {payInfo?.receipt_no}</Text>
-          <Text style={styles.textStyle}>Date: {formatDate(payInfo?.pay_date)}</Text>
+        <View
+          style={{
+            padding: 8,
+            backgroundColor: "#f0eeee",
+            borderRadius: 8,
+            marginTop: 5,
+          }}
+        >
+          <Text
+            style={{
+              fontWeight: "bold",
+              marginBottom: 0,
+              fontSize: 18,
+              textAlign: "center",
+            }}
+          >
+            MY CHITS
+          </Text>
+          <Text
+            style={[styles.textStyle, { textAlign: "center", marginTop: 3 }]}
+          >
+            No.11/36-25, 2nd Main,
+          </Text>
+          <Text style={[styles.textStyle, { textAlign: "center" }]}>
+            Kathriguppe Main Road,
+          </Text>
+          <Text style={[styles.textStyle, { textAlign: "center" }]}>
+            Bangalore, 560085 9483900777
+          </Text>
+
+          <View
+            style={{
+              borderBottomWidth: 1,
+              borderColor: "#000",
+              marginVertical: 5,
+            }}
+          />
+
+          <Text
+            style={{
+              fontWeight: "bold",
+              marginBottom: 0,
+              fontSize: 13,
+              textAlign: "center",
+              marginBottom: 10,
+            }}
+          >
+            {isPigmePayment ? "Pigme Receipt" : "Receipt"}
+          </Text>
+
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <View>
+              <Text style={styles.textStyle}>
+                Receipt No: {receipt_no || ""}
+              </Text>
+              <Text style={styles.textStyle}>
+                Date: {formatDate(pay_date || "")}
+              </Text>
+            </View>
+          </View>
+
           <Text style={styles.textStyle}> </Text>
-          <Text style={styles.textStyle}>MY CHIT FUND INDIA PVT LTD</Text>
-          <Text style={styles.textStyle}>No.11/36-25, 2nd Main, Kathriguppe Main Road,</Text>
-          <Text style={styles.textStyle}>Karnataka, 9483900777</Text>
+
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <View>
+              <Text style={styles.textStyle}>
+                Name: {customer_name || ""}
+              </Text>
+              <Text style={styles.textStyle}>
+                Mobile No: {phone_number || ""}
+              </Text>
+            </View>
+          </View>
+
           <Text style={styles.textStyle}> </Text>
-          <Text style={styles.textStyle}>Name: {payInfo?.user_id?.full_name}</Text>
-          <Text style={styles.textStyle}>Mobile No: {payInfo?.user_id?.phone_number}</Text>
-          <Text style={styles.textStyle}>--------------------------------</Text>
-          <Text style={styles.textStyle}>Group: {payInfo?.group_id?.group_name}</Text>
-          <Text style={styles.textStyle}>Ticket: {payInfo?.ticket}</Text>
-          <Text style={styles.textStyle}>Received Amount: {payInfo?.amount}</Text>
-          <Text style={styles.textStyle}>Paid Till Date:</Text>
-          <Text style={styles.textStyle}>Payment Mode: {payInfo?.pay_type}</Text>
-          <Text style={styles.textStyle}>--------------------------------</Text>
-          <Text style={styles.textStyle}>*System Generated Bill</Text>
-          <Text style={styles.textStyle}>No Signature Needed</Text>
+
+          <Text
+            style={[styles.textStyle, { fontSize: 14, fontWeight: "bold" }]}
+          >
+            {groupOrPigmeDisplay}
+          </Text>
+
           <Text style={styles.textStyle}> </Text>
-          <Text style={styles.textStyle}>Thank You</Text>
+
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Text
+              style={[
+                styles.textStyle,
+                {
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  borderWidth: 1,
+                  padding: 5,
+                },
+              ]}
+            >
+              Received Amount | Rs.{amount || ""}
+            </Text>
+          </View>
+
+          <Text style={styles.textStyle}> </Text>
+          <Text style={styles.textStyle}>
+            Mode:{" "}
+            {pay_type?pay_type
+              : ""}
+          </Text>
+          <Text style={styles.textStyle}>Total: Rs.{total_amount}</Text>
+
+          <View
+            style={{
+              borderBottomWidth: 1,
+              borderColor: "#000",
+              marginVertical: 5,
+            }}
+          />
+
+          <Text style={styles.textStyle}>Collected by: {agent_name}</Text>
+          <Text style={styles.textStyle}> </Text>
         </View>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 18,
+          }}
+        >
           <Button
             title="Thermal Print"
             filled

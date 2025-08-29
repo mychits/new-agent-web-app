@@ -19,7 +19,6 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
-import url from "../constants/baseUrl";
 
 const PigmePayin = ({ route, navigation }) => {
     const { user, customer } = route.params;
@@ -61,7 +60,7 @@ const PigmePayin = ({ route, navigation }) => {
         const fetchCustomerPigme = async () => {
             try {
                 const response = await axios.get(
-                    `https://mychits.online/api/pigme/get-pigme/${customer}`
+                    `${baseUrl}/pigme/get-pigme/${customer}`
                 );
                 console.log(response.data?.customer, "checking dhf");
                 if (response.data.customer) {
@@ -87,7 +86,7 @@ const PigmePayin = ({ route, navigation }) => {
         const fetchReceipt = async () => {
             try {
                 const response = await axios.get(
-                    `http://13.51.87.99:3000/api/payment/get-latest-receipt`
+                    `${url}/payment/get-latest-receipt`
                 );
 
                 setReceipt(response.data);
@@ -150,15 +149,64 @@ const PigmePayin = ({ route, navigation }) => {
                 amount: amount,
                 transaction_id: transactionId,
                 collected_by: agent._id,
+                pay_for: "Pigme",
 
             };
+            const PigmeId = selectedPigme?._id;
             const response = await axios.post(
-                `${url}/payment/add-payments`,
+                `${url}/payment/pigme/${PigmeId}`,
                 data
             );
             if (response.status === 201) {
                 Alert.alert("Success", "Payment added successfully!");
-                navigation.navigate("PigmePrint", { store_id: response.data._id });
+                const userResponse = await axios.get(
+          `${baseUrl}/user/get-user-by-id/${customer}`
+        );
+        const { full_name,phone_number } = userResponse.data;
+        const { pay_date, amount, pay_type, transaction_id, receipt_no } =
+          response.data?.response;
+        const agentResponse = await axios.get(
+          `${baseUrl}/agent/get-agent-by-id/${user.userId}`
+        );
+		console.log("level two");
+		
+        const { name } = agentResponse.data;
+        // need to chnaged
+        // re format loan print page ,loan/-id
+        const totalAmountResponse = await axios.post(
+          `${baseUrl}/payment/get-total-amount`,
+          { user_id: customer, loan: loanId }
+        );
+		console.log("level three",loanId,customer,"this sis its");
+
+        console.log(
+          full_name,
+          phone_number,
+          name,
+          amount,
+          pay_type,
+          pay_date,
+          transaction_id,
+          receipt_no,
+         
+          "hejejek jhakhsakjas thjahksakjsahsjhkjsdhkjsdahkjsdhksdajhsdajksdajk"
+        );
+
+        navigation.navigate("PigmePrint", {
+          customer_name: full_name,
+          phone_number,
+          agent_name: name,
+          amount,
+          pay_type,
+          pay_date,
+          transaction_id,
+          receipt_no,
+        //   total_amount: totalAmountResponse?.data?.totalAmount,
+		total_amount:500,
+          isPigmePayment: true,
+          pigme_id: PigmeId,
+        });
+               // navigation.navigate("PigmePrint", { store_id: response.data._id });
             } else {
                 console.log("Error:", response.data);
             }

@@ -116,7 +116,9 @@ const RouteCustomerLoan = ({ route, navigation }) => {
 
                         navigation.navigate("LoanPayin", {
                           customer: customer?.borrower?._id,
-                          loan_id:customer._id
+                          loan_id:customer._id,
+                          custom_loan_id:customer.loan_id,
+
                         })
 
 

@@ -8,13 +8,13 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
-
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
@@ -22,8 +22,7 @@ import baseUrl from "../constants/baseUrl";
 import url from "../constants/baseUrl";
 
 const LoanPayin = ({ route, navigation }) => {
-  const { user, customer ,loan_id} = route.params;
-
+  const { user, customer, loan_id,custom_loan_id } = route.params;
   const [currentDate, setCurrentDate] = useState("");
   const [receipt, setReceipt] = useState({});
   const [paymentDetails, setPaymentDetails] = useState("");
@@ -41,7 +40,7 @@ const LoanPayin = ({ route, navigation }) => {
     const fetchCustomerAndLoan = async () => {
       try {
         const response = await axios.get(
-          `https://mychits.online/api/loans/get-borrower/${loan_id}`
+          `${baseUrl}/loans/get-borrower/${loan_id}`
         );
         console.log(response.data, "checking");
         if (response.data) {
@@ -67,7 +66,7 @@ const LoanPayin = ({ route, navigation }) => {
     const fetchReceipt = async () => {
       try {
         const response = await axios.get(
-          `http://13.51.87.99:3000/api/payment/get-latest-receipt`
+          `${baseUrl}/payment/get-latest-receipt`
         );
 
         setReceipt(response.data);
@@ -136,40 +135,28 @@ const LoanPayin = ({ route, navigation }) => {
       const response = await axios.post(`${url}/payment/loan/${loanId}`, data);
       if (response.status === 201) {
         Alert.alert("Success", "Payment added successfully!");
-		console.log("level one",customer);
+        console.log("level one", customer);
 
         const userResponse = await axios.get(
           `${baseUrl}/user/get-user-by-id/${customer}`
         );
-        const { full_name,phone_number } = userResponse.data;
+        const { full_name, phone_number } = userResponse.data;
         const { pay_date, amount, pay_type, transaction_id, receipt_no } =
           response.data?.response;
         const agentResponse = await axios.get(
           `${baseUrl}/agent/get-agent-by-id/${user.userId}`
         );
-		console.log("level two");
-		
-        const { name } = agentResponse.data;
-// need to chnaged
-// re format loan print page ,loan/-id
-        // const totalAmountResponse = await axios.post(
-        //   `${baseUrl}/payment/get-total-amount`,
-        //   { user_id: customer, loan: loanId }
-        // );
-		console.log("level twhree");
+      
 
-        console.log(
-          full_name,
-          phone_number,
-          name,
-          amount,
-          pay_type,
-          pay_date,
-          transaction_id,
-          receipt_no,
-         
-          "hejejek jhakhsakjas thjahksakjsahsjhkjsdhkjsdahkjsdhksdajhsdajksdajk"
+        const { name } = agentResponse.data;
+
+        const totalAmountResponse = await axios.post(
+          `${baseUrl}/payment/get-total-amount`,
+          { user_id: customer, loan: loanId }
         );
+        console.log("level three", customer, loanId);
+
+
 
         navigation.navigate("LoanPrint", {
           customer_name: full_name,
@@ -180,8 +167,9 @@ const LoanPayin = ({ route, navigation }) => {
           pay_date,
           transaction_id,
           receipt_no,
-        //   total_amount: totalAmountResponse?.data?.totalAmount,
-		totalAmount:500,
+            total_amount: totalAmountResponse?.data?.totalAmount || 0,
+          total_amount: 500,
+          custom_loan_id,
           isLoanPayment: true,
         });
       } else {

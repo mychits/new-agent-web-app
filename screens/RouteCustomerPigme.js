@@ -57,7 +57,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-         colors={['#dbf6faff', '#90dafcff']}
+        colors={['#dbf6faff', '#90dafcff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -95,25 +95,22 @@ const RouteCustomerPigme = ({ route, navigation }) => {
             ) : (
               <>
                 {Array.isArray(customers) &&
-  customers
-    .filter((item) => {
-      const name = item.customer?.full_name?.toLowerCase() || "";
-      const phone = item.customer?.phone_number || "";
-      return (
-        name.includes(search.toLowerCase()) ||
-        phone.includes(search)
-      );
-    })
-    .map((item, index) => (
-      <CustomerCard
-        key={index}
-        name={item.customer?.full_name || "Unknown Customer"}
-        phone={item.customer?.phone_number || "N/A"}
-        onPress={() =>
-          navigation.navigate("PigmePayin", { customer: item._id })
-        }
-      />
-    ))}
+                  customers
+                     
+                    .filter((item) => 
+                      item.customer?.full_name?.toLowerCase().includes(search.toLowerCase()) || ""
+
+                    )
+                    .map((item, index) => (
+                      <CustomerCard
+                        key={index}
+                        name={item.customer?.full_name || "Unknown Customer"}
+                        phone={item.customer?.phone_number || "N/A"}
+                        onPress={() =>
+                          navigation.navigate("PigmePayin", { user, customer: item.customer?._id, pigme_id: item._id })
+                        }
+                      />
+                    ))}
 
               </>
             )
