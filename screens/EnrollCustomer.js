@@ -9,6 +9,7 @@ import {
 	ScrollView,
 	TouchableOpacity,
 	ToastAndroid,
+	FlatList,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,11 +23,14 @@ import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
 
 const EnrollCustomer = ({ route, navigation }) => {
-	const { user, customer } = route.params;
+	const { user, customerPhoneNumber } = route.params;
 	const [receipt, setReceipt] = useState({});
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedCustomerType, setSelectedCustomerType] = useState("chits");
 	const [agentCustomers, setAgentCustomers] = useState([]);
+	const [filteredCustomers, setFilteredCustomers] = useState([]);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [showCustomerList, setShowCustomerList] = useState(false);
 	const [groups, setGroups] = useState([]);
 	const [availableTickets, setAvailableTickets] = useState([]);
 	const baseUrl =
@@ -37,9 +41,28 @@ const EnrollCustomer = ({ route, navigation }) => {
 		no_of_tickets: "",
 		tickets: "",
 	});
+	const [customerDetails, setCustomerDetails] = useState(null);
 	
-	// New state variable to control the visibility of the "Proceed to Payment" button
 	const [showPaymentButton, setShowPaymentButton] = useState(false);
+
+	useEffect(() => {
+		const fetchCustomerDetails = async () => {
+			if (customerPhoneNumber) {
+				try {
+					const response = await axios.get(`${baseUrl}/user/get-user-by-phone/${customerPhoneNumber}`);
+					if (response.status >= 400) throw new Error("Customer not found.");
+					const fetchedCustomer = response.data;
+					setCustomerDetails(fetchedCustomer);
+					setFormFields(prev => ({ ...prev, user_id: fetchedCustomer._id }));
+					setSearchQuery(fetchedCustomer.full_name);
+				} catch (err) {
+					console.error("Failed to load Customer Data by phone:", err);
+					Alert.alert("Error", "Failed to fetch customer details. Please try again.");
+				}
+			}
+		};
+		fetchCustomerDetails();
+	}, [customerPhoneNumber, baseUrl]);
 
 	useEffect(() => {
 		const fetchGroups = async () => {
@@ -53,18 +76,21 @@ const EnrollCustomer = ({ route, navigation }) => {
 		};
 		fetchGroups();
 	}, [selectedCustomerType]);
+	
 	useEffect(() => {
 		const fetchAgentUsers = async () => {
 			try {
 				const response = await axios.get(`${baseUrl}/user/get-user`);
 				if (response.status >= 400) throw new Error("Something went wrong");
 				setAgentCustomers(response.data);
+				setFilteredCustomers(response.data);
 			} catch (err) {
 				console.error("Failed to load Customers Data");
 			}
 		};
 		fetchAgentUsers();
 	}, [selectedCustomerType]);
+	
 	useEffect(() => {
 		const fetchReceipt = async () => {
 			try {
@@ -78,6 +104,7 @@ const EnrollCustomer = ({ route, navigation }) => {
 		};
 		fetchReceipt();
 	}, []);
+	
 	const handleCancel = () => {
 		Alert.alert("Confirmation", "Are you sure you want to Close?", [
 			{
@@ -91,6 +118,7 @@ const EnrollCustomer = ({ route, navigation }) => {
 			},
 		]);
 	};
+	
 	const handleInputChange = async (field, value) => {
 		setFormFields({ ...formFields, [field]: value });
 		if (field === "group_id") {
@@ -105,6 +133,26 @@ const EnrollCustomer = ({ route, navigation }) => {
 				console.error("Error fetching next tickets");
 			}
 		}
+	};
+	
+	const handleSearchCustomer = (query) => {
+		setSearchQuery(query);
+		if (query === "") {
+			setFilteredCustomers(agentCustomers);
+		} else {
+			const lowerCaseQuery = query.toLowerCase();
+			const filteredData = agentCustomers.filter((customer) =>
+				customer.full_name.toLowerCase().includes(lowerCaseQuery)
+			);
+			setFilteredCustomers(filteredData);
+		}
+	};
+
+	const handleSelectCustomer = (customer) => {
+		setCustomerDetails(customer);
+		setFormFields({ ...formFields, user_id: customer._id });
+		setSearchQuery(customer.full_name);
+		setShowCustomerList(false);
 	};
 	
 	const handleEnrollCustomer = async () => {
@@ -133,24 +181,32 @@ const EnrollCustomer = ({ route, navigation }) => {
 			return;
 		}
 
-		const { no_of_tickets, group_id, user_id } = formFields;
+		if (!customerDetails || !customerDetails._id) {
+			Alert.alert("Error", "Customer data not found. Please try again or go back.");
+			return;
+		}
+
+		const userId = customerDetails._id;
+		const { no_of_tickets, group_id } = formFields;
 		const ticketsCount = parseInt(no_of_tickets, 10);
 		setIsLoading(true);
-		
-		const ticketEntries = availableTickets
-			.slice(0, ticketsCount)
-			.map((ticketNumber) => ({
-				group_id,
-				user_id,
-				tickets: ticketNumber,
-			}));
+
 		try {
-			for (const ticketEntry of ticketEntries) {
-				ticketEntry.agent = user.userId;
-				await axios.post(`${baseUrl}/enroll/add-enroll`, ticketEntry);
-			}
-			
-			// New logic: Show success message and a new button instead of navigating away
+			// Construct the payload for all tickets
+			const enrollmentPromises = availableTickets.slice(0, ticketsCount).map(ticketNumber => {
+				const payload = {
+					user_id: userId,
+					group_id: group_id,
+					no_of_tickets: ticketsCount, // Pass the total number of tickets in each request
+					tickets: ticketNumber, // The specific ticket number for this enrollment
+					agent: user.userId,
+				};
+				console.log("Sending payload:", payload); // Log the payload to verify
+				return axios.post(`${baseUrl}/enroll/add-enroll`, payload);
+			});
+
+			await Promise.all(enrollmentPromises);
+
 			ToastAndroid.show("Customer Enrolled Successfully!", ToastAndroid.SHORT);
 			setShowPaymentButton(true);
 			
@@ -159,16 +215,23 @@ const EnrollCustomer = ({ route, navigation }) => {
 			if (error.response) {
 				console.error("Server responded with data:", error.response.data);
 				console.error("Server responded with status:", error.response.status);
+				Alert.alert("Error", `Failed to enroll customer. Server says: ${error.response.data.message || 'Unknown error'}`);
+			} else if (error.request) {
+				Alert.alert("Error", "No response from server. Please check your network connection.");
+			} else {
+				Alert.alert("Error", `Request Error: ${error.message}`);
 			}
-			Alert.alert("Error Enrolling Customer. Please try again.");
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
+
 	const handleProceedToPayment = () => {
-		// Replace this with your actual logic to navigate to the payment screen
-		navigation.replace("PaymentScreen", { user: { ...user }, customer: { ...formFields } });
+		navigation.replace("PaymentScreen", { 
+			user: { ...user }, 
+			customer: { ...customerDetails, ...formFields } 
+		});
 	};
 
 	return (
@@ -199,7 +262,6 @@ const EnrollCustomer = ({ route, navigation }) => {
 								</TouchableOpacity>
 							</View>
 							
-							{/* New content box starts here */}
 							<View style={styles.contentBox}>
 								<Text style={styles.label}>
 									Customer Type
@@ -243,27 +305,35 @@ const EnrollCustomer = ({ route, navigation }) => {
 										))}
 									</Picker>
 								</View>
+								
+								{/* Customer Search Section */}
 								<Text style={styles.label}>
 									Customer
 								</Text>
-								<View style={styles.pickerContainer}>
-									<Picker
-										style={styles.picker}
-										selectedValue={formFields.user_id}
-										onValueChange={(value) =>
-											handleInputChange("user_id", value)
-										}
-									>
-										<Picker.Item label="Select Customer" value={""} />
-										{agentCustomers.map((customer) => (
-											<Picker.Item
-												key={customer._id}
-												label={`${customer.full_name}`}
-												value={customer._id}
-											/>
-										))}
-									</Picker>
-								</View>
+								<TextInput
+									placeholder="Search or Select Customer"
+									style={styles.textInput}
+									value={searchQuery}
+									onFocus={() => setShowCustomerList(true)}
+									onChangeText={handleSearchCustomer}
+								/>
+								{showCustomerList && (
+									<View style={styles.customerListContainer}>
+										<FlatList
+											data={filteredCustomers}
+											keyExtractor={(item) => item._id}
+											renderItem={({ item }) => (
+												<TouchableOpacity
+													style={styles.customerListItem}
+													onPress={() => handleSelectCustomer(item)}
+												>
+													<Text>{item.full_name}</Text>
+												</TouchableOpacity>
+											)}
+										/>
+									</View>
+								)}
+								
 								<Text style={styles.label}>
 									Number of Tickets
 								</Text>
@@ -300,7 +370,6 @@ const EnrollCustomer = ({ route, navigation }) => {
 									}}
 									onPress={handleEnrollCustomer}
 								/>
-								{/* Conditionally render the new button */}
 								{showPaymentButton && (
 									<Button
 										title="Proceed to Payment"
@@ -313,7 +382,6 @@ const EnrollCustomer = ({ route, navigation }) => {
 									/>
 								)}
 							</View>
-							{/* New content box ends here */}
 						</View>
 					</ScrollView>
 				</KeyboardAvoidingView>
@@ -436,6 +504,22 @@ const styles = StyleSheet.create({
 	picker: {
 		height: 50,
 		width: "100%",
+	},
+	customerListContainer: {
+		backgroundColor: '#fff',
+		borderColor: '#d0d0d0',
+		borderWidth: 1,
+		borderRadius: 15,
+		maxHeight: 200,
+		marginTop: -10,
+		marginBottom: 10,
+		elevation: 3,
+		zIndex: 10,
+	},
+	customerListItem: {
+		padding: 15,
+		borderBottomWidth: 1,
+		borderBottomColor: '#eee',
 	},
 });
 

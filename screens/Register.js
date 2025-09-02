@@ -217,6 +217,7 @@ export default function Register() {
           track_source: "mobile",
         }),
       });
+      console.log(response.data,"preeeetha is not adding usrhgjsdf");
 
       if (response.ok) {
         const data = await response.json();

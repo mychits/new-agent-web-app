@@ -20,15 +20,11 @@ import Button from "../components/Button";
 import chitBaseUrl from "../constants/baseUrl";
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
-import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
 
 const AddCustomer = ({ route, navigation }) => {
     const { user } = route.params;
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState(1);
-    const [aadhaarFile, setAadhaarFile] = useState(null);
-    const [panFile, setPanFile] = useState(null);
 
     const [customerInfo, setCustomerInfo] = useState({
         full_name: "",
@@ -37,42 +33,12 @@ const AddCustomer = ({ route, navigation }) => {
         password: "",
         address: "",
         pincode: "",
-        aadhaar_no: "",
+        adhaar_no: "", // CORRECTED: Changed 'aadhaar_no' to 'adhaar_no'
         pan_no: "",
     });
 
     const handleInputChange = (field, value) => {
         setCustomerInfo({ ...customerInfo, [field]: value });
-    };
-
-    const handleAadhaarPick = async () => {
-        try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: "image/*,application/pdf",
-                copyToCacheDirectory: false,
-            });
-
-            if (!result.canceled) {
-                setAadhaarFile(result.assets[0]);
-            }
-        } catch (err) {
-            console.log("Error picking document: ", err);
-        }
-    };
-
-    const handlePanPick = async () => {
-        try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: "image/*,application/pdf",
-                copyToCacheDirectory: false,
-            });
-
-            if (!result.canceled) {
-                setPanFile(result.assets[0]);
-            }
-        } catch (err) {
-            console.log("Error picking document: ", err);
-        }
     };
 
     const handleAddCustomer = async () => {
@@ -94,43 +60,24 @@ const AddCustomer = ({ route, navigation }) => {
         setIsLoading(true);
 
         try {
-            const formData = new FormData();
-            for (const key in customerInfo) {
-                if (customerInfo[key]) {
-                    formData.append(key, customerInfo[key]);
-                }
-            }
-            formData.append('agent', user.userId);
+            const payload = {
+                ...customerInfo,
+                agent: user.userId,
+            };
 
-            if (aadhaarFile) {
-                formData.append('aadhaar_card', {
-                    uri: aadhaarFile.uri,
-                    name: aadhaarFile.name,
-                    type: aadhaarFile.mimeType,
-                });
-            }
-
-            if (panFile) {
-                formData.append('pan_card', {
-                    uri: panFile.uri,
-                    name: panFile.name,
-                    type: panFile.mimeType,
-                });
-            }
-
-            console.log("FormData being sent:", formData);
-
-            const response = await axios.post(`${chitBaseUrl}/user/add-user`, formData, {
+            const response = await axios.post(`${chitBaseUrl}/user/add-user`, payload, {
                 headers: {
-                    "Content-Type": "multipart/form-data",
+                    "Content-Type": "application/json",
                 },
             });
 
             if (response.status === 201) {
                 ToastAndroid.show("Customer Added Successfully!", ToastAndroid.SHORT);
+                
+                // FIX: Pass the phone number to the next screen instead of a non-existent _id
                 navigation.navigate("EnrollCustomer", {
                     user: { ...user },
-                    customer: response.data.customer._id,
+                    customerPhoneNumber: customerInfo.phone_number,
                 });
             } else {
                 console.log("Unexpected response status:", response.status, response.data);
@@ -241,9 +188,9 @@ const AddCustomer = ({ route, navigation }) => {
                         <TextInput
                             placeholder="Enter Aadhaar Number"
                             style={styles.textInput}
-                            value={customerInfo.aadhaar_no}
+                            value={customerInfo.adhaar_no}
                             keyboardType="number-pad"
-                            onChangeText={(value) => handleInputChange("aadhaar_no", value)}
+                            onChangeText={(value) => handleInputChange("adhaar_no", value)}
                         />
                         <Text style={styles.label}>
                             PAN Number
@@ -261,47 +208,13 @@ const AddCustomer = ({ route, navigation }) => {
                                 onPress={() => setStep(1)}
                             />
                             <Button
-                                title="Next"
+                                title={isLoading ? "Please wait..." : "Add Customer"}
                                 filled
-                                style={styles.nextButton}
-                                onPress={() => setStep(3)}
+                                disabled={isLoading}
+                                style={styles.finalAddCustomerButton}
+                                onPress={handleAddCustomer}
                             />
                         </View>
-                    </>
-                );
-            case 3:
-                return (
-                    <>
-                        <View style={styles.uploadContainer}>
-                            <Text style={styles.label}>Aadhaar Card Upload</Text>
-                            <TouchableOpacity style={styles.uploadButton} onPress={handleAadhaarPick}>
-                                <Text style={styles.uploadButtonText}>
-                                    <Icon name="upload" size={16} color="#fff" /> Choose File
-                                </Text>
-                            </TouchableOpacity>
-                            {aadhaarFile && <Text style={styles.fileName}>{aadhaarFile.name}</Text>}
-                        </View>
-                        <View style={styles.uploadContainer}>
-                            <Text style={styles.label}>PAN Card Upload</Text>
-                            <TouchableOpacity style={styles.uploadButton} onPress={handlePanPick}>
-                                <Text style={styles.uploadButtonText}>
-                                    <Icon name="upload" size={16} color="#fff" /> Choose File
-                                </Text>
-                            </TouchableOpacity>
-                            {panFile && <Text style={styles.fileName}>{panFile.name}</Text>}
-                        </View>
-                        <Button
-                            title="Back"
-                            style={styles.finalBackButton}
-                            onPress={() => setStep(2)}
-                        />
-                        <Button
-                            title={isLoading ? "Please wait..." : "Add Customer"}
-                            filled
-                            disabled={isLoading}
-                            style={styles.finalAddCustomerButton}
-                            onPress={handleAddCustomer}
-                        />
                     </>
                 );
             default:
@@ -446,21 +359,21 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     nextButton: {
-        width: '48%',
+        width: '100%',
         backgroundColor: COLORS.primary,
     },
     secondaryButton: {
         width: '48%',
-        backgroundColor: COLORS.secondary, // Changed from primary to secondary
+        backgroundColor: COLORS.secondary,
     },
     finalBackButton: {
         width: '100%',
-        backgroundColor: COLORS.secondary, // Changed from primary to secondary
+        backgroundColor: COLORS.secondary,
         marginTop: 20,
         marginBottom: 10,
     },
     finalAddCustomerButton: {
-        width: '100%',
+        width: '48%',
         backgroundColor: COLORS.third,
     },
 });

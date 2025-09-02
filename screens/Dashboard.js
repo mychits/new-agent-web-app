@@ -89,6 +89,12 @@ const Dashboard = ({ route, navigation }) => {
       );
 
       if (!selectedTarget) {
+        setTargetData({
+          total: 0,
+          achieved: 0,
+          remaining: 0,
+        });
+        setProgress(0);
         return;
       }
 
@@ -221,10 +227,12 @@ const Dashboard = ({ route, navigation }) => {
                   <View style={styles.performanceContent}>
                     <View style={styles.circularProgressContainer}>
                       <Text style={styles.performanceValue}>
-                        {`${(
-                          (targetData.achieved / targetData.total) *
-                          100
-                        ).toFixed(0)}%`}
+                        {targetData.total > 0
+                          ? `${(
+                              (targetData.achieved / targetData.total) *
+                              100
+                            ).toFixed(0)}%`
+                          : "0%"}
                       </Text>
                       <Animated.View style={StyleSheet.absoluteFillObject}>
                         <AnimatedSvg
