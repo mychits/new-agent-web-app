@@ -213,8 +213,8 @@ const ViewLeads = ({ route, navigation }) => {
             item.scheme_type.charAt(0).toUpperCase() + item.scheme_type.slice(1) :
             "";
             
-        // Corrected line to fetch group name
-        const groupName = item.group_name ? item.group_name : "No Group";
+       
+       const groupName = item.group_id?.group_name ? item.group_id?.group_name : "No Group"; 
 
         return (
             <TouchableOpacity onPress={() => toggleExpand(item._id)} style={cardStyle}>

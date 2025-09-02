@@ -10,7 +10,8 @@ import {
     Linking,
     Alert,
     Pressable,
-    ScrollView
+    ScrollView,
+    TextInput
 } from "react-native";
 import { TapGestureHandler } from "react-native-gesture-handler";
 import React, { useState, useEffect, useCallback } from "react";
@@ -19,10 +20,10 @@ import axios from "axios";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { whatsappMessage } from "../components/data/messages";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons } from "@expo/vector-icons";
+
 
 const ExpectedCommissions = ({ route, navigation }) => {
     const { user } = route.params;
@@ -32,8 +33,9 @@ const ExpectedCommissions = ({ route, navigation }) => {
     const [isGoldLoading, setIsGoldLoading] = useState(false);
     const [customers, setCustomer] = useState([]);
     const [activeTab, setActiveTab] = useState("CHIT");
-    const [totalChitCommmissions, setTotalChitCommissions] = useState("")
-    const [totalGoldCommmissions, setTotalGoldCommissions] = useState("")
+    const [totalChitCommmissions, setTotalChitCommissions] = useState("");
+    const [totalGoldCommmissions, setTotalGoldCommissions] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
 
     const sendWhatsappMessage = async (item) => {
         if (item.user_id?.phone_number) {
@@ -102,6 +104,13 @@ const ExpectedCommissions = ({ route, navigation }) => {
         fetchExpectedCommissions();
     }, [activeTab, user]);
 
+    const filteredCustomers = customers.filter(customer => {
+        const groupName = customer?.group_id?.group_name || "";
+        const userName = customer?.user_id?.full_name || "";
+        const query = searchQuery.toLowerCase();
+        return groupName.toLowerCase().includes(query) || userName.toLowerCase().includes(query);
+    });
+
     const renderEnrolledCustomerCard = ({ item }) => (
         <TapGestureHandler
             numberOfTaps={2}
@@ -114,10 +123,10 @@ const ExpectedCommissions = ({ route, navigation }) => {
                 style={styles.card}
             >
                 <View style={styles.leftSection}>
-                    <Text style={styles.name}>
+                    <Text style={styles.groupName}>
                         {item?.group_id?.group_name || "No Group Name"}
                     </Text>
-                    <Text style={styles.groupName}>
+                    <Text style={styles.name}>
                         {item?.user_id?.full_name || "No User Name"}
                     </Text>
                 </View>
@@ -127,7 +136,6 @@ const ExpectedCommissions = ({ route, navigation }) => {
                             {`Rs ${item?.calculated_commission || "0"}`}
                         </Text>
                     </View>
-                    <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />
                 </View>
             </Pressable>
         </TapGestureHandler>
@@ -136,7 +144,7 @@ const ExpectedCommissions = ({ route, navigation }) => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
             <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
+                colors={['#dbf6faff', '#90dafcff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -156,6 +164,20 @@ const ExpectedCommissions = ({ route, navigation }) => {
                             <Text style={styles.title}>Expected Commissions</Text>
                             <Text style={styles.subtitle}>View your estimated commissions</Text>
                         </View>
+
+                        {/* Search Input and Icon */}
+                        <View style={styles.searchContainer}>
+                            <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search by name or group"
+                                placeholderTextColor="#888"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                            />
+                        </View>
+                        {/* End Search Input */}
+
                         <View style={styles.tabContainer}>
                             <TouchableOpacity
                                 style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
@@ -220,9 +242,12 @@ const ExpectedCommissions = ({ route, navigation }) => {
                                 </Text>
                             ) : (
                                 <FlatList
-                                    data={customers}
+                                    data={filteredCustomers}
                                     keyExtractor={(item, index) => index.toString()}
                                     renderItem={renderEnrolledCustomerCard}
+                                    ListEmptyComponent={() => (
+                                        <Text style={styles.noLeadsText}>No matching customers found.</Text>
+                                    )}
                                 />
                             )
                         ) : isGoldLoading ? (
@@ -237,9 +262,12 @@ const ExpectedCommissions = ({ route, navigation }) => {
                             </Text>
                         ) : (
                             <FlatList
-                                data={customers}
+                                data={filteredCustomers}
                                 keyExtractor={(item, index) => index.toString()}
                                 renderItem={renderEnrolledCustomerCard}
+                                ListEmptyComponent={() => (
+                                    <Text style={styles.noLeadsText}>No matching customers found.</Text>
+                                )}
                             />
                         )}
                     </ScrollView>
@@ -262,11 +290,29 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: 'bold',
         color: '#333',
+        alignItems: 'center',
     },
     subtitle: {
         fontSize: 16,
         color: '#666',
         marginTop: 5,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        borderRadius: 15,
+        paddingHorizontal: 15,
+        marginBottom: 10,
+        height: 50,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#333',
     },
     tabContainer: {
         flexDirection: "row",
@@ -314,7 +360,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
         shadowRadius: 10,
-     
+
         alignItems: 'center',
     },
     totalCardContent: {
@@ -322,7 +368,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        
+
     },
     totalCardText: {
         fontSize: 18,
@@ -339,6 +385,7 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(255, 255, 255, 0.7)",
         flexDirection: "row",
         justifyContent: 'space-between',
+        alignItems: 'center',
         padding: 15,
         marginVertical: 5,
         borderRadius: 15,
@@ -348,37 +395,40 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
         shadowRadius: 10,
-       
-        alignItems: 'center',
     },
     leftSection: {
         flex: 1,
     },
     rightSection: {
-        alignItems: "flex-end",
-        flexDirection: 'row',
-        gap: 10,
+        alignItems: "center",
+        flexDirection: 'column',
+        justifyContent: 'center',
+        gap: 5,
     },
     name: {
         fontSize: 18,
         fontWeight: "600",
         color: "#000",
         marginBottom: 5,
+        textAlign: 'center',
     },
     groupName: {
         fontSize: 14,
         color: "#666",
+        textAlign: 'center',
     },
     commissionContainer: {
         backgroundColor: '#FFD70020',
         borderRadius: 10,
         paddingHorizontal: 10,
         paddingVertical: 5,
+        alignSelf: 'center',
     },
     commissionText: {
         fontSize: 14,
         fontWeight: 'bold',
         color: '#666',
+        textAlign: 'center',
     },
     cardIcon: {
         color: '#da8201',

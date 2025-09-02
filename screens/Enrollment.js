@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     groupName: {
-        fontSize: 24, // Increased font size for prominence
+        fontSize: 20, // Increased font size for prominence
         fontWeight: 'bold', // Bolder style
         flexShrink: 1,
         textAlign: 'center', // Ensure text is centered

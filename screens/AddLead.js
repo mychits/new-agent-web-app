@@ -3,7 +3,7 @@ import {
     Text,
     StyleSheet,
     TextInput,
-    Alert, // Keep Alert for now, but consider custom modals for production
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -29,19 +29,17 @@ const AddLead = ({ route, navigation }) => {
 
     const [currentDate, setCurrentDate] = useState("");
     const [receipt, setReceipt] = useState({});
-    // Removed unused states: paymentDetails, amount, transactionId, additionalInfo
     const [isLoading, setIsLoading] = useState(false);
 
     const [customerInfo, setCustomerInfo] = useState({
         full_name: "",
         phone_number: "",
-        profession: "", // Initial state for profession
+        profession: "",
     });
 
     const [groups, setGroups] = useState([]);
-    // Removed unused state: tickets (selectedTicket is used directly)
     const [selectedGroup, setSelectedGroup] = useState("");
-    const [selectedTicket, setSelectedTicket] = useState("chit"); // Set an initial value for the active tab
+    const [selectedTicket, setSelectedTicket] = useState("chit");
 
     useEffect(() => {
         const fetchGroups = async () => {
@@ -52,7 +50,6 @@ const AddLead = ({ route, navigation }) => {
                 const response = await axios.get(`${currentUrl}/group/get-group`);
                 if (response.data) {
                     setGroups(response.data || []);
-                    // Reset selected group when ticket type changes to avoid invalid selection
                     setSelectedGroup("");
                 } else {
                     console.error("No data in response");
@@ -100,11 +97,10 @@ const AddLead = ({ route, navigation }) => {
         if (
             !customerInfo.full_name ||
             !customerInfo.phone_number ||
-            !customerInfo.profession || // Added validation for profession
+            !customerInfo.profession ||
             !selectedTicket ||
             !selectedGroup
         ) {
-            // Using Alert.alert as per original code, but consider a custom modal for better UX
             Alert.alert("Required", "Please fill out all fields!");
             setIsLoading(false);
             return;
@@ -114,7 +110,7 @@ const AddLead = ({ route, navigation }) => {
             const data = {
                 lead_name: customerInfo.full_name,
                 lead_phone: customerInfo.phone_number,
-                lead_profession: customerInfo.profession, // Uses the selected profession
+                lead_profession: customerInfo.profession,
                 group_id: selectedGroup,
                 lead_type: "agent",
                 scheme_type: selectedTicket,
@@ -129,10 +125,10 @@ const AddLead = ({ route, navigation }) => {
                 setCustomerInfo({
                     full_name: "",
                     phone_number: "",
-                    profession: "", // Reset profession after successful submission
+                    profession: "",
                 });
                 setSelectedGroup("");
-                setSelectedTicket("chit"); // Reset the active tab
+                setSelectedTicket("chit");
                 navigation.navigate("ViewLeads", { user: user });
             } else {
                 console.log("Error:", response.data);
@@ -208,7 +204,6 @@ const AddLead = ({ route, navigation }) => {
                                     </Picker>
                                 </View>
 
-                                {/* Corrected tab rendering to use selectedTicket state */}
                                 <View style={styles.tabContainer}>
                                     <TouchableOpacity
                                         style={[styles.tab, selectedTicket === "chit" && styles.activeTab]}
@@ -310,17 +305,10 @@ const styles = StyleSheet.create({
         height: 50,
         width: "100%",
         backgroundColor: COLORS.white,
-        borderColor: "#d0d0d0",
-        borderWidth: 1,
         borderRadius: 15,
         paddingHorizontal: 15,
         marginVertical: 10,
         color: "#000",
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
     },
     contentContainer: {
         marginTop: -4,
@@ -358,14 +346,7 @@ const styles = StyleSheet.create({
     pickerContainer: {
         backgroundColor: COLORS.white,
         borderRadius: 15,
-        borderWidth: 1,
-        borderColor: "#d0d0d0",
         marginVertical: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
     },
 });
 

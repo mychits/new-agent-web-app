@@ -8,14 +8,15 @@ import {
     ScrollView,
     TouchableOpacity,
     ActivityIndicator,
-    Animated, // Import Animated
+    Animated,
+    TextInput,
 } from "react-native";
-import React, { useEffect, useState, useRef } from "react"; // Import useRef
+import React, { useEffect, useState, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 const MyCommission = ({ route, navigation }) => {
     const { commissions } = route.params;
@@ -23,8 +24,8 @@ const MyCommission = ({ route, navigation }) => {
     const [isChitLoading, setIsChitLoading] = useState(false);
     const [isGoldLoading, setIsGoldLoading] = useState(false);
     const [activeTab, setActiveTab] = useState("CHIT");
+    const [searchQuery, setSearchQuery] = useState("");
 
-    // Create animated values for the slide-in effect
     const leftAnim = useRef(new Animated.Value(-200)).current;
     const rightAnim = useRef(new Animated.Value(200)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -34,7 +35,6 @@ const MyCommission = ({ route, navigation }) => {
         if (commissions.commission_data) {
             setIsChitLoading(false)
 
-            // Animate the summary boxes when data is available
             if (activeTab === "CHIT") {
                 Animated.parallel([
                     Animated.timing(leftAnim, {
@@ -56,6 +56,13 @@ const MyCommission = ({ route, navigation }) => {
             }
         }
     }, [activeTab, commissions.commission_data]);
+
+    const filteredCommissions = commissions?.commission_data?.filter(commission => {
+        const userName = commission?.user_name || "";
+        const groupName = commission?.group_name || "";
+        const query = searchQuery.toLowerCase();
+        return userName.toLowerCase().includes(query) || groupName.toLowerCase().includes(query);
+    }) || [];
 
     const renderCommissionCard = ({ item }) => {
         if(item.commission_released === false) return;
@@ -100,6 +107,16 @@ const MyCommission = ({ route, navigation }) => {
                         <View style={styles.titleContainer}>
                             <Text style={styles.title}>My Commission</Text>
                             <Text style={styles.subtitle}>My business performance</Text>
+                        </View>
+                        <View style={styles.searchContainer}>
+                            <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search by name or group"
+                                placeholderTextColor="#888"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                            />
                         </View>
                         <View style={styles.tabContainer}>
                             <TouchableOpacity
@@ -153,7 +170,7 @@ const MyCommission = ({ route, navigation }) => {
                             ) : (
 
                                 <FlatList
-                                    data={commissions?.commission_data || []}
+                                    data={filteredCommissions}
                                     keyExtractor={(item, index) => index.toString()}
                                     renderItem={renderCommissionCard}
                                     ListHeaderComponent={() => (
@@ -176,6 +193,9 @@ const MyCommission = ({ route, navigation }) => {
                                             </Animated.View>
                                         </View>
                                     )}
+                                    ListEmptyComponent={() => (
+                                        <Text style={styles.noLeadsText}>No matching commissions found.</Text>
+                                    )}
                                 />
                             )
                         ) : isGoldLoading ? (
@@ -188,9 +208,12 @@ const MyCommission = ({ route, navigation }) => {
                             <Text style={styles.noLeadsText}>No commission Data Found</Text>
                         ) : (
                             <FlatList
-                                data={commissions?.commission_data || []}
+                                data={filteredCommissions}
                                 keyExtractor={(item, index) => index.toString()}
                                 renderItem={renderCommissionCard}
+                                ListEmptyComponent={() => (
+                                    <Text style={styles.noLeadsText}>No matching commissions found.</Text>
+                                )}
                             />
                         )}
                     </ScrollView>
@@ -218,6 +241,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
         marginTop: 5,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        borderRadius: 15,
+        paddingHorizontal: 15,
+        marginBottom: 10,
+        height: 50,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#333',
     },
     tabContainer: {
         flexDirection: "row",

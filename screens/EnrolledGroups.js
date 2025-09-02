@@ -10,7 +10,8 @@ import {
     Linking,
     Alert,
     Pressable,
-    ScrollView
+    ScrollView,
+    TextInput
 } from "react-native";
 import { TapGestureHandler } from "react-native-gesture-handler";
 import React, { useState, useEffect, useCallback } from "react";
@@ -21,7 +22,7 @@ import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 
 const EnrolledGroups = ({ route, navigation }) => {
@@ -32,6 +33,7 @@ const EnrolledGroups = ({ route, navigation }) => {
     const [isGoldLoading, setIsGoldLoading] = useState(false);
     const [customers, setCustomer] = useState([]);
     const [activeTab, setActiveTab] = useState("CHIT");
+    const [searchQuery, setSearchQuery] = useState("");
     const sendWhatsappMessage = async (item) => {
         if (item.user_id?.phone_number) {
             let url = `whatsapp://send?phone=${
@@ -95,6 +97,13 @@ const EnrolledGroups = ({ route, navigation }) => {
         fetchEnrolledCustomers();
     }, [activeTab, user]);
 
+    const filteredCustomers = customers.filter(customer => {
+        const groupName = customer?.group_id?.group_name || "";
+        const userName = customer?.user_id?.full_name || "";
+        const query = searchQuery.toLowerCase();
+        return groupName.toLowerCase().includes(query) || userName.toLowerCase().includes(query);
+    });
+
     const renderEnrolledCustomerCard = ({ item }) => (
         <Pressable
             onPress={() => openDialer(item)}
@@ -144,7 +153,18 @@ const EnrolledGroups = ({ route, navigation }) => {
                             <Text style={styles.title}>Groups</Text>
                             <Text style={styles.subtitle}>Enrolled groups by you</Text>
                         </View>
-
+                        {/* Search Input and Icon */}
+                        <View style={styles.searchContainer}>
+                            <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search by name or group"
+                                placeholderTextColor="#888"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                            />
+                        </View>
+                        {/* End Search Input */}
                         <View style={styles.tabContainer}>
                             <TouchableOpacity
                                 style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
@@ -197,9 +217,12 @@ const EnrolledGroups = ({ route, navigation }) => {
                                 </Text>
                             ) : (
                                 <FlatList
-                                    data={customers}
+                                    data={filteredCustomers}
                                     keyExtractor={(item, index) => index.toString()}
                                     renderItem={renderEnrolledCustomerCard}
+                                    ListEmptyComponent={() => (
+                                        <Text style={styles.noLeadsText}>No matching groups found.</Text>
+                                    )}
                                 />
                             )
                         ) : isGoldLoading ? (
@@ -214,9 +237,12 @@ const EnrolledGroups = ({ route, navigation }) => {
                             </Text>
                         ) : (
                             <FlatList
-                                data={customers}
+                                data={filteredCustomers}
                                 keyExtractor={(item, index) => index.toString()}
                                 renderItem={renderEnrolledCustomerCard}
+                                ListEmptyComponent={() => (
+                                    <Text style={styles.noLeadsText}>No matching groups found.</Text>
+                                )}
                             />
                         )}
                     </ScrollView>
@@ -244,6 +270,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
         marginTop: 5,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        borderRadius: 15,
+        paddingHorizontal: 15,
+        marginBottom: 10,
+        height: 50,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#333',
     },
     tabContainer: {
         flexDirection: "row",
@@ -295,16 +338,16 @@ const styles = StyleSheet.create({
     rightSection: {
         alignItems: "flex-end",
         flexDirection: 'row',
-        gap: 10,
+        gap: 5,
     },
     name: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: "600",
         color: "#000",
         marginBottom: 5,
     },
     groupName: {
-        fontSize: 14,
+        fontSize: 12,
         color: "#666",
     },
     ticketContainer: {
@@ -331,36 +374,3 @@ const styles = StyleSheet.create({
 });
 
 export default EnrolledGroups;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
