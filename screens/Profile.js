@@ -8,7 +8,7 @@ import {
 	TouchableOpacity,
 	ScrollView,
 	KeyboardAvoidingView,
-	Platform
+	Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons, Feather } from "@expo/vector-icons";
@@ -59,10 +59,20 @@ const Profile = ({ route, navigation }) => {
 		navigation.navigate("Login", { user });
 	};
 
+	const menuItems = [
+		{ name: "Language", icon: "globe-outline", component: Ionicons, value: "English", action: () => { } },
+		{ name: "Collections", icon: "briefcase", component: MaterialCommunityIcons, action: () => navigation.navigate("PaymentNavigator") },
+		{ name: "Payments", icon: "credit-card-outline", component: MaterialCommunityIcons, action: () => navigation.navigate("PayNavigation", { user: user }) },
+		{ name: "Leads", icon: "account-plus", component: MaterialCommunityIcons, action: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user: user } }) },
+		{ name: "Commissions", icon: "cash-multiple", component: MaterialCommunityIcons, action: () => navigation.navigate("Commissions") },
+		{ name: "About MyChits", icon: "information-circle-outline", component: Ionicons, action: () => navigation.navigate("AboutMyChits") },
+		{ name: "Help & Support", icon: "help-circle-outline", component: Ionicons, action: () => navigation.navigate("HelpAndSupport") },
+	];
+
 	return (
 		<SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
 			<LinearGradient
-				 colors={['#dbf6faff', '#90dafcff']}
+				colors={['#dbf6faff', '#90dafcff']}
 				style={styles.gradientOverlay}
 				start={{ x: 0, y: 0 }}
 				end={{ x: 1, y: 1 }}
@@ -75,9 +85,7 @@ const Profile = ({ route, navigation }) => {
 					<View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
 						<Header />
 						<View style={styles.container}>
-							<View style={styles.header}>
-								<Text style={styles.headerTitle}>Profile</Text>
-							</View>
+							<Text style={styles.headerTitle}>Profile</Text>
 							<ScrollView
 								showsVerticalScrollIndicator={false}
 								showsHorizontalScrollIndicator={false}
@@ -96,146 +104,33 @@ const Profile = ({ route, navigation }) => {
 										</View>
 									</View>
 
-									
-
 									<View style={styles.section}>
 										<View style={styles.sectionBody}>
-											<View style={styles.rowWrapper}>
-												<TouchableOpacity
-													onPress={() => {
-														/* handle onPress */
-													}}
-													style={styles.row}
-												>
-													<View style={styles.rowIcon}>
-														<Ionicons color="#fff" name="globe-outline" size={20} />
-													</View>
-													<Text style={styles.rowLabel}>Language</Text>
-													<View style={styles.rowSpacer} />
-													<Text style={styles.rowValue}>English</Text>
-													<MaterialCommunityIcons
-														color="#C6C6C6"
-														name="chevron-right"
-														size={20}
-													/>
-												</TouchableOpacity>
-											</View>
-											<View style={styles.rowWrapper}>
-												<TouchableOpacity
-													onPress={() => navigation.navigate("PaymentNavigator")}
-													style={styles.row}
-												>
-													<View style={styles.rowIcon}>
-														<MaterialCommunityIcons color="#fff" name="briefcase" size={20} />
-													</View>
-													<Text style={styles.rowLabel}>Collections</Text>
-													<View style={styles.rowSpacer} />
-													<MaterialCommunityIcons
-														color="#C6C6C6"
-														name="chevron-right"
-														size={20}
-													/>
-												</TouchableOpacity>
-											</View>
-											<View style={styles.rowWrapper}>
-												<TouchableOpacity
-													onPress={() =>
-														navigation.navigate("PayNavigation", { user: user })
-													}
-													style={styles.row}
-												>
-													<View style={styles.rowIcon}>
-														<MaterialCommunityIcons color="#fff" name="credit-card-outline" size={20} />
-													</View>
-													<Text style={styles.rowLabel}>Payments</Text>
-													<View style={styles.rowSpacer} />
-													<MaterialCommunityIcons
-														color="#C6C6C6"
-														name="chevron-right"
-														size={20}
-													/>
-												</TouchableOpacity>
-											</View>
-											<View style={styles.rowWrapper}>
-												<TouchableOpacity
-													onPress={() =>
-														navigation.navigate("PayNavigation", {
-															screen: "ViewLeads",
-															params: { user: user },
-														})
-													}
-													style={styles.row}
-												>
-													<View style={styles.rowIcon}>
-														<MaterialCommunityIcons color="#fff" name="account-plus" size={20} />
-													</View>
-													<Text style={styles.rowLabel}>Leads</Text>
-													<View style={styles.rowSpacer} />
-													<MaterialCommunityIcons
-														color="#C6C6C6"
-														name="chevron-right"
-														size={20}
-													/>
-												</TouchableOpacity>
-											</View>
-											<View style={styles.rowWrapper}>
-												<TouchableOpacity
-													onPress={() => navigation.navigate("Commissions")}
-													style={styles.row}
-												>
-													<View style={styles.rowIcon}>
-														<MaterialCommunityIcons color="#fff" name="cash-multiple" size={20} />
-													</View>
-													<Text style={styles.rowLabel}>Commissions</Text>
-													<View style={styles.rowSpacer} />
-													<MaterialCommunityIcons
-														color="#C6C6C6"
-														name="chevron-right"
-														size={20}
-													/>
-												</TouchableOpacity>
-											</View>
-
-											{/* New Menu Item: About MyChits */}
-											<View style={styles.rowWrapper}>
-												<TouchableOpacity
-													onPress={() => navigation.navigate("AboutMyChits")} // Navigate to 'AboutMyChits' screen
-													style={styles.row}
-												>
-													<View style={styles.rowIcon}>
-														<Ionicons color="#fff" name="information-circle-outline" size={20} />
-													</View>
-													<Text style={styles.rowLabel}>About MyChits</Text>
-													<View style={styles.rowSpacer} />
-													<MaterialCommunityIcons
-														color="#C6C6C6"
-														name="chevron-right"
-														size={20}
-													/>
-												</TouchableOpacity>
-											</View>
-
-											{/* New Menu Item: Help & Support */}
-											<View style={styles.rowWrapper}>
-												<TouchableOpacity
-													onPress={() => navigation.navigate("HelpAndSupport")} // Corrected to "HelpAndSupport"
-													style={styles.row}
-												>
-													<View style={styles.rowIcon}>
-														<Ionicons color="#fff" name="help-circle-outline" size={20} />
-													</View>
-													<Text style={styles.rowLabel}>Help & Support</Text>
-													<View style={styles.rowSpacer} />
-													<MaterialCommunityIcons
-														color="#C6C6C6"
-														name="chevron-right"
-														size={20}
-													/>
-												</TouchableOpacity>
-											</View>
-
+											{menuItems.map((item, index) => {
+												const IconComponent = item.component;
+												return (
+													<TouchableOpacity
+														key={index}
+														onPress={item.action}
+														style={styles.menuCard}
+													>
+														<View style={styles.rowIcon}>
+															<IconComponent color="#fff" name={item.icon} size={20} />
+														</View>
+														<Text style={styles.rowLabel}>{item.name}</Text>
+														<View style={styles.rowSpacer} />
+														{item.value && <Text style={styles.rowValue}>{item.value}</Text>}
+														<MaterialCommunityIcons
+															color="#C6C6C6"
+															name="chevron-right"
+															size={20}
+														/>
+													</TouchableOpacity>
+												);
+											})}
 										</View>
 									</View>
+
 									<TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
 										<View style={styles.profileAction}>
 											<Text style={styles.profileActionText}>Logout</Text>
@@ -268,27 +163,26 @@ const styles = StyleSheet.create({
 		elevation: 8,
 	},
 	container: {
-		paddingVertical: 4,
+		paddingVertical: -2,
 		paddingHorizontal: 0,
 		flexGrow: 1,
 		flexShrink: 1,
-	},
-	header: {
-		paddingHorizontal: 14,
-		marginBottom: 12,
-		marginTop: 20,
 	},
 	headerTitle: {
 		fontSize: 22,
 		fontWeight: "900",
 		color: "#1d1d1d",
 		letterSpacing: 0.8,
+		paddingHorizontal: 14,
+		marginBottom: 12,
+		marginTop: 10,
 	},
 	profile: {
-		paddingVertical: 16,
-		paddingHorizontal: 12,
-		flexDirection: "column",
+		paddingVertical: 20,
+		paddingHorizontal: 20,
+		flexDirection: "row",
 		alignItems: "center",
+		marginBottom: 10,
 	},
 	profileAvatar: {
 		width: 80,
@@ -303,14 +197,14 @@ const styles = StyleSheet.create({
 		elevation: 5,
 	},
 	profileInfo: {
-		marginTop: 16,
-		alignItems: 'center',
+		marginLeft: 15,
+		alignItems: 'flex-start',
 	},
 	agentName: {
 		fontSize: 24,
 		fontWeight: "700",
 		color: "#090909",
-		marginBottom: 4,
+		marginBottom: -2,
 	},
 	agentPhone: {
 		fontSize: 16,
@@ -323,21 +217,25 @@ const styles = StyleSheet.create({
 	sectionBody: {
 		paddingHorizontal: 14,
 	},
-	row: {
+	menuCard: {
 		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "flex-start",
-		paddingVertical: 14,
-	},
-	rowWrapper: {
-		borderBottomWidth: 1,
-		borderColor: "#f0f0f0",
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		backgroundColor: "#fff",
+		borderRadius: 12,
+		marginBottom: 10,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
 	},
 	rowIcon: {
 		width: 38,
 		height: 38,
 		borderRadius: 12,
-		backgroundColor: '#5A9BD6', // A more vibrant blue
+		backgroundColor: '#5A9BD6',
 		alignItems: "center",
 		justifyContent: "center",
 		marginRight: 16,
@@ -358,25 +256,19 @@ const styles = StyleSheet.create({
 		color: "#8B8B8B",
 		marginRight: 8,
 	},
-	separator: {
-		height: 1.5,
-		backgroundColor: "#e3e3e3",
-		marginVertical: 15,
-		marginHorizontal: 20,
-	},
 	logoutButton: {
-		marginTop: 30,
+		marginTop: 20,
 		marginBottom: 20,
 		marginHorizontal: 12,
 	},
 	profileAction: {
-		paddingVertical: 14,
-		paddingHorizontal: 20,
+		paddingVertical: 16,
+		paddingHorizontal: 24,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: '#E74C3C', // A darker, more elegant red
-		borderRadius: 16,
+		backgroundColor: '#E74C3C',
+		borderRadius: 30,
 		elevation: 5,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },

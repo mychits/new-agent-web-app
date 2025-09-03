@@ -340,14 +340,24 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 5,
     },
+    // name: {
+    //     fontSize: 15,
+    //     fontWeight: "600",
+    //     color: "#000",
+    //     marginBottom: 5,
+    // },
+    // groupName: {
+    //     fontSize: 12,
+    //     color: "#666",
+    // },
     name: {
-        fontSize: 15,
-        fontWeight: "600",
+        fontSize: 14,
+        fontWeight: "900",
         color: "#000",
-        marginBottom: 5,
+        marginBottom: 5,  // gap between name and groupName
     },
     groupName: {
-        fontSize: 12,
+        fontSize: 16,
         color: "#666",
     },
     ticketContainer: {

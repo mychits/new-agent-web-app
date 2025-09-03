@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
-import Svg, { G, Circle } from "react-native-svg";
+import Svg, { G, Circle, Defs, Stop, RadialGradient } from "react-native-svg";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
@@ -89,11 +89,7 @@ const Dashboard = ({ route, navigation }) => {
       );
 
       if (!selectedTarget) {
-        setTargetData({
-          total: 0,
-          achieved: 0,
-          remaining: 0,
-        });
+        setTargetData({ total: 0, achieved: 0, remaining: 0 });
         setProgress(0);
         return;
       }
@@ -134,6 +130,8 @@ const Dashboard = ({ route, navigation }) => {
         "Error fetching target or commission:",
         err.response?.data || err.message
       );
+      setTargetData({ total: 0, achieved: 0, remaining: 0 });
+      setProgress(0);
     }
   };
 
@@ -159,6 +157,8 @@ const Dashboard = ({ route, navigation }) => {
       setTotalCollection(totalAmount);
     } catch (error) {
       console.error("Error fetching collection data:", error);
+      setTotalCollection(0);
+      setTodayPayments([]);
     }
   };
 
@@ -194,6 +194,33 @@ const Dashboard = ({ route, navigation }) => {
     return dashoffset;
   };
 
+  const getProgressColor = () => {
+    if (progress < 50) return "#FF4B2B";
+    if (progress < 80) return "#FFD349";
+    return "#5EBD3E";
+  };
+
+  const getMotivationalMessage = () => {
+    const percentage = ((targetData.achieved / targetData.total) * 100).toFixed(0);
+    if (targetData.total === 0) {
+      return "No target set yet. Check back soon!";
+    } else if (percentage === 0) {
+      return "Start strong and make today count!";
+    } else if (percentage < 50) {
+      return "You're off to a great start. Keep pushing!";
+    } else if (percentage < 80) {
+      return "You're so close to your goal. Go for it!";
+    } else if (percentage >= 100) {
+      return "Outstanding performance! Exceed your targets!";
+    } else {
+      return "Keep up the excellent work!";
+    }
+  };
+
+  const handlePerformancePress = () => {
+    navigation.navigate("Target");
+  };
+
   return (
     <LinearGradient
       colors={["#dbf6faff", "#90dafcff"]}
@@ -217,29 +244,37 @@ const Dashboard = ({ route, navigation }) => {
               </View>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.topSection}>
+             
+              <View style={styles.targetSection}>
                 <LinearGradient
-                  colors={["#64B5F6", "#2196F3"]}
+                  colors={["#E0E0E0", "#E0E0E0"]}
                   style={styles.performanceCard}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
                   <View style={styles.performanceContent}>
+                    {/* Left side: Circular Progress */}
                     <View style={styles.circularProgressContainer}>
-                      <Text style={styles.performanceValue}>
-                        {targetData.total > 0
-                          ? `${(
-                              (targetData.achieved / targetData.total) *
-                              100
-                            ).toFixed(0)}%`
-                          : "0%"}
-                      </Text>
                       <Animated.View style={StyleSheet.absoluteFillObject}>
                         <AnimatedSvg
                           width="100%"
                           height="100%"
                           viewBox="0 0 150 150"
                         >
+                          <Defs>
+                            <RadialGradient
+                              id="grad"
+                              cx="50%"
+                              cy="50%"
+                              r="50%"
+                              fx="50%"
+                              fy="50%"
+                            >
+                              <Stop offset="0%" stopColor="#FF4B2B" />
+                              <Stop offset="50%" stopColor="#FFD349" />
+                              <Stop offset="100%" stopColor="#5EBD3E" />
+                            </RadialGradient>
+                          </Defs>
                           <G rotation="-90" origin="75, 75">
                             <Circle
                               cx="75"
@@ -253,7 +288,7 @@ const Dashboard = ({ route, navigation }) => {
                               cx="75"
                               cy="75"
                               r="65"
-                              stroke="#da8201"
+                              stroke={targetData.total > 0 ? "url(#grad)" : "#E0E0E0"}
                               strokeWidth="10"
                               fill="transparent"
                               strokeDasharray={circumference}
@@ -263,45 +298,33 @@ const Dashboard = ({ route, navigation }) => {
                           </G>
                         </AnimatedSvg>
                       </Animated.View>
-                    </View>
-                    <Text style={styles.performanceLabel}>Target Achieved</Text>
-                  </View>
-                </LinearGradient>
-                <LinearGradient
-                  colors={["#81C784", "#4CAF50"]}
-                  style={styles.metricsCard}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <View style={styles.metricItem}>
-                    <View style={styles.metricHeader}>
-                      <Text style={styles.metricLabel}>Total Target</Text>
-                      <Text style={styles.metricValue}>
-                        {`₹${targetData.total.toLocaleString("en-IN")}`}
+                      <Text style={[styles.performanceValue, { color: getProgressColor() }]}>
+                        {targetData.total > 0
+                          ? `${((targetData.achieved / targetData.total) * 100).toFixed(0)}%`
+                          : "0%"}
                       </Text>
                     </View>
-                  </View>
-                  <View style={styles.metricItem}>
-                    <View style={styles.metricHeader}>
-                      <Text style={styles.metricLabel}>Achieved Business</Text>
-                      <Text style={styles.metricValue}>
-                        {`₹${targetData.achieved.toLocaleString("en-IN")}`}
+
+                    {/* Right side: Text and Button */}
+                    <View style={styles.textAndButtonContainer}>
+                      <Text style={styles.performanceLabel}>Target Achieved</Text>
+                      <Text style={styles.motivationalText}>
+                        {getMotivationalMessage()}
                       </Text>
-                    </View>
-                  </View>
-                  <View style={styles.metricItem}>
-                    <View style={styles.metricHeader}>
-                      <Text style={styles.metricLabel}>
-                        Remaining to Achieve
-                      </Text>
-                      <Text style={styles.metricValue}>
-                        {`₹${targetData.remaining.toLocaleString("en-IN")}`}
-                      </Text>
+                      <TouchableOpacity
+                        style={styles.performanceButton}
+                        onPress={handlePerformancePress}
+                      >
+                        <Text style={styles.performanceButtonText}>
+                          Performance
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </LinearGradient>
               </View>
 
+              {/* Today's Collection Section */}
               <View style={styles.collectionSection}>
                 <View style={styles.collectionCard}>
                   <LinearGradient
@@ -330,6 +353,7 @@ const Dashboard = ({ route, navigation }) => {
                 </View>
               </View>
 
+              {/* Collection Details List */}
               <View style={[styles.detailListContainer, { marginBottom: 70 }]}>
                 <Text style={styles.detailListTitle}>Collection Details</Text>
                 {todayPayments.length > 0 ? (
@@ -402,88 +426,86 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  topSection: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  targetSection: {
+    width: "100%",
     marginBottom: 20,
   },
   performanceCard: {
-    width: "48%",
     borderRadius: 20,
-    height: 200,
+    height: 250,
     padding: 15,
     justifyContent: "center",
-    alignItems: "center",
     elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    backgroundColor: "#fff",
   },
   performanceContent: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
   },
   circularProgressContainer: {
     width: 120,
     height: 120,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 20,
   },
   performanceValue: {
     position: "absolute",
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: "bold",
-    color: "#fff",
+  },
+  textAndButtonContainer: {
+    flex: 1,
+    alignItems: "center",
   },
   performanceLabel: {
-    color: "#fff",
-    fontSize: 14,
+    color: "#333",
+    fontSize: 16,
     fontWeight: "600",
     marginTop: 10,
   },
-  metricsCard: {
-    width: "48%",
-    borderRadius: 20,
-    height: 200,
-    padding: 20,
-    justifyContent: "space-around",
-    elevation: 5,
+  motivationalText: {
+    fontSize: 12,
+    color: "#888",
+    textAlign: "center",
+    marginTop: 5,
+    marginBottom: 15,
+  },
+  performanceButton: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
-  metricItem: {
-    marginBottom: 5,
-  },
-  metricHeader: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-    justifyContent: "center",
-  },
-  metricLabel: {
+  performanceButtonText: {
     color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-    opacity: 0.8,
-  },
-  metricValue: {
-    color: "#fff",
-    fontSize: 16,
     fontWeight: "bold",
+    fontSize: 14,
   },
   collectionSection: {
+    width: "100%",
     marginBottom: 20,
   },
   collectionCard: {
     borderRadius: 20,
     overflow: "hidden",
+    height: 120, // Decreased height
   },
   collectionGradient: {
+    flex: 1,
     padding: 20,
-    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
     elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -491,25 +513,29 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   collectionContent: {
-    flexDirection: "row",
+    flexDirection: "row", // Aligns content horizontally
     alignItems: "center",
+    justifyContent: "space-around", // Distributes space evenly
+    width: "100%",
   },
   collectionIconContainer: {
-    marginRight: 20,
+    // marginBottom: 10, // Removed to align horizontally
   },
   collectionTextContainer: {
-    flex: 1,
+    alignItems: "center",
   },
   collectionLabel: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 14, // Decreased font size
     fontWeight: "600",
     marginBottom: 5,
+    textAlign: "center",
   },
   collectionValue: {
     color: "#fff",
-    fontSize: 24,
+    fontSize: 20, // Decreased font size
     fontWeight: "bold",
+    textAlign: "center",
   },
   detailListContainer: {
     marginTop: 10,
@@ -529,9 +555,7 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 15,
   },
-  detailScrollView: {
-    // maxHeight: 250,  // This line is now removed.
-  },
+  detailScrollView: {},
   paymentItemCard: {
     backgroundColor: "#f7f7f7",
     padding: 15,

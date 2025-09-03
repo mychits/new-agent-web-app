@@ -92,19 +92,19 @@ const ViewLeads = ({ route, navigation }) => {
             setGoldLoaded(true);
         }
     };
-    
+
     // Use an effect to fetch data whenever startDate or endDate changes
     useEffect(() => {
-      fetchChitLeads(startDate, endDate);
-      fetchGoldLeads(startDate, endDate);
-    }, [startDate, endDate]);
-    
-    // Use focus effect to refresh data when the screen comes into focus
-    useFocusEffect(
-      useCallback(() => {
         fetchChitLeads(startDate, endDate);
         fetchGoldLeads(startDate, endDate);
-      }, [startDate, endDate])
+    }, [startDate, endDate]);
+
+    // Use focus effect to refresh data when the screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchChitLeads(startDate, endDate);
+            fetchGoldLeads(startDate, endDate);
+        }, [startDate, endDate])
     );
 
     const handleCall = (phoneNumber) => {
@@ -138,8 +138,8 @@ const ViewLeads = ({ route, navigation }) => {
         let newStartDate, newEndDate;
         switch (range) {
             case "All":
-               newStartDate = "";
-               newEndDate = "";
+                newStartDate = "";
+                newEndDate = "";
                 break;
             case "Today":
                 newStartDate = moment().format('YYYY-MM-DD');
@@ -212,20 +212,18 @@ const ViewLeads = ({ route, navigation }) => {
         const schemeTypeDisplay = item.scheme_type ?
             item.scheme_type.charAt(0).toUpperCase() + item.scheme_type.slice(1) :
             "";
-            
-       
-       const groupName = item.group_id?.group_name ? item.group_id?.group_name : "No Group"; 
+
+
+        const groupName = item.group_id?.group_name ? item.group_id?.group_name : "No Group";
 
         return (
             <TouchableOpacity onPress={() => toggleExpand(item._id)} style={cardStyle}>
                 <View style={styles.cardHeader}>
                     <View style={styles.leftSection}>
-                        <Text style={styles.name}>
-                            {item.lead_name}
-                            <Text style={styles.groupName}>
-                                {` (${groupName})`}
-                            </Text>
-                        </Text>
+                        <View>
+                            <Text style={styles.name}>{item.lead_name}</Text>
+                            <Text style={styles.groupName}>{groupName}</Text>
+                        </View>
                     </View>
                     <View style={styles.rightSection}>
                         <Text style={styles.schemeType}>
@@ -294,9 +292,8 @@ const ViewLeads = ({ route, navigation }) => {
 
     const filteredLeads = searchQuery
         ? allLeads.filter((item) => {
-            const itemData = `${item.lead_name.toUpperCase()} ${item.lead_phone.toUpperCase()} ${
-                item.group_name ? item.group_name.toUpperCase() : ""
-            }`;
+            const itemData = `${item.lead_name.toUpperCase()} ${item.lead_phone.toUpperCase()} ${item.group_name ? item.group_name.toUpperCase() : ""
+                }`;
             const textData = searchQuery.toUpperCase();
             return itemData.indexOf(textData) > -1;
         })
@@ -582,13 +579,13 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     name: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: "600",
         color: "#000",
-        marginBottom: 5,
+        marginBottom: 5,  // gap between name and groupName
     },
     groupName: {
-        fontSize: 14,
+        fontSize: 16,
         color: "#666",
     },
     schemeType: {
@@ -711,21 +708,21 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
     },
     filterBox: {
-    backgroundColor: "rgba(192, 223, 248, 0.7)",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    borderColor: "rgba(192, 223, 248, 0.7)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    flex: 3,
-    height: 50,
-},
+        backgroundColor: "rgba(192, 223, 248, 0.7)",
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 15,
+        borderColor: "rgba(192, 223, 248, 0.7)",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        flex: 3,
+        height: 50,
+    },
     filterIcon: {
         marginRight: 5,
         fontSize: 15,

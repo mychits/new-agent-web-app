@@ -592,8 +592,6 @@ const ChitPayments = ({ route, navigation }) => {
                     transparent={true}
                     animationType="fade"
                     onRequestClose={() => setShowPicker(false)}>
-                    {/* The `DateTimePicker` component itself provides the "OK" and "Cancel" buttons.
-                        Removing the custom view that contained the "X" button and placing the picker directly. */}
                     <View style={styles.modalContainer}>
                       <View style={styles.pickerContainer}>
                         <TouchableOpacity
@@ -601,9 +599,9 @@ const ChitPayments = ({ route, navigation }) => {
                             setShowPicker(false);
                             setSelectedFilter(null);
                           }}
-                          style={styles.closeButton}
+                          
                         >
-                          <Text style={styles.closeButtonText}>Close</Text>
+                          
                         </TouchableOpacity>
                         {renderPicker()}
                       </View>
@@ -837,15 +835,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     width: '90%',
   },
-  closeButton: {
-    alignSelf: 'flex-end',
-    padding: 5,
-  },
-  closeButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+
   fullScreenModalGradient: {
     flex: 1,
   },

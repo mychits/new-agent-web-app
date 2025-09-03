@@ -59,6 +59,10 @@ const cardImagePaths = {
     require("../assets/groups.png"),
     require("../assets/groups1.png"),
   ],
+  customerOnHold: [
+    require("../assets/Holdon1.png"),
+    require("../assets/Holdon2.png"),
+  ],
 };
 
 const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
@@ -262,6 +266,13 @@ const Home = ({ route, navigation }) => {
           params: { user: user },
         }),
       backgroundColor: "#D1C4E9",
+    },
+    {
+      id: "customerOnHold",
+      name: "Customer on Hold",
+      imagePaths: cardImagePaths.customerOnHold,
+      onPress: () => navigation.navigate("CustomerOnHold"), // Replace with the actual screen name
+      backgroundColor: "#FFF3E0",
     },
   ].filter(Boolean);
 
