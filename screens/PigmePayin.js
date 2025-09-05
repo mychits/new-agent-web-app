@@ -21,9 +21,8 @@ import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
 
 const PigmePayin = ({ route, navigation }) => {
-    const { user, customer ,pigme_id,custom_pigme_id} = route.params;
-   
-    //const [loanData, setPigmeData] = useState([]);
+    const { user, customer, pigme_id, custom_pigme_id } = route.params;
+
     const [currentDate, setCurrentDate] = useState("");
     const [receipt, setReceipt] = useState({});
     const [paymentDetails, setPaymentDetails] = useState("");
@@ -46,8 +45,8 @@ const PigmePayin = ({ route, navigation }) => {
                     `${baseUrl}/pigme/get-pigme/${pigme_id}`
                 );
                 console.log(response.data?.customer, "checking dhf");
-                if (response.data.customer) {
-                    setCustomerInfo(response.data?.customer?.full_name);
+                if (response.data && response.data.customer) {
+                    setCustomerInfo(response.data.customer.full_name);
                     setPigmeData([response.data]);
                 } else {
                     console.error("Unexpected API response format:", response.data);
@@ -124,18 +123,21 @@ const PigmePayin = ({ route, navigation }) => {
                 return;
             }
 
+            const PigmeId = selectedPigme?._id;
             const data = {
                 user_id: selectedPigme?.customer?._id,
                 pay_date: new Date().toISOString().split("T")[0],
-              
                 pay_type: paymentDetails,
                 amount: amount,
                 transaction_id: transactionId,
                 collected_by: user?.userId,
                 pay_for: "Pigme",
-
+                // Explicitly add pigme_id to the data object for the database
+                pigme_id: PigmeId,
             };
-            const PigmeId = selectedPigme?._id;
+
+            console.log("Sending data to API:", data);
+
             const response = await axios.post(
                 `${baseUrl}/payment/pigme/${PigmeId}`,
                 data
@@ -143,52 +145,37 @@ const PigmePayin = ({ route, navigation }) => {
             if (response.status === 201) {
                 Alert.alert("Success", "Payment added successfully!");
                 const userResponse = await axios.get(
-          `${baseUrl}/user/get-user-by-id/${customer}`
-        );
-        const { full_name,phone_number } = userResponse.data;
-        const { pay_date, amount, pay_type, transaction_id, receipt_no } =
-          response.data?.response;
-        const agentResponse = await axios.get(
-          `${baseUrl}/agent/get-agent-by-id/${user.userId}`
-        );
-		console.log("level two");
-		
-        const { name } = agentResponse.data;
-      
-        const totalAmountResponse = await axios.post(
-          `${baseUrl}/payment/get-total-amount`,
-          { user_id: customer, pigme: pigme_id }
-        );
-		
+                    `${baseUrl}/user/get-user-by-id/${customer}`
+                );
+                const { full_name, phone_number } = userResponse.data;
+                const { pay_date, amount, pay_type, transaction_id, receipt_no } =
+                    response.data?.response;
+                const agentResponse = await axios.get(
+                    `${baseUrl}/agent/get-agent-by-id/${user.userId}`
+                );
 
-        console.log(
-          full_name,
-          phone_number,
-          name,
-          amount,
-          pay_type,
-          pay_date,
-          transaction_id,
-          receipt_no,
-         
-          "hejejek jhakhsakjas thjahksakjsahsjhkjsdhkjsdahkjsdhksdajhsdajksdajk"
-        );
-console.log("level 3")
-        navigation.navigate("PigmePrint", {
-          customer_name: full_name,
-          phone_number,
-          agent_name: name,
-          amount,
-          pay_type,
-          pay_date,
-          transaction_id,
-          receipt_no,
-          total_amount: totalAmountResponse?.data?.totalAmount || 0,
-		custom_pigme_id,
-          isPigmePayment: true,
-          pigme_id: PigmeId,
-        });
-               // navigation.navigate("PigmePrint", { store_id: response.data._id });
+                const { name } = agentResponse.data;
+
+                const totalAmountResponse = await axios.post(
+                    `${baseUrl}/payment/get-total-amount`,
+                    { user_id: customer, pigme: pigme_id }
+                );
+
+
+                navigation.navigate("PigmePrint", {
+                    customer_name: full_name,
+                    phone_number: phone_number,
+                    agent_name: name,
+                    amount: amount,
+                    pay_type: pay_type,
+                    pay_date: pay_date,
+                    transaction_id: transaction_id,
+                    receipt_no: receipt_no,
+                    total_amount: totalAmountResponse?.data?.totalAmount || 0,
+                    custom_pigme_id: custom_pigme_id,
+                    isPigmePayment: true,
+                    pigme_id: pigme_id,
+                });
             } else {
                 console.log("Error:", response.data);
             }

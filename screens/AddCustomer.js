@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		height: 40,
-		backgroundColor: COLORS.white,
+		backgroundColor: "#e8f4faff",
 		borderRadius: 20,
 		paddingHorizontal: 15,
 		marginVertical: 10,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
 	},
 	headerText: {
 		fontWeight: "bold",
-		fontSize: 24,
+		fontSize: 28,
 		color: COLORS.primary,
 	},
 	myCustomersButton: {
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
 	},
 	myCustomersButtonText: {
 		color: COLORS.white,
-		fontSize: 14,
+		fontSize: 10,
 		fontWeight: '600',
 	},
 	addButton: {

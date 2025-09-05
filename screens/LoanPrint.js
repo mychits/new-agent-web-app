@@ -405,8 +405,6 @@ import { useNavigation } from "@react-navigation/native";
 
 const LoanPrint = ({ route }) => {
   const navigation = useNavigation();
-
-  // Get all necessary data directly from route params
   const {
     customer_name,
     phone_number,
