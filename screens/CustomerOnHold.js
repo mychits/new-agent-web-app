@@ -14,27 +14,68 @@ import Header from "../components/Header";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const chitBaseUrl = "http://51.21.197.152:3000/api"; // ✅ backend base URL
 
 const CustomerOnHold = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [agent, setAgent] = useState(null);
 
+  // ✅ Fetch agent details from AsyncStorage → then fetch agent info from API
   useEffect(() => {
+    const fetchAgentById = async () => {
+      try {
+        const storedAgentInfo = await AsyncStorage.getItem("agentInfo");
+        if (!storedAgentInfo) {
+          setError("No agent info found. Please login again.");
+          setLoading(false);
+          return;
+        }
+
+        const parsedAgent = JSON.parse(storedAgentInfo);
+        const agentId = parsedAgent?._id; // ✅ agentId from AsyncStorage
+
+        if (!agentId) {
+          setError("Agent ID not found in stored info.");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch agent from backend
+        const response = await axios.get(
+          `${chitBaseUrl}/agent/get-agent-by-id/${agentId}`
+        );
+        setAgent(response.data);
+      } catch (error) {
+        console.error("Error fetching agent data:", error);
+        setError("Failed to load agent information.");
+        setLoading(false);
+      }
+    };
+
+    fetchAgentById();
+  }, []);
+
+  // ✅ Fetch customers on hold when agent is loaded
+  useEffect(() => {
+    if (!agent || !agent._id) return;
+
     const fetchCustomersOnHold = async () => {
       try {
-        const agentId = '67a9dbcb2f3189bb854e8af6'; 
-        const apiUrl = `http://51.21.197.152:3000/api/enroll/holded?agent=${agentId}`;
+        const apiUrl = `${chitBaseUrl}/enroll/holded?agent=${agent._id}`;
         const response = await axios.get(apiUrl);
-        
-        const formattedCustomers = response.data.map(item => ({
+
+        const formattedCustomers = response.data.map((item) => ({
           id: item.user_id._id,
           name: item.user_id.full_name,
           groupName: item.group_id.group_name,
           phoneNumber: item.user_id.phone_number,
           email: item.user_id.email,
         }));
-        
+
         setCustomers(formattedCustomers);
       } catch (err) {
         console.error("Failed to fetch customers:", err);
@@ -43,10 +84,11 @@ const CustomerOnHold = () => {
         setLoading(false);
       }
     };
-    
-    fetchCustomersOnHold();
-  }, []);
 
+    fetchCustomersOnHold();
+  }, [agent]);
+
+  // -------- helper functions for call, email, whatsapp ----------
   const handleCall = async (phoneNumber) => {
     try {
       const url = `tel:${phoneNumber}`;
@@ -71,7 +113,7 @@ const CustomerOnHold = () => {
     try {
       const url = `whatsapp://send?phone=${phoneNumber}`;
       const supported = await Linking.canOpenURL(url);
-      
+
       if (supported) {
         await Linking.openURL(url);
       } else {
@@ -92,7 +134,6 @@ const CustomerOnHold = () => {
       <View style={styles.cardBody}>
         <Text style={styles.groupName}>{customer.groupName}</Text>
         <Text style={styles.phoneNumber}>Phone: {customer.phoneNumber}</Text>
-        
       </View>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
@@ -123,7 +164,7 @@ const CustomerOnHold = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']}
+        colors={["#dbf6faff", "#90dafcff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -154,12 +195,8 @@ const CustomerOnHold = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  gradientOverlay: {
-    flex: 1,
-  },
+  safeArea: { flex: 1 },
+  gradientOverlay: { flex: 1 },
   mainContentArea: {
     flex: 1,
     paddingHorizontal: 20,
@@ -179,18 +216,14 @@ const styles = StyleSheet.create({
     marginBottom: 25,
     textAlign: "center",
   },
-  loader: {
-    marginTop: 50,
-  },
+  loader: { marginTop: 50 },
   statusText: {
     fontSize: 16,
     color: "#555",
     textAlign: "center",
     marginTop: 20,
   },
-  cardsScrollViewContent: {
-    paddingBottom: 20,
-  },
+  cardsScrollViewContent: { paddingBottom: 20 },
   card: {
     backgroundColor: "#e8f4faff",
     borderRadius: 15,
@@ -205,40 +238,16 @@ const styles = StyleSheet.create({
     borderColor: "#da8201",
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 5,
   },
-  customerName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  groupType: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  cardBody: {
-    marginBottom: 15,
-  },
-  groupName: {
-    fontSize: 16,
-    color: "#777",
-    fontWeight: "400",
-  },
-  phoneNumber: {
-    fontSize: 16,
-    color: "#000",
-    fontWeight: "500",
-    marginTop: 5,
-  },
-  createdDate: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 5,
-  },
+  customerName: { fontSize: 20, fontWeight: "bold", color: "#000" },
+  groupType: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  cardBody: { marginBottom: 15 },
+  groupName: { fontSize: 16, color: "#777", fontWeight: "400" },
+  phoneNumber: { fontSize: 16, color: "#000", fontWeight: "500", marginTop: 5 },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "flex-start",
@@ -246,9 +255,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   contactButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 7,
     paddingHorizontal: 10,
     borderRadius: 50,
@@ -259,20 +268,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     gap: 8,
   },
-  callButton: {
-    backgroundColor: '#ff8c00',
-  },
-  whatsappButton: {
-    backgroundColor: '#25D366',
-  },
-  emailButton: {
-    backgroundColor: '#3498db',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  callButton: { backgroundColor: "#ff8c00" },
+  whatsappButton: { backgroundColor: "#25D366" },
+  emailButton: { backgroundColor: "#3498db" },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
 
 export default CustomerOnHold;

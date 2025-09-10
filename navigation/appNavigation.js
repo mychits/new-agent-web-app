@@ -26,7 +26,8 @@ import HelpAndSupport from "../screens/HelpAndSupport";
 import Commissions from "../screens/Commissions";
 import Target from "../screens/Target";
 import Dashboard from "../screens/Dashboard";
-import CustomerOnHold from "../screens/CustomerOnHold"
+import CustomerOnHold from "../screens/CustomerOnHold";
+import MonthlyTurnover from "../screens/MonthlyTurnover";
 
 // Import the EditLead screen
 import EditLead from "../screens/EditLead"; // <--- ADDED: Ensure this path is correct for your project
@@ -49,6 +50,11 @@ export default function AppNavigation() {
         <Stack.Screen
           name="BottomNavigation"
           component={BottomNavigation}
+          options={{ headerShown: false }}
+        />
+          <Stack.Screen
+          name="MonthlyTurnover"
+          component={MonthlyTurnover}
           options={{ headerShown: false }}
         />
         <Stack.Screen

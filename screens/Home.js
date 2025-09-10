@@ -24,6 +24,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { AgentContext } from "../context/AgentContextProvider";
+import { useNetInfo } from "@react-native-community/netinfo";
 
 const { width } = Dimensions.get("window");
 
@@ -63,6 +64,7 @@ const cardImagePaths = {
     require("../assets/Holdon1.png"),
     require("../assets/Holdon2.png"),
   ],
+  monthlyTurnover: [require("../assets/MITA.png"), require("../assets/MITB.png")],
 };
 
 const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
@@ -116,6 +118,9 @@ const Home = ({ route, navigation }) => {
   const [initialVisit, setInitialVisit] = useState(true);
   const { modifyPayment, setModifyPayment } = useContext(AgentContext);
 
+  // Use the useNetInfo hook to get real-time network status
+  const netInfo = useNetInfo();
+
   setModifyPayment(
     agentInfo.designation_id?.permission?.modify_payments === "true"
   );
@@ -142,8 +147,10 @@ const Home = ({ route, navigation }) => {
         setAgent({});
       }
     };
-    fetchAgent();
-  }, [user.userId, agentInfo]);
+    if (netInfo.isConnected) {
+      fetchAgent();
+    }
+  }, [user.userId, agentInfo, netInfo.isConnected]);
 
   useEffect(() => {
     const checkFirstVisit = async () => {
@@ -255,7 +262,6 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#DCEDC8",
     },
-    // This is the correct navigation for the 'Groups' card, assuming 'Enrollment.jsx' is mapped to the 'MyGroups' screen.
     {
       id: "groups",
       name: "Groups",
@@ -271,10 +277,34 @@ const Home = ({ route, navigation }) => {
       id: "customerOnHold",
       name: "Customer on Hold",
       imagePaths: cardImagePaths.customerOnHold,
-      onPress: () => navigation.navigate("CustomerOnHold"), // Replace with the actual screen name
+      onPress: () => navigation.navigate("CustomerOnHold"),
       backgroundColor: "#FFF3E0",
     },
+    {
+      id: "monthlyTurnover",
+      name: "MIT",
+      imagePaths: cardImagePaths.monthlyTurnover,
+      onPress: () => navigation.navigate("MonthlyTurnover"),
+      backgroundColor: "#D0F0C0",
+    },
   ].filter(Boolean);
+
+  // "No Internet" component to be rendered when offline
+  const renderNoInternet = () => (
+    <View style={styles.noInternetContainer}>
+      <Image
+        source={require("../assets/Nointernetp.png")}
+        style={styles.noInternetImage}
+        resizeMode="contain"
+      />
+      <Text style={styles.noInternetText}>
+        Oops! No internet connection.
+      </Text>
+      <Text style={styles.noInternetSubText}>
+        Please check your network settings and try again.
+      </Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -294,21 +324,26 @@ const Home = ({ route, navigation }) => {
               Welcome to MyChits Agent App
             </Text>
           </View>
-          <ScrollView
-            contentContainerStyle={styles.cardsScrollViewContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.cardsGridContainer}>
-              {cardsData.map((card) => (
-                <CardWithAnimatedImage
-                  key={card.id}
-                  card={card}
-                  cardStyles={styles}
-                  initialImageIndex={getInitialImageIndex()}
-                />
-              ))}
-            </View>
-          </ScrollView>
+
+          {netInfo.isConnected === false ? (
+            renderNoInternet()
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.cardsScrollViewContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.cardsGridContainer}>
+                {cardsData.map((card) => (
+                  <CardWithAnimatedImage
+                    key={card.id}
+                    card={card}
+                    cardStyles={styles}
+                    initialImageIndex={getInitialImageIndex()}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          )}
         </View>
       </LinearGradient>
     </SafeAreaView>
@@ -382,8 +417,29 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     textAlign: "center",
   },
-  gradientOverlay: {
+  // No Internet styles
+  noInternetContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noInternetImage: {
+    width: 200,
+    height: 200,
+  },
+  noInternetText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginTop: 20,
+    textAlign: "center",
+  },
+  noInternetSubText: {
+    fontSize: 16,
+    color: "#777",
+    marginTop: 10,
+    textAlign: "center",
   },
 });
 
