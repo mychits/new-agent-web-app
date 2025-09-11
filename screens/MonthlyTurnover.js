@@ -124,6 +124,10 @@ const MonthlyTurnover = () => {
           <Text style={styles.customerValue}>{item.group_id.group_name}</Text>
         </View>
         <View style={styles.customerDetailRow}>
+        <Text style={styles.customerLabel}>Ticket Number:</Text>
+        <Text style={styles.customerValue}>{item.ticket}</Text>
+      </View>
+        <View style={styles.customerDetailRow}>
           <Text style={styles.customerLabel}>Monthly Installment:</Text>
           <Text style={styles.customerValue}>₹{item.monthly_installment}</Text>
         </View>
@@ -329,7 +333,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#34495e",
   },
-  // New styles for the image-based design
+  
   freshLeadBadgeContainer: {
     position: 'absolute',
     top: 0,
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: 'orange',
+    backgroundColor: 'Red',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderBottomLeftRadius: 15,
