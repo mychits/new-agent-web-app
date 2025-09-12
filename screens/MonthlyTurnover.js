@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   FlatList,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
@@ -13,12 +14,18 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 import { FontAwesome5 } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const MonthlyTurnover = () => {
   const [turnoverData, setTurnoverData] = useState(null);
   const [customersData, setCustomersData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+  const [formattedDate, setFormattedDate] = useState(
+    moment().format("MMMM YYYY")
+  );
 
   useEffect(() => {
     const fetchMonthlyData = async () => {
@@ -33,8 +40,8 @@ const MonthlyTurnover = () => {
           return;
         }
 
-        const currentYear = moment().year();
-        const currentMonth = moment().month() + 1;
+        const currentYear = moment(selectedDate).year();
+        const currentMonth = moment(selectedDate).month() + 1;
 
         const apiUrl = `http://51.21.197.152:3000/api/user/agent-monthly-turnover-by-id/${agentId}?year=${currentYear}&month=${currentMonth}`;
 
@@ -61,7 +68,17 @@ const MonthlyTurnover = () => {
     };
 
     fetchMonthlyData();
-  }, []);
+  }, [selectedDate]);
+
+  const onDateChange = (event, newDate) => {
+    setShowPicker(false);
+    if (newDate) {
+      // Set the day to 1 to ensure the date is consistent, as we only care about month and year
+      const adjustedDate = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+      setSelectedDate(adjustedDate);
+      setFormattedDate(moment(adjustedDate).format("MMMM YYYY"));
+    }
+  };
 
   const renderTurnoverCard = () => (
     <View>
@@ -73,6 +90,13 @@ const MonthlyTurnover = () => {
             <Text style={styles.phoneNumber}>{turnoverData?.phone_number}</Text>
           </View>
         </View>
+        <TouchableOpacity
+          style={styles.datePickerContainer}
+          onPress={() => setShowPicker(true)}
+        >
+          <FontAwesome5 name="calendar-alt" size={20} color="#34495E" />
+          <Text style={styles.datePickerText}>{formattedDate}</Text>
+        </TouchableOpacity>
         <View style={styles.divider} />
         <View style={styles.cardBody}>
           <View style={styles.dataRow}>
@@ -96,7 +120,7 @@ const MonthlyTurnover = () => {
           </View>
           <View style={styles.verticalDivider} />
           <View style={styles.turnoverSection}>
-            <Text style={styles.turnoverLabel}>Total</Text>
+            <Text style={styles.turnoverLabel}>Actual</Text>
             <Text style={styles.turnoverValue}>₹{turnoverData?.totalTurnover}</Text>
           </View>
         </View>
@@ -167,6 +191,15 @@ const MonthlyTurnover = () => {
             />
           )}
         </View>
+        {showPicker && (
+          <DateTimePicker
+            testID="dateTimePicker"
+            value={selectedDate}
+            mode="date"
+            display="spinner"
+            onChange={onDateChange}
+          />
+        )}
       </LinearGradient>
     </SafeAreaView>
   );
@@ -357,6 +390,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     textTransform: 'uppercase',
+  },
+  datePickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
+  datePickerText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#34495E',
+    marginLeft: 10,
   },
 });
 
