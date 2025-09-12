@@ -15,8 +15,7 @@ import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-ico
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const chitBaseUrl = "http://51.21.197.152:3000/api"; // ✅ backend base URL
+import chitBaseUrl from "../constants/baseUrl"
 
 const CustomerOnHold = () => {
   const [customers, setCustomers] = useState([]);
