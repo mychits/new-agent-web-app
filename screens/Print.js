@@ -403,7 +403,7 @@ Collected by: ${agent.name}
 						filled
 						style={{ flex: 1, marginLeft: 8, backgroundColor: COLORS.third }}
 						onPress={() => handlePosPrint()}
-						disabled={!isConnected}
+						
 					/>
 				</View>
 			</View>

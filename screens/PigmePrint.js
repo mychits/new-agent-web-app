@@ -197,29 +197,99 @@ Collected by: ${agent_name}
     }
   };
   const handlePosPrint = async () => {
+   
+
     setIsPrinting(true);
+
+    const groupOrPigmeHtml = isPigmePayment
+      ? `<p style="margin: 0;">Pigme ID: ${custom_pigme_id}</p>`
+      : `<p style="margin: 0;">Group: ${"Loan"}</p><p style="margin: 0;">Ticket: ${
+          "loab" || "N/A"
+        }</p>`;
+
+    const txnLine =
+      pay_type?.toLowerCase() === "online" && transaction_id
+        ? `<p>Transaction ID: ${transaction_id}</p>`
+        : "";
+
+    const htmlContent = `
+      <html>
+      <head>
+        <style>
+          @page {
+            size: 58mm auto;
+            margin: 0 0 0 4mm;
+          }
+          body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            margin: 0;
+            padding: 0;
+            width: 58mm;
+          }
+          .receipt {
+            padding: 5mm;
+          }
+          .header, .footer {
+            text-align: center;
+          }
+          .line {
+            border-top: 1px dashed #000;
+            margin: 2mm 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            <h3 align="center">MY CHITS</h3>
+          </div>
+          <div>
+            <p align="center">No.11/36-25, 2nd Main,</br>
+            Kathriguppe Main Road,</br>
+            Bangalore, 560085
+            9483900777</p>
+          </div>
+          <div class="line"></div>
+          <p align="center" style="font-weight:bold">${
+            isPigmePayment ? "Pigme Receipt" : "Receipt"
+          }</p>
+          <p>
+          Receipt No: ${receipt_no} <br/>
+          Date: ${formatDate(pay_date)}
+          </p>
+          <p>
+          Name: ${customer_name} <br/>
+          Mobile No: ${phone_number}
+          </p>
+          <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            ${groupOrPigmeHtml}
+          </div>
+          <table style="border-collapse: collapse; width: 100%;" border="1">
+            <tr>
+              <td style="padding: 5px; font-size:14px">Received Amount</td>
+              <td style="padding: 5px; font-size:14px">Rs.${amount}</td>
+            </tr>
+          </table>
+          <p>Mode: ${pay_type}</br>
+          ${txnLine}
+          Total: Rs.${total_amount || 0}</p>
+          <div class="line"></div>
+          <p>Collected By: ${agent_name}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
     try {
-      await blePrinter.printReceipt(
-        customer_name,
-        custom_pigme_id,
-        pay_date,
-        receipt_no,
-        amount,
-        pay_type,
-        transaction_id,
-        total_amount,
-        agent_name
-      );
+      await RNPrint.print({ html: htmlContent });
     } catch (error) {
-      Alert.alert(
-        "POS Print Error",
-        "Failed to print to POS. " + error.message
-      );
+      Alert.alert("Print Error", "Failed to print the document.");
     } finally {
       setIsPrinting(false);
     }
   };
-
+  
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
