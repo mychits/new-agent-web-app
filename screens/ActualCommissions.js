@@ -261,7 +261,15 @@ const styles = StyleSheet.create({
         marginHorizontal: 3,
     },
     textInput: {
-        height: 40,
+        ...Platform.select({
+            android:{
+                height:55
+            },
+            ios:{
+                height:55
+            }
+
+        }),
         width: "100%",
         borderColor: "gray",
         borderWidth: 1,
@@ -283,7 +291,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     picker: {
-        height: 40,
+       ...Platform.select({
+        android:{
+            height:55
+        },
+        ios:{
+            height:55
+        }
+
+       }),
         width: "100%",
     },
     container: {

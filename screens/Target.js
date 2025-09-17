@@ -120,7 +120,6 @@ const Target = ({ route, navigation }) => {
                 return;
             }
 
-            console.log("Fetching target for agent:", agentId, "Designation:", designationId);
 
             const res = await axios.get(`${baseUrl}/target/get-targets`, {
                 params: {

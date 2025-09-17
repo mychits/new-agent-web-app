@@ -44,7 +44,6 @@ const PigmePayin = ({ route, navigation }) => {
                 const response = await axios.get(
                     `${baseUrl}/pigme/get-pigme/${pigme_id}`
                 );
-                console.log(response.data?.customer, "checking dhf");
                 if (response.data && response.data.customer) {
                     setCustomerInfo(response.data.customer.full_name);
                     setPigmeData([response.data]);
@@ -136,7 +135,7 @@ const PigmePayin = ({ route, navigation }) => {
                 pigme_id: PigmeId,
             };
 
-            console.log("Sending data to API:", data);
+          
 
             const response = await axios.post(
                 `${baseUrl}/payment/pigme/${PigmeId}`,
@@ -204,7 +203,7 @@ const PigmePayin = ({ route, navigation }) => {
                         <View style={{ marginHorizontal: 22, marginTop: 12 }}>
                             <Header />
                             <View style={styles.titleContainer}>
-                                <Text style={styles.title}>Add Payment</Text>
+                                <Text style={styles.title}>Add Pigme Payment</Text>
                             </View>
                             <View style={styles.container}>
                                 <View style={styles.formBox}>
@@ -367,7 +366,8 @@ const styles = StyleSheet.create({
         marginHorizontal: 3,
     },
     textInput: {
-        height: 40,
+        
+        
         width: "100%",
         borderColor: "#d0d0d0",
         borderWidth: 1,
@@ -381,6 +381,16 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 3,
+        ...Platform.select({
+            ios:{
+                height:55
+
+            },
+            android:{
+                height:55
+            }
+        })
+
     },
     contentContainer: {
         marginTop: 20,
@@ -400,7 +410,14 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     picker: {
-        height: 40,
+        ...Platform.select({
+            android:{
+                height:55
+            },
+            ios:{
+                height:55
+            }
+        }),
         width: "100%",
     },
     label: {

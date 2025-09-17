@@ -80,7 +80,6 @@ const ViewEnrollments = ({ route, navigation }) => {
 				const response = await axios.get(
 					`${currentUrl}/enroll/get-enroll-by-agent-id/${user.userId}`
 				);
-				console.log(response.data);
 				if (response.status >= 400)
 					throw new Error("Failed to fetch Enrolled customer Data");
 				setCustomer(response.data);

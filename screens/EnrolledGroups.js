@@ -13,15 +13,14 @@ import {
     ScrollView,
     TextInput
 } from "react-native";
-import { TapGestureHandler } from "react-native-gesture-handler";
-import React, { useState, useEffect, useCallback } from "react";
+
+import { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import { LinearGradient } from "expo-linear-gradient";
-import Icon from "react-native-vector-icons/FontAwesome";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 
@@ -78,7 +77,6 @@ const EnrolledGroups = ({ route, navigation }) => {
                 const response = await axios.get(
                     `${currentUrl}/enroll/get-enroll-by-agent-id/${user.userId}`
                 );
-                console.log(response.data);
                 if (response.status >= 400)
                     throw new Error("Failed to fetch Enrolled customer Data");
                 setCustomer(response.data);

@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 import { FontAwesome5 } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-
+import baseUrl from "../constants/baseUrl"
 const MonthlyTurnover = () => {
   const [turnoverData, setTurnoverData] = useState(null);
   const [customersData, setCustomersData] = useState([]);
@@ -43,7 +43,7 @@ const MonthlyTurnover = () => {
         const currentYear = moment(selectedDate).year();
         const currentMonth = moment(selectedDate).month() + 1;
 
-        const apiUrl = `http://51.21.197.152:3000/api/user/agent-monthly-turnover-by-id/${agentId}?year=${currentYear}&month=${currentMonth}`;
+        const apiUrl = `${baseUrl}/user/agent-monthly-turnover-by-id/${agentId}?year=${currentYear}&month=${currentMonth}`;
 
         const response = await axios.get(apiUrl);
 

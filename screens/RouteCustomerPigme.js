@@ -38,7 +38,6 @@ const RouteCustomerPigme = ({ route, navigation }) => {
         const response = await axios.get(
           `${baseUrl}/pigme/get-all-pigme-customers`
         );
-        console.log(response.data, "checking");
         if (response.data) {
           setCustomers(response.data);
         } else {
@@ -107,7 +106,6 @@ const RouteCustomerPigme = ({ route, navigation }) => {
                         name={item.customer?.full_name || "Unknown Customer"}
                         phone={item.customer?.phone_number || "N/A"}
                         onPress={() =>{
-                          console.log("begins here \n",item,"this si skjhakjhka")
                           navigation.navigate("PigmePayin", { user, customer: item.customer?._id, pigme_id: item._id ,custom_pigme_id:item?.pigme_id})}
                         }
                       />

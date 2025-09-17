@@ -66,7 +66,7 @@ class BlePrinter {
       const discoveredDevices = await RNBluetoothClassic.startDiscovery();
       console.log("Discovered devices:", discoveredDevices);
 
-      // ✅ Look for any of the allowed MACs
+      
       let device =
         discoveredDevices.find((d) => this.targetMacs.includes(d.id)) ||
         (await RNBluetoothClassic.getBondedDevices()).find((d) =>

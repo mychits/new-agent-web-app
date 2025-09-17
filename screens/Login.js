@@ -10,7 +10,7 @@ import {
   Pressable,
   Animated,
 } from "react-native";
-import React, { useState, useRef, useEffect } from "react";
+import  { useState, useRef, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import baseUrl from "../constants/baseUrl";
@@ -20,14 +20,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
 
-// Define a consistent color palette based on the existing design
 const COLOR_PALETTE = {
-  primary: '#1C2E4A', // Dark blue/charcoal for text and buttons
-  secondary: '#5F6C7D', // Grayish blue for labels and icons
-  lightText: '#FFFFFF', // White text for contrast
+  primary: '#1C2E4A', 
+  secondary: '#5F6C7D', 
+  lightText: '#FFFFFF', 
 };
 
-// Define your background images for the animated transition
+
 const backgroundImages = [
   require('../assets/i1.png'),
   require('../assets/i.png'),
@@ -39,26 +38,20 @@ export default function Login({ navigation }) {
   const [password, setPassword] = useState("");
   const [isPasswordShown, setIsPasswordShown] = useState(false);
 
-  // State and animation for dynamic background image transitions
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // Animation for the login button
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  // Animation for the input fields
   const inputAnim = useRef(new Animated.Value(0)).current;
 
-  // Effect for background image animation and input field fade-in
   useEffect(() => {
     const interval = setInterval(() => {
-      // Fade out current image
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 500,
         useNativeDriver: true,
       }).start(() => {
-        // After fade out, change to next image and fade in
         setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
         Animated.timing(fadeAnim, {
           toValue: 1,

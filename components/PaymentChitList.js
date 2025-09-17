@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Alert, Linking } from "react-native";
 import React from "react";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import { TouchableOpacity } from "react-native";
 import COLORS from "../constants/color";
 import { Feather } from "@expo/vector-icons";
 

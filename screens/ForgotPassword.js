@@ -38,8 +38,7 @@ export default function ForgotPassword({ navigation }) {
 
     setLoading(true);
     try {
-      // --- DEBUGGING STEP: Log the phone number before sending ---
-      console.log("Sending OTP for phone number:", phone);
+      
 
       const response = await axios.post(`${baseUrl}/agent/forgot-password`, {
         phone_number: phone,
@@ -68,8 +67,6 @@ export default function ForgotPassword({ navigation }) {
     }
     setLoading(true);
     try {
-      // --- DEBUGGING STEP: Log the phone number and OTP before sending ---
-      console.log("Verifying OTP for phone:", phone, "OTP:", otp);
 
       const response = await axios.post(`${baseUrl}/agent/verify-otp`, {
         phone_number: phone.trim(),

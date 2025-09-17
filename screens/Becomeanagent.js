@@ -129,7 +129,6 @@ const Becomeanagent = ({ navigation, route }) => {
 
       // Use the imported baseUrl here
       const fullUrl = `${baseUrl}/become-agent/agents/become`;
-      console.log("Attempting to post to URL:", fullUrl);
 
       const response = await axios.post(fullUrl, formData);
 

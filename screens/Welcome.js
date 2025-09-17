@@ -142,7 +142,7 @@ const Welcome = ({ navigation }) => {
           <View style={styles.navigationContainer}>
             {/* Back Button */}
             <TouchableOpacity style={styles.navButton}>
-              <AntDesign name="arrowleft" size={24} color="#333" />
+              <AntDesign name="arrow-left" size={24} color="#333" />
             </TouchableOpacity>
 
             {/* Pagination Dots */}
@@ -163,7 +163,7 @@ const Welcome = ({ navigation }) => {
               style={[styles.navButton, styles.nextButton]} 
               onPress={handleNextPress}
             >
-              <AntDesign name="arrowright" size={24} color="#fff" />
+              <AntDesign name="arrow-right" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>

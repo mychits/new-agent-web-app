@@ -31,7 +31,6 @@ const MyCommission = ({ route, navigation }) => {
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        console.log(commissions.commission_data, "commission data")
         if (commissions.commission_data) {
             setIsChitLoading(false)
 

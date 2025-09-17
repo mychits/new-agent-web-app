@@ -42,7 +42,6 @@ const LoanPayin = ({ route, navigation }) => {
         const response = await axios.get(
           `${baseUrl}/loans/get-borrower/${loan_id}`
         );
-        console.log(response.data, "checking");
         if (response.data) {
           setCustomerInfo(response.data.borrower);
           setLoanData([response.data]);
@@ -135,7 +134,6 @@ const LoanPayin = ({ route, navigation }) => {
       const response = await axios.post(`${url}/payment/loan/${loanId}`, data);
       if (response.status === 201) {
         Alert.alert("Success", "Payment added successfully!");
-        console.log("level one", customer);
 
         const userResponse = await axios.get(
           `${baseUrl}/user/get-user-by-id/${customer}`
@@ -154,7 +152,6 @@ const LoanPayin = ({ route, navigation }) => {
           `${baseUrl}/payment/get-total-amount`,
           { user_id: customer, loan: loanId }
         );
-        console.log("level three", customer, loanId);
 
 
 
@@ -199,7 +196,7 @@ const LoanPayin = ({ route, navigation }) => {
             <View style={{ marginHorizontal: 22, marginTop: 12 }}>
               <Header />
               <View style={styles.titleContainer}>
-                <Text style={styles.title}>Add Payment</Text>
+                <Text style={styles.title}>Add Loan Payment</Text>
               </View>
               <View style={styles.container}>
                 <View style={styles.formBox}>
@@ -362,7 +359,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 3,
   },
   textInput: {
-    height: 40,
+   ...Platform.select({
+    android:
+    {
+      height:55
+    },ios:{
+      height:55
+    }
+
+   }),
     width: "100%",
     borderColor: "#d0d0d0",
     borderWidth: 1,
@@ -395,8 +400,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   picker: {
-    height: 40,
+   
     width: "100%",
+    ...Platform.select({
+      ios:{
+height:55
+      },
+      android:{
+        height:55
+      }
+    })
   },
   label: {
     fontWeight: "bold",

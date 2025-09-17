@@ -1,8 +1,8 @@
-import React from "react";
+
 import { View, Image } from "react-native";
-import COLORS from "../constants/color";
+
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import { TouchableOpacity } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native"; // Import navigation and route hooks
 
 const Header = () => {
