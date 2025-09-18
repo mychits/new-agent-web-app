@@ -9,7 +9,6 @@ class BlePrinter {
     this.latestWeight = "";
     this.connectedDevice = null;
     this.dataSubscription = null;
-    // ✅ Array of MAC addresses
     this.targetMacs = [
       "66:32:60:5D:D4:CD",
       "66:32:D9:CC:DB:5F",

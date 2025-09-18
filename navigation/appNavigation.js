@@ -31,6 +31,7 @@ import MonthlyTurnover from "../screens/MonthlyTurnover";
 
 // Import the EditLead screen
 import EditLead from "../screens/EditLead"; // <--- ADDED: Ensure this path is correct for your project
+import QrCodePage from "../screens/QrCodePage";
 
 enableScreens();
 
@@ -76,6 +77,11 @@ export default function AppNavigation() {
           name="PayNavigation"
           component={PayNavigation}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="qrCode"
+          options={{ headerShown: false }}
+          component={QrCodePage}
         />
         <Stack.Screen
           name="PaymentNavigator"

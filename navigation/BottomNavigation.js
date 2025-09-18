@@ -6,6 +6,7 @@ import COLORS from "../constants/color";
 import PaymentNavigator from "./PaymentNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import { enableScreens } from "react-native-screens";
+import { SafeAreaView } from "react-native-safe-area-context";
 enableScreens();
 
 const Tab = createBottomTabNavigator();
@@ -29,6 +30,7 @@ const BottomNavigation = ({ route }) => {
 	const { user, agentInfo } = route.params;
 
 	return (
+		<SafeAreaView>
 		<Tab.Navigator screenOptions={screenOptions}>
 			<Tab.Screen
 				name="Home"
@@ -88,6 +90,7 @@ const BottomNavigation = ({ route }) => {
 				}}
 			/>
 		</Tab.Navigator>
+		</SafeAreaView>
 	);
 };
 

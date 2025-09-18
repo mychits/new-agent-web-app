@@ -33,6 +33,10 @@ const cardImagePaths = {
     require("../assets/Collection1.png"),
     require("../assets/Collection2.png"),
   ],
+    qrCode: [
+    require("../assets/qrcode.png"),
+    require("../assets/qrcode.png"),
+  ],
   daybook: [
     require("../assets/Daybook1.png"),
     require("../assets/Daybook2.png"),
@@ -180,6 +184,13 @@ const Home = ({ route, navigation }) => {
       name: "Collections",
       imagePaths: cardImagePaths.collections,
       onPress: () => navigation.navigate("PaymentNavigator"),
+      backgroundColor: "#FFEBEE",
+    },
+    agentInfo?.designation_id?.permission?.collection === "true" && {
+      id: "qrCode",
+      name: "QR Code",
+      imagePaths: cardImagePaths.qrCode,
+      onPress: () => navigation.navigate("qrCode"),
       backgroundColor: "#FFEBEE",
     },
     agentInfo?.designation_id?.permission?.daybook === "true" && {

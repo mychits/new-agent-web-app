@@ -207,7 +207,105 @@ Collected by: ${agent.name}
       Alert.alert("Print Error", "Failed to print the document.");
     }
   };
+  const handlePos80MMPrint = async () => {
+    const htmlContent = `
+  <html>
+<head>
+  <style>
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      margin: 0;
+      padding: 0;
+      width: 80mm;
+    }
+    .receipt {
+      padding: 3mm 2mm;
+      line-height: 1.3;
+    }
+    .header, .footer {
+      text-align: center;
+      margin-bottom: 2mm;
+    }
+    .line {
+      border-top: 1px dashed #000;
+      margin: 2mm 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2mm 0;
+    }
+    td {
+      padding: 2px 4px;
+      font-size: 11px;
+    }
+    p {
+      margin: 1px 0;
+    }
+    .flex-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 1px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="header">
+      <strong>MY CHITS</strong><br/>
+      No.11/36-25, 2nd Main,<br/>
+      Kathriguppe Main Road,<br/>
+      Bangalore, 560085<br/>
+      9483900777
+    </div>
 
+    <div class="line"></div>
+
+    <p align="center"><strong>RECEIPT</strong></p>
+
+    <p><strong>Receipt No:</strong> ${payInfo?.receipt_no}</p>
+    <p><strong>Date:</strong> ${formatDate(payInfo?.pay_date)}</p>
+
+    <p><strong>Name:</strong> ${payInfo?.user_id?.full_name}</p>
+    <p><strong>Mobile:</strong> ${payInfo?.user_id?.phone_number}</p>
+
+    <div class="flex-row">
+      <span><strong>Group:</strong> ${
+        payInfo?.group_id?.group_name || "N/A"
+      }</span>
+      <span><strong>Ticket:</strong> ${payInfo?.ticket || "N/A"}</span>
+    </div>
+
+    <table>
+      <tr>
+        <td>Received Amount</td>
+        <td style="text-align: right;">Rs. ${payInfo?.amount}</td>
+      </tr>
+    </table>
+
+    <p><strong>Mode:</strong> ${payInfo?.pay_type}</p>
+    <p><strong>Total:</strong> Rs. ${totalAmount || 0}</p>
+
+    <div class="line"></div>
+
+    <p><strong>Collected By:</strong> ${agent.name}</p>
+  </div>
+</body>
+</html>
+  `;
+
+    try {
+      await RNPrint.print({ html: htmlContent });
+    } catch (error) {
+      Alert.alert("Print Error", "Failed to print the document.");
+    }
+  };
   useEffect(() => {
     const backAction = () => {
       navigation.navigate("RouteCustomerChit");
@@ -405,7 +503,24 @@ Collected by: ${agent.name}
             onPress={() => handlePosPrint()}
             disabled={false}
           />
+          
         </View>
+         <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 18,
+          }}
+        >
+          <Button
+            title="POS 80MM Print"
+            filled
+            style={{ flex: 1, marginLeft: 8, backgroundColor: COLORS.third }}
+            onPress={() => handlePos80MMPrint()}
+            disabled={false}
+          />
+        </View>
+        
       </View>
     </SafeAreaView>
   );
