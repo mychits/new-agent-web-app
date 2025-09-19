@@ -8,8 +8,17 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  Image,
+  ActivityIndicator,
 } from "react-native";
-import React, { useState, useEffect, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useSyncExternalStore,
+} from "react";
+import { Buffer } from "buffer";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
@@ -22,6 +31,7 @@ import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
 import { AgentContext } from "../context/AgentContextProvider";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 
 const Payin = ({ route, navigation }) => {
   const { user, customer } = route.params;
@@ -42,6 +52,9 @@ const Payin = ({ route, navigation }) => {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedTicket, setSelectedTicket] = useState("");
   const [allData, setAllData] = useState([]);
+  const [url, setUrl] = useState("");
+  const [qrLoading, setQrLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
   // Fetch customer details
   useEffect(() => {
@@ -70,7 +83,6 @@ const Payin = ({ route, navigation }) => {
         const response = await axios.post(
           `${baseUrl}/enroll/get-user-tickets/${customer}`
         );
-       
 
         setAllData(response.data);
 
@@ -222,9 +234,118 @@ const Payin = ({ route, navigation }) => {
       setSelectedTicket(tickets[0].toString());
     }
   }, [tickets]);
+  const generateQrCode = async () => {
+    try {
+      setQrLoading(true);
+      const response = await axios.post(
+        `${baseUrl}/qrcode?amount=${amount}`,
+        {},
+        { responseType: "arraybuffer" } 
+      );
 
+      const base64 = Buffer.from(response.data, "binary").toString("base64");
+      const dataUrl = `data:image/png;base64,${base64}`;
+      setUrl(dataUrl);
+
+      setModalVisible(true);
+    } catch (error) {
+      console.error("Failed to generate qr code", error);
+    } finally {
+      setQrLoading(false);
+    }
+  };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              width: 320,
+              padding: 24,
+              backgroundColor: "white",
+              borderRadius: 16,
+              alignItems: "center",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              elevation: 6,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "bold",
+                color: "#222",
+                marginBottom: 6,
+              }}
+            >
+              MyChits Payment
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#666",
+                marginBottom: 16,
+              }}
+            >
+              Pay ₹{amount}
+            </Text>
+
+            <View
+              style={{
+                padding: 12,
+                backgroundColor: "#f8f8f8",
+                borderRadius: 12,
+                marginBottom: 20,
+              }}
+            >
+              <Image
+                source={{ uri: url }}
+                style={{ width: 240, height: 240 }}
+                resizeMode="contain"
+              />
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={{
+                width: "100%",
+                paddingVertical: 12,
+                backgroundColor: "#EA5B6F",
+                borderRadius: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontWeight: "bold",
+                  fontSize: 16,
+                  textAlign: "center",
+                }}
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <LinearGradient
         colors={["#dbf6faff", "#90dafcff"]}
         style={styles.gradientOverlay}
@@ -389,13 +510,33 @@ const Payin = ({ route, navigation }) => {
                       />
                     </>
                   )}
-                  <Button
-                    title={isLoading ? "Please wait..." : "Add Payment"}
-                    filled
-                    disabled={isLoading}
-                    style={styles.button}
-                    onPress={handleAddPayment}
-                  />
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    {amount && paymentDetails === "online" && (
+                      <TouchableOpacity
+                        onPress={generateQrCode}
+                        style={styles.qrButton}
+                      >
+                        {qrLoading ? (
+                          <ActivityIndicator size="small" color={"green"}/>
+                        ) : (
+                          <MaterialIcons name="qr-code-2" size={40} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+
+                    <Button
+                      title={isLoading ? "Please wait..." : "Add Payment"}
+                      filled
+                      disabled={isLoading}
+                      style={styles.button}
+                      onPress={handleAddPayment}
+                    />
+                  </View>
                 </View>
               </View>
             </View>
@@ -460,7 +601,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    
   },
 
   pickerContainer: {
@@ -497,7 +637,19 @@ const styles = StyleSheet.create({
   star: {
     color: "red",
   },
+  qrButton: {
+    flex: 1,
+    marginTop: 18,
+    marginBottom: 50,
+    backgroundColor: "#A7E399",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    padding: 2,
+  },
   button: {
+    flex: 6,
+    margin: 3,
     marginTop: 18,
     marginBottom: 50,
     backgroundColor: "#da8201",

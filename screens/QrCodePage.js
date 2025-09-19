@@ -1,5 +1,4 @@
 import { View, Text, Image, StyleSheet } from "react-native";
-import React from "react";
 import  Header from "../components/Header";
 
 const QrCodePage = () => {
@@ -60,7 +59,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
+    backgroundColor: "#E0DEDD",
     borderRadius: 15,
     padding: 20,
     shadowColor: "#000",
