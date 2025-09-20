@@ -1,8 +1,6 @@
 import React, {
   useEffect,
   useState,
-  useRef,
-  useCallback,
   useContext,
 } from "react";
 import {
@@ -11,10 +9,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Dimensions,
   Image,
-  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
@@ -28,101 +24,28 @@ import { useNetInfo } from "@react-native-community/netinfo";
 
 const { width } = Dimensions.get("window");
 
+// Updated to single image paths instead of arrays
 const cardImagePaths = {
-  collections: [
-    require("../assets/Collection1.png"),
-    require("../assets/Collection2.png"),
-  ],
-    qrCode: [
-    require("../assets/qrcode.png"),
-    require("../assets/qrcode.png"),
-  ],
-  daybook: [
-    require("../assets/Daybook1.png"),
-    require("../assets/Daybook2.png"),
-  ],
-  targets: [require("../assets/Target1.png"), require("../assets/Target2.png")],
-  myLeads: [require("../assets/Lead1.png"), require("../assets/Lead2.png")],
-  addCustomers: [
-    require("../assets/AddCutomer1.png"),
-    require("../assets/AddCutomer2.png"),
-  ],
-  myCustomers: [
-    require("../assets/Mycustomers1.png"),
-    require("../assets/Mycustomers2.png"),
-  ],
-  myTasks: [require("../assets/Target1.png"), require("../assets/Target2.png")],
-  reports: [
-    require("../assets/Reports1.png"),
-    require("../assets/Reports2.png"),
-  ],
-  commission: [
-    require("../assets/commissions1.png"),
-    require("../assets/commission2.png"),
-  ],
-  groups: [
-    require("../assets/groups.png"),
-    require("../assets/groups1.png"),
-  ],
-  customerOnHold: [
-    require("../assets/Holdon1.png"),
-    require("../assets/Holdon2.png"),
-  ],
-  monthlyTurnover: [require("../assets/MITA.png"), require("../assets/MITB.png")],
-};
-
-const CardWithAnimatedImage = ({ card, cardStyles, initialImageIndex }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(
-    initialImageIndex || 0
-  );
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (card.imagePaths.length > 1) {
-      const interval = setInterval(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(() => {
-          setCurrentImageIndex(
-            (prevIndex) => (prevIndex + 1) % card.imagePaths.length
-          );
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }).start();
-        });
-      }, 20000);
-
-      return () => clearInterval(interval);
-    }
-  }, [fadeAnim, card.imagePaths.length]);
-
-  return (
-    <TouchableOpacity
-      key={card.id}
-      style={[cardStyles.gridCard, { backgroundColor: card.backgroundColor }]}
-      onPress={card.onPress}
-    >
-      <Animated.Image
-        source={card.imagePaths[currentImageIndex]}
-        style={[cardStyles.cardImage, { opacity: fadeAnim }]}
-        resizeMode="contain"
-      />
-      <Text style={cardStyles.gridCardText}>{card.name}</Text>
-    </TouchableOpacity>
-  );
+  collections: require("../assets/Collection2.png"),
+  qrCode: require("../assets/qrcode.png"),
+  daybook: require("../assets/Daybook2.png"),
+  targets: require("../assets/Target2.png"),
+  myLeads: require("../assets/Lead1.png"),
+  addCustomers: require("../assets/AddCutomer1.png"),
+  myCustomers: require("../assets/Mycustomers1.png"),
+  myTasks: require("../assets/Target2.png"),
+  reports: require("../assets/Reports2.png"),
+  commission: require("../assets/commissions1.png"),
+  groups: require("../assets/groups1.png"),
+  customerOnHold: require("../assets/Holdon2.png"),
+  monthlyTurnover: require("../assets/MITB.png"),
 };
 
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
   const [agent, setAgent] = useState({});
-  const [initialVisit, setInitialVisit] = useState(true);
   const { modifyPayment, setModifyPayment } = useContext(AgentContext);
 
-  // Use the useNetInfo hook to get real-time network status
   const netInfo = useNetInfo();
 
   setModifyPayment(
@@ -156,61 +79,40 @@ const Home = ({ route, navigation }) => {
     }
   }, [user.userId, agentInfo, netInfo.isConnected]);
 
-  useEffect(() => {
-    const checkFirstVisit = async () => {
-      try {
-        const hasVisited = await AsyncStorage.getItem("hasVisitedHome");
-        if (hasVisited === null) {
-          setInitialVisit(true);
-          await AsyncStorage.setItem("hasVisitedHome", "true");
-        } else {
-          setInitialVisit(false);
-        }
-      } catch (error) {
-        console.error("Error managing AsyncStorage for initial visit:", error);
-        setInitialVisit(true);
-      }
-    };
-    checkFirstVisit();
-  }, []);
-
-  const getInitialImageIndex = useCallback(() => {
-    return initialVisit ? 0 : 1;
-  }, [initialVisit]);
-
+  // The cardsData array now references single image paths
   const cardsData = [
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
       name: "Collections",
-      imagePaths: cardImagePaths.collections,
+      imagePath: cardImagePaths.collections,
       onPress: () => navigation.navigate("PaymentNavigator"),
       backgroundColor: "#FFEBEE",
     },
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "qrCode",
       name: "QR Code",
-      imagePaths: cardImagePaths.qrCode,
+      imagePath: cardImagePaths.qrCode,
       onPress: () => navigation.navigate("qrCode"),
       backgroundColor: "#FFEBEE",
     },
     agentInfo?.designation_id?.permission?.daybook === "true" && {
       id: "daybook",
       name: "Daybook",
-      imagePaths: cardImagePaths.daybook,
+      imagePath: cardImagePaths.daybook,
       onPress: () => navigation.navigate("PayNavigation", { user: user }),
       backgroundColor: "#E8F5E9",
     },
     agentInfo?.designation_id?.permission?.targets === "true" && {
       id: "targets",
       name: "Targets",
-      imagePaths: cardImagePaths.targets,
+      imagePath: cardImagePaths.targets,
       onPress: () => navigation.navigate("Target"),
       backgroundColor: "#FFFDE7",
     },
     agentInfo?.designation_id?.permission?.leads === "true" && {
       id: "myLeads",
       name: "My Leads",
-      imagePaths: cardImagePaths.myLeads,
+      imagePath: cardImagePaths.myLeads,
       onPress: () =>
         navigation.navigate("PayNavigation", {
           screen: "ViewLeads",
@@ -221,7 +123,7 @@ const Home = ({ route, navigation }) => {
     {
       id: "addCustomers",
       name: "Add Customers",
-      imagePaths: cardImagePaths.addCustomers,
+      imagePath: cardImagePaths.addCustomers,
       onPress: () =>
         navigation.navigate("CustomerNavigation", {
           screen: "Customer",
@@ -232,7 +134,7 @@ const Home = ({ route, navigation }) => {
     {
       id: "myCustomers",
       name: "My Customers",
-      imagePaths: cardImagePaths.myCustomers,
+      imagePath: cardImagePaths.myCustomers,
       onPress: () =>
         navigation.navigate("CustomerNavigation", {
           screen: "ViewEnrollments",
@@ -243,7 +145,7 @@ const Home = ({ route, navigation }) => {
     {
       id: "myTasks",
       name: "My Tasks",
-      imagePaths: cardImagePaths.myTasks,
+      imagePath: cardImagePaths.myTasks,
       onPress: () =>
         navigation.navigate("MyTasks", {
           employeeId: user.userId,
@@ -254,7 +156,7 @@ const Home = ({ route, navigation }) => {
     agentInfo?.designation_id?.permission?.reports === "true" && {
       id: "reports",
       name: "Reports",
-      imagePaths: cardImagePaths.reports,
+      imagePath: cardImagePaths.reports,
       onPress: () =>
         navigation.navigate("PayNavigation", {
           screen: "Reports",
@@ -265,7 +167,7 @@ const Home = ({ route, navigation }) => {
     agentInfo?.designation_id?.permission?.commission === "true" && {
       id: "commission",
       name: "Commission",
-      imagePaths: cardImagePaths.commission,
+      imagePath: cardImagePaths.commission,
       onPress: () =>
         navigation.navigate("CustomerNavigation", {
           screen: "Commissions",
@@ -276,7 +178,7 @@ const Home = ({ route, navigation }) => {
     {
       id: "groups",
       name: "Groups",
-      imagePaths: cardImagePaths.groups,
+      imagePath: cardImagePaths.groups,
       onPress: () =>
         navigation.navigate("Enrollment", {
           screen: "Enrollment",
@@ -287,20 +189,19 @@ const Home = ({ route, navigation }) => {
     {
       id: "customerOnHold",
       name: "Customer on Hold",
-      imagePaths: cardImagePaths.customerOnHold,
+      imagePath: cardImagePaths.customerOnHold,
       onPress: () => navigation.navigate("CustomerOnHold"),
       backgroundColor: "#FFF3E0",
     },
     {
       id: "monthlyTurnover",
       name: "MIT",
-      imagePaths: cardImagePaths.monthlyTurnover,
+      imagePath: cardImagePaths.monthlyTurnover,
       onPress: () => navigation.navigate("MonthlyTurnover"),
       backgroundColor: "#D0F0C0",
     },
   ].filter(Boolean);
 
-  // "No Internet" component to be rendered when offline
   const renderNoInternet = () => (
     <View style={styles.noInternetContainer}>
       <Image
@@ -345,12 +246,18 @@ const Home = ({ route, navigation }) => {
             >
               <View style={styles.cardsGridContainer}>
                 {cardsData.map((card) => (
-                  <CardWithAnimatedImage
+                  <TouchableOpacity
                     key={card.id}
-                    card={card}
-                    cardStyles={styles}
-                    initialImageIndex={getInitialImageIndex()}
-                  />
+                    style={[styles.gridCard, { backgroundColor: card.backgroundColor }]}
+                    onPress={card.onPress}
+                  >
+                    <Image
+                      source={card.imagePath}
+                      style={styles.cardImage}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.gridCardText}>{card.name}</Text>
+                  </TouchableOpacity>
                 ))}
               </View>
             </ScrollView>
@@ -411,24 +318,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    padding: 10,
+    padding: 5,
   },
   cardImage: {
     width: 155,
     height: 90,
-    marginBottom: 5,
+    marginBottom: 1,
   },
   gradientOverlay: {
     flex: 1,
   },
   gridCardText: {
-    marginTop: 10,
+    marginTop: 2,
     fontSize: 17,
     fontWeight: "900",
     color: COLORS.black,
     textAlign: "center",
   },
-  // No Internet styles
   noInternetContainer: {
     flex: 1,
     justifyContent: 'center',

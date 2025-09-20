@@ -9,8 +9,9 @@ import {
   Image,
   Pressable,
   Animated,
+  ActivityIndicator, // 👈 Import ActivityIndicator
 } from "react-native";
-import  { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import baseUrl from "../constants/baseUrl";
@@ -21,9 +22,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const { width, height } = Dimensions.get("window");
 
 const COLOR_PALETTE = {
-  primary: '#1C2E4A', 
-  secondary: '#5F6C7D', 
-  lightText: '#FFFFFF', 
+  primary: '#1C2E4A',
+  secondary: '#5F6C7D',
+  lightText: '#FFFFFF',
 };
 
 
@@ -37,12 +38,11 @@ export default function Login({ navigation }) {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordShown, setIsPasswordShown] = useState(false);
+  const [loading, setLoading] = useState(false); // 👈 New state for loader
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
-
   const scaleAnim = useRef(new Animated.Value(1)).current;
-
   const inputAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -61,7 +61,6 @@ export default function Login({ navigation }) {
       });
     }, 4000);
 
-    // Fade in input fields after a delay
     Animated.timing(inputAnim, {
       toValue: 1,
       duration: 800,
@@ -69,27 +68,25 @@ export default function Login({ navigation }) {
       useNativeDriver: true,
     }).start();
 
-    return () => clearInterval(interval); // Cleanup on unmount
+    return () => clearInterval(interval);
   }, [fadeAnim, backgroundImages.length, inputAnim]);
 
-  // Animation handlers for the login button
   const onPressInButton = () => {
     Animated.spring(scaleAnim, {
-      toValue: 0.95, // Scale down slightly
+      toValue: 0.95,
       useNativeDriver: true,
     }).start();
   };
 
   const onPressOutButton = () => {
     Animated.spring(scaleAnim, {
-      toValue: 1, // Scale back to original size
-      friction: 3, // Adds a little bounce
+      toValue: 1,
+      friction: 3,
       tension: 40,
       useNativeDriver: true,
     }).start();
   };
 
-  // Login handler
   const handleLogin = async () => {
     if (!mobile || !password) {
       Alert.alert(
@@ -98,6 +95,9 @@ export default function Login({ navigation }) {
       );
       return;
     }
+
+    setLoading(true); // 👈 Show loader
+
     try {
       const cleanedPassword = password.replace(/\s/g, "");
       const response = await fetch(`${baseUrl}/agent/login-agent`, {
@@ -106,6 +106,7 @@ export default function Login({ navigation }) {
         body: JSON.stringify({ phone_number: mobile, password: cleanedPassword }),
       });
       const data = await response.json();
+
       if (response.ok) {
         const agentDetail = await axios.get(
           `${baseUrl}/agent/get-agent-by-id/${data.userId}`
@@ -122,6 +123,8 @@ export default function Login({ navigation }) {
     } catch (error) {
       Alert.alert("Error", "An error occurred. Please try again.");
       console.error(error);
+    } finally {
+      setLoading(false); // 👈 Hide loader
     }
   };
 
@@ -136,7 +139,7 @@ export default function Login({ navigation }) {
 
       {/* A richer, semi-transparent gradient overlay */}
       <LinearGradient
-      colors={['#dbf6faff', '#90dafcff']}
+        colors={['#dbf6faff', '#90dafcff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -150,15 +153,15 @@ export default function Login({ navigation }) {
           <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
             <Text style={styles.inputLabel}>Phone Number</Text>
             <View style={styles.inputContainer}>
-                <Ionicons name="call" size={24} color={COLOR_PALETTE.secondary} style={{marginRight: 10}} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="eg. 8765349076"
-                  placeholderTextColor="#A9A9A9"
-                  keyboardType="numeric"
-                  value={mobile}
-                  onChangeText={setMobile}
-                />
+              <Ionicons name="call" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
+              <TextInput
+                style={styles.textInput}
+                placeholder="eg. 8765349076"
+                placeholderTextColor="#A9A9A9"
+                keyboardType="numeric"
+                value={mobile}
+                onChangeText={setMobile}
+              />
             </View>
           </Animated.View>
 
@@ -166,7 +169,7 @@ export default function Login({ navigation }) {
           <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
             <Text style={styles.inputLabel}>Password</Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed" size={24} color={COLOR_PALETTE.secondary} style={{marginRight: 10}} />
+              <Ionicons name="lock-closed" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
               <TextInput
                 style={styles.textInput}
                 placeholder="***************"
@@ -190,7 +193,7 @@ export default function Login({ navigation }) {
               <Text style={styles.forgotPasswordText}>Forgot password?</Text>
             </Pressable>
           </Animated.View>
-          
+
           {/* Become an agent? link - Moved here, between password and login button */}
           <Animated.View style={[styles.becomeAgentLinkWrapper, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
             <Pressable style={styles.becomeAgentLink} onPress={() => navigation.navigate("Becomeanagent")}>
@@ -205,6 +208,7 @@ export default function Login({ navigation }) {
               onPressIn={onPressInButton}
               onPressOut={onPressOutButton}
               activeOpacity={1}
+              disabled={loading} // 👈 Disable button while loading
             >
               <LinearGradient
                 colors={[COLOR_PALETTE.primary, COLOR_PALETTE.secondary]}
@@ -212,7 +216,12 @@ export default function Login({ navigation }) {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={styles.loginButtonText}>Log in</Text>
+                {/* 👈 Conditional rendering for loader */}
+                {loading ? (
+                  <ActivityIndicator color={COLOR_PALETTE.lightText} size="small" />
+                ) : (
+                  <Text style={styles.loginButtonText}>Log in</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
@@ -307,7 +316,7 @@ const styles = StyleSheet.create({
   },
   loginButtonWrapper: {
     width: '100%',
-    marginTop: 60, // Adjusted margin to control spacing from "Become an agent?"
+    marginTop: 60,
     marginBottom: 40,
     justifyContent: 'center',
     alignItems: 'center',
@@ -330,27 +339,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
-  // Styles for the "Become an agent?" link
-  becomeAgentLinkWrapper: { // Added a wrapper for consistent animated styling
+  becomeAgentLinkWrapper: {
     width: '100%',
-    alignItems: 'center', // Aligns the text to the right
-    marginTop: 10, // Adjust this as needed for vertical spacing
-    marginBottom: 10, // Adjust this as needed for vertical spacing before the login button
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
   },
-  becomeAgentLink: {
-    // No specific styles needed here, as the wrapper handles alignment
-  },
+  becomeAgentLink: {},
   becomeAgentText: {
     fontSize: 18,
     fontWeight: '600',
     color: "black",
     textDecorationLine: 'underline',
   },
-  // NEW Styles for "Don't have an account? Sign Up" link
   signUpLinkWrapper: {
     width: '100%',
     alignItems: 'center',
-    marginTop: 20, // Space below the login button
+    marginTop: 20,
   },
   signUpText: {
     fontSize: 16,

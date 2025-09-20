@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   cardText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cardIcon: {
-    fontSize: 32, // Increased icon size for more visual impact
+    fontSize: 25, // Increased icon size for more visual impact
     color: '#da8201', // Gold color for consistency
   },
   arrowIcon: {

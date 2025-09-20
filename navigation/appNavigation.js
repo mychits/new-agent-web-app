@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "../screens/Home";
 import Welcome from "../screens/Welcome";
 import Login from "../screens/Login";
-import BottomNavigation from "./BottomNavigation";
+import BottomNavigation from "./BottomNavigation"; // This component contains the tab navigator
 import PaymentNavigator from "./PaymentNavigator";
 import Enrollment from "../screens/Enrollment";
 import Print from "../screens/Print";
@@ -28,9 +28,7 @@ import Target from "../screens/Target";
 import Dashboard from "../screens/Dashboard";
 import CustomerOnHold from "../screens/CustomerOnHold";
 import MonthlyTurnover from "../screens/MonthlyTurnover";
-
-// Import the EditLead screen
-import EditLead from "../screens/EditLead"; // <--- ADDED: Ensure this path is correct for your project
+import EditLead from "../screens/EditLead";
 import QrCodePage from "../screens/QrCodePage";
 
 enableScreens();
@@ -40,7 +38,6 @@ const Stack = createNativeStackNavigator();
 export default function AppNavigation() {
   return (
     <NavigationContainer>
-      {/* Transparent Status Bar */}
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -48,21 +45,28 @@ export default function AppNavigation() {
       />
 
       <Stack.Navigator initialRouteName="Welcome">
+        {/*
+          Keep BottomNavigation as the main entry point for the app's logged-in state.
+          The BottomNavigation component will internally handle the Home screen
+          and other screens with tabs.
+        */}
         <Stack.Screen
           name="BottomNavigation"
           component={BottomNavigation}
           options={{ headerShown: false }}
         />
-          <Stack.Screen
-          name="MonthlyTurnover"
-          component={MonthlyTurnover}
-          options={{ headerShown: false }}
-        />
+        
+        {/*
+          Remove the standalone Home screen.
+          It should be part of the BottomNavigation Tab.
+        
         <Stack.Screen
           name="Home"
-          options={{ headerShown: false }}
+          options={{ headerShown: true }}
           component={Home}
         />
+        */}
+        
         <Stack.Screen
           name="Welcome"
           options={{ headerShown: false }}
@@ -72,6 +76,12 @@ export default function AppNavigation() {
           name="Login"
           options={{ headerShown: false }}
           component={Login}
+        />
+        {/* All other screens can remain here as they do not need the bottom tab bar */}
+        <Stack.Screen
+          name="MonthlyTurnover"
+          component={MonthlyTurnover}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="PayNavigation"
@@ -88,7 +98,7 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={PaymentNavigator}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="CustomerOnHold"
           options={{ headerShown: false }}
           component={CustomerOnHold}
@@ -102,7 +112,7 @@ export default function AppNavigation() {
         <Stack.Screen name="ResetPassword" component={ResetPassword} options={{ headerShown: false }} />
         <Stack.Screen name="MyTasks" options={{ headerShown: false }} component={MyTaskListScreen} />
         <Stack.Screen name="Task Detail" component={TaskDetailScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="CompleteTask"  options={{ headerShown: false }} component={CompleteTaskScreen} />
+        <Stack.Screen name="CompleteTask" options={{ headerShown: false }} component={CompleteTaskScreen} />
         <Stack.Screen name="ViewCustomer" component={ViewCustomer} options={{ headerShown: false }} />
         <Stack.Screen name="AddCustomer" component={AddCustomer} options={{ headerShown: false }} />
         <Stack.Screen name="Commissions" component={Commissions} options={{ headerShown: false }} />
@@ -112,9 +122,8 @@ export default function AppNavigation() {
         <Stack.Screen name="HelpAndSupport" component={HelpAndSupport} options={{ headerShown: false }} />
         <Stack.Screen name="Target" component={Target} options={{ headerShown: false }} />
         <Stack.Screen name="EditLead" component={EditLead} options={{ headerShown: false }} />
-          <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
-           <Stack.Screen name="Enrollment" component={Enrollment} options={{ headerShown: false }} /> 
-
+        <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
+        <Stack.Screen name="Enrollment" component={Enrollment} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

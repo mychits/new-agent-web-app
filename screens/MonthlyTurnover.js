@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
+  TextInput,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
@@ -15,7 +17,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 import { FontAwesome5 } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import baseUrl from "../constants/baseUrl"
+import baseUrl from "../constants/baseUrl";
+
 const MonthlyTurnover = () => {
   const [turnoverData, setTurnoverData] = useState(null);
   const [customersData, setCustomersData] = useState([]);
@@ -26,6 +29,7 @@ const MonthlyTurnover = () => {
   const [formattedDate, setFormattedDate] = useState(
     moment().format("MMMM YYYY")
   );
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     const fetchMonthlyData = async () => {
@@ -33,35 +37,37 @@ const MonthlyTurnover = () => {
         setLoading(true);
         const user = JSON.parse(await AsyncStorage.getItem("user"));
         const agentId = user?.userId;
-
         if (!agentId) {
           setError("No agentId found. Please login again.");
           setLoading(false);
           return;
         }
 
-        const currentYear = moment(selectedDate).year();
-        const currentMonth = moment(selectedDate).month() + 1;
+        const year = moment(selectedDate).year();
+        const month = moment(selectedDate).month() + 1;
 
-        const apiUrl = `${baseUrl}/user/agent-monthly-turnover-by-id/${agentId}?year=${currentYear}&month=${currentMonth}`;
-
+        const apiUrl = `${baseUrl}/user/agent-monthly-turnover-by-id/${agentId}?year=${year}&month=${month}`;
         const response = await axios.get(apiUrl);
 
-        if (response.data && response.data.success) {
+        if (response.data?.success) {
           setTurnoverData(response.data.agentData);
-          const customersWithStatus = response.data.agentData.payingCustomers.map(customer => ({
-            ...customer,
-            paymentStatus: customer.totalPaid >= customer.monthly_installment ? 'Paid' : 'Unpaid'
-          }));
+          const customersWithStatus =
+            response.data.agentData.payingCustomers.map((c) => {
+              const totalPaid = parseFloat(c.totalPaid);
+              const monthlyInstallment = parseFloat(c.monthly_installment);
+              return {
+                ...c,
+                paymentStatus:
+                  totalPaid >= monthlyInstallment ? "PAID" : "UNPAID",
+              };
+            });
           setCustomersData(customersWithStatus);
         } else {
           setError("Failed to fetch data. No success message from API.");
         }
       } catch (err) {
-        console.error("Failed to fetch monthly turnover data:", err);
-        setError(
-          "Failed to load monthly turnover information. Please check your network and try again."
-        );
+        console.error("Fetch error:", err);
+        setError("Failed to load data. Please check your network.");
       } finally {
         setLoading(false);
       }
@@ -70,13 +76,13 @@ const MonthlyTurnover = () => {
     fetchMonthlyData();
   }, [selectedDate]);
 
-  const onDateChange = (event, newDate) => {
+  const onDateChange = (_event, newDate) => {
     setShowPicker(false);
     if (newDate) {
-      // Set the day to 1 to ensure the date is consistent, as we only care about month and year
-      const adjustedDate = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
-      setSelectedDate(adjustedDate);
-      setFormattedDate(moment(adjustedDate).format("MMMM YYYY"));
+      // snap to first of the month so only Month & Year matter
+      const firstDay = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+      setSelectedDate(firstDay);
+      setFormattedDate(moment(firstDay).format("MMMM YYYY"));
     }
   };
 
@@ -90,14 +96,28 @@ const MonthlyTurnover = () => {
             <Text style={styles.phoneNumber}>{turnoverData?.phone_number}</Text>
           </View>
         </View>
+
+        {/* clear instruction for agents */}
+        <Text style={styles.dateHint}>
+          Tap the blue button to change Month & Year
+        </Text>
+
         <TouchableOpacity
           style={styles.datePickerContainer}
           onPress={() => setShowPicker(true)}
         >
-          <FontAwesome5 name="calendar-alt" size={20} color="#34495E" />
+          <FontAwesome5 name="calendar-alt" size={18} color="#fff" />
           <Text style={styles.datePickerText}>{formattedDate}</Text>
+          <FontAwesome5
+            name="chevron-down"
+            size={16}
+            color="#fff"
+            style={{ marginLeft: 6 }}
+          />
         </TouchableOpacity>
+
         <View style={styles.divider} />
+
         <View style={styles.cardBody}>
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Month-Year</Text>
@@ -112,22 +132,44 @@ const MonthlyTurnover = () => {
             </Text>
           </View>
         </View>
+
         <View style={styles.divider} />
+
         <View style={styles.cardFooter}>
           <View style={styles.turnoverSection}>
             <Text style={styles.turnoverLabel}>Expected</Text>
-            <Text style={styles.turnoverValue}>₹{turnoverData?.expectedTurnover}</Text>
+            <Text style={styles.turnoverValue}>
+              ₹{turnoverData?.expectedTurnover}
+            </Text>
           </View>
           <View style={styles.verticalDivider} />
           <View style={styles.turnoverSection}>
             <Text style={styles.turnoverLabel}>Actual</Text>
-            <Text style={styles.turnoverValue}>₹{turnoverData?.totalTurnover}</Text>
+            <Text style={styles.turnoverValue}>
+              ₹{turnoverData?.totalTurnover}
+            </Text>
           </View>
         </View>
       </View>
+
       {customersData.length > 0 && (
         <View style={styles.customersListContainer}>
           <Text style={styles.customersListTitle}>Paying Customers</Text>
+          <View style={styles.searchContainer}>
+            <FontAwesome5
+              name="search"
+              size={18}
+              color="#777"
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by customer or group "
+              placeholderTextColor="#999"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+          </View>
         </View>
       )}
     </View>
@@ -135,9 +177,16 @@ const MonthlyTurnover = () => {
 
   const renderCustomerCard = ({ item }) => (
     <View style={styles.customerCard}>
-      <View style={item.paymentStatus === 'Paid' ? styles.freshLeadBadgeContainer : styles.newLeadBadgeContainer}>
-        <Text style={styles.freshLeadBadgeText}>{item.paymentStatus}</Text>
+      <View
+        style={
+          item.paymentStatus === "PAID"
+            ? styles.paidBadgeContainer
+            : styles.unpaidBadgeContainer
+        }
+      >
+        <Text style={styles.badgeText}>{item.paymentStatus}</Text>
       </View>
+
       <View style={styles.customerContent}>
         <View style={styles.customerDetailRow}>
           <Text style={styles.customerLabel}>Customer Name:</Text>
@@ -148,9 +197,9 @@ const MonthlyTurnover = () => {
           <Text style={styles.customerValue}>{item.group_id.group_name}</Text>
         </View>
         <View style={styles.customerDetailRow}>
-        <Text style={styles.customerLabel}>Ticket Number:</Text>
-        <Text style={styles.customerValue}>{item.ticket}</Text>
-      </View>
+          <Text style={styles.customerLabel}>Ticket Number:</Text>
+          <Text style={styles.customerValue}>{item.ticket}</Text>
+        </View>
         <View style={styles.customerDetailRow}>
           <Text style={styles.customerLabel}>Monthly Installment:</Text>
           <Text style={styles.customerValue}>₹{item.monthly_installment}</Text>
@@ -162,6 +211,14 @@ const MonthlyTurnover = () => {
       </View>
     </View>
   );
+
+  const filteredCustomers = customersData.filter((c) => {
+    const term = searchText.toLowerCase();
+    return (
+      c.user_id.full_name.toLowerCase().includes(term) ||
+      c.group_id.group_name.toLowerCase().includes(term)
+    );
+  });
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -175,28 +232,30 @@ const MonthlyTurnover = () => {
           <Header />
           <Text style={styles.screenTitle}>Monthly Turnover</Text>
           <Text style={styles.instructionText}>
-            This screen displays your monthly financial performance and customer payments.
+            This screen displays your monthly financial performance and customer
+            payments.
           </Text>
+
           {loading ? (
             <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
           ) : error ? (
             <Text style={styles.statusText}>{error}</Text>
           ) : (
             <FlatList
-              data={customersData}
+              data={filteredCustomers}
               renderItem={renderCustomerCard}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(_, index) => index.toString()}
               ListHeaderComponent={renderTurnoverCard()}
               contentContainerStyle={styles.flatListContent}
             />
           )}
         </View>
+
         {showPicker && (
           <DateTimePicker
-            testID="dateTimePicker"
             value={selectedDate}
             mode="date"
-            display="spinner"
+            display={Platform.OS === "ios" ? "spinner" : "calendar"}
             onChange={onDateChange}
           />
         )}
@@ -206,17 +265,9 @@ const MonthlyTurnover = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  gradientOverlay: {
-    flex: 1,
-  },
-  mainContentArea: {
-    flex: 1,
-    paddingHorizontal: 20,
-    marginTop: 15,
-  },
+  safeArea: { flex: 1 },
+  gradientOverlay: { flex: 1 },
+  mainContentArea: { flex: 1, paddingHorizontal: 20, marginTop: 15 },
   screenTitle: {
     fontSize: 28,
     fontWeight: "bold",
@@ -228,26 +279,18 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 14,
     color: "#0a0a0aff",
-    marginBottom: 25,
+    marginBottom: 20,
     textAlign: "center",
   },
-  loader: {
-    marginTop: 50,
-  },
-  statusText: {
-    fontSize: 16,
-    color: "#555",
-    textAlign: "center",
-    marginTop: 20,
-  },
-  flatListContent: {
-    paddingBottom: 20,
-  },
+  loader: { marginTop: 50 },
+  statusText: { fontSize: 16, color: "#555", textAlign: "center", marginTop: 20 },
+  flatListContent: { paddingBottom: 20 },
+
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 25,
-    borderColor: "dark blue",
+    borderColor: "darkblue",
     borderWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -257,83 +300,92 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerTextContainer: {
-    marginLeft: 15,
-  },
-  agentName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#2C3E50",
-  },
-  phoneNumber: {
-    fontSize: 14,
-    color: "#7F8C8D",
-    marginTop: 2,
-  },
-  cardBody: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
   },
+  headerTextContainer: { marginLeft: 15 },
+  agentName: { fontSize: 22, fontWeight: "bold", color: "#2C3E50" },
+  phoneNumber: { fontSize: 14, color: "#7F8C8D", marginTop: 2 },
+
+  dateHint: {
+    textAlign: "center",
+    fontSize: 12,
+    color: "#555",
+    marginBottom: 8,
+  },
+  datePickerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007bff",
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  datePickerText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+    marginLeft: 10,
+  },
+
+  cardBody: { marginBottom: 10 },
   dataRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 8,
   },
-  dataLabel: {
-    fontSize: 15,
-    color: "#7F8C8D",
-    fontWeight: "500",
-  },
-  dataValue: {
-    fontSize: 16,
-    color: "#34495E",
-    fontWeight: "600",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#EAEAEA",
-    marginVertical: 10,
-  },
+  dataLabel: { fontSize: 15, color: "#7F8C8D", fontWeight: "500" },
+  dataValue: { fontSize: 16, color: "#34495E", fontWeight: "600" },
+  divider: { height: 1, backgroundColor: "#EAEAEA", marginVertical: 10 },
   cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 10,
   },
-  turnoverSection: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 10,
-  },
+  turnoverSection: { flex: 1, alignItems: "center", padding: 10 },
   turnoverLabel: {
     fontSize: 14,
     color: "#7F8C8D",
     fontWeight: "600",
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
-  turnoverValue: {
-    fontSize: 17,
-    fontWeight: "bold",
-    color: "#2C3E50",
-    marginTop: 5,
-  },
-  verticalDivider: {
-    width: 1,
-    backgroundColor: "#EAEAEA",
-  },
-  customersListContainer: {
-    marginTop: 30,
-    paddingHorizontal: 10,
-  },
+  turnoverValue: { fontSize: 17, fontWeight: "bold", color: "#2C3E50", marginTop: 5 },
+  verticalDivider: { width: 1, backgroundColor: "#EAEAEA" },
+
+  customersListContainer: { marginTop: 30, paddingHorizontal: 10 },
   customersListTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#0c0c0cff",
+    marginBottom: 10,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    paddingHorizontal: 12,
+    height: 48,
     marginBottom: 15,
   },
+  searchIcon: { marginRight: 8 },
+  searchInput: {
+    flex: 1,
+    fontSize: 17,
+    color: "#333",
+    textAlign: "left",
+    paddingVertical: 0,
+  },
+
   customerCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 15,
@@ -344,67 +396,39 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 5,
-    position: 'relative',
-  },
-  customerHeader: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#4a90e2",
-    marginBottom: 10,
+    position: "relative",
   },
   customerDetailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
   },
-  customerLabel: {
-    fontSize: 14,
-    color: "#555",
-  },
-  customerValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#34495e",
-  },
-  
-  freshLeadBadgeContainer: {
-    position: 'absolute',
+  customerLabel: { fontSize: 14, color: "#555" },
+  customerValue: { fontSize: 14, fontWeight: "600", color: "#34495e" },
+
+  paidBadgeContainer: {
+    position: "absolute",
     top: 0,
     right: 0,
-    backgroundColor: 'green',
+    backgroundColor: "green",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderBottomLeftRadius: 15,
   },
-  newLeadBadgeContainer: {
-    position: 'absolute',
+  unpaidBadgeContainer: {
+    position: "absolute",
     top: 0,
     right: 0,
-    backgroundColor: 'Red',
+    backgroundColor: "red",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderBottomLeftRadius: 15,
   },
-  freshLeadBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-  },
-  datePickerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
-  datePickerText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#34495E',
-    marginLeft: 10,
+  badgeText: {
+    color: "#fff",
+    fontSize: 8,
+    fontWeight: "bold",
+    textTransform: "uppercase",
   },
 });
 

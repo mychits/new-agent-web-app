@@ -11,11 +11,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
-import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  Ionicons,
+  FontAwesome5,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import chitBaseUrl from "../constants/baseUrl"
+import chitBaseUrl from "../constants/baseUrl";
 
 const CustomerOnHold = () => {
   const [customers, setCustomers] = useState([]);
@@ -78,7 +82,9 @@ const CustomerOnHold = () => {
         setCustomers(formattedCustomers);
       } catch (err) {
         console.error("Failed to fetch customers:", err);
-        setError("Failed to load customer information. Please check your network and try again.");
+        setError(
+          "Failed to load customer information. Please check your network and try again."
+        );
       } finally {
         setLoading(false);
       }
@@ -98,9 +104,14 @@ const CustomerOnHold = () => {
     }
   };
 
-  const handleEmail = async (email) => {
+  const handleEmail = async (email, customerName) => {
     try {
-      const url = `mailto:${email}`;
+      const subject = "Regarding your pending Chit payment";
+      const body = `Dear ${customerName},\n\nWe noticed that your recent chit payment is still pending for the group\n\nTo continue your participation and avoid any interruptions, please complete the payment at your earliest convenience.\n\nThank you for your cooperation.\n\nSincerely,\nMyChits Team`;
+
+      const url = `mailto:${email}?subject=${encodeURIComponent(
+        subject
+      )}&body=${encodeURIComponent(body)}`;
       await Linking.openURL(url);
     } catch (error) {
       console.error("Failed to open email client:", error);
@@ -151,7 +162,7 @@ const CustomerOnHold = () => {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.contactButton, styles.emailButton]}
-          onPress={() => handleEmail(customer.email)}
+          onPress={() => handleEmail(customer.email, customer.name)}
         >
           <MaterialCommunityIcons name="email" size={15} color="#fff" />
           <Text style={styles.buttonText}>Email</Text>
@@ -175,7 +186,11 @@ const CustomerOnHold = () => {
             Follow up with these customers to resolve their hold status.
           </Text>
           {loading ? (
-            <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
+            <ActivityIndicator
+              size="large"
+              color="#007bff"
+              style={styles.loader}
+            />
           ) : error ? (
             <Text style={styles.statusText}>{error}</Text>
           ) : (
@@ -183,7 +198,9 @@ const CustomerOnHold = () => {
               {customers.length > 0 ? (
                 customers.map(renderCustomerCard)
               ) : (
-                <Text style={styles.statusText}>No customers currently on hold.</Text>
+                <Text style={styles.statusText}>
+                  No customers currently on hold.
+                </Text>
               )}
             </ScrollView>
           )}
