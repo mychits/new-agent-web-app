@@ -35,12 +35,13 @@ const ChitPayments = ({ route, navigation }) => {
   const [agent, setAgent] = useState({});
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [selectedPaymentMode, setSelectedPaymentMode] = useState("");
-  const [selectedCustomerName, setSelectedCustomerName] = useState("");
-  const [selectedGroupName, setSelectedGroupName] = useState("");
+  // These state variables are no longer needed
+  // const [selectedDate, setSelectedDate] = useState(new Date());
+  // const [selectedCustomer, setSelectedCustomer] = useState("");
+  // const [selectedGroup, setSelectedGroup] = useState("");
+  // const [selectedPaymentMode, setSelectedPaymentMode] = useState("");
+  // const [selectedCustomerName, setSelectedCustomerName] = useState("");
+  // const [selectedGroupName, setSelectedGroupName] = useState("");
   const [activeChitId, setActiveChitId] = useState(null);
   const [showTotalCollectionDetails, setShowTotalCollectionDetails] =
     useState(false);
@@ -52,6 +53,7 @@ const ChitPayments = ({ route, navigation }) => {
       year: "numeric",
     });
   };
+
   const isSameDate = (date1, date2) => {
     const d1 = new Date(date1);
     const d2 = new Date(date2);
@@ -62,20 +64,23 @@ const ChitPayments = ({ route, navigation }) => {
     );
   };
 
+  // The filters array now also holds the state for the values.
   const [filters, setFilters] = useState([
     {
       id: "date",
       title: "Date",
-      value: formatDate(selectedDate),
+      value: new Date(),
+      displayValue: formatDate(new Date()),
       icon: "calendar",
     },
-    { id: "customer", title: "Customer", value: "All", icon: "user" },
-    { id: "group", title: "Group", value: "All", icon: "users" },
-    { id: "paymentMode", title: "Payment Mode", value: "All", icon: "money" },
+    { id: "customer", title: "Customer", value: "All", displayValue: "All", icon: "user" },
+    { id: "group", title: "Group", value: "All", displayValue: "All", icon: "users" },
+    { id: "paymentMode", title: "Payment Mode", value: "All", displayValue: "All", icon: "money" },
     {
       id: "totalCollection",
       title: "Total Collection",
-      value: "...",
+      value: 0,
+      displayValue: "...",
       icon: "money",
     },
   ]);
@@ -92,10 +97,23 @@ const ChitPayments = ({ route, navigation }) => {
     }
   };
 
-  const updateFilterValue = (id, value) => {
+  // This function is now the only way to update a filter value
+  const updateFilterValue = (id, value, newDisplayValue) => {
     setFilters((prevFilters) =>
       prevFilters.map((filter) =>
-        filter.id === id ? { ...filter, value: value || "All" } : filter
+        filter.id === id
+          ? {
+            ...filter,
+            value: value,
+            displayValue:
+              newDisplayValue ||
+              (id === "date"
+                ? formatDate(value)
+                : id === "totalCollection"
+                  ? `₹ ${value.toFixed(2)}`
+                  : value || "All"),
+          }
+          : filter
       )
     );
   };
@@ -109,14 +127,14 @@ const ChitPayments = ({ route, navigation }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [customersResponse, cusResponse, groupsResponse, agentResponse] = 
+        const [customersResponse, cusResponse, groupsResponse, agentResponse] =
           await Promise.all([
             axios.get(`${baseUrl}/payment/get-payment-agent/${user.userId}`),
             axios.get(`${baseUrl}/user/get-user`),
             axios.get(`${baseUrl}/group/get-group`),
             axios.get(`${baseUrl}/agent/get-agent-by-id/${user.userId}`)
           ]);
-        
+
         setCustomers(customersResponse.data || []);
         setCus(cusResponse.data || []);
         setGroups(groupsResponse.data || []);
@@ -132,26 +150,33 @@ const ChitPayments = ({ route, navigation }) => {
     fetchData();
   }, [user.userId]);
 
+  // The filtering logic now directly uses the 'filters' array values
   const filteredCustomers = Array.isArray(customers)
     ? customers.filter((customer) => {
-        const nameMatch = customer?.user_id?.full_name
-          ?.toLowerCase()
-          .includes(search.toLowerCase());
-        const dateMatch = isSameDate(customer.pay_date, selectedDate);
-        const customerMatch =
-          !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-        const groupMatch =
-          !selectedGroup || customer?.group_id?._id === selectedGroup;
-        const paymentModeMatch =
-          !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-        return (
-          nameMatch &&
-          dateMatch &&
-          customerMatch &&
-          groupMatch &&
-          paymentModeMatch
-        );
-      })
+      const dateFilter = filters.find((f) => f.id === "date");
+      const customerFilter = filters.find((f) => f.id === "customer");
+      const groupFilter = filters.find((f) => f.id === "group");
+      const paymentModeFilter = filters.find((f) => f.id === "paymentMode");
+
+      const nameMatch = customer?.user_id?.full_name
+        ?.toLowerCase()
+        .includes(search.toLowerCase());
+      const dateMatch = isSameDate(customer.pay_date, dateFilter.value);
+      const customerMatch =
+        customerFilter.value === "All" || customer?.user_id?._id === customerFilter.value;
+      const groupMatch =
+        groupFilter.value === "All" || customer?.group_id?._id === groupFilter.value;
+      const paymentModeMatch =
+        paymentModeFilter.value === "All" || customer.pay_type === paymentModeFilter.value;
+
+      return (
+        nameMatch &&
+        dateMatch &&
+        customerMatch &&
+        groupMatch &&
+        paymentModeMatch
+      );
+    })
     : [];
 
   const totalAmount = filteredCustomers.reduce((sum, customer) => {
@@ -161,24 +186,30 @@ const ChitPayments = ({ route, navigation }) => {
 
   useEffect(() => {
     if (!loading) {
-      updateFilterValue("totalCollection", `₹ ${totalAmount.toFixed(2)}`);
+      updateFilterValue("totalCollection", totalAmount);
     }
   }, [totalAmount, loading]);
 
   const renderPicker = () => {
+    // Find the currently selected filter from the filters array
+    const currentFilter = filters.find(f => f.id === selectedFilter);
+
+    if (!currentFilter) {
+      return null;
+    }
+
     switch (selectedFilter) {
       case "date":
         return (
           <DateTimePicker
-            key={selectedDate.toISOString()}
-            value={selectedDate}
+            key={currentFilter.value.toISOString()}
+            value={currentFilter.value}
             mode="date"
             display={Platform.OS === "android" ? "spinner" : "default"}
             maximumDate={new Date()} // 👈 Restricts selection to today and earlier
             onChange={(event, date) => {
               if (date) {
-                setSelectedDate(date);
-                updateFilterValue("date", formatDate(date));
+                updateFilterValue("date", date);
               }
               setTimeout(() => {
                 setShowPicker(false);
@@ -189,16 +220,14 @@ const ChitPayments = ({ route, navigation }) => {
       case "group":
         return (
           <Picker
-            selectedValue={selectedGroup}
+            selectedValue={currentFilter.value}
             onValueChange={(value) => {
               const selected = groups.find((group) => group._id === value);
-              setSelectedGroup(value);
-              setSelectedGroupName(selected?.group_name || "");
-              updateFilterValue("group", selected?.group_name);
+              updateFilterValue("group", value, selected ? selected.group_name : "All");
               setShowPicker(false);
             }}
           >
-            <Picker.Item label="All Groups" value="" />
+            <Picker.Item label="All Groups" value="All" />
             {Array.isArray(groups) &&
               groups.map((group) => (
                 <Picker.Item
@@ -212,16 +241,14 @@ const ChitPayments = ({ route, navigation }) => {
       case "customer":
         return (
           <Picker
-            selectedValue={selectedCustomer}
+            selectedValue={currentFilter.value}
             onValueChange={(value) => {
               const selected = cus.find((customer) => customer._id === value);
-              setSelectedCustomer(value);
-              setSelectedCustomerName(selected?.full_name || "");
-              updateFilterValue("customer", selected?.full_name);
+              updateFilterValue("customer", value, selected ? selected.full_name : "All");
               setShowPicker(false);
             }}
           >
-            <Picker.Item label="All Customers" value="" />
+            <Picker.Item label="All Customers" value="All" />
             {cus.map((customer) => (
               <Picker.Item
                 key={customer._id}
@@ -234,13 +261,13 @@ const ChitPayments = ({ route, navigation }) => {
       case "paymentMode":
         return (
           <Picker
-            selectedValue={selectedPaymentMode}
+            selectedValue={currentFilter.value}
             onValueChange={(value) => {
-              setSelectedPaymentMode(value);
               updateFilterValue("paymentMode", value);
               setShowPicker(false);
             }}
           >
+            <Picker.Item label="All" value="All" />
             {paymentModes.map((mode) => (
               <Picker.Item key={mode} label={mode} value={mode} />
             ))}
@@ -253,32 +280,8 @@ const ChitPayments = ({ route, navigation }) => {
   };
 
   const printPDF = async () => {
-    const isSameDate = (date1, date2) => {
-      const d1 = new Date(date1).toDateString();
-      const d2 = new Date(date2).toDateString();
-      return d1 === d2;
-    };
-
-    const filteredCustomersForPrint = customers
-      .filter((customer) => {
-        const nameMatch = customer?.user_id?.full_name
-          ?.toLowerCase()
-          .includes(search.toLowerCase());
-        const dateMatch = isSameDate(customer.pay_date, selectedDate);
-        const customerMatch =
-          !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-        const groupMatch =
-          !selectedGroup || customer?.group_id?._id === selectedGroup;
-        const paymentModeMatch =
-          !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-        return (
-          nameMatch &&
-          dateMatch &&
-          customerMatch &&
-          groupMatch &&
-          paymentModeMatch
-        );
-      })
+    // Filtering logic for print is now consistent with the main app logic
+    const filteredCustomersForPrint = filteredCustomers
       .map(
         (customer, index) => `
         <tr>
@@ -358,7 +361,7 @@ const ChitPayments = ({ route, navigation }) => {
             </tbody>
           </table>
           <div class="footer">
-            <p>${agent.name} | ${selectedDate.toDateString()} </p>
+            <p>${agent.name} | ${formatDate(filters.find(f => f.id === "date").value)} </p>
             <p>Thank You!</p>
           </div>
         </div>
@@ -419,7 +422,7 @@ const ChitPayments = ({ route, navigation }) => {
           <h1>Total Collection Summary</h1>
           <p class="amount">₹ ${totalAmount.toFixed(2)}</p>
           <p>Agent: ${agent.name || "N/A"}</p>
-          <p>Date: ${formatDate(selectedDate)}</p>
+          <p>Date: ${formatDate(filters.find(f => f.id === "date").value)}</p>
           <div class="footer">
             <p>Generated by Chit Payments App</p>
           </div>
@@ -446,14 +449,18 @@ const ChitPayments = ({ route, navigation }) => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
+        <View style={{ marginTop: 20 }}>
+      <Header />
+    </View>
+
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#f7f7f7ff" />
           </View>
         ) : (
           <>
-            <View style={{ marginHorizontal: 22, marginTop: 12 }}>
-              <Header />
+            <View style={{ marginHorizontal: 22, marginTop: 1 }}>
+            
               <View style={styles.titleCollectionContainer}>
                 <View>
                   <Text style={styles.title}>Chit Payments</Text>
@@ -501,7 +508,7 @@ const ChitPayments = ({ route, navigation }) => {
                         Agent: {agent.name || "N/A"}
                       </Text>
                       <Text style={styles.totalDetailsDate}>
-                        Date: {formatDate(selectedDate)}
+                        Date: {formatDate(filters.find(f => f.id === "date").value)}
                       </Text>
 
                       <Text style={styles.paymentDetailsHeader}>
@@ -584,7 +591,7 @@ const ChitPayments = ({ route, navigation }) => {
                           styles.card,
                           selectedFilter === filter.id && styles.activeCard,
                           filter.id === "totalCollection" &&
-                            styles.totalCollectionCard,
+                          styles.totalCollectionCard,
                         ]}
                         onPress={() => handleFilterPress(filter.id)}
                       >
@@ -594,7 +601,7 @@ const ChitPayments = ({ route, navigation }) => {
                               style={[
                                 styles.radioCircle,
                                 selectedFilter === filter.id &&
-                                  styles.radioCircleActive,
+                                styles.radioCircleActive,
                               ]}
                             />
                           )}
@@ -613,13 +620,15 @@ const ChitPayments = ({ route, navigation }) => {
                                 style={[
                                   styles.cardTitle,
                                   selectedFilter === filter.id &&
-                                    styles.activeCardTitle,
+                                  styles.activeCardTitle,
                                 ]}
                               >
                                 {filter.title}
                               </Text>
                             </View>
-                            <Text style={styles.cardValue}>{filter.value}</Text>
+                            <Text style={styles.cardValue}>
+                              {filter.displayValue}
+                            </Text>
                           </View>
                         </View>
                       </TouchableOpacity>
@@ -633,9 +642,30 @@ const ChitPayments = ({ route, navigation }) => {
                   </TouchableOpacity>
 
                   {showPicker && (
-                    <View style={styles.modalContainer}>
-                      {renderPicker()}
-                    </View>
+                    <Modal
+                      transparent={true}
+                      visible={showPicker}
+                      animationType="fade"
+                      onRequestClose={() => setShowPicker(false)}
+                    >
+                      <View style={styles.modalContainer}>
+                        <View style={styles.pickerContainer}>
+                          {renderPicker()}
+                          {selectedFilter !== 'date' && (
+                            <TouchableOpacity onPress={() => setShowPicker(false)}>
+                              <Text
+                                style={[
+                                  styles.close,
+                                  { textAlign: "center", paddingVertical: 10, paddingHorizontal: 20 }
+                                ]}
+                              >
+                                Close
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    </Modal>
                   )}
                 </View>
 
@@ -644,32 +674,7 @@ const ChitPayments = ({ route, navigation }) => {
                   contentContainerStyle={{ paddingBottom: 80 }}
                   showsVerticalScrollIndicator={false}
                 >
-                  {Array.isArray(customers) &&
-                  customers.filter((customer) => {
-                    const nameMatch = customer?.user_id?.full_name
-                      ?.toLowerCase()
-                      .includes(search.toLowerCase());
-                    const dateMatch = isSameDate(
-                      customer.pay_date,
-                      selectedDate
-                    );
-                    const customerMatch =
-                      !selectedCustomer ||
-                      customer?.user_id?._id === selectedCustomer;
-                    const groupMatch =
-                      !selectedGroup ||
-                      customer?.group_id?._id === selectedGroup;
-                    const paymentModeMatch =
-                      !selectedPaymentMode ||
-                      customer.pay_type === selectedPaymentMode;
-                    return (
-                      nameMatch &&
-                      dateMatch &&
-                      customerMatch &&
-                      groupMatch &&
-                      paymentModeMatch
-                    );
-                  }).length === 0 ? (
+                  {filteredCustomers.length === 0 ? (
                     <View style={styles.noDataContainer}>
                       <Image source={noImage} style={styles.noImage} />
                       <Text style={styles.noDataText}>
@@ -677,51 +682,25 @@ const ChitPayments = ({ route, navigation }) => {
                       </Text>
                     </View>
                   ) : (
-                    customers
-                      .filter((customer) => {
-                        const nameMatch = customer?.user_id?.full_name
-                          ?.toLowerCase()
-                          .includes(search.toLowerCase());
-                        const dateMatch = isSameDate(
-                          customer.pay_date,
-                          selectedDate
-                        );
-                        const customerMatch =
-                          !selectedCustomer ||
-                          customer?.user_id?._id === selectedCustomer;
-                        const groupMatch =
-                          !selectedGroup ||
-                          customer?.group_id?._id === selectedGroup;
-                        const paymentModeMatch =
-                          !selectedPaymentMode ||
-                          customer.pay_type === selectedPaymentMode;
-                        return (
-                          nameMatch &&
-                          dateMatch &&
-                          customerMatch &&
-                          groupMatch &&
-                          paymentModeMatch
-                        );
-                      })
-                      .map((customer, index) => (
-                        <PaymentChitList
-                          key={index}
-                          idx={index}
-                          name={customer?.user_id?.full_name || "N/A"}
-                          cus_id={customer._id}
-                          phone={customer?.user_id?.phone_number || "N/A"}
-                          receipt={customer.receipt_no}
-                          date={customer.pay_date}
-                          amount={customer.amount}
-                          group={customer?.group_id?.group_name || "N/A"}
-                          type={customer.pay_type}
-                          navigation={navigation}
-                          user={user}
-                          onPress={() => handleChitPress(customer._id)}
-                          customer={customer}
-                          isActive={customer._id === activeChitId}
-                        />
-                      ))
+                    filteredCustomers.map((customer, index) => (
+                      <PaymentChitList
+                        key={index}
+                        idx={index}
+                        name={customer?.user_id?.full_name || "N/A"}
+                        cus_id={customer._id}
+                        phone={customer?.user_id?.phone_number || "N/A"}
+                        receipt={customer.receipt_no}
+                        date={customer.pay_date}
+                        amount={customer.amount}
+                        group={customer?.group_id?.group_name || "N/A"}
+                        type={customer.pay_type}
+                        navigation={navigation}
+                        user={user}
+                        onPress={() => handleChitPress(customer._id)}
+                        customer={customer}
+                        isActive={customer._id === activeChitId}
+                      />
+                    ))
                   )}
                 </ScrollView>
               </>
@@ -742,7 +721,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   titleCollectionContainer: {
     display: "flex",
     flexDirection: "row",
@@ -791,6 +769,7 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     marginBottom: 15,
+    zIndex: 2,
   },
   scrollContainer: {
     paddingHorizontal: 22,
@@ -878,6 +857,19 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
+  closeButton: {
+    alignSelf: 'flex-end',
+    padding: 5,
+  },
+  close: {
+    color: 'white',
+    backgroundColor: "#D25D5D",
+    borderRadius: 20,
+    borderWidth: 2,
+    width: "100%",
+    height: 50,
+    overflow: "hidden",
+  },
   printButtonText: {
     fontSize: 16,
     fontWeight: "bold",
@@ -892,7 +884,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    zIndex: 1000,
+    zIndex: 0,
   },
   pickerContainer: {
     backgroundColor: COLORS.white,
@@ -906,9 +898,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
     width: "90%",
-    display: "none",
   },
-
   fullScreenModalGradient: {
     flex: 1,
   },
@@ -999,7 +989,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: "#053B90",
-    marginBottom: 10,
+    marginBottom: 20,
     alignSelf: "flex-start",
     width: "100%",
     textAlign: "center",
