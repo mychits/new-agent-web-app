@@ -51,14 +51,23 @@ const MonthlyTurnover = () => {
 
         if (response.data?.success) {
           setTurnoverData(response.data.agentData);
+          console.log(response.data.agentData, "test");
           const customersWithStatus =
             response.data.agentData.payingCustomers.map((c) => {
               const totalPaid = parseFloat(c.totalPaid);
               const monthlyInstallment = parseFloat(c.monthly_installment);
+               let lastPaymentDate = null;
+          if (c.payments && c.payments.length > 0) {
+            // Sort payments by date descending and pick the first one
+            lastPaymentDate = c.payments
+              .map(p => p.pay_date)
+              .sort((a, b) => new Date(b) - new Date(a))[0];
+          }
               return {
                 ...c,
                 paymentStatus:
                   totalPaid >= monthlyInstallment ? "PAID" : "UNPAID",
+                  lastPaymentDate,
               };
             });
           setCustomersData(customersWithStatus);
@@ -203,6 +212,10 @@ const MonthlyTurnover = () => {
         <View style={styles.customerDetailRow}>
           <Text style={styles.customerLabel}>Monthly Installment:</Text>
           <Text style={styles.customerValue}>₹{item.monthly_installment}</Text>
+        </View>
+        <View style={styles.customerDetailRow}>
+          <Text style={styles.customerLabel}>Last Transaction:</Text>
+          <Text style={styles.customerValue}>{item.lastPaymentDate}</Text>
         </View>
         <View style={styles.customerDetailRow}>
           <Text style={styles.customerLabel}>Total Paid:</Text>

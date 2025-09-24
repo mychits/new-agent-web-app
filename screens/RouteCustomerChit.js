@@ -1,12 +1,4 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  ActivityIndicator,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -15,17 +7,15 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import axios from "axios";
-import { useMemo } from "react";
 
-// This is the new, self-contained Card component
-const CustomerCard = ({ name, phone, customerId, onPress }) => (
+
+const CustomerCard = ({ name, phone, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.card}>
     <View style={styles.cardContent}>
       <Icon name="user-circle" style={styles.cardIcon} />
       <View style={styles.textContainer}>
         <Text style={styles.cardText}>{name}</Text>
         <Text style={styles.cardSubText}>Phone: {phone}</Text>
-        <Text style={styles.cardSubText}>Customer ID: {customerId}</Text>
       </View>
     </View>
     <Icon name="arrow-right" style={styles.arrowIcon} />
@@ -34,52 +24,101 @@ const CustomerCard = ({ name, phone, customerId, onPress }) => (
 
 const RouteCustomer = ({ route, navigation }) => {
 
-  const { user, areaId } = route.params;
+  const { user } = route.params;
 
   const [search, setSearch] = useState("");
+ const [agent, setAgent] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const customersList = useMemo(() => {
-    const searchText = (search ?? "").toLowerCase();
-
-    return customers.filter((customer) =>
-      Object.values(customer).some((field) =>
-        String(field ?? "")
-          .toLowerCase()
-          .includes(searchText)
-      )
-    );
-  }, [search, customers]);
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`${baseUrl}/user/get-user`);
-        if (response.data) {
-          setCustomers(response.data);
-        } else {
-          console.error("Unexpected API response format:", response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching customer data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const fetchEmployee = async () => {
+    try{
+      const response = await axios.get(`${baseUrl}/agent/get-employee`);
+      setAgent(response?.data?.employee)
 
-    fetchCustomers();
+
+
+    }catch(error){
+      console.error("unable to get agent id")
+    }
+  }
+fetchEmployee()
   }, []);
+
+  // useEffect(() => {
+  //   const fetchCustomers = async () => {
+  //     try {
+  //       setLoading(true);
+       
+  //       const response = await axios.get(`${baseUrl}/user/collection-area/agent/${agent}`);
+  //       console.log(response.data, "jsgkjg");
+  //       if (response.data) {
+  //         setCustomers(response.data);
+  //       } else {
+  //         console.error("Unexpected API response format:", response.data);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching customer data:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+    
+  //   if (user && user._id) {
+  //     fetchCustomers();
+  //   }
+  // }, [user, agent]);
+
+
+useEffect(() => {
+  const fetchCustomers = async () => {
+    if (!agent || agent.length === 0) return; // wait until agent list is fetched
+
+    try {
+      setLoading(true);
+
+      // Pick the first agent's _id
+      
+      console.info(user.userId, "yfgsduyfgsufgsgf");
+      if (!user.userId) return;
+
+      const response = await axios.get(`${baseUrl}/user/collection-area/agent/${user.userId}`);
+      console.info(response.data, "Customer data fetched");
+
+      if (Array.isArray(response.data)) {
+        setCustomers(response.data);
+      } else {
+        console.error("Unexpected API response format:", response.data);
+        setCustomers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching customer data:", error);
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchCustomers();
+}, [agent]);
+  const filteredCustomers = Array.isArray(customers)
+    ? customers.filter((customer) =>
+        customer.full_name?.toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
+        colors={['#dbf6faff', '#90dafcff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <ScrollView
-          style={{ flex: 1, marginHorizontal: 20, marginTop: 12 }}
+          style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
           contentContainerStyle={{ paddingBottom: 80 }}
           showsVerticalScrollIndicator={false}
         >
@@ -109,18 +148,20 @@ const RouteCustomer = ({ route, navigation }) => {
             </View>
           ) : (
             <>
-              {Array.isArray(customersList) &&
-                customersList.map((customer, index) => (
+              {filteredCustomers.length > 0 ? (
+                filteredCustomers.map((customer, index) => (
                   <CustomerCard
                     key={index}
                     name={customer.full_name}
                     phone={customer.phone_number}
-                    customerId={customer.customer_id}
                     onPress={() =>
                       navigation.navigate("Payin", { customer: customer._id })
                     }
                   />
-                ))}
+                ))
+              ) : (
+                <Text style={styles.noCustomersText}>No customers found.</Text>
+              )}
             </>
           )}
         </ScrollView>
@@ -136,16 +177,16 @@ const styles = StyleSheet.create({
   titleContainer: {
     marginTop: 40,
     marginBottom: 20,
-    alignItems: "center",
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
     marginTop: 5,
   },
   searchContainer: {
@@ -154,8 +195,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 10,
-    width: "100%",
-    shadowColor: "#000",
+    width: '100%',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -171,18 +212,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.darkGray,
   },
-  // Styles for the new CustomerCard component
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 20,
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderLeftWidth: 5,
-    borderColor: "#da8201",
-    shadowColor: "#000",
+    borderColor: '#da8201',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -190,30 +230,36 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cardContent: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   textContainer: {
     marginLeft: 15,
   },
   cardText: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   cardSubText: {
     fontSize: 14,
-    color: "#888",
+    color: '#888',
     marginTop: 2,
   },
   cardIcon: {
     fontSize: 32,
-    color: "#da8201",
+    color: '#da8201',
   },
   arrowIcon: {
     fontSize: 22,
-    color: "#da8201",
+    color: '#da8201',
   },
+  noCustomersText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#888',
+  }
 });
 
 export default RouteCustomer;
