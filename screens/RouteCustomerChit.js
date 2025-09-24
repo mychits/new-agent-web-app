@@ -8,7 +8,7 @@ import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import axios from "axios";
 
-// This is the new, self-contained Card component
+
 const CustomerCard = ({ name, phone, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.card}>
     <View style={styles.cardContent}>
@@ -23,31 +23,91 @@ const CustomerCard = ({ name, phone, onPress }) => (
 );
 
 const RouteCustomer = ({ route, navigation }) => {
-  const { user, areaId } = route.params;
+
+  const { user } = route.params;
 
   const [search, setSearch] = useState("");
+ const [agent, setAgent] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`${baseUrl}/user/get-user`);
-        if (response.data) {
-          setCustomers(response.data);
-        } else {
-          console.error("Unexpected API response format:", response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching customer data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const fetchEmployee = async () => {
+    try{
+      const response = await axios.get(`${baseUrl}/agent/get-employee`);
+      setAgent(response?.data?.employee)
 
-    fetchCustomers();
+
+
+    }catch(error){
+      console.error("unable to get agent id")
+    }
+  }
+fetchEmployee()
   }, []);
+
+  // useEffect(() => {
+  //   const fetchCustomers = async () => {
+  //     try {
+  //       setLoading(true);
+       
+  //       const response = await axios.get(`${baseUrl}/user/collection-area/agent/${agent}`);
+  //       console.log(response.data, "jsgkjg");
+  //       if (response.data) {
+  //         setCustomers(response.data);
+  //       } else {
+  //         console.error("Unexpected API response format:", response.data);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching customer data:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+    
+  //   if (user && user._id) {
+  //     fetchCustomers();
+  //   }
+  // }, [user, agent]);
+
+
+useEffect(() => {
+  const fetchCustomers = async () => {
+    if (!agent || agent.length === 0) return; // wait until agent list is fetched
+
+    try {
+      setLoading(true);
+
+      // Pick the first agent's _id
+      
+      console.info(user.userId, "yfgsduyfgsufgsgf");
+      if (!user.userId) return;
+
+      const response = await axios.get(`${baseUrl}/user/collection-area/agent/${user.userId}`);
+      console.info(response.data, "Customer data fetched");
+
+      if (Array.isArray(response.data)) {
+        setCustomers(response.data);
+      } else {
+        console.error("Unexpected API response format:", response.data);
+        setCustomers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching customer data:", error);
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchCustomers();
+}, [agent]);
+  const filteredCustomers = Array.isArray(customers)
+    ? customers.filter((customer) =>
+        customer.full_name?.toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
@@ -88,23 +148,20 @@ const RouteCustomer = ({ route, navigation }) => {
             </View>
           ) : (
             <>
-              {Array.isArray(customers) &&
-                customers
-                  .filter((customer) =>
-                    customer.full_name
-                      ?.toLowerCase()
-                      .includes(search.toLowerCase())
-                  )
-                  .map((customer, index) => (
-                    <CustomerCard
-                      key={index}
-                      name={customer.full_name}
-                      phone={customer.phone_number}
-                      onPress={() =>
-                        navigation.navigate("Payin", { customer: customer._id })
-                      }
-                    />
-                  ))}
+              {filteredCustomers.length > 0 ? (
+                filteredCustomers.map((customer, index) => (
+                  <CustomerCard
+                    key={index}
+                    name={customer.full_name}
+                    phone={customer.phone_number}
+                    onPress={() =>
+                      navigation.navigate("Payin", { customer: customer._id })
+                    }
+                  />
+                ))
+              ) : (
+                <Text style={styles.noCustomersText}>No customers found.</Text>
+              )}
             </>
           )}
         </ScrollView>
@@ -155,7 +212,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.darkGray,
   },
-  // Styles for the new CustomerCard component
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 15,
@@ -198,6 +254,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: '#da8201',
   },
+  noCustomersText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#888',
+  }
 });
 
 export default RouteCustomer;
