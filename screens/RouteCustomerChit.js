@@ -1,4 +1,12 @@
-import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -8,14 +16,14 @@ import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import axios from "axios";
 
-
-const CustomerCard = ({ name, phone, onPress }) => (
+const CustomerCard = ({ name, phone, customerId, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.card}>
     <View style={styles.cardContent}>
       <Icon name="user-circle" style={styles.cardIcon} />
       <View style={styles.textContainer}>
         <Text style={styles.cardText}>{name}</Text>
         <Text style={styles.cardSubText}>Phone: {phone}</Text>
+        <Text style={styles.cardSubText}>Customer ID: {customerId}</Text>
       </View>
     </View>
     <Icon name="arrow-right" style={styles.arrowIcon} />
@@ -23,86 +31,55 @@ const CustomerCard = ({ name, phone, onPress }) => (
 );
 
 const RouteCustomer = ({ route, navigation }) => {
-
   const { user } = route.params;
 
   const [search, setSearch] = useState("");
- const [agent, setAgent] = useState([]);
+  const [agent, setAgent] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchEmployee = async () => {
-    try{
-      const response = await axios.get(`${baseUrl}/agent/get-employee`);
-      setAgent(response?.data?.employee)
-
-
-
-    }catch(error){
-      console.error("unable to get agent id")
-    }
-  }
-fetchEmployee()
+      try {
+        const response = await axios.get(`${baseUrl}/agent/get-employee`);
+        setAgent(response?.data?.employee);
+      } catch (error) {
+        console.error("unable to get agent id");
+      }
+    };
+    fetchEmployee();
   }, []);
 
-  // useEffect(() => {
-  //   const fetchCustomers = async () => {
-  //     try {
-  //       setLoading(true);
-       
-  //       const response = await axios.get(`${baseUrl}/user/collection-area/agent/${agent}`);
-  //       console.log(response.data, "jsgkjg");
-  //       if (response.data) {
-  //         setCustomers(response.data);
-  //       } else {
-  //         console.error("Unexpected API response format:", response.data);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching customer data:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      if (!agent || agent.length === 0) return;
 
-    
-  //   if (user && user._id) {
-  //     fetchCustomers();
-  //   }
-  // }, [user, agent]);
+      try {
+        setLoading(true);
 
+        const agentId = user.userId;
+        if (!agentId) return;
 
-useEffect(() => {
-  const fetchCustomers = async () => {
-    if (!agent || agent.length === 0) return; // wait until agent list is fetched
+        const response = await axios.get(`${baseUrl}/user/collection-area/agent/${agentId}`);
+        console.info(response.data, "Customer data fetched");
 
-    try {
-      setLoading(true);
-
-      // Pick the first agent's _id
-      
-      console.info(user.userId, "yfgsduyfgsufgsgf");
-      if (!user.userId) return;
-
-      const response = await axios.get(`${baseUrl}/user/collection-area/agent/${user.userId}`);
-      console.info(response.data, "Customer data fetched");
-
-      if (Array.isArray(response.data)) {
-        setCustomers(response.data);
-      } else {
-        console.error("Unexpected API response format:", response.data);
+        if (Array.isArray(response.data)) {
+          setCustomers(response.data);
+        } else {
+          console.error("Unexpected API response format:", response.data);
+          setCustomers([]);
+        }
+      } catch (error) {
+        console.error("Error fetching customer data:", error);
         setCustomers([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching customer data:", error);
-      setCustomers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchCustomers();
-}, [agent]);
+    fetchCustomers();
+  }, [agent]);
+
   const filteredCustomers = Array.isArray(customers)
     ? customers.filter((customer) =>
         customer.full_name?.toLowerCase().includes(search.toLowerCase())
@@ -154,6 +131,7 @@ useEffect(() => {
                     key={index}
                     name={customer.full_name}
                     phone={customer.phone_number}
+                    customerId={customer.customer_id}
                     onPress={() =>
                       navigation.navigate("Payin", { customer: customer._id })
                     }
