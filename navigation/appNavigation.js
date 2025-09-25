@@ -11,6 +11,8 @@ import { enableScreens } from "react-native-screens";
 import PaymentList from "../screens/PaymentList";
 import PayNavigation from "./PayNavigation";
 import { StatusBar } from "react-native";
+import LoanPayments from "../screens/LoanPayments";
+import PigmePayments from "../screens/PigmePayments";
 import AddCustomer from "../screens/AddCustomer";
 import ViewCustomer from "../screens/ViewCustomer";
 import CustomerNavigation from "./CustomerNavigation";
@@ -83,6 +85,17 @@ export default function AppNavigation() {
           component={MonthlyTurnover}
           options={{ headerShown: false }}
         />
+          <Stack.Screen
+         name="LoanPayments"
+         component={LoanPayments}
+         options={{headerShown: false}}
+         />
+
+          <Stack.Screen
+         name="PigmePayments"
+         component={PigmePayments}
+         options={{headerShown: false}}
+         /> 
         <Stack.Screen
           name="PayNavigation"
           component={PayNavigation}

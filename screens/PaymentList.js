@@ -26,7 +26,7 @@ const PaymentList = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-         colors={['#dbf6faff', '#90dafcff']}
+        colors={['#dbf6faff', '#90dafcff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -54,6 +54,22 @@ const PaymentList = ({ route, navigation }) => {
               icon="credit-card"
               onPress={() =>
                 navigation.navigate("GoldPayment", { user, areaId: "gold-chits" })
+              }
+            />
+            {/* NEW CARD: Loan Payments */}
+            <PaymentCard
+              name="Loan Payments"
+              icon="bank" // Using 'bank' or could use 'usd' or 'handshake-o'
+              onPress={() =>
+                navigation.navigate("LoanPayments", { user, areaId: "loans" })
+              }
+            />
+            {/* NEW CARD: Pigmy Payments */}
+            <PaymentCard
+              name="Pigmy Payments"
+              icon="briefcase" // Using 'briefcase' or could use 'inr' or 'book'
+              onPress={() =>
+                navigation.navigate("PigmyPayments", { user, areaId: "pigmy" })
               }
             />
           </View>
@@ -111,7 +127,7 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   cardText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
