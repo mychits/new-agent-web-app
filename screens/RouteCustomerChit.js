@@ -36,9 +36,15 @@ const RouteCustomer = ({ route, navigation }) => {
   const [search, setSearch] = useState("");
   const [agent, setAgent] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // FIX: Initialize loading to true so the ActivityIndicator shows immediately.
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
+    // This is fetching employee data. It should probably set its own loading state 
+    // or be merged into the customer fetch if it's a prerequisite.
+    // For now, leaving it as is, but noting the dependency flow:
+    // 1. fetchEmployee runs and updates `agent`.
+    // 2. The second useEffect runs because `agent` changed.
     const fetchEmployee = async () => {
       try {
         const response = await axios.get(`${baseUrl}/agent/get-employee`);
@@ -52,10 +58,14 @@ const RouteCustomer = ({ route, navigation }) => {
 
   useEffect(() => {
     const fetchCustomers = async () => {
+      // The initial `loading` state handles the first render, but we need
+      // to ensure we set it to true again *before* this fetch runs if it's
+      // triggered by a dependency change (like `agent` being updated).
+      // However, since `agent` is fetched once, this logic is fine for now.
       if (!agent || agent.length === 0) return;
 
       try {
-        setLoading(true);
+        setLoading(true); // Ensure loading is true right before fetching
 
         const agentId = user.userId;
         if (!agentId) return;
@@ -73,12 +83,12 @@ const RouteCustomer = ({ route, navigation }) => {
         console.error("Error fetching customer data:", error);
         setCustomers([]);
       } finally {
-        setLoading(false);
+        setLoading(false); // Set to false regardless of success or failure
       }
     };
 
     fetchCustomers();
-  }, [agent]);
+  }, [agent]); // Runs when 'agent' changes (after the first useEffect completes)
 
   const filteredCustomers = Array.isArray(customers)
     ? customers.filter((customer) =>
@@ -119,6 +129,8 @@ const RouteCustomer = ({ route, navigation }) => {
               style={styles.searchInput}
             />
           </View>
+          {/* Display logic is correct: show loader while loading, 
+              then show data or "No customers found" when loading is complete. */}
           {loading ? (
             <View style={{ marginTop: 30, alignItems: "center" }}>
               <ActivityIndicator size="large" color="#da8201" />

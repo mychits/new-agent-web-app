@@ -20,7 +20,7 @@ import PaymentChitList from "../components/PaymentChitList";
 
 const noImage = require('../assets/no.png');
 
-const ChitPayments = ({ route, navigation }) => {
+const LoanPayments = ({ route, navigation }) => {
   const { user, areaId } = route.params;
 
   const [search, setSearch] = useState("");
@@ -961,4 +961,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChitPayments;
+export default LoanPayments;

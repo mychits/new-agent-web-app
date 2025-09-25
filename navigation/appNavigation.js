@@ -30,6 +30,8 @@ import CustomerOnHold from "../screens/CustomerOnHold";
 import MonthlyTurnover from "../screens/MonthlyTurnover";
 import EditLead from "../screens/EditLead";
 import QrCodePage from "../screens/QrCodePage";
+import LoanPayments from "../screens/LoanPayments";
+import PigmePayments from "../screens/PigmePayments";
 
 enableScreens();
 
@@ -88,6 +90,17 @@ export default function AppNavigation() {
           component={PayNavigation}
           options={{ headerShown: false }}
         />
+         <Stack.Screen
+         name="LoanPayments"
+         component={LoanPayments}
+         options={{headerShown: false}}
+         />
+
+          <Stack.Screen
+         name="PigmePayments"
+         component={PigmePayments}
+         options={{headerShown: false}}
+         /> 
         <Stack.Screen
           name="qrCode"
           options={{ headerShown: false }}
