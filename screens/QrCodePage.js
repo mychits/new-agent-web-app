@@ -22,23 +22,30 @@ const QrCodePage = () => {
             <Text style={styles.title}>MyChits Payment QR Code</Text>
           </View>
 
+          {/* ******** QR Code Container (The middle block) ******** */}
           <View style={styles.qrContainer}>
+            {/* UPI ID TEXT (Still above the QR image, inside the box) */}
+            <View style={styles.infoContainer_QR}>
+              <Text style={styles.infoText}>UPI ID mychits@kotak</Text>
+            </View>
+
+            {/* QR CODE IMAGE */}
             <Image
               source={qrCodeImage}
               style={styles.qrImage}
               resizeMode="contain"
             />
-            <View style={styles.infoContainer}>
-              <Text style={styles.infoText}>UPI ID mychits@kotak</Text>
-            </View>
           </View>
-
-          <View style={styles.infoContainer}>
+          
+          {/* ******** SCAN INSTRUCTIONS TEXT BLOCK - MOVED BELOW THE QR CODE BOX ******** */}
+          <View style={styles.infoContainer_Bottom}> 
             <Text style={styles.infoText}>
               Scan this QR code to make payments
             </Text>
             <Text style={styles.infoText}>Kotak Bank</Text>
           </View>
+          {/* ******** END MOVED BLOCK ******** */}
+          
         </View>
       </View>
     </LinearGradient>
@@ -55,7 +62,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
+    padding: 13,
   },
   header: {
     marginBottom: 20,
@@ -82,12 +89,20 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   qrImage: {
-    width: 300,
+    width: 250,
     height: 300,
   },
-  infoContainer: {
+  
+  // ******** UPDATED STYLES ********
+  infoContainer_QR: { // For UPI ID text *inside* the QR container
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  infoContainer_Bottom: { // New style for the text block *below* the QR container
+    alignItems: "center",
+    marginTop: 10, // Small space above the text block
+    // No large margin here, unlike the original code
   },
   infoText: {
     fontSize: 16,
