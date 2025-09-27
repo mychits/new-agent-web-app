@@ -32,6 +32,8 @@ import EditLead from "../screens/EditLead";
 import QrCodePage from "../screens/QrCodePage";
 import LoanPayments from "../screens/LoanPayments";
 import PigmePayments from "../screens/PigmePayments";
+import DueReport from "../screens/DueReport";
+import Due from "../screens/Due";
 
 enableScreens();
 
@@ -110,6 +112,16 @@ export default function AppNavigation() {
           name="PaymentNavigator"
           options={{ headerShown: false }}
           component={PaymentNavigator}
+        />
+         <Stack.Screen
+          name="DueReport"
+          options={{ headerShown: false }}
+          component={DueReport}
+        />
+          <Stack.Screen
+          name="Due"
+          options={{ headerShown: false }}
+          component={Due}
         />
         <Stack.Screen
           name="CustomerOnHold"
