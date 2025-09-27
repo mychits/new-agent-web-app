@@ -11,8 +11,6 @@ import { enableScreens } from "react-native-screens";
 import PaymentList from "../screens/PaymentList";
 import PayNavigation from "./PayNavigation";
 import { StatusBar } from "react-native";
-import LoanPayments from "../screens/LoanPayments";
-import PigmePayments from "../screens/PigmePayments";
 import AddCustomer from "../screens/AddCustomer";
 import ViewCustomer from "../screens/ViewCustomer";
 import CustomerNavigation from "./CustomerNavigation";
@@ -32,6 +30,10 @@ import CustomerOnHold from "../screens/CustomerOnHold";
 import MonthlyTurnover from "../screens/MonthlyTurnover";
 import EditLead from "../screens/EditLead";
 import QrCodePage from "../screens/QrCodePage";
+import LoanPayments from "../screens/LoanPayments";
+import PigmePayments from "../screens/PigmePayments";
+import Due from "../screens/Due";
+import DueReport from "../screens/DueReport";
 
 enableScreens();
 
@@ -85,7 +87,12 @@ export default function AppNavigation() {
           component={MonthlyTurnover}
           options={{ headerShown: false }}
         />
-          <Stack.Screen
+        <Stack.Screen
+          name="PayNavigation"
+          component={PayNavigation}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
          name="LoanPayments"
          component={LoanPayments}
          options={{headerShown: false}}
@@ -97,11 +104,6 @@ export default function AppNavigation() {
          options={{headerShown: false}}
          /> 
         <Stack.Screen
-          name="PayNavigation"
-          component={PayNavigation}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
           name="qrCode"
           options={{ headerShown: false }}
           component={QrCodePage}
@@ -110,6 +112,16 @@ export default function AppNavigation() {
           name="PaymentNavigator"
           options={{ headerShown: false }}
           component={PaymentNavigator}
+        />
+         <Stack.Screen
+          name="Due"
+          options={{ headerShown: false }}
+          component={Due}
+        />
+          <Stack.Screen
+          name="DueReport"
+          options={{ headerShown: false }}
+          component={DueReport}
         />
         <Stack.Screen
           name="CustomerOnHold"

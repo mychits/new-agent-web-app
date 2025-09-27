@@ -38,6 +38,7 @@ const cardImagePaths = {
   groups: require("../assets/groups1.png"),
   customerOnHold: require("../assets/Holdon2.png"),
   monthlyTurnover: require("../assets/MITB.png"),
+    DueImage: require("../assets/dues.png"),
 };
 
 const Home = ({ route, navigation }) => {
@@ -198,6 +199,13 @@ const Home = ({ route, navigation }) => {
       imagePath: cardImagePaths.monthlyTurnover,
       onPress: () => navigation.navigate("MonthlyTurnover"),
       backgroundColor: "#D0F0C0",
+    },
+    {
+      id: "dues",
+      name: "Dues",
+      imagePath: cardImagePaths.DueImage,
+      onPress: () => navigation.navigate("Due"),
+      backgroundColor: "#e9d0e3ff",
     },
   ].filter(Boolean);
 
