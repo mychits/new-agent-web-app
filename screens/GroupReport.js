@@ -11,7 +11,7 @@ import {
     Image,
 } from "react-native";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Picker } from '@react-native-picker/picker'; 
+import { Picker } from '@react-native-picker/picker'; // <--- RE-IMPORTED PICKER
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -19,16 +19,15 @@ import COLORS from "../constants/color";
 import Header from "../components/Header"; 
 import { Feather, MaterialIcons } from '@expo/vector-icons'; 
 
-// --- Constants (Updated Gradient and Colors) ---
-const PRIMARY_COLOR = COLORS.primary || '#3498db'; // Primary Blue
+
+const PRIMARY_COLOR = COLORS.primary || '#3498db'; 
 const ACCENT_COLOR = '#2ecc71'; 
 const DUE_COLOR = '#e74c3c'; 
 
-// New Gradient for a softer top background look
+
 const BACKGROUND_GRADIENT = ["#dbf6faff", "#90dafcff"]; 
 const API_URL = "https://mychits.online/api/group/get-group";
 
-// IMAGE ASSET IMPORTED WITH RELATIVE PATH
 const NO_REPORTS_IMAGE = require('../assets/NoReports.png');
 // --------------------------------------------------
 
@@ -37,7 +36,7 @@ const formatDate = (date) => {
 };
 
 
-// GroupDueItem component remains unchanged
+
 const GroupDueItem = React.memo(({ item }) => {
     const dueDateText = formatDate(item.next_due_date_string ? new Date(item.next_due_date_string) : null);
     
@@ -100,41 +99,29 @@ const GroupDueItem = React.memo(({ item }) => {
 });
 
 
-const DueReport = ({ route }) => {
-    const { user = {}, reportType = 'group' } = route.params || {};
+const GroupReport = ({ route }) => {
+  
+    const { user = {} } = route.params || {};
     
-    const getReportDetails = (type) => {
-        switch (type) {
-            case 'collection':
-                return {
-                    title: "Collection Report",
-                    subtitle: "Manage and review all outstanding payments for collection."
-                };
-            case 'referred':
-                return {
-                    title: "Referred Report",
-                    subtitle: "Track the outstanding payments from your referred customers."
-                };
-            case 'group':
-            default:
-                return {
-                    title: "Group Report",
-                    subtitle: "Track and manage all outstanding reports for each group."
-                };
-        }
+    const getReportDetails = () => {
+     
+        return {
+            title: "Group Report",
+            subtitle: "Manage and review all outstanding payments for Group."
+        };
     };
     
-    const reportDetails = useMemo(() => getReportDetails(reportType), [reportType]);
+    const reportDetails = useMemo(() => getReportDetails(), []);
 
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedGroupValue, setSelectedGroupValue] = useState('all'); 
+    const [selectedGroupValue, setSelectedGroupValue] = useState('all'); // <--- RESTORED STATE
     const [fromDate, setFromDate] = useState(null); 
     const [toDate, setToDate] = useState(new Date()); 
     const [showDatePicker, setShowDatePicker] = useState({ visible: false, mode: 'date', type: '' });
 
-    // --- Data Fetching Effect (Kept unchanged) ---
+    // --- Data Fetching Effect ---
     const fetchGroups = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -148,7 +135,6 @@ const DueReport = ({ route }) => {
             let fetchedData = [];
             if (json.data && Array.isArray(json.data)) {
                 
-                // --- MOCK DATA INJECTION FOR DEMO ---
                 fetchedData = json.data.map((item, index) => {
                     const baseDate = new Date();
                     const dateOffsets = [0, 1, 30, -5, 7]; 
@@ -161,8 +147,6 @@ const DueReport = ({ route }) => {
                         members_count: item.members_count || (index + 5), 
                     };
                 });
-                // --- END MOCK DATA INJECTION ---
-                
             } else if (Array.isArray(json)) { 
                 fetchedData = json;
             } else {
@@ -170,8 +154,7 @@ const DueReport = ({ route }) => {
             }
             
             setGroups(fetchedData);
-            setSelectedGroupValue('all');
-
+            setSelectedGroupValue('all'); // <--- RESTORED
         } catch (e) {
             console.error("Error fetching groups:", e);
             setError(e.message);
@@ -217,7 +200,7 @@ const DueReport = ({ route }) => {
     
     const filteredGroups = useMemo(() => {
         let filtered = groups;
-        // 1. Group Filter
+        // 1. Group Filter <--- RESTORED LOGIC
         if (selectedGroupValue !== 'all' && selectedGroupValue) {
             filtered = filtered.filter(group => group.id && group.id.toString() === selectedGroupValue);
         }
@@ -240,12 +223,11 @@ const DueReport = ({ route }) => {
         }
         
         return filtered;
-    }, [groups, selectedGroupValue, fromDate, toDate]);
+    }, [groups, selectedGroupValue, fromDate, toDate]); // <--- RESTORED dependency
 
-    // --- Render Functions for Filters (Remains Unchanged) ---
-    const renderGroupDropdown = () => {
-        // Only show picker if data is available (not loading or error)
-        if (!groups.length && !selectedGroupValue) return null; 
+    // --- Render Functions for Filters ---
+    const renderGroupDropdown = () => { // <--- RESTORED FUNCTION
+        if (!groups.length && selectedGroupValue !== 'all') return null; 
 
         return (
             <View style={styles.dropdownContainer}>
@@ -326,8 +308,8 @@ const DueReport = ({ route }) => {
                 </View>
                 
                 <View style={styles.filterSection}>
-                    {renderGroupDropdown()}
-                    <View style={styles.filterSeparator} />
+                    {renderGroupDropdown()} {/* <--- RESTORED CALL */}
+                    <View style={styles.filterSeparator} /> {/* <--- RESTORED SEPARATOR */}
                     {renderDatePickers()}
                 </View>
 
@@ -358,14 +340,14 @@ const DueReport = ({ route }) => {
                         keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
                         ListEmptyComponent={() => ( 
                             <View style={styles.emptyContainer}>
-                                    <Image 
-                                        source={NO_REPORTS_IMAGE} 
-                                        style={styles.emptyImage} 
-                                        resizeMode="contain" 
-                                    />
+                                <Image 
+                                    source={NO_REPORTS_IMAGE} 
+                                    style={styles.emptyImage} 
+                                    resizeMode="contain" 
+                                />
                                 <Text style={styles.emptyText}>
-                                        No Due Reports Found
-                                    </Text>
+                                    No Due Reports Found
+                                </Text>
                                 <Text style={styles.emptyText_sub}>Great job! All payments seem to be cleared for the selected filters.</Text>
                             </View>
                         )}
@@ -381,7 +363,6 @@ const DueReport = ({ route }) => {
     const FullScreenLoading = () => (
         <View style={styles.fullScreenLoading}>
             <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-     
         </View>
     );
 
@@ -395,17 +376,13 @@ const DueReport = ({ route }) => {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
-                {/* *** THIS IS THE KEY CHANGE ***
-                  If loading is true, only show the FullScreenLoading overlay.
-                  Otherwise, render the MainContent with headers, filters, and list.
-                */}
                 {loading ? <FullScreenLoading /> : <MainContent />}
             </LinearGradient>
         </SafeAreaView>
     );
 };
 
-// --- STYLESHEET (Added fullScreenLoading and loadingText styles) ---
+// --- STYLESHEET (Restored Picker and related styles) ---
 const styles = StyleSheet.create({
     
     gradientOverlay: {
@@ -414,7 +391,7 @@ const styles = StyleSheet.create({
     // NEW STYLE: Full Screen Loading Overlay
     fullScreenLoading: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white to show gradient slightly
+        backgroundColor: 'rgba(255, 255, 255, 0.9)', 
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 10,
@@ -425,7 +402,6 @@ const styles = StyleSheet.create({
         color: PRIMARY_COLOR,
         fontWeight: '700',
     },
-    // Existing styles (mostly unchanged)
     staticHeaderContainer: {
         backgroundColor: 'transparent',
         paddingHorizontal: 22, 
@@ -478,15 +454,15 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 1,
     },
-    filterSeparator: {
+    filterSeparator: { // <--- RESTORED STYLE
         height: 1,
         backgroundColor: 'rgba(0,0,0,0.08)', 
         marginVertical: 10, 
     },
-    dropdownContainer: {
+    dropdownContainer: { // <--- RESTORED STYLE
         
     },
-    pickerWrapper: {
+    pickerWrapper: { // <--- RESTORED STYLE
         borderWidth: 2, 
         borderColor: '#e1e5e8', 
         borderRadius: 12,
@@ -494,18 +470,18 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         justifyContent: 'center',
     },
-    pickerStyle: {
+    pickerStyle: { // <--- RESTORED STYLE
         height: Platform.OS === 'ios' ? 150 : 55, 
         width: '100%',
         color: '#333',
     },
-    dropdownIcon: {
+    dropdownIcon: { // <--- RESTORED STYLE
         position: 'absolute',
         right: 15,
         pointerEvents: 'none',
         top: Platform.OS === 'ios' ? undefined : 16,
     },
-    pickerItemText: {
+    pickerItemText: { // <--- RESTORED STYLE
         fontSize: 15,
     },
     dateFilterContainer: {
@@ -712,10 +688,8 @@ const styles = StyleSheet.create({
         color: '#999',
         textAlign: 'center',
         marginTop: 5,
-
-
-        
     }
 });
 
-export default DueReport;
+// Exported as original name for compatibility with other files
+export default GroupReport;

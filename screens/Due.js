@@ -23,17 +23,12 @@ const CustomRouteCard = ({ name, icon, onPress }) => (
 
 const Due = ({ route, navigation }) => {
   // Defensive destructuring remains in place to prevent the previous crash
-  const { user = {} } = route.params || {};
+  const { user} = route.params 
 
-  // Function to handle navigation to the DueReport screen
-  // The type parameter can be used in DueReport.js to fetch specific data
-  const navigateToDueReport = (reportType) => {
-    // Assuming 'DueReport' is the correct screen name in your navigator
-    navigation.navigate("DueReport", { 
-      user: user, 
-      reportType: reportType 
-    });
-  };
+
+
+  // Removed the navigateToDueReport function and replaced calls below
+  // to navigate directly to the specific report screens.
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
@@ -57,19 +52,22 @@ const Due = ({ route, navigation }) => {
           <View style={styles.cardListContainer}>
           
             <CustomRouteCard
+             
               name="Collection Report"
               icon="inbox" 
-              onPress={() => navigateToDueReport("collection")}
+              onPress={() => navigation.navigate("OutstandingReports", { user})}
             />
             <CustomRouteCard
+             
               name="Referred Report"
               icon="share-alt" 
-              onPress={() => navigateToDueReport("referred")}
+              onPress={() => navigation.navigate("ReferredReport", { user})}
             />
             <CustomRouteCard
+             
               name="Group Report"
               icon="users" 
-              onPress={() => navigateToDueReport("group")}
+              onPress={() => navigation.navigate("GroupReport", { user})}
             />
             
           </View>

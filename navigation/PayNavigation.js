@@ -17,6 +17,7 @@ import ViewLeads from "../screens/ViewLeads";
 import Reports from "../screens/Reports";
 import LoanPrint from "../screens/LoanPrint";
 import PigmePrint from "../screens/PigmePrint";
+import Due from "../screens/Due";
 enableScreens();
 
 const stack = createNativeStackNavigator();
@@ -71,6 +72,12 @@ const PayNavigation = ({ route }) => {
 			<stack.Screen
 				name="PigmePrint"
 				component={PigmePrint}
+				initialParams={{ user, store_id }}
+				options={{ headerShown: false }}
+			/>
+      <stack.Screen
+				name="Due"
+				component={Due}
 				initialParams={{ user, store_id }}
 				options={{ headerShown: false }}
 			/>

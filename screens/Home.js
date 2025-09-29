@@ -60,6 +60,7 @@ const Home = ({ route, navigation }) => {
           const response = await axios.get(
             `${baseUrl}/agent/get-agent-by-id/${user.userId}`
           );
+         
           if (response.data) {
             setAgent(response.data);
           } else {
@@ -205,7 +206,10 @@ const Home = ({ route, navigation }) => {
       id: "DueReport",
       name: "DueReport",
       imagePath: cardImagePaths.DueReportImage,
-      onPress: () => navigation.navigate("Due"),
+      onPress: () =>  navigation.navigate("PayNavigation", {
+          screen: "Due",
+          params: { user },
+        }),
       backgroundColor: "#e9d0e3ff",
     },
   ].filter(Boolean);

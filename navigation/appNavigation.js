@@ -32,8 +32,11 @@ import EditLead from "../screens/EditLead";
 import QrCodePage from "../screens/QrCodePage";
 import LoanPayments from "../screens/LoanPayments";
 import PigmePayments from "../screens/PigmePayments";
-import DueReport from "../screens/DueReport";
+
+import GroupReport from "../screens/GroupReport";
+import ReferredReport from "../screens/ReferredReport";
 import Due from "../screens/Due";
+import OutstandingReports from "../screens/OutstandingReports";
 
 enableScreens();
 
@@ -64,11 +67,11 @@ export default function AppNavigation() {
           Remove the standalone Home screen.
           It should be part of the BottomNavigation Tab.
         
-        <Stack.Screen
-          name="Home"
-          options={{ headerShown: true }}
-          component={Home}
-        />
+          <Stack.Screen
+            name="Home"
+            options={{ headerShown: true }}
+            component={Home}
+          />
         */}
         
         <Stack.Screen
@@ -92,17 +95,17 @@ export default function AppNavigation() {
           component={PayNavigation}
           options={{ headerShown: false }}
         />
-         <Stack.Screen
-         name="LoanPayments"
-         component={LoanPayments}
-         options={{headerShown: false}}
-         />
+          <Stack.Screen
+          name="LoanPayments"
+          component={LoanPayments}
+          options={{headerShown: false}}
+          />
 
           <Stack.Screen
-         name="PigmePayments"
-         component={PigmePayments}
-         options={{headerShown: false}}
-         /> 
+          name="PigmePayments"
+          component={PigmePayments}
+          options={{headerShown: false}}
+          /> 
         <Stack.Screen
           name="qrCode"
           options={{ headerShown: false }}
@@ -113,16 +116,27 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={PaymentNavigator}
         />
-         <Stack.Screen
-          name="DueReport"
+          <Stack.Screen
+          name="OutstandingReports"
           options={{ headerShown: false }}
-          component={DueReport}
-        />
+          component={OutstandingReports}
+          />
+          <Stack.Screen
+          name="GroupReport"
+          options={{ headerShown: false }}
+          component={GroupReport}
+          />
+          <Stack.Screen
+          name="ReferredReport"
+          options={{ headerShown: false }}
+          component={ReferredReport}
+          />
+          {/* THE ERROR WAS HERE: Removed the stray 'ReferredReport' tag. */}
           <Stack.Screen
           name="Due"
           options={{ headerShown: false }}
           component={Due}
-        />
+          />
         <Stack.Screen
           name="CustomerOnHold"
           options={{ headerShown: false }}
