@@ -16,7 +16,6 @@ import React, {
   useState,
   useEffect,
   useContext,
-  useSyncExternalStore,
 } from "react";
 import { Buffer } from "buffer";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -46,6 +45,9 @@ const Payin = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // --- NEW STATE FOR INITIAL LOADING ---
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
   const [customerInfo, setCustomerInfo] = useState({});
   const [groups, setGroups] = useState([]);
   const [tickets, setTickets] = useState([]);
@@ -56,7 +58,13 @@ const Payin = ({ route, navigation }) => {
   const [qrLoading, setQrLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Fetch customer details
+  // Use a ref or multiple state variables to track completion of individual fetches
+  const [customerLoaded, setCustomerLoaded] = useState(false);
+  const [enrollmentLoaded, setEnrollmentLoaded] = useState(false);
+  const [receiptLoaded, setReceiptLoaded] = useState(false);
+
+
+  // 1. Fetch customer details
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
@@ -65,18 +73,17 @@ const Payin = ({ route, navigation }) => {
         );
         if (response.data) {
           setCustomerInfo(response.data);
-        } else {
-          console.error("Unexpected API response format:", response.data);
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
+      } finally {
+        setCustomerLoaded(true); // Mark customer data as loaded
       }
     };
-
     fetchCustomer();
   }, [customer]);
 
-  // Fetch enrollment details (groups and tickets)
+  // 2. Fetch enrollment details (groups and tickets) & Auto-Select Logic
   useEffect(() => {
     const fetchEnrollDetails = async () => {
       try {
@@ -101,14 +108,34 @@ const Payin = ({ route, navigation }) => {
           }, []);
 
         setGroups(uniqueGroups);
+
+        // --- Auto-selection for Group ---
+        if (uniqueGroups.length === 1) {
+          const groupId = uniqueGroups[0].group_id._id;
+          setSelectedGroup(groupId);
+          
+          // Automatically set tickets for the single group
+          const groupTickets = response.data
+            .filter((item) => item.group_id && item.group_id._id === groupId)
+            .map((item) => item.tickets);
+          setTickets(groupTickets);
+
+          // Auto-select ticket if only one exists for the single group
+          if (groupTickets.length === 1) {
+            setSelectedTicket(groupTickets[0].toString());
+          }
+        }
       } catch (error) {
         console.error("Error fetching customer enrollment data:", error);
+      } finally {
+        setEnrollmentLoaded(true); // Mark enrollment data as loaded
       }
     };
 
     fetchEnrollDetails();
   }, [customer]);
 
+  // 3. Fetch latest receipt
   useEffect(() => {
     const fetchReceipt = async () => {
       try {
@@ -119,10 +146,20 @@ const Payin = ({ route, navigation }) => {
         setReceipt(response.data);
       } catch (error) {
         console.error("Error fetching latest receipt:", error);
+      } finally {
+        setReceiptLoaded(true); // Mark receipt data as loaded
       }
     };
     fetchReceipt();
   }, []);
+
+  // 4. Combined Loading Effect
+  useEffect(() => {
+    if (customerLoaded && enrollmentLoaded && receiptLoaded) {
+      setIsInitialLoading(false);
+    }
+  }, [customerLoaded, enrollmentLoaded, receiptLoaded]);
+
 
   const handleDateChange = (event, selectedDate) => {
     const newDate = selectedDate || currentDate;
@@ -132,17 +169,23 @@ const Payin = ({ route, navigation }) => {
 
   const handleGroupChange = (groupId) => {
     setSelectedGroup(groupId);
-    setSelectedTicket("");
+    setSelectedTicket(""); // Reset ticket selection
 
     if (groupId) {
       const groupTickets = allData
         .filter((item) => item.group_id && item.group_id._id === groupId)
         .map((item) => item.tickets);
       setTickets(groupTickets);
+
+      // --- Auto-selection for Ticket on Group Change ---
+      if (groupTickets.length === 1) {
+        setSelectedTicket(groupTickets[0].toString());
+      }
     } else {
       setTickets([]);
     }
   };
+
   const handlePaymentTypeChange = (type) => {
     setPaymentDetails(type);
     if (type === "online") {
@@ -154,6 +197,7 @@ const Payin = ({ route, navigation }) => {
     }
     setTransactionId("");
   };
+
   const handleAddPayment = async () => {
     if (
       !customerInfo.full_name ||
@@ -175,7 +219,7 @@ const Payin = ({ route, navigation }) => {
         user_id: customer,
         group_id: selectedGroup,
         ticket: selectedTicket,
-        pay_date: moment(currentDate).format("YYYY-MM-DD"), // Corrected line
+        pay_date: moment(currentDate).format("YYYY-MM-DD"),
         receipt_no:
           receipt.receipt_no === 0
             ? "0"
@@ -228,24 +272,20 @@ const Payin = ({ route, navigation }) => {
     }
   };
 
-  // Auto-select ticket if only one is available for the selected group
-  useEffect(() => {
-    if (tickets.length === 1) {
-      setSelectedTicket(tickets[0].toString());
-    }
-  }, [tickets]);
   const generateQrCode = async () => {
     try {
       setQrLoading(true);
       const response = await axios.post(
         `${baseUrl}/qrcode?amount=${amount}`,
         {},
-        { responseType: "arraybuffer" } 
+        { responseType: "arraybuffer" }
       );
 
+      // --- QR CODE LOGIC ---
       const base64 = Buffer.from(response.data, "binary").toString("base64");
       const dataUrl = `data:image/png;base64,${base64}`;
       setUrl(dataUrl);
+      // ---------------------
 
       setModalVisible(true);
     } catch (error) {
@@ -254,8 +294,20 @@ const Payin = ({ route, navigation }) => {
       setQrLoading(false);
     }
   };
+  
+  // --- Loading Screen Component ---
+  if (isInitialLoading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+  // ---------------------------------
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+      {/* --- QR CODE MODAL --- */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -345,6 +397,7 @@ const Payin = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
+      {/* --------------------------- */}
 
       <LinearGradient
         colors={["#dbf6faff", "#90dafcff"]}
@@ -383,8 +436,13 @@ const Payin = ({ route, navigation }) => {
                       selectedValue={selectedGroup}
                       onValueChange={handleGroupChange}
                       style={styles.picker}
+                      // Disable picker if only one group is available
+                      enabled={groups.length > 1}
                     >
-                      <Picker.Item label="Select Group" value="" />
+                      {/* Show 'Select Group' only if more than 1 group */}
+                      {groups.length !== 1 && (
+                        <Picker.Item label="Select Group" value="" />
+                      )}
                       {groups.map((group, index) => (
                         <Picker.Item
                           key={index}
@@ -404,9 +462,13 @@ const Payin = ({ route, navigation }) => {
                         setSelectedTicket(itemValue)
                       }
                       style={styles.picker}
-                      enabled={selectedGroup !== ""}
+                      // Disable picker if no group is selected or only one ticket is available
+                      enabled={selectedGroup !== "" && tickets.length !== 1}
                     >
-                      <Picker.Item label="Select Ticket" value="" />
+                      {/* Show 'Select Ticket' only if more than 1 ticket */}
+                      {tickets.length !== 1 && (
+                        <Picker.Item label="Select Ticket" value="" />
+                      )}
                       {tickets.map((ticket, index) => (
                         <Picker.Item
                           key={index}
@@ -510,19 +572,23 @@ const Payin = ({ route, navigation }) => {
                       />
                     </>
                   )}
+                  
+                  {/* BUTTON CONTAINER WITH CENTERING LOGIC */}
                   <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
+                    style={[
+                      styles.buttonContainer,
+                      // Apply centering style if QR button is NOT visible
+                      !(amount && paymentDetails === "online") && styles.buttonContainerCentered,
+                    ]}
                   >
+                    {/* QR Code Button */}
                     {amount && paymentDetails === "online" && (
                       <TouchableOpacity
                         onPress={generateQrCode}
                         style={styles.qrButton}
                       >
                         {qrLoading ? (
-                          <ActivityIndicator size="small" color={"green"}/>
+                          <ActivityIndicator size="small" color={"green"} />
                         ) : (
                           <MaterialIcons name="qr-code-2" size={40} />
                         )}
@@ -548,6 +614,12 @@ const Payin = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+  },
   gradientOverlay: {
     flex: 1,
   },
@@ -639,20 +711,33 @@ const styles = StyleSheet.create({
   },
   qrButton: {
     flex: 1,
-    marginTop: 18,
+    marginTop: 0,
     marginBottom: 50,
     backgroundColor: "#A7E399",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
     padding: 2,
+    height: 55,
   },
   button: {
-    flex: 6,
+    flex: 6, // Takes up more space when QR button is present
     margin: 3,
-    marginTop: 18,
+    marginTop: 0,
     marginBottom: 50,
     backgroundColor: "#da8201",
+    height: 55,
+  },
+  // STYLES for button centering
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center", // Align items vertically in the center
+    marginTop: 20,
+  },
+  // Style to center the content when only one button is present
+  buttonContainerCentered: {
+    justifyContent: 'center',
   },
 });
 

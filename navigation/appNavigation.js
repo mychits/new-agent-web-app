@@ -32,8 +32,13 @@ import EditLead from "../screens/EditLead";
 import QrCodePage from "../screens/QrCodePage";
 import LoanPayments from "../screens/LoanPayments";
 import PigmePayments from "../screens/PigmePayments";
+// NOTE: We import the file named 'Attendence.js' but rename the screen to 'Attendance'
+import Attendence from "../screens/Attendence"; 
+
+import GroupReport from "../screens/GroupReport";
+import ReferredReport from "../screens/ReferredReport";
 import Due from "../screens/Due";
-import DueReport from "../screens/DueReport";
+import OutstandingReports from "../screens/OutstandingReports";
 
 enableScreens();
 
@@ -60,17 +65,6 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
         />
         
-        {/*
-          Remove the standalone Home screen.
-          It should be part of the BottomNavigation Tab.
-        
-        <Stack.Screen
-          name="Home"
-          options={{ headerShown: true }}
-          component={Home}
-        />
-        */}
-        
         <Stack.Screen
           name="Welcome"
           options={{ headerShown: false }}
@@ -92,17 +86,17 @@ export default function AppNavigation() {
           component={PayNavigation}
           options={{ headerShown: false }}
         />
-         <Stack.Screen
-         name="LoanPayments"
-         component={LoanPayments}
-         options={{headerShown: false}}
-         />
+          <Stack.Screen
+          name="LoanPayments"
+          component={LoanPayments}
+          options={{headerShown: false}}
+          />
 
           <Stack.Screen
-         name="PigmePayments"
-         component={PigmePayments}
-         options={{headerShown: false}}
-         /> 
+          name="PigmePayments"
+          component={PigmePayments}
+          options={{headerShown: false}}
+          /> 
         <Stack.Screen
           name="qrCode"
           options={{ headerShown: false }}
@@ -113,16 +107,28 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={PaymentNavigator}
         />
-         <Stack.Screen
+          <Stack.Screen
+          name="OutstandingReports"
+          options={{ headerShown: false }}
+          component={OutstandingReports}
+          />
+          <Stack.Screen
+          name="GroupReport"
+          options={{ headerShown: false }}
+          component={GroupReport}
+          />
+          <Stack.Screen
+          name="ReferredReport"
+          options={{ headerShown: false }}
+          component={ReferredReport}
+          />
+          {/* ✅ CORRECTED: Screen name is now 'Attendance' */}
+          <Stack.Screen name="Attendance" component={Attendence} options={{headerShown: false}} />
+          <Stack.Screen
           name="Due"
           options={{ headerShown: false }}
           component={Due}
-        />
-          <Stack.Screen
-          name="DueReport"
-          options={{ headerShown: false }}
-          component={DueReport}
-        />
+          />
         <Stack.Screen
           name="CustomerOnHold"
           options={{ headerShown: false }}
