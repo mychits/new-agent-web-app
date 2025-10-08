@@ -1,695 +1,476 @@
+import React, { useEffect, useState } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
-    ActivityIndicator,
-    FlatList,
-    TouchableOpacity,
-    StatusBar,
-    Image,
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Image,
+  StatusBar,
+  Platform,
+  LayoutAnimation, // <-- NEW: For Animation
+  UIManager, // <-- NEW: For Animation on Android
 } from "react-native";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Picker } from '@react-native-picker/picker'; // <--- RE-IMPORTED PICKER
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from "@react-native-picker/picker";
 import COLORS from "../constants/color"; 
-import Header from "../components/Header"; 
-import { Feather, MaterialIcons } from '@expo/vector-icons'; 
+import Header from "../components/Header";
 
-
-const PRIMARY_COLOR = COLORS.primary || '#3498db'; 
-const ACCENT_COLOR = '#2ecc71'; 
-const DUE_COLOR = '#e74c3c'; 
-
-
+// --- ORIGINAL CONSTANTS ---
+const DUE_API = "https://mychits.online/api/enroll/due/routes/agent/";
+const GROUP_API = "https://mychits.online/api/group/get-group";
+// Using the linear gradient from the original file
 const BACKGROUND_GRADIENT = ["#dbf6faff", "#90dafcff"]; 
-const API_URL = "https://mychits.online/api/group/get-group";
+const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
 
-const NO_REPORTS_IMAGE = require('../assets/NoReports.png');
-// --------------------------------------------------
+// --- CUSTOM STYLING CONSTANTS (Updated) ---
+// New Color Palette for a professional look
+const MODERN_PRIMARY = "#1e3a8a"; // Deep, professional blue
+const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
+const WARNING_RED = "#dc2626";     // Strong red for negative/balance
+// Adding a neutral grey constant for cleaner styles
+const NEUTRAL_GREY = "#6b7280"; 
 
-const formatDate = (date) => {
-    return date ? `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}` : 'DD/MM/YYYY';
+// Enable LayoutAnimation for Android
+if (
+    Platform.OS === "android" &&
+    UIManager.setLayoutAnimationEnabledExperimental
+) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const formatCurrency = (amount) => {
+  if (amount === undefined || amount === null) return "₹0.00";
+  const num = typeof amount === "number" ? amount : parseFloat(amount);
+  if (isNaN(num)) return "₹0.00";
+  return `₹ ${num.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 };
-
-
-
-const GroupDueItem = React.memo(({ item }) => {
-    const dueDateText = formatDate(item.next_due_date_string ? new Date(item.next_due_date_string) : null);
-    
-    const DUE_SOON_DAYS = 7;
-    const isDueSoon = item.next_due_date_string && (new Date(item.next_due_date_string) <= new Date(Date.now() + (DUE_SOON_DAYS * 86400000))); 
-    const isUrgentDue = item.next_due_date_string && (new Date(item.next_due_date_string) <= new Date(Date.now() + (1 * 86400000))); 
-
-    const itemBorderColor = isUrgentDue ? DUE_COLOR : (isDueSoon ? '#f39c12' : PRIMARY_COLOR);
-
-    return (
-        <View style={[styles.groupItem, { borderLeftColor: itemBorderColor }]}>
-            <View style={styles.itemHeader}>
-                <Text style={styles.groupText_title}>
-                    {item.group_name || `Group ID: ${item.id || 'N/A'}`}
-                </Text>
-                <View style={[styles.statusBadge, { 
-                    backgroundColor: item.status === 'Active' ? ACCENT_COLOR : '#95a5a6' 
-                }]}>
-                    <Text style={styles.statusText}>{item.status || 'Active'}</Text>
-                </View>
-            </View>
-
-            <View style={styles.itemDetails}>
-                <View style={styles.detailPill}>
-                    <Feather name="tag" size={14} color="#7f8c8d" />
-                    <Text style={styles.groupText_detail}>ID: {item.id || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailPill}>
-                    <Feather name="users" size={14} color="#7f8c8d" />
-                    <Text style={styles.groupText_detail}>Members: {item.members_count || 'N/A'}</Text>
-                </View>
-            </View>
-
-            <View style={styles.itemFooter}>
-                <View style={styles.dueInfo}>
-                    <Text style={styles.dueLabel}>Outstanding Amount</Text>
-                    <Text style={styles.dueAmount}>₹ 4,500.00</Text> 
-                </View>
-                <View style={[styles.dateInfo, { 
-                    backgroundColor: isUrgentDue ? 'rgba(231, 76, 60, 0.1)' : (isDueSoon ? 'rgba(243, 156, 18, 0.1)' : 'rgba(52, 152, 219, 0.1)'),
-                    borderColor: itemBorderColor
-                }]}>
-                    <Feather 
-                        name="calendar" 
-                        size={18} 
-                        color={itemBorderColor} 
-                    />
-                    <View style={{marginLeft: 10}}>
-                        <Text style={styles.dateLabel_bold}>Next Due Date:</Text>
-                        <Text style={[styles.dateText_bold, { 
-                            color: itemBorderColor
-                        }]}>
-                            {dueDateText}
-                        </Text>
-                    </View>
-                </View>
-            </View>
-        </View>
-    );
-});
-
 
 const ReferredReport = ({ route }) => {
-    
-    const { user = {} } = route.params || {};
-    
-    const getReportDetails = () => {
-       
-        return {
-            title: "Referred Report",
-            subtitle: "Manage and review all outstanding payments for Referred."
-        };
-    };
-    
-    const reportDetails = useMemo(() => getReportDetails(), []);
+  const { user } = route.params;
+  const [groups, setGroups] = useState([]);
+  const [dues, setDues] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState("all");
+  const [loading, setLoading] = useState(true);
 
-    const [groups, setGroups] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedGroupValue, setSelectedGroupValue] = useState('all'); // <--- RESTORED STATE
-    const [fromDate, setFromDate] = useState(null); 
-    const [toDate, setToDate] = useState(new Date()); 
-    const [showDatePicker, setShowDatePicker] = useState({ visible: false, mode: 'date', type: '' });
-
-    // --- Data Fetching Effect ---
-    const fetchGroups = useCallback(async () => {
+  // Fetch groups + dues
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
         setLoading(true);
-        setError(null);
-        try {
-            const response = await fetch(API_URL);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const json = await response.json();
-            
-            let fetchedData = [];
-            if (json.data && Array.isArray(json.data)) {
-                
-                fetchedData = json.data.map((item, index) => {
-                    const baseDate = new Date();
-                    const dateOffsets = [0, 1, 30, -5, 7]; 
-                    const dateOffset = dateOffsets[index % 5] * 86400000; 
-                    baseDate.setTime(Date.now() + dateOffset);
+        const [groupRes, dueRes] = await Promise.all([
+          fetch(GROUP_API),
+          fetch(`${DUE_API}${user?.userId}`),
+        ]);
+        const groupJson = await groupRes.json();
+        const dueJson = await dueRes.json();
 
-                    return {
-                        ...item,
-                        next_due_date_string: baseDate.toISOString(),
-                        members_count: item.members_count || (index + 5), 
-                    };
-                });
-            } else if (Array.isArray(json)) { 
-                fetchedData = json;
-            } else {
-                throw new Error("Invalid data format received from API");
-            }
-            
-            setGroups(fetchedData);
-            setSelectedGroupValue('all'); // <--- RESTORED
-        } catch (e) {
-            console.error("Error fetching groups:", e);
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+        const allGroups = Array.isArray(groupJson?.data)
+          ? groupJson.data
+          : Array.isArray(groupJson)
+          ? groupJson
+          : [];
 
-    useEffect(() => {
-        const timer = setTimeout(fetchGroups, 500); 
-        return () => clearTimeout(timer);
-    }, [fetchGroups]);
+        const allDues = dueJson?.enrollments || [];
 
-
-    const handleDateChange = useCallback((event, selectedDate) => {
-        setShowDatePicker({ visible: false, mode: 'date', type: '' });
-        
-        if (event.type === 'set' && selectedDate) {
-            const dateToSet = new Date(selectedDate);
-            
-            if (showDatePicker.type === 'from') {
-                if (toDate && dateToSet > toDate) {
-                    setFromDate(toDate); 
-                    setToDate(dateToSet); 
-                } else {
-                    setFromDate(dateToSet);
-                }
-            } else if (showDatePicker.type === 'to') {
-                if (fromDate && dateToSet < fromDate) {
-                    setToDate(fromDate); 
-                    setFromDate(dateToSet); 
-                } else {
-                    setToDate(dateToSet);
-                }
-            }
-        }
-    }, [fromDate, toDate, showDatePicker.type]);
-
-    const showPicker = useCallback((type) => {
-        setShowDatePicker({ visible: true, mode: 'date', type: type });
-    }, []);
-
-    
-    const filteredGroups = useMemo(() => {
-        let filtered = groups;
-        // 1. Group Filter <--- RESTORED LOGIC
-        if (selectedGroupValue !== 'all' && selectedGroupValue) {
-            filtered = filtered.filter(group => group.id && group.id.toString() === selectedGroupValue);
-        }
-
-        // 2. Date Range Filter
-        if (fromDate || toDate) {
-            filtered = filtered.filter(group => {
-                const due_date_string = group.next_due_date_string; 
-                if (!due_date_string) return false; 
-
-                const due_date = new Date(due_date_string);
-                const startOfFromDate = fromDate ? new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate(), 0, 0, 0, 0) : null;
-                const endOfToDate = toDate ? new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate(), 23, 59, 59, 999) : null; 
-
-                const isAfterFrom = startOfFromDate ? due_date >= startOfFromDate : true;
-                const isBeforeTo = endOfToDate ? due_date <= endOfToDate : true;
-
-                return isAfterFrom && isBeforeTo;
-            });
-        }
-        
-        return filtered;
-    }, [groups, selectedGroupValue, fromDate, toDate]); // <--- RESTORED dependency
-
-    // --- Render Functions for Filters ---
-    const renderGroupDropdown = () => { // <--- RESTORED FUNCTION
-        if (!groups.length && selectedGroupValue !== 'all') return null; 
-
-        return (
-            <View style={styles.dropdownContainer}>
-                <Text style={styles.filterLabel}>Group Filter</Text>
-                <View style={styles.pickerWrapper}>
-                    <Picker
-                        selectedValue={selectedGroupValue.toString()}
-                        onValueChange={(itemValue) => setSelectedGroupValue(itemValue)}
-                        style={styles.pickerStyle}
-                        mode="dropdown"
-                    >
-                        <Picker.Item label="All Groups" value="all" style={styles.pickerItemText} />
-                        {groups.map((group) => (
-                            <Picker.Item
-                                key={group.id ? group.id.toString() : group.group_name}
-                                label={group.group_name || `Group ID: ${group.id || 'N/A'}`}
-                                value={group.id ? group.id.toString() : group.group_name}
-                                style={styles.pickerItemText}
-                            />
-                        ))}
-                    </Picker>
-                    <Feather 
-                        name="chevron-down" 
-                        size={20} 
-                        color="#7f8c8d" 
-                        style={styles.dropdownIcon}
-                    />
-                </View>
-            </View>
-        );
+        setGroups(allGroups);
+        setDues(allDues);
+        // ******* ANIMATION TRIGGER *******
+        // Apply LayoutAnimation to make the initial load smooth
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setFilteredData(allDues);
+      } catch (err) {
+        console.error("Error fetching:", err);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchData();
+  }, [user?.userId]);
 
-    const renderDatePickers = () => (
-        <View style={styles.dateFilterContainer}>
-            <Text style={styles.filterLabel}>Due Date Range</Text>
-            <View style={styles.datePickersRow}>
-                <View style={styles.datePickerInput}>
-                    <Text style={styles.dateInputLabel}>From</Text>
-                    <TouchableOpacity onPress={() => showPicker('from')} style={styles.dateButton}>
-                        <Feather name="calendar" size={16} color={PRIMARY_COLOR} />
-                        <Text style={styles.dateButtonText}>{formatDate(fromDate)}</Text>
-                    </TouchableOpacity>
-                </View>
+  // Filter dues by group
+  useEffect(() => {
+    // ******* ANIMATION TRIGGER *******
+    // Apply LayoutAnimation before changing state for a smooth filter transition
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); 
+    if (selectedGroup === "all") setFilteredData(dues);
+    else
+      setFilteredData(
+        dues.filter((item) => item.group_id?._id === selectedGroup)
+      );
+  }, [selectedGroup, dues]);
 
-                <View style={[styles.datePickerInput, { marginLeft: 10 }]}>
-                    <Text style={styles.dateInputLabel}>To</Text>
-                    <TouchableOpacity onPress={() => showPicker('to')} style={styles.dateButton}>
-                        <Feather name="calendar" size={16} color={PRIMARY_COLOR} />
-                        <Text style={styles.dateButtonText}>{formatDate(toDate)}</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-            
-            {showDatePicker.visible && (
-                <DateTimePicker
-                    value={showDatePicker.type === 'from' ? (fromDate || new Date()) : (toDate || new Date())}
-                    mode={showDatePicker.mode}
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={handleDateChange}
-                />
-            )}
-        </View>
-    );
+  const renderItem = ({ item }) => {
+    const name = item?.user_id?.full_name || "Unknown";
+    const email = item?.user_id?.email;
+    const phone = item?.user_id?.phone_number;
+    const groupName = item?.group_id?.group_name || "N/A";
+    const paymentType = item?.payment_type || "N/A";
 
+    // Safely extract financial values
+    const getFinancialValue = (value) =>
+      Array.isArray(value) && value[0] ? value[0] : value || 0;
+
+    const totalPayable = getFinancialValue(item.total_payable_amount);
+    const totalProfit = getFinancialValue(item.total_profit);
+    const totalToBePaid = item?.total_to_be_paid || 0;
+    const balance = item?.balance || item?.Balance || 0;
     
-    // --- MAIN CONTENT RENDERED AFTER LOADING ---
-    const MainContent = () => (
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-            {/* Top Fixed Header */}
-            <View style={styles.staticHeaderContainer}>
-                <Header /> 
-                <View style={styles.titleContainer}>
-                    <Text style={styles.title}>{reportDetails.title}</Text>
-                    <Text style={styles.subtitle}>{reportDetails.subtitle}</Text>
-                </View>
-                
-                <View style={styles.filterSection}>
-                    {renderGroupDropdown()} {/* <--- RESTORED CALL */}
-                    <View style={styles.filterSeparator} /> {/* <--- RESTORED SEPARATOR */}
-                    {renderDatePickers()}
-                </View>
+    // ******* UNIQUE IDEA: STATUS BAR COLOR *******
+    const statusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
 
-                <Text style={styles.listSectionTitle}>
-                    {`${filteredGroups.length} Pending Due Reports`}
-                </Text>
-            </View>
-            
-            {/* Scrolling List Content */}
-            <View style={styles.listContainer}>
-                {error ? (
-                    <View style={styles.errorContainer}>
-                        <Feather name="alert-triangle" size={30} color={COLORS.white} />
-                        <Text style={styles.errorText_title}>Data Error</Text>
-                        <Text style={styles.errorText_subtitle}>Could not load data: {error}</Text>
-                        <TouchableOpacity 
-                            style={styles.retryButton} 
-                            onPress={fetchGroups}
-                        >
-                            <Text style={styles.retryButtonText}>Try Again</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <FlatList
-                        data={filteredGroups}
-                        style={styles.flatList}
-                        contentContainerStyle={styles.flatListContent} 
-                        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
-                        ListEmptyComponent={() => ( 
-                            <View style={styles.emptyContainer}>
-                                <Image 
-                                    source={NO_REPORTS_IMAGE} 
-                                    style={styles.emptyImage} 
-                                    resizeMode="contain" 
-                                />
-                                <Text style={styles.emptyText}>
-                                    No Due Reports Found
-                                </Text>
-                                <Text style={styles.emptyText_sub}>Great job! All payments seem to be cleared for the selected filters.</Text>
-                            </View>
-                        )}
-                        renderItem={({ item }) => <GroupDueItem item={item} />}
-                        showsVerticalScrollIndicator={false}
-                    />
-                )}
-            </View>
-        </KeyboardAvoidingView>
-    );
-
-    // --- FULL SCREEN LOADING OVERLAY COMPONENT ---
-    const FullScreenLoading = () => (
-        <View style={styles.fullScreenLoading}>
-            <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-        </View>
-    );
-
-    // --- MAIN RETURN: Conditional Rendering for Full Page Load ---
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND_GRADIENT[0] }}>
-            <StatusBar barStyle="dark-content" backgroundColor={BACKGROUND_GRADIENT[0]} />
-            <LinearGradient
-                colors={BACKGROUND_GRADIENT}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                {loading ? <FullScreenLoading /> : <MainContent />}
-            </LinearGradient>
-        </SafeAreaView>
+      <View style={styles.cardContainer}>
+        {/* Status Indicator Bar */}
+        <View style={[styles.cardStatusIndicator, { backgroundColor: statusColor }]} />
+
+        <View style={styles.card}>
+          {/* Header (Group and Type) */}
+          <View style={styles.cardHeader}>
+            <Text style={styles.groupName}>{groupName}</Text>
+            <Text style={styles.paymentType}>{paymentType}</Text>
+          </View>
+
+          {/* Customer Info */}
+          <View style={styles.cardBody}>
+            <Text style={styles.customerName}>{name}</Text>
+            {email ? <Text style={styles.customerInfo}>📧 {email}</Text> : null}
+            {phone ? <Text style={styles.customerInfo}>📞 {phone}</Text> : null}
+          </View>
+
+          {/* Financial Info */}
+          <View style={styles.cardFinancial}>
+            {/* Total Payable */}
+            <View style={styles.financialRow}>
+              <Text style={styles.financialLabel}>Total Payable</Text>
+              <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
+                {formatCurrency(totalPayable)}
+              </Text>
+            </View>
+
+            {/* Total Profit */}
+            <View style={styles.financialRow}>
+              <Text style={styles.financialLabel}>Total Profit</Text>
+              <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
+                {formatCurrency(totalProfit)}
+              </Text>
+            </View>
+
+            {/* Total To Be Paid */}
+            <View style={styles.financialRow}>
+              <Text style={styles.financialLabel}>Total To Be Paid</Text>
+              <Text style={styles.financialValue}>
+                {formatCurrency(totalToBePaid)}
+              </Text>
+            </View>
+
+            {/* Balance (Stands out) */}
+            <View style={styles.balanceRow}>
+              <Text style={styles.balanceLabel}>Outstanding Balance</Text>
+              <Text style={styles.balanceValue}>
+                {formatCurrency(balance)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
     );
+  };
+
+  const totalPending = filteredData.reduce(
+    (sum, item) => sum + (item?.balance || item?.Balance || 0),
+    0
+  );
+
+  const EmptyList = () => (
+    <View style={styles.emptyContainer}>
+      <Image source={NO_REPORTS_IMAGE} style={styles.emptyImage} />
+      <Text style={styles.emptyText}>No pending dues found</Text>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <StatusBar barStyle="dark-content" />
+      {/* USING ORIGINAL LINEAR GRADIENT */}
+      <LinearGradient colors={BACKGROUND_GRADIENT} style={{ flex: 1 }}>
+        
+        {/* WRAPPER ADDED TO PUSH HEADER DOWN */}
+        <View style={styles.headerSpacer}>
+            <Header />
+        </View>
+
+        <View style={styles.container}>
+          <Text style={styles.title}>Referred Report</Text>
+          <Text style={styles.subtitle}>
+            Select a group to view pending details
+          </Text>
+
+          {/* Group Filter (FIXED TEXT COLOR/STYLE HERE) */}
+          <View style={styles.dropdownWrapper}>
+            <Text style={styles.dropdownLabel}>Filter by Group</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={selectedGroup}
+                onValueChange={(itemValue) => setSelectedGroup(itemValue)}
+                // FIX: Set the style and color directly on the Picker component (Good for Android contrast/style)
+                style={[styles.picker, { color: MODERN_PRIMARY }]} 
+                // itemStyle is primarily for iOS list appearance
+                itemStyle={{ color: MODERN_PRIMARY, fontSize: 16 }} 
+              >
+                <Picker.Item label="All Groups" value="all" />
+                {groups.map((g) => (
+                  // Use the group name as the label
+                  <Picker.Item key={g._id} label={g.group_name} value={g._id} />
+                ))}
+              </Picker>
+            </View>
+          </View>
+
+          {/* Total Summary (Highlighted Card) */}
+          <View style={styles.totalWrapper}>
+            <Text style={styles.totalText}>
+              Total Pending Balance:
+            </Text>
+            <Text style={styles.totalAmount}>
+              {formatCurrency(totalPending)}
+            </Text>
+          </View>
+
+          {loading ? (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color={MODERN_PRIMARY} />
+              <Text style={{ marginTop: 10, color: NEUTRAL_GREY }}>Loading data...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredData}
+              renderItem={renderItem}
+              keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
+              ListEmptyComponent={EmptyList}
+              contentContainerStyle={{ paddingBottom: 50 }}
+            />
+          )}
+        </View>
+      </LinearGradient>
+    </SafeAreaView>
+  );
 };
 
-// --- STYLESHEET (Restored Picker and related styles) ---
-const styles = StyleSheet.create({
-    
-    gradientOverlay: {
-        flex: 1,
-    },
-    // NEW STYLE: Full Screen Loading Overlay
-    fullScreenLoading: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', 
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10,
-    },
-    loadingText: {
-        marginTop: 15,
-        fontSize: 16,
-        color: PRIMARY_COLOR,
-        fontWeight: '700',
-    },
-    staticHeaderContainer: {
-        backgroundColor: 'transparent',
-        paddingHorizontal: 22, 
-        paddingTop: Platform.OS === 'ios' ? 0 : 12, 
-    },
-    listContainer: {
-        flex: 1,
-    },
-    flatList: {
-        flex: 1,
-    },
-    flatListContent: {
-        paddingHorizontal: 22,
-        paddingBottom: 80,
-    },
-    titleContainer: {
-        marginTop: 15,
-        marginBottom: 25,
-        alignItems: 'center', 
-        paddingLeft: 0, 
-    },
-    title: {
-        fontSize: 26, 
-        fontWeight: '900',
-        color: '#2c3e50',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#7f8c8d',
-        marginTop: 5,
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-    filterSection: {
-        backgroundColor: COLORS.white,
-        padding: 20, 
-        borderRadius: 18, 
-        marginBottom: 25,
-        shadowColor: "rgba(0,0,0,0.2)",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.1,
-        shadowRadius: 15,
-        elevation: 8,
-    },
-    filterLabel: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: PRIMARY_COLOR, 
-        marginBottom: 10,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    filterSeparator: { // <--- RESTORED STYLE
-        height: 1,
-        backgroundColor: 'rgba(0,0,0,0.08)', 
-        marginVertical: 10, 
-    },
-    dropdownContainer: { // <--- RESTORED STYLE
-        
-    },
-    pickerWrapper: { // <--- RESTORED STYLE
-        borderWidth: 2, 
-        borderColor: '#e1e5e8', 
-        borderRadius: 12,
-        backgroundColor: '#f9f9f9', 
-        overflow: 'hidden',
-        justifyContent: 'center',
-    },
-    pickerStyle: { // <--- RESTORED STYLE
-        height: Platform.OS === 'ios' ? 150 : 55, 
-        width: '100%',
-        color: '#333',
-    },
-    dropdownIcon: { // <--- RESTORED STYLE
-        position: 'absolute',
-        right: 15,
-        pointerEvents: 'none',
-        top: Platform.OS === 'ios' ? undefined : 16,
-    },
-    pickerItemText: { // <--- RESTORED STYLE
-        fontSize: 15,
-    },
-    dateFilterContainer: {
-        
-    },
-    datePickersRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    datePickerInput: {
-        flex: 1,
-    },
-    dateInputLabel: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#7f8c8d',
-        marginBottom: 8,
-    },
-    dateButton: {
-        backgroundColor: COLORS.white,
-        paddingVertical: 15, 
-        paddingHorizontal: 15,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#e1e5e8',
-        flexDirection: 'row',
-        alignItems: 'center',
-        shadowColor: "rgba(0,0,0,0.05)",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    dateButtonText: {
-        color: '#333',
-        fontSize: 12,
-        marginLeft: 10,
-        fontWeight: '700',
-    },
-   listSectionTitle: {
-     fontSize: 18, 
-     fontWeight: 'bold',
-     color: '#34495e',
-     marginBottom: 18, 
-     marginTop: 5,
-     textAlign: 'center', 
-    },
-    groupItem: {
-        padding: 22, 
-        backgroundColor: COLORS.white,
-        borderRadius: 15, 
-        marginBottom: 18,
-        borderLeftWidth: 8, 
-        shadowColor: "rgba(0,0,0,0.15)", 
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 8,
-        overflow: 'hidden',
-    },
-    itemHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    groupText_title: {
-        fontSize: 20, 
-        fontWeight: '800', 
-        color: '#2c3e50',
-        flexShrink: 1,
-    },
-    statusBadge: {
-        paddingHorizontal: 12, 
-        paddingVertical: 6,
-        borderRadius: 20, 
-        minWidth: 80,
-        alignItems: 'center',
-    },
-    statusText: {
-        fontSize: 13, 
-        fontWeight: 'bold',
-        color: COLORS.white,
-        textTransform: 'uppercase',
-    },
-    itemDetails: {
-        flexDirection: 'row',
-        marginBottom: 18,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ecf0f1', 
-        paddingBottom: 12,
-    },
-    detailPill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: 25, 
-        backgroundColor: '#f4f6f8', 
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        borderRadius: 8,
-    },
-    groupText_detail: {
-        fontSize: 14,
-        color: '#7f8c8d',
-        marginLeft: 5,
-        fontWeight: '600',
-    },
-    itemFooter: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    dueInfo: {
-        alignItems: 'flex-start',
-    },
-    dueLabel: {
-        fontSize: 14, 
-        color: '#7f8c8d',
-        marginBottom: 4,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-    },
-    dueAmount: {
-        fontSize: 24, 
-        fontWeight: '900',
-        color: DUE_COLOR, 
-    },
-    dateInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        borderRadius: 10,
-        borderWidth: 2, 
-    },
-    dateLabel_bold: {
-        fontSize: 13,
-        color: '#555',
-        fontWeight: '700',
-    },
-    dateText_bold: {
-        fontSize: 16, 
-        fontWeight: '800',
-        marginTop: 2,
-    },
-    errorContainer: {
-        backgroundColor: DUE_COLOR,
-        padding: 25,
-        borderRadius: 15,
-        marginTop: 50,
-        alignItems: 'center',
-        marginHorizontal: 22,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.4,
-        shadowRadius: 6,
-        elevation: 10,
-    },
-    errorText_title: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginTop: 10,
-    },
-    errorText_subtitle: {
-        fontSize: 15,
-        color: '#fefefe',
-        textAlign: 'center',
-        marginTop: 5,
-        marginBottom: 15,
-    },
-    retryButton: {
-        marginTop: 15,
-        backgroundColor: COLORS.white,
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-    },
-    retryButtonText: {
-        color: DUE_COLOR,
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    emptyContainer: {
-        padding: 40, 
-        borderRadius: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 20,
-    },
-    emptyImage: {
-        width: 200, 
-        height: 150,
-        marginBottom: -10,
-    },
-    emptyText: {
-        fontSize: 18,
-        color: '#555',
-        textAlign: 'center',
-        marginTop: 15,
-        fontWeight: '700',
-    },
-    emptyText_sub: {
-        fontSize: 15,
-        color: '#999',
-        textAlign: 'center',
-        marginTop: 5,
-    }
-});
-
-// Exported as original name for compatibility with other files
 export default ReferredReport;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  // --- NEW STYLE FOR HEADER SPACING ---
+  headerSpacer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10, // Adjust this value to push the header down
+  },
+  // --- TITLES ---
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: 'Black',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 15,
+     color: 'Black',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
+  // --- DROP DOWN / FILTER ---
+  dropdownWrapper: {
+    backgroundColor: "#ffffff",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    // Stronger, cleaner shadow for better elevation
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  dropdownLabel: {
+    fontWeight: "700",
+    marginBottom: 8,
+    color: MODERN_PRIMARY,
+    fontSize: 16,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#f9fafb",
+  },
+
+  totalWrapper: {
+    backgroundColor: "#fff7ed", // Soft orange/yellow background
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
+    borderLeftWidth: 5,
+    borderLeftColor: "#f97316", // Vibrant orange
+    alignItems: 'center',
+  },
+  totalText: {
+    color: "#c2410c",
+    fontWeight: "600",
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  totalAmount: {
+    color: WARNING_RED,
+    fontWeight: "900",
+    fontSize: 24,
+  },
+
+  // --- REPORT CARD (Nicely Styled) ---
+  // NEW WRAPPER FOR STATUS INDICATOR
+  cardContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  // UNIQUE IDEA: STATUS BAR
+  cardStatusIndicator: {
+    width: 6, // Width of the indicator
+    backgroundColor: 'red', // Default, will be overridden
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    // Ensure it matches the card height (via flex: 1) and shadow offset
+    marginTop: 0, 
+    marginBottom: 0,
+    height: 'auto',
+  },
+  card: {
+    flex: 1, // Take up the remaining space next to the indicator
+    backgroundColor: "#ffffff",
+    borderTopRightRadius: 16, // Only right side for the main card
+    borderBottomRightRadius: 16, // Only right side for the main card
+    padding: 20,
+    // Premium, larger shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 10,
+    marginLeft: -6, // Overlap the indicator bar to make it look cohesive
+    zIndex: 1,
+  },
+
+  // CARD CONTENT
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  groupName: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: MODERN_PRIMARY,
+  },
+  paymentType: {
+    fontSize: 13,
+    color: NEUTRAL_GREY,
+    textTransform: "capitalize",
+    fontWeight: "600",
+    backgroundColor: "#eef2ff", // Light blue background for a tag feel
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 5,
+  },
+  cardBody: {
+    marginBottom: 15,
+  },
+  customerName: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#1f2937",
+    marginBottom: 5,
+  },
+  customerInfo: {
+    fontSize: 14,
+    color: NEUTRAL_GREY,
+    marginTop: 3,
+    fontWeight: "500",
+  },
+  cardFinancial: {
+    paddingTop: 10,
+  },
+  financialRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  financialLabel: {
+    fontSize: 15,
+    color: "#374151",
+    fontWeight: "600",
+  },
+  financialValue: {
+    fontSize: 15,
+    color: "#1f2937",
+    fontWeight: "700",
+  },
+  // Balance Row (Stands out)
+  balanceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    marginTop: 10,
+    backgroundColor: "#fee2e2", // Very light red background
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
+  balanceLabel: {
+    fontSize: 16,
+    color: WARNING_RED,
+    fontWeight: "700",
+  },
+  balanceValue: {
+    fontSize: 17,
+    color: WARNING_RED,
+    fontWeight: "900",
+  },
+  
+  // --- LOADER/EMPTY STATE ---
+  loader: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 50,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    marginTop: 80,
+    padding: 20,
+  },
+  emptyImage: {
+    width: 200,
+    height: 160,
+    opacity: 0.8,
+  },
+  emptyText: {
+    color: NEUTRAL_GREY,
+    marginTop: 20,
+    fontWeight: "700",
+    fontSize: 18,
+  },
+});

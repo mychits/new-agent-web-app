@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator, // <--- Import ActivityIndicator
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -29,7 +30,11 @@ const GoldPayin = ({ route, navigation }) => {
   const [amount, setAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // New state for initial data loading
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  // Existing state for payment submission loading
+  const [isLoading, setIsLoading] = useState(false); 
 
   const [customerInfo, setCustomerInfo] = useState({});
   const [groups, setGroups] = useState([]);
@@ -38,6 +43,41 @@ const GoldPayin = ({ route, navigation }) => {
   const [selectedTicket, setSelectedTicket] = useState("");
   const [allData, setAllData] = useState([]);
   const [agent, setAgent] = useState([]);
+  
+  // Helper to track when all initial data fetching is complete
+  const [fetchStatuses, setFetchStatuses] = useState({
+    customer: false,
+    enrollment: false,
+    receipt: false,
+    agent: false,
+  });
+
+  // Master useEffect to control isInitialLoading
+  useEffect(() => {
+    const allLoaded = Object.values(fetchStatuses).every(status => status);
+    if (allLoaded) {
+      setIsInitialLoading(false);
+    }
+  }, [fetchStatuses]);
+
+  // Helper function to handle group and ticket selection logic
+  const handleSelectionLogic = (uniqueGroups, allEnrollmentData) => {
+    if (uniqueGroups.length === 1) {
+      const onlyGroup = uniqueGroups[0];
+      const groupId = onlyGroup.group_id._id;
+      setSelectedGroup(groupId);
+
+      const groupTickets = allEnrollmentData
+        .filter((item) => item.group_id._id === groupId)
+        .map((item) => item.tickets);
+
+      setTickets(groupTickets);
+
+      if (groupTickets.length === 1) {
+        setSelectedTicket(groupTickets[0].toString());
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchCustomer = async () => {
@@ -52,11 +92,13 @@ const GoldPayin = ({ route, navigation }) => {
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
+      } finally {
+        setFetchStatuses(prev => ({ ...prev, customer: true }));
       }
     };
 
     fetchCustomer();
-  }, []);
+  }, [customer]);
 
   useEffect(() => {
     const fetchEnrollDetails = async () => {
@@ -64,8 +106,10 @@ const GoldPayin = ({ route, navigation }) => {
         const response = await axios.post(
           `http://13.51.87.99:3000/api/enroll/get-user-tickets/${customer}`
         );
-        setAllData(response.data);
-        const uniqueGroups = response.data.reduce((acc, group) => {
+        const enrollmentData = response.data;
+        setAllData(enrollmentData);
+        
+        const uniqueGroups = enrollmentData.reduce((acc, group) => {
           if (
             !acc.some(
               (g) => g.group_id.group_name === group.group_id.group_name
@@ -75,9 +119,14 @@ const GoldPayin = ({ route, navigation }) => {
           }
           return acc;
         }, []);
+        
         setGroups(uniqueGroups);
+        handleSelectionLogic(uniqueGroups, enrollmentData);
+
       } catch (error) {
         console.error("Error fetching customer data:", error);
+      } finally {
+        setFetchStatuses(prev => ({ ...prev, enrollment: true }));
       }
     };
     fetchEnrollDetails();
@@ -86,6 +135,7 @@ const GoldPayin = ({ route, navigation }) => {
   useEffect(() => {
     const today = moment().format("DD-MM-YYYY");
     setCurrentDate(today);
+    // Date is synchronous, so no need for fetchStatuses update here
   }, []);
 
   useEffect(() => {
@@ -98,6 +148,8 @@ const GoldPayin = ({ route, navigation }) => {
         setReceipt(response.data);
       } catch (error) {
         console.error("Error fetching customer data:", error);
+      } finally {
+        setFetchStatuses(prev => ({ ...prev, receipt: true }));
       }
     };
     fetchReceipt();
@@ -116,11 +168,13 @@ const GoldPayin = ({ route, navigation }) => {
         }
       } catch (error) {
         console.error("Error fetching agent data:", error);
+      } finally {
+        setFetchStatuses(prev => ({ ...prev, agent: true }));
       }
     };
 
     fetchAgent();
-  }, []);
+  }, [user.userId, baseUrl]);
 
   const handleGroupChange = (groupId) => {
     setSelectedGroup(groupId);
@@ -130,9 +184,17 @@ const GoldPayin = ({ route, navigation }) => {
       const groupTickets = allData
         .filter((item) => item.group_id._id === groupId)
         .map((item) => item.tickets);
+      
       setTickets(groupTickets);
+
+      if (groupTickets.length === 1) {
+        setSelectedTicket(groupTickets[0].toString());
+      } else {
+        setSelectedTicket("");
+      }
     } else {
       setTickets([]);
+      setSelectedTicket("");
     }
   };
 
@@ -144,13 +206,13 @@ const GoldPayin = ({ route, navigation }) => {
       setAdditionalInfo("Cheque Number");
     } else {
       setAdditionalInfo("");
+      setTransactionId(""); 
     }
   };
 
   const handleAddPayment = async () => {
     setIsLoading(true);
     try {
-      // Validate required fields before submission
       if (
         !selectedGroup ||
         !selectedTicket ||
@@ -168,30 +230,115 @@ const GoldPayin = ({ route, navigation }) => {
         group_id: selectedGroup,
         ticket: selectedTicket,
         pay_date: new Date().toISOString().split("T")[0],
-        receipt_no: receipt.receipt_no ? receipt.receipt_no.toString() : "",
+        receipt_no: receipt.receipt_no ? (receipt.receipt_no + 1).toString() : "1",
         pay_type: paymentDetails,
         amount: amount,
         transaction_id: transactionId,
         collected_name: agent.name,
         collected_phone: agent.phone_number,
       };
+      
       const response = await axios.post(
         `http://13.51.87.99:3000/api/payment/add-payment`,
         data
       );
+      
       if (response.status === 201) {
         Alert.alert("Success", "Payment added successfully!");
         navigation.navigate("GoldPrint", { store_id: response.data._id });
       } else {
         console.log("Error:", response.data);
+        Alert.alert("Error", response.data.message || "Something went wrong.");
       }
     } catch (error) {
       console.error("Error adding payment:", error);
-      Alert.alert("Error adding payment. Please try again.");
+      Alert.alert("Error", "Error adding payment. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  const renderGroupPicker = () => {
+    if (groups.length === 1 && selectedGroup) {
+      const groupName = groups[0].group_id.group_name;
+      return (
+        <TextInput
+          style={styles.textInput}
+          value={groupName}
+          editable={false}
+        />
+      );
+    }
+
+    return (
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={selectedGroup}
+          onValueChange={handleGroupChange}
+          style={styles.picker}
+        >
+          <Picker.Item label="Select Group" value="" />
+          {groups.map((group, index) => (
+            <Picker.Item
+              key={index}
+              label={group.group_id.group_name}
+              value={group.group_id._id}
+            />
+          ))}
+        </Picker>
+      </View>
+    );
+  };
+
+  const renderTicketPicker = () => {
+    if (tickets.length === 1 && selectedTicket) {
+      return (
+        <TextInput
+          style={styles.textInput}
+          value={selectedTicket}
+          editable={false}
+        />
+      );
+    }
+
+    return (
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={selectedTicket}
+          onValueChange={(itemValue) => setSelectedTicket(itemValue)}
+          style={styles.picker}
+          enabled={selectedGroup !== "" && tickets.length > 1}
+        >
+          <Picker.Item label="Select Ticket" value="" />
+          {tickets.map((ticket, index) => (
+            <Picker.Item
+              key={index}
+              label={`${ticket}`}
+              value={ticket.toString()}
+            />
+          ))}
+        </Picker>
+      </View>
+    );
+  };
+
+  // --- Conditional Rendering for Loading State ---
+  if (isInitialLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+        <LinearGradient
+          colors={["#dbf6faff", "#90dafcff"]}
+          style={styles.gradientOverlay}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
@@ -214,6 +361,7 @@ const GoldPayin = ({ route, navigation }) => {
               </View>
               <View style={styles.container}>
                 <View style={styles.formBox}>
+                  {/* Name Input (Read-only) */}
                   <Text style={styles.label}>
                     Name<Text style={styles.star}>*</Text>
                   </Text>
@@ -224,47 +372,20 @@ const GoldPayin = ({ route, navigation }) => {
                     value={customerInfo.full_name}
                     editable={false}
                   />
+
+                  {/* Group Selection */}
                   <Text style={styles.label}>
                     Group<Text style={styles.star}>*</Text>
                   </Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={selectedGroup}
-                      onValueChange={handleGroupChange}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Select Group" value="" />
-                      {groups.map((group, index) => (
-                        <Picker.Item
-                          key={index}
-                          label={group.group_id.group_name}
-                          value={group.group_id._id}
-                        />
-                      ))}
-                    </Picker>
-                  </View>
+                  {renderGroupPicker()}
+
+                  {/* Ticket Selection */}
                   <Text style={styles.label}>
                     Ticket<Text style={styles.star}>*</Text>
                   </Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={selectedTicket}
-                      onValueChange={(itemValue) =>
-                        setSelectedTicket(itemValue)
-                      }
-                      style={styles.picker}
-                      enabled={selectedGroup !== ""}
-                    >
-                      <Picker.Item label="Select Ticket" value="" />
-                      {tickets.map((ticket, index) => (
-                        <Picker.Item
-                          key={index}
-                          label={`${ticket}`}
-                          value={ticket.toString()}
-                        />
-                      ))}
-                    </Picker>
-                  </View>
+                  {renderTicketPicker()}
+
+                  {/* Date and Receipt */}
                   <View style={styles.row}>
                     <View style={styles.column}>
                       <Text style={styles.label}>
@@ -286,11 +407,13 @@ const GoldPayin = ({ route, navigation }) => {
                         style={styles.textInput}
                         placeholder="Select Receipt"
                         keyboardType="numeric"
-                        value={receipt.receipt_no ? receipt.receipt_no : ""}
+                        value={receipt.receipt_no ? (receipt.receipt_no + 1).toString() : "1"}
                         editable={false}
                       />
                     </View>
                   </View>
+
+                  {/* Payment Type and Amount */}
                   <View style={styles.row}>
                     <View style={styles.column}>
                       <Text style={styles.label}>
@@ -307,6 +430,7 @@ const GoldPayin = ({ route, navigation }) => {
                           <Picker.Item label="Select" value="" />
                           <Picker.Item label="Cash" value="cash" />
                           <Picker.Item label="Online" value="online" />
+                          <Picker.Item label="Cheque" value="cheque" />
                         </Picker>
                       </View>
                     </View>
@@ -323,6 +447,8 @@ const GoldPayin = ({ route, navigation }) => {
                       />
                     </View>
                   </View>
+
+                  {/* Additional Info (Transaction/Cheque ID) */}
                   {additionalInfo !== "" && (
                     <>
                       <Text style={styles.label}>
@@ -338,6 +464,7 @@ const GoldPayin = ({ route, navigation }) => {
                       />
                     </>
                   )}
+
                   <Button
                     title={isLoading ? "Please wait..." : "Add Payment"}
                     filled
@@ -358,6 +485,16 @@ const GoldPayin = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
+  },
+  loadingContainer: { // <--- New style for initial loading
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: { // <--- New style for loading text
+    marginTop: 10,
+    fontSize: 16,
+    color: '#333',
   },
   titleContainer: {
     marginTop: 20,

@@ -29,6 +29,7 @@ import Dashboard from "../screens/Dashboard";
 import CustomerOnHold from "../screens/CustomerOnHold";
 import MonthlyTurnover from "../screens/MonthlyTurnover";
 import EditLead from "../screens/EditLead";
+import Attendence from "../screens/Attendence";
 import QrCodePage from "../screens/QrCodePage";
 import LoanPayments from "../screens/LoanPayments";
 import PigmePayments from "../screens/PigmePayments";
@@ -106,6 +107,7 @@ export default function AppNavigation() {
           component={PigmePayments}
           options={{headerShown: false}}
           /> 
+          <Stack.Screen name="Attendence" component={Attendence} options={{headerShown: false}} />
         <Stack.Screen
           name="qrCode"
           options={{ headerShown: false }}

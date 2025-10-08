@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useContext,
-} from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -11,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
@@ -24,8 +21,8 @@ import { useNetInfo } from "@react-native-community/netinfo";
 
 const { width } = Dimensions.get("window");
 
-// Updated to single image paths instead of arrays
 const cardImagePaths = {
+  attendence: require("../assets/attendence.png"),
   collections: require("../assets/Collection2.png"),
   qrCode: require("../assets/qrcode.png"),
   daybook: require("../assets/Daybook2.png"),
@@ -42,47 +39,103 @@ const cardImagePaths = {
   DueReportImage: require("../assets/dues.png"),
 };
 
+// --- Attendance Modal Component ---
+const AttendanceModal = ({ visible, message, onClose, onProceed }) => {
+  return (
+    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
+      <View style={modalStyles.centeredView}>
+        <View style={modalStyles.modalView}>
+          <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
+            <Text style={modalStyles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+
+          <Image source={cardImagePaths.attendence} style={modalStyles.modalImage} />
+          <Text style={modalStyles.modalText}>{message}</Text>
+
+          <TouchableOpacity style={modalStyles.markAttendanceButton} onPress={onProceed}>
+            <Text style={modalStyles.markAttendanceButtonText}>OK / Proceed</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
   const [agent, setAgent] = useState({});
   const { modifyPayment, setModifyPayment } = useContext(AgentContext);
-
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceMessage, setAttendanceMessage] = useState("");
   const netInfo = useNetInfo();
 
-  setModifyPayment(
-    agentInfo.designation_id?.permission?.modify_payments === "true"
-  );
+  setModifyPayment(agentInfo.designation_id?.permission?.modify_payments === "true");
 
+  // Fetch agent details
   useEffect(() => {
     const fetchAgent = async () => {
       if (user && user.userId) {
         try {
-          const response = await axios.get(
-            `${baseUrl}/agent/get-agent-by-id/${user.userId}`
-          );
-         
-          if (response.data) {
-            setAgent(response.data);
-          } else {
-            console.error("Unexpected API response format:", response.data);
-            setAgent({});
-          }
+          const response = await axios.get(`${baseUrl}/agent/get-agent-by-id/${user.userId}`);
+          if (response.data) setAgent(response.data);
         } catch (error) {
-          console.error("Error fetching agent data:", error);
-          setAgent({});
+          console.error("Error fetching agent data:", error.message);
         }
-      } else {
-        console.warn("User ID not available, skipping agent data fetch.");
-        setAgent({});
       }
     };
-    if (netInfo.isConnected) {
-      fetchAgent();
-    }
-  }, [user.userId, agentInfo, netInfo.isConnected]);
+    if (netInfo.isConnected) fetchAgent();
+  }, [user.userId, netInfo.isConnected]);
 
-  // The cardsData array now references single image paths
+  // Check Attendance Modal
+  useEffect(() => {
+    const checkAttendance = async () => {
+      const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
+      const currentDate = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const params = { employee_id: user.userId, date: currentDate };
+
+      console.log("🔍 Checking attendance modal at:", ATTENDANCE_MODAL_URL, params);
+
+      try {
+        // Optional token header
+        const token = await AsyncStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const response = await axios.get(ATTENDANCE_MODAL_URL, { params, headers });
+        const data = response.data;
+
+        console.log("✅ Attendance API Response:", data);
+
+        if (data?.showModal === true) {
+          setAttendanceMessage(data.message || "Eligible to mark attendance");
+          setShowAttendanceModal(true);
+        } else if (data?.message) {
+          // If API returns message but showModal is false, show toast or log
+          console.warn("Attendance API message:", data.message);
+          setShowAttendanceModal(false);
+        } else {
+          setShowAttendanceModal(false);
+        }
+      } catch (error) {
+        // Safe fallback: no modal and log friendly message
+        console.error(
+          "❌ Error checking attendance status:",
+          error.response?.data?.message || error.message
+        );
+        setShowAttendanceModal(false);
+      }
+    };
+
+    if (user.userId && netInfo.isConnected) checkAttendance();
+  }, [user.userId, netInfo.isConnected]);
+
   const cardsData = [
+    {
+      id: "attendence",
+      name: "Attendance",
+      imagePath: cardImagePaths.attendence,
+      onPress: () => navigation.navigate("Attendence"),
+      backgroundColor: "#D9D7F1",
+    },
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
       name: "Collections",
@@ -101,7 +154,7 @@ const Home = ({ route, navigation }) => {
       id: "daybook",
       name: "Daybook",
       imagePath: cardImagePaths.daybook,
-      onPress: () => navigation.navigate("PayNavigation", { user: user }),
+      onPress: () => navigation.navigate("PayNavigation", { user }),
       backgroundColor: "#E8F5E9",
     },
     agentInfo?.designation_id?.permission?.targets === "true" && {
@@ -116,10 +169,7 @@ const Home = ({ route, navigation }) => {
       name: "My Leads",
       imagePath: cardImagePaths.myLeads,
       onPress: () =>
-        navigation.navigate("PayNavigation", {
-          screen: "ViewLeads",
-          params: { user: user },
-        }),
+        navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user } }),
       backgroundColor: "#E3F2FD",
     },
     {
@@ -127,10 +177,7 @@ const Home = ({ route, navigation }) => {
       name: "Add Customers",
       imagePath: cardImagePaths.addCustomers,
       onPress: () =>
-        navigation.navigate("CustomerNavigation", {
-          screen: "Customer",
-          params: { user },
-        }),
+        navigation.navigate("CustomerNavigation", { screen: "Customer", params: { user } }),
       backgroundColor: "#F3E5F5",
     },
     {
@@ -138,10 +185,7 @@ const Home = ({ route, navigation }) => {
       name: "My Customers",
       imagePath: cardImagePaths.myCustomers,
       onPress: () =>
-        navigation.navigate("CustomerNavigation", {
-          screen: "ViewEnrollments",
-          params: { user },
-        }),
+        navigation.navigate("CustomerNavigation", { screen: "ViewEnrollments", params: { user } }),
       backgroundColor: "#FFECB3",
     },
     {
@@ -149,10 +193,7 @@ const Home = ({ route, navigation }) => {
       name: "My Tasks",
       imagePath: cardImagePaths.myTasks,
       onPress: () =>
-        navigation.navigate("MyTasks", {
-          employeeId: user.userId,
-          agentName: agent.name,
-        }),
+        navigation.navigate("MyTasks", { employeeId: user.userId, agentName: agent.name }),
       backgroundColor: "#E0F7FA",
     },
     agentInfo?.designation_id?.permission?.reports === "true" && {
@@ -160,102 +201,49 @@ const Home = ({ route, navigation }) => {
       name: "Reports",
       imagePath: cardImagePaths.reports,
       onPress: () =>
-        navigation.navigate("PayNavigation", {
-          screen: "Reports",
-          params: { user: user },
-        }),
+        navigation.navigate("PayNavigation", { screen: "Reports", params: { user } }),
       backgroundColor: "#FCE4EC",
-    },
-    agentInfo?.designation_id?.permission?.commission === "true" && {
-      id: "commission",
-      name: "Commission",
-      imagePath: cardImagePaths.commission,
-      onPress: () =>
-        navigation.navigate("CustomerNavigation", {
-          screen: "Commissions",
-          params: { user: user },
-        }),
-      backgroundColor: "#DCEDC8",
     },
     {
       id: "groups",
       name: "Groups",
       imagePath: cardImagePaths.groups,
       onPress: () =>
-        navigation.navigate("Enrollment", {
-          screen: "Enrollment",
-          params: { user: user },
-        }),
+        navigation.navigate("Enrollment", { screen: "Enrollment", params: { user } }),
       backgroundColor: "#D1C4E9",
-    },
-    {
-      id: "customerOnHold",
-      name: "Customer on Hold",
-      imagePath: cardImagePaths.customerOnHold,
-      onPress: () => navigation.navigate("CustomerOnHold"),
-      backgroundColor: "#FFF3E0",
-    },
-    {
-      id: "monthlyTurnover",
-      name: "MIT",
-      imagePath: cardImagePaths.monthlyTurnover,
-      onPress: () => navigation.navigate("MonthlyTurnover"),
-      backgroundColor: "#D0F0C0",
     },
     {
       id: "DueReport",
       name: "DueReport",
       imagePath: cardImagePaths.DueReportImage,
-      onPress: () =>  navigation.navigate("PayNavigation", {
-          screen: "Due",
-          params: { user },
-        }),
+      onPress: () =>
+        navigation.navigate("PayNavigation", { screen: "Due", params: { user } }),
       backgroundColor: "#e9d0e3ff",
     },
   ].filter(Boolean);
 
   const renderNoInternet = () => (
     <View style={styles.noInternetContainer}>
-      <Image
-        source={require("../assets/Nointernetp.png")}
-        style={styles.noInternetImage}
-        resizeMode="contain"
-      />
-      <Text style={styles.noInternetText}>
-        Oops! No internet connection.
-      </Text>
-      <Text style={styles.noInternetSubText}>
-        Please check your network settings and try again.
-      </Text>
+      <Image source={require("../assets/Nointernetp.png")} style={styles.noInternetImage} resizeMode="contain" />
+      <Text style={styles.noInternetText}>Oops! No internet connection.</Text>
+      <Text style={styles.noInternetSubText}>Please check your network and try again.</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+      <LinearGradient colors={["#dbf6faff", "#90dafcff"]} style={styles.gradientOverlay}>
         <View style={styles.mainContentArea}>
           <Header />
           <View style={styles.introSection}>
-            <Text style={styles.welcomeText}>
-              Hello {agent.name || "Agent"},
-            </Text>
-            <Text style={styles.questionText}>
-              Welcome to MyChits Agent App
-            </Text>
+            <Text style={styles.welcomeText}>Hello {agent.name || "Agent"},</Text>
+            <Text style={styles.questionText}>Welcome to MyChits Agent App</Text>
           </View>
 
           {netInfo.isConnected === false ? (
             renderNoInternet()
           ) : (
-            <ScrollView
-              contentContainerStyle={styles.cardsScrollViewContent}
-              showsVerticalScrollIndicator={false}
-            >
+            <ScrollView contentContainerStyle={styles.cardsScrollViewContent} showsVerticalScrollIndicator={false}>
               <View style={styles.cardsGridContainer}>
                 {cardsData.map((card) => (
                   <TouchableOpacity
@@ -263,11 +251,7 @@ const Home = ({ route, navigation }) => {
                     style={[styles.gridCard, { backgroundColor: card.backgroundColor }]}
                     onPress={card.onPress}
                   >
-                    <Image
-                      source={card.imagePath}
-                      style={styles.cardImage}
-                      resizeMode="contain"
-                    />
+                    <Image source={card.imagePath} style={styles.cardImage} resizeMode="contain" />
                     <Text style={styles.gridCardText}>{card.name}</Text>
                   </TouchableOpacity>
                 ))}
@@ -276,46 +260,28 @@ const Home = ({ route, navigation }) => {
           )}
         </View>
       </LinearGradient>
+
+      <AttendanceModal
+        visible={showAttendanceModal}
+        message={attendanceMessage}
+        onClose={() => setShowAttendanceModal(false)}
+        onProceed={() => {
+          setShowAttendanceModal(false);
+          navigation.navigate("Attendence");
+        }}
+      />
     </SafeAreaView>
   );
 };
 
+// --- Styles ---
 const styles = StyleSheet.create({
-  mainContentArea: {
-    flex: 1,
-    marginHorizontal: 22,
-    marginTop: 12,
-  },
-  introSection: {
-    marginTop: 20,
-    marginBottom: 20,
-    paddingHorizontal: 5,
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 5,
-  },
-  questionText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#555",
-    marginBottom: 10,
-  },
-  instructionText: {
-    fontSize: 16,
-    color: "#777",
-  },
-  cardsScrollViewContent: {
-    paddingBottom: 50,
-  },
-  cardsGridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
+  mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 },
+  introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
+  welcomeText: { fontSize: 28, fontWeight: "bold", color: "#333", marginBottom: 5 },
+  questionText: { fontSize: 20, fontWeight: "600", color: "#555", marginBottom: 10 },
+  cardsScrollViewContent: { paddingBottom: 50 },
+  cardsGridContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginTop: 10 },
   gridCard: {
     width: (width - 22 * 2 - 20) / 2,
     height: (width - 22 * 2 - 20) / 2,
@@ -332,44 +298,36 @@ const styles = StyleSheet.create({
     elevation: 5,
     padding: 5,
   },
-  cardImage: {
-    width: 155,
-    height: 90,
-    marginBottom: 1,
+  cardImage: { width: 155, height: 90 },
+  gridCardText: { fontSize: 17, fontWeight: "900", color: COLORS.black, textAlign: "center" },
+  noInternetContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  noInternetImage: { width: 200, height: 200 },
+  noInternetText: { fontSize: 20, fontWeight: "bold", color: "#333", marginTop: 20 },
+  noInternetSubText: { fontSize: 16, color: "#777", marginTop: 10 },
+  gradientOverlay: { flex: 1 },
+});
+
+const modalStyles = StyleSheet.create({
+  centeredView: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.6)" },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: "80%",
   },
-  gradientOverlay: {
-    flex: 1,
-  },
-  gridCardText: {
-    marginTop: 2,
-    fontSize: 17,
-    fontWeight: "900",
-    color: COLORS.black,
-    textAlign: "center",
-  },
-  noInternetContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  noInternetImage: {
-    width: 200,
-    height: 200,
-  },
-  noInternetText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 20,
-    textAlign: "center",
-  },
-  noInternetSubText: {
-    fontSize: 16,
-    color: "#777",
-    marginTop: 10,
-    textAlign: "center",
-  },
+  modalImage: { width: 100, height: 100, marginBottom: 15 },
+  modalText: { marginBottom: 15, textAlign: "center", fontSize: 18, fontWeight: "bold", color: "#333" },
+  closeButton: { position: "absolute", top: 10, right: 15, padding: 5 },
+  closeButtonText: { fontSize: 24, fontWeight: "bold", color: "#999" },
+  markAttendanceButton: { backgroundColor: "#059669", borderRadius: 10, padding: 10, marginTop: 10 },
+  markAttendanceButtonText: { color: "white", fontWeight: "bold", textAlign: "center", fontSize: 16 },
 });
 
 export default Home;

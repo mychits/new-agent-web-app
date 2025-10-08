@@ -1,1534 +1,570 @@
-// import {
-//     View,
-//     Text,
-//     StyleSheet,
-//     KeyboardAvoidingView,
-//     Platform,
-//     ActivityIndicator,
-//     FlatList,
-//     TouchableOpacity,
-//     StatusBar,
-//     Image,
-// } from "react-native";
-// import React, { useState, useEffect, useMemo, useCallback } from "react";
-// import { Picker } from '@react-native-picker/picker';
-// import { SafeAreaView } from "react-native-safe-area-context";
-// import { LinearGradient } from "expo-linear-gradient";
-// import DateTimePicker from '@react-native-community/datetimepicker';
-// import COLORS from "../constants/color";
-// import Header from "../components/Header";
-// import { Feather } from '@expo/vector-icons';
-
-
-// const PRIMARY_COLOR = COLORS.primary || '#3498db';
-// const DUE_COLOR = '#e74c3c';
-// const SECONDARY_COLOR = '#2c3e50';
-// const INFO_COLOR = '#95a5a6';
-
-// const BACKGROUND_GRADIENT = ["#dbf6faff", "#90dafcff"];
-// const API_URL = "https://mychits.online/api/group/get-group";
-// const AGENT_COLLECTION_API = "https://mychits.online/api/enroll/due/routes/agent/";
-
-// const NO_REPORTS_IMAGE = require('../assets/NoReports.png');
-
-
-
-// const formatDate = (date) => {
-//     return date ? `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}` : 'DD/MM/YYYY';
-// };
-
-
-// const GroupDueItem = React.memo(({ item }) => {
-//     const dueDateText = formatDate(item.next_due_date_string ? new Date(item.next_due_date_string) : null);
-
-//     const groupName = item.group_name || 'N/A Group Name';
-
-//     const formatCurrency = (amount) => {
-//         if (amount === undefined || amount === null) return '₹ N/A';
-//         const numericAmount = typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.-]+/g, "")) : amount;
-//         return `₹ ${numericAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-//     };
-
-//     const totalPayableAmount = formatCurrency(item.total_payable_amount);
-//     const totalToBePaid = formatCurrency(item.total_to_be_paid);
-//     const balance = formatCurrency(item.Balance);
-
-//     const DUE_SOON_DAYS = 7;
-//     const isUrgentDue = item.next_due_date_string && (new Date(item.next_due_date_string) <= new Date(Date.now() + (1 * 86400000)));
-//     const isDueSoon = item.next_due_date_string && (new Date(item.next_due_date_string) <= new Date(Date.now() + (DUE_SOON_DAYS * 86400000)));
-//     const dueColor = isUrgentDue ? DUE_COLOR : (isDueSoon ? '#f39c12' : SECONDARY_COLOR);
-
-//     return (
-//         <View style={styles.groupItem}>
-
-//             <View style={styles.itemHeader_vertical}>
-//                 <Text style={styles.groupText_title_vertical}>
-//                     {groupName}
-//                 </Text>
-//             </View>
-
-//             <View style={styles.itemFinancials_vertical}>
-
-//                 <View style={styles.financialRow}>
-//                     <Text style={styles.financialLabel_vertical}>Total Payable Amount</Text>
-//                     <Text style={styles.financialAmount_Primary_vertical}>{totalPayableAmount}</Text>
-//                 </View>
-
-//                 <View style={styles.financialSeparator} />
-
-//                 <View style={styles.financialRow}>
-//                     <Text style={styles.financialLabel_vertical}>Total to be Paid</Text>
-//                     <Text style={styles.financialAmount_Primary_vertical}>{totalToBePaid}</Text>
-//                 </View>
-
-//                 <View style={styles.financialSeparator} />
-
-//                 <View style={styles.financialRow}>
-//                     <Text style={styles.financialLabel_vertical_balance}>Outstanding Balance</Text>
-//                     <Text style={styles.financialAmount_Outstanding_vertical}>{balance}</Text>
-//                 </View>
-//             </View>
-
-//             <View style={[styles.dateInfo_simple, {
-//                 borderColor: dueColor,
-//                 backgroundColor: isUrgentDue ? 'rgba(231, 76, 60, 0.05)' : 'rgba(52, 152, 219, 0.05)',
-//             }]}>
-//                 <Feather
-//                     name="calendar"
-//                     size={18}
-//                     color={dueColor}
-//                 />
-//                 <View style={{ marginLeft: 10 }}>
-//                     <Text style={styles.dateLabel_simple}>Next Due Date:</Text>
-//                     <Text style={[styles.dateText_simple, { color: dueColor }]}>
-//                         {dueDateText}
-//                     </Text>
-//                 </View>
-//             </View>
-//         </View>
-//     );
-// });
-
-
-// /**
-//  * ListHeader Component (Used for FlatListHeaderComponent to ensure scrollability)
-//  */
-// const ListHeader = ({ reportDetails, renderGroupDropdown, renderDatePickers, filteredGroupsCount }) => (
-//     <View style={styles.listHeaderContainer}>
-//         <Header />
-//         <View style={styles.titleContainer}>
-//             <Text style={styles.title}>{reportDetails.title}</Text>
-//             <Text style={styles.subtitle}>{reportDetails.subtitle}</Text>
-//         </View>
-
-//         <View style={styles.filterSection}>
-//             {renderGroupDropdown()}
-//             <View style={styles.filterSeparator} />
-//             {renderDatePickers()}
-//         </View>
-
-//         <Text style={styles.listSectionTitle}>
-//             {`${filteredGroupsCount} Pending Due Reports`}
-//         </Text>
-//     </View>
-// );
-
-// const OutstandingReports = ({ route }) => {
-//     const { user } = route.params
-//     console.log(user, "preetha's user")
-
-
-//     const getReportDetails = () => {
-//         return {
-//             title: "Collection Due Report",
-//             subtitle: "View pending amounts for all assigned collection groups."
-//         };
-//     };
-
-//     const reportDetails = useMemo(() => getReportDetails(), []);
-
-//     const [groups, setGroups] = useState([]);
-//     const [loading, setLoading] = useState(true);
-//     const [error, setError] = useState(null);
-//     const [selectedGroupValue, setSelectedGroupValue] = useState('all');
-//     const [fromDate, setFromDate] = useState(null);
-//     const [toDate, setToDate] = useState(() => {
-//         const futureDate = new Date();
-//         futureDate.setFullYear(futureDate.getFullYear() + 10);
-//         return futureDate;
-//     });
-//     const [showDatePicker, setShowDatePicker] = useState({ visible: false, mode: 'date', type: '' });
-
-//     // --- Data Fetching Effect ---
-//     const fetchGroups = useCallback(async () => {
-//         setLoading(true);
-//         setError(null);
-//         let allData = [];
-
-//         try {
-//             // 1. Fetch from Original Group API
-//             const groupResponse = await fetch(API_URL);
-//             if (!groupResponse.ok) throw new Error(`Group API error! status: ${groupResponse.status}`);
-//             const groupJson = await groupResponse.json();
-
-//             let fetchedGroupData = [];
-//             if (groupJson.data && Array.isArray(groupJson.data)) {
-//                 fetchedGroupData = groupJson.data;
-//             } else if (Array.isArray(groupJson)) {
-//                 fetchedGroupData = groupJson;
-//             }
-//             allData = [...allData, ...fetchedGroupData];
-
-//             // 2. Fetch from Agent Collection API (Uses the static agent_id)
-//             try {
-//                 console.log(user, "user id iser")
-//                 const collectionResponse = await fetch(`${AGENT_COLLECTION_API}${user?.userId}`);
-//                 if (!collectionResponse.ok) console.error(`Collection API error! status: ${collectionResponse.status}`);
-//                 else {
-//                     const collectionJson = await collectionResponse.json();
-//                     let fetchedCollectionData = [];
-//                     if (collectionJson.data && Array.isArray(collectionJson.data)) {
-//                         fetchedCollectionData = collectionJson.data;
-//                     } else if (Array.isArray(collectionJson)) {
-//                         fetchedCollectionData = collectionJson;
-//                     }
-//                     allData = [...allData, ...fetchedCollectionData];
-//                 }
-//             } catch (e) {
-//                 console.error("Error fetching Collection API:", e);
-//             }
-
-//             // 3. Process and Set State with MOCK FINANCIAL DATA
-//             const finalData = allData.map((item, index) => {
-//                 const baseDate = new Date();
-//                 const dateOffsets = [0, 1, 30, -5, 7, 14, 45, 60, -10];
-//                 const dateOffset = dateOffsets[index % dateOffsets.length] * 86400000;
-//                 baseDate.setTime(Date.now() + dateOffset);
-
-//                 // --- Mock Financial Data based on index ---
-//                 const baseAmount = 50000 + (index * 10000);
-//                 const mockTotalToBePaid = 4500 + (index * 500);
-//                 const mockBalance = mockTotalToBePaid * (1 + (index % 3) * 0.5);
-
-//                 return {
-//                     ...item,
-//                     next_due_date_string: item.next_due_date_string || baseDate.toISOString(),
-//                     id: item.id || `mock-${index}-${Math.random() * 1000}`,
-//                     group_name: item.group_name || `Group Alpha ${index + 1}`,
-
-//                     // Fields required in the component display
-//                     total_payable_amount: item.total_payable_amount || Math.round(baseAmount / 100) * 100,
-//                     total_to_be_paid: item.total_to_be_paid || Math.round(mockTotalToBePaid / 10) * 10,
-//                     Balance: item.Balance || Math.round(mockBalance / 10) * 10,
-//                 };
-//             });
-
-//             setGroups(finalData);
-//             setSelectedGroupValue('all');
-
-//         } catch (e) {
-//             console.error("Error fetching data:", e);
-//             setError(e.message);
-//         } finally {
-//             setLoading(false);
-//         }
-//     }, []);
-
-//     useEffect(() => {
-//         const timer = setTimeout(fetchGroups, 500);
-//         return () => clearTimeout(timer);
-//     }, [fetchGroups]);
-
-
-//     const handleDateChange = useCallback((event, selectedDate) => {
-//         setShowDatePicker({ visible: false, mode: 'date', type: '' });
-
-//         if (event.type === 'set' && selectedDate) {
-//             const dateToSet = new Date(selectedDate);
-
-//             if (showDatePicker.type === 'from') {
-//                 if (toDate && dateToSet > toDate) {
-//                     setFromDate(toDate);
-//                     setToDate(dateToSet);
-//                 } else {
-//                     setFromDate(dateToSet);
-//                 }
-//             } else if (showDatePicker.type === 'to') {
-//                 if (fromDate && dateToSet < fromDate) {
-//                     setToDate(fromDate);
-//                     setFromDate(dateToSet);
-//                 } else {
-//                     setToDate(dateToSet);
-//                 }
-//             }
-//         }
-//     }, [fromDate, toDate, showDatePicker.type]);
-
-//     const showPicker = useCallback((type) => {
-//         setShowDatePicker({ visible: true, mode: 'date', type: type });
-//     }, []);
-
-
-//     const filteredGroups = useMemo(() => {
-//         let filtered = groups;
-//         // 1. Group Filter
-//         if (selectedGroupValue !== 'all' && selectedGroupValue) {
-//             filtered = filtered.filter(group => group.id && group.id.toString() === selectedGroupValue);
-//         }
-
-//         // 2. Date Range Filter
-//         if (fromDate || toDate) {
-//             filtered = filtered.filter(group => {
-//                 const due_date_string = group.next_due_date_string;
-//                 if (!due_date_string) return false;
-
-//                 const due_date = new Date(due_date_string);
-//                 const startOfFromDate = fromDate ? new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate(), 0, 0, 0, 0) : null;
-//                 const endOfToDate = toDate ? new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate(), 23, 59, 59, 999) : null;
-
-//                 const isAfterFrom = startOfFromDate ? due_date >= startOfFromDate : true;
-//                 const isBeforeTo = endOfToDate ? due_date <= endOfToDate : true;
-
-//                 return isAfterFrom && isBeforeTo;
-//             });
-//         }
-
-//         return filtered;
-//     }, [groups, selectedGroupValue, fromDate, toDate]);
-
-
-//     const renderGroupDropdown = () => {
-//         const availableGroups = groups.map(group => ({
-//             id: group.id ? group.id.toString() : group.group_name,
-//             name: group.group_name || `Group ID: ${group.id || 'N/A'}`
-//         })).filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-
-//         if (!availableGroups.length && selectedGroupValue !== 'all') return null;
-
-//         return (
-//             <View style={styles.dropdownContainer}>
-//                 <Text style={styles.filterLabel}>Group Filter</Text>
-//                 <View style={styles.pickerWrapper}>
-//                     <Picker
-//                         selectedValue={selectedGroupValue.toString()}
-//                         onValueChange={(itemValue) => setSelectedGroupValue(itemValue)}
-//                         style={styles.pickerStyle}
-//                         mode="dropdown"
-//                     >
-//                         <Picker.Item label="All Groups" value="all" style={styles.pickerItemText} />
-//                         {availableGroups.map((group) => (
-//                             <Picker.Item
-//                                 key={group.id}
-//                                 label={group.name}
-//                                 value={group.id}
-//                                 style={styles.pickerItemText}
-//                             />
-//                         ))}
-//                     </Picker>
-//                     <Feather name="chevron-down" size={20} color="#7f8c8d" style={styles.dropdownIcon} />
-//                 </View>
-//             </View>
-//         );
-//     };
-
-//     const renderDatePickers = () => (
-//         <View style={styles.dateFilterContainer}>
-//             <Text style={styles.filterLabel}>Due Date Range</Text>
-//             <View style={styles.datePickersRow}>
-//                 <View style={styles.datePickerInput}>
-//                     <Text style={styles.dateInputLabel}>From</Text>
-//                     <TouchableOpacity onPress={() => showPicker('from')} style={styles.dateButton}>
-//                         <Feather name="calendar" size={16} color={PRIMARY_COLOR} />
-//                         <Text style={styles.dateButtonText}>{formatDate(fromDate)}</Text>
-//                     </TouchableOpacity>
-//                 </View>
-
-//                 <View style={[styles.datePickerInput, { marginLeft: 10 }]}>
-//                     <Text style={styles.dateInputLabel}>To</Text>
-//                     <TouchableOpacity onPress={() => showPicker('to')} style={styles.dateButton}>
-//                         <Feather name="calendar" size={16} color={PRIMARY_COLOR} />
-//                         <Text style={styles.dateButtonText}>{formatDate(toDate)}</Text>
-//                     </TouchableOpacity>
-//                 </View>
-//             </View>
-
-//             {showDatePicker.visible && (
-//                 <DateTimePicker
-//                     value={showDatePicker.type === 'from' ? (fromDate || new Date()) : (toDate || new Date())}
-//                     mode={showDatePicker.mode}
-//                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-//                     onChange={handleDateChange}
-//                 />
-//             )}
-//         </View>
-//     );
-
-
-//     const MainContent = () => (
-//         <KeyboardAvoidingView
-//             style={styles.mainContentContainer}
-//             behavior={Platform.OS === "ios" ? "padding" : "height"}
-//         >
-//             {error ? (
-//                 <View style={styles.errorContainer}>
-//                     <Feather name="alert-triangle" size={30} color={COLORS.white} />
-//                     <Text style={styles.errorText_title}>Data Error</Text>
-//                     <Text style={styles.errorText_subtitle}>Could not load data: {error}</Text>
-//                     <TouchableOpacity
-//                         style={styles.retryButton}
-//                         onPress={fetchGroups}
-//                     >
-//                         <Text style={styles.retryButtonText}>Try Again</Text>
-//                     </TouchableOpacity>
-//                 </View>
-//             ) : (
-//                 <FlatList
-//                     data={filteredGroups}
-//                     style={styles.flatList}
-//                     contentContainerStyle={styles.flatListContent}
-//                     keyExtractor={(item) => item.id.toString()}
-
-//                     // Uses ListHeaderComponent to make the filter section scrollable with the list
-//                     ListHeaderComponent={
-//                         <ListHeader
-//                             reportDetails={reportDetails}
-//                             renderGroupDropdown={renderGroupDropdown}
-//                             renderDatePickers={renderDatePickers}
-//                             filteredGroupsCount={filteredGroups.length}
-//                         />
-//                     }
-
-//                     ListEmptyComponent={() => (
-//                         <View style={styles.emptyContainer}>
-//                             <Image
-//                                 source={NO_REPORTS_IMAGE}
-//                                 style={styles.emptyImage}
-//                                 resizeMode="contain"
-//                             />
-//                             <Text style={styles.emptyText}>
-//                                 No Due Reports Found
-//                             </Text>
-//                             <Text style={styles.emptyText_sub}>Great job! All payments seem to be cleared for the selected filters.</Text>
-//                         </View>
-//                     )}
-//                     renderItem={({ item }) => <GroupDueItem item={item} />}
-//                     showsVerticalScrollIndicator={false}
-//                 />
-//             )}
-//         </KeyboardAvoidingView>
-//     );
-
-//     const FullScreenLoading = () => (
-//         <View style={styles.fullScreenLoading}>
-//             <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-//         </View>
-//     );
-
-//     return (
-//         <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND_GRADIENT[0] }}>
-//             <StatusBar barStyle="dark-content" backgroundColor={BACKGROUND_GRADIENT[0]} />
-//             <LinearGradient
-//                 colors={BACKGROUND_GRADIENT}
-//                 style={styles.gradientOverlay}
-//                 start={{ x: 0, y: 0 }}
-//                 end={{ x: 1, y: 1 }}
-//             >
-//                 {loading ? <FullScreenLoading /> : <MainContent />}
-//             </LinearGradient>
-//         </SafeAreaView>
-//     );
-// };
-
-// // --- STYLESHEET ---
-// const styles = StyleSheet.create({
-//     gradientOverlay: { flex: 1 },
-//     fullScreenLoading: {
-//         ...StyleSheet.absoluteFillObject,
-//         backgroundColor: 'rgba(255, 255, 255, 0.9)',
-//         alignItems: 'center',
-//         justifyContent: 'center',
-//         zIndex: 10,
-//     },
-//     mainContentContainer: {
-//         flex: 1,
-//         paddingHorizontal: 22,
-//         paddingTop: Platform.OS === 'ios' ? 0 : 12,
-//     },
-//     listHeaderContainer: {
-//         backgroundColor: 'transparent',
-//     },
-//     flatList: {
-//         flex: 1,
-//     },
-//     flatListContent: {
-//         paddingBottom: 80,
-//     },
-//     titleContainer: {
-//         marginTop: 15,
-//         marginBottom: 25,
-//         alignItems: 'center',
-//         paddingLeft: 0,
-//     },
-//     title: {
-//         fontSize: 26,
-//         fontWeight: '900',
-//         color: SECONDARY_COLOR,
-//     },
-//     subtitle: {
-//         fontSize: 16,
-//         color: '#7f8c8d',
-//         marginTop: 5,
-//         fontWeight: '500',
-//         textAlign: 'center',
-//     },
-//     filterSection: {
-//         backgroundColor: COLORS.white,
-//         padding: 20,
-//         borderRadius: 18,
-//         marginBottom: 25,
-//         shadowColor: "rgba(0,0,0,0.2)",
-//         shadowOffset: { width: 0, height: 8 },
-//         shadowOpacity: 0.1,
-//         shadowRadius: 15,
-//         elevation: 8,
-//     },
-//     filterLabel: {
-//         fontSize: 14,
-//         fontWeight: '700',
-//         color: PRIMARY_COLOR,
-//         marginBottom: 10,
-//         textTransform: 'uppercase',
-//         letterSpacing: 1,
-//     },
-//     filterSeparator: {
-//         height: 1,
-//         backgroundColor: 'rgba(0,0,0,0.08)',
-//         marginVertical: 10,
-//     },
-//     dropdownContainer: {},
-//     pickerWrapper: {
-//         borderWidth: 2,
-//         borderColor: '#e1e5e8',
-//         borderRadius: 12,
-//         backgroundColor: '#f9f9f9',
-//         overflow: 'hidden',
-//         justifyContent: 'center',
-//     },
-//     pickerStyle: {
-//         height: Platform.OS === 'ios' ? 150 : 55,
-//         width: '100%',
-//         color: '#333',
-//     },
-//     dropdownIcon: {
-//         position: 'absolute',
-//         right: 15,
-//         pointerEvents: 'none',
-//         top: Platform.OS === 'ios' ? undefined : 16,
-//     },
-//     pickerItemText: { fontSize: 15 },
-//     dateFilterContainer: {},
-//     datePickersRow: {
-//         flexDirection: 'row',
-//         justifyContent: 'space-between',
-//     },
-//     datePickerInput: { flex: 1 },
-//     dateInputLabel: {
-//         fontSize: 14,
-//         fontWeight: '700',
-//         color: '#7f8c8d',
-//         marginBottom: 8,
-//     },
-//     dateButton: {
-//         backgroundColor: COLORS.white,
-//         paddingVertical: 15,
-//         paddingHorizontal: 15,
-//         borderRadius: 12,
-//         borderWidth: 1,
-//         borderColor: '#e1e5e8',
-//         flexDirection: 'row',
-//         alignItems: 'center',
-//         shadowColor: "rgba(0,0,0,0.05)",
-//         shadowOffset: { width: 0, height: 2 },
-//         shadowOpacity: 0.1,
-//         shadowRadius: 4,
-//         elevation: 2,
-//     },
-//     dateButtonText: {
-//         color: '#333',
-//         fontSize: 12,
-//         marginLeft: 10,
-//         fontWeight: '700',
-//     },
-//     listSectionTitle: {
-//         fontSize: 18,
-//         fontWeight: 'bold',
-//         color: '#34495e',
-//         marginBottom: 18,
-//         marginTop: 5,
-//         textAlign: 'center',
-//     },
-//     groupItem: {
-//         padding: 22,
-//         backgroundColor: COLORS.white,
-//         borderRadius: 15,
-//         marginBottom: 18,
-//         shadowColor: "rgba(0,0,0,0.15)",
-//         shadowOffset: { width: 0, height: 5 },
-//         shadowOpacity: 0.15,
-//         shadowRadius: 10,
-//         elevation: 8,
-//     },
-//     itemHeader_vertical: {
-//         marginBottom: 15,
-//     },
-//     groupText_title_vertical: {
-//         fontSize: 20,
-//         fontWeight: '900',
-//         color: SECONDARY_COLOR,
-//     },
-//     itemFinancials_vertical: {
-//         backgroundColor: '#f8f9fa',
-//         borderRadius: 12,
-//         padding: 15,
-//         marginBottom: 15,
-//         borderWidth: 1,
-//         borderColor: '#ecf0f1',
-//     },
-//     financialRow: {
-//         flexDirection: 'row',
-//         justifyContent: 'space-between',
-//         alignItems: 'center',
-//         paddingVertical: 8,
-//     },
-//     financialSeparator: {
-//         height: 1,
-//         backgroundColor: '#e1e5e8',
-//         marginVertical: 4,
-//     },
-//     financialLabel_vertical: {
-//         fontSize: 14,
-//         color: INFO_COLOR,
-//         fontWeight: '600',
-//     },
-//     financialLabel_vertical_balance: {
-//         fontSize: 15,
-//         color: SECONDARY_COLOR,
-//         fontWeight: '700',
-//     },
-//     financialAmount_Primary_vertical: {
-//         fontSize: 16,
-//         fontWeight: '700',
-//         color: PRIMARY_COLOR,
-//     },
-//     financialAmount_Outstanding_vertical: {
-//         fontSize: 18,
-//         fontWeight: '900',
-//         color: DUE_COLOR,
-//     },
-//     dateInfo_simple: {
-//         flexDirection: 'row',
-//         alignItems: 'center',
-//         padding: 12,
-//         borderRadius: 10,
-//         borderWidth: 1,
-//     },
-//     dateLabel_simple: {
-//         fontSize: 12,
-//         color: '#555',
-//         fontWeight: '700',
-//     },
-//     dateText_simple: {
-//         fontSize: 15,
-//         fontWeight: '800',
-//         marginTop: 2,
-//     },
-//     errorContainer: {
-//         backgroundColor: DUE_COLOR,
-//         padding: 25,
-//         borderRadius: 15,
-//         marginTop: 50,
-//         alignItems: 'center',
-//         marginHorizontal: 0,
-//         shadowColor: "#000",
-//         shadowOffset: { width: 0, height: 5 },
-//         shadowOpacity: 0.4,
-//         shadowRadius: 6,
-//         elevation: 10,
-//     },
-//     errorText_title: {
-//         fontSize: 22,
-//         fontWeight: 'bold',
-//         color: COLORS.white,
-//         marginTop: 10,
-//     },
-//     errorText_subtitle: {
-//         fontSize: 15,
-//         color: '#fefefe',
-//         textAlign: 'center',
-//         marginTop: 5,
-//         marginBottom: 15,
-//     },
-//     retryButton: {
-//         marginTop: 15,
-//         backgroundColor: COLORS.white,
-//         paddingVertical: 10,
-//         paddingHorizontal: 20,
-//         borderRadius: 8,
-//     },
-//     retryButtonText: {
-//         color: DUE_COLOR,
-//         fontWeight: 'bold',
-//         fontSize: 16,
-//     },
-//     emptyContainer: {
-//         padding: 40,
-//         borderRadius: 15,
-//         alignItems: 'center',
-//         justifyContent: 'center',
-//         marginTop: 20,
-//     },
-//     emptyImage: {
-//         width: 200,
-//         height: 150,
-//         marginBottom: -10,
-//     },
-//     emptyText: {
-//         fontSize: 18,
-//         color: '#555',
-//         textAlign: 'center',
-//         marginTop: 15,
-//         fontWeight: '700',
-//     },
-//     emptyText_sub: {
-//         fontSize: 15,
-//         color: '#999',
-//         textAlign: 'center',
-//         marginTop: 5,
-//     }
-// });
-
-// export default OutstandingReports;
-
-
-
-
-
+import React, { useEffect, useState } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
-    ActivityIndicator,
-    FlatList,
-    TouchableOpacity,
-    StatusBar,
-    Image,
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Image,
+  StatusBar,
+  Platform,
+  LayoutAnimation,
+  UIManager,
+  // --- NEW IMPORTS FOR CALL FUNCTIONALITY ---
+  TouchableOpacity,
+  Linking,
 } from "react-native";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import DateTimePicker from '@react-native-community/datetimepicker';
-import COLORS from "../constants/color";
+import { Picker } from "@react-native-picker/picker";
+import COLORS from "../constants/color"; // Keeping this, though not used below
 import Header from "../components/Header";
-import { Feather } from '@expo/vector-icons';
 
-const PRIMARY_COLOR = COLORS.primary || '#3498db';
-const DUE_COLOR = '#e74c3c';
-const SECONDARY_COLOR = '#2c3e50';
-const INFO_COLOR = '#95a5a6';
-
+// --- ORIGINAL CONSTANTS ---
+const DUE_API = "https://mychits.online/api/enroll/due/routes/agent/";
+const GROUP_API = "https://mychits.online/api/group/get-group";
+// Using the linear gradient from the original file
 const BACKGROUND_GRADIENT = ["#dbf6faff", "#90dafcff"];
-const API_URL = "https://mychits.online/api/group/get-group";
-const AGENT_COLLECTION_API = "https://mychits.online/api/enroll/due/routes/agent/";
+const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
 
-const NO_REPORTS_IMAGE = require('../assets/NoReports.png');
+// --- CUSTOM STYLING CONSTANTS (Updated) ---
+// New Color Palette for a professional look
+const MODERN_PRIMARY = "#1e3a8a"; // Deep, professional blue
+const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
+const WARNING_RED = "#dc2626";     // Strong red for negative/balance
+// Adding a neutral grey constant for cleaner styles
+const NEUTRAL_GREY = "#6b7280";
+// Darkest text color for contrast
+const DARK_TEXT = "#1f2937";
 
-/* ------------------ Helpers ------------------ */
-const formatDate = (date) =>
-    date
-        ? `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1)
-              .toString()
-              .padStart(2, '0')}/${date.getFullYear()}`
-        : 'DD/MM/YYYY';
+// Enable LayoutAnimation for Android
+if (
+    Platform.OS === "android" &&
+    UIManager.setLayoutAnimationEnabledExperimental
+) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const formatCurrency = (amount) => {
-    const num = Number(
-        typeof amount === 'string'
-            ? amount.replace(/[^0-9.-]+/g, '')
-            : amount
-    );
-    if (isNaN(num)) return '₹ 0.00';
-    return `₹ ${num.toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })}`;
+  if (amount === undefined || amount === null) return "₹0.00";
+  const num = typeof amount === "number" ? amount : parseFloat(amount);
+  if (isNaN(num)) return "₹0.00";
+  return `₹ ${num.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 };
 
-/* ------------------ Item Component ------------------ */
-const GroupDueItem = React.memo(({ item }) => {
-    const dueDateText = formatDate(
-        item.next_due_date_string ? new Date(item.next_due_date_string) : null
-    );
-    const groupName = item.group_name || 'N/A Group Name';
+// --- NEW FUNCTION TO HANDLE CALLS ---
+const handleCall = (phoneNumber) => {
+  if (phoneNumber) {
+    const url = `tel:${phoneNumber}`;
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(url);
+        } else {
+          console.log(`Don't know how to open URI: ${url}`);
+          // In a real app, you might show an Alert here.
+        }
+      })
+      .catch((err) => console.error('An error occurred while opening dialer', err));
+  }
+};
 
-    const totalPayableAmount = formatCurrency(item.total_payable_amount);
-    const totalToBePaid = formatCurrency(item.total_to_be_paid);
-    const balance = formatCurrency(item.balance); // <-- fixed key
 
-    const DUE_SOON_DAYS = 7;
-    const isUrgentDue =
-        item.next_due_date_string &&
-        new Date(item.next_due_date_string) <=
-            new Date(Date.now() + 1 * 86400000);
-    const isDueSoon =
-        item.next_due_date_string &&
-        new Date(item.next_due_date_string) <=
-            new Date(Date.now() + DUE_SOON_DAYS * 86400000);
-    const dueColor = isUrgentDue
-        ? DUE_COLOR
-        : isDueSoon
-        ? '#f39c12'
-        : SECONDARY_COLOR;
-
-    return (
-        <View style={styles.groupItem}>
-            <View style={styles.itemHeader_vertical}>
-                <Text style={styles.groupText_title_vertical}>{groupName}</Text>
-            </View>
-
-            <View style={styles.itemFinancials_vertical}>
-                <View style={styles.financialRow}>
-                    <Text style={styles.financialLabel_vertical}>
-                        Total Payable Amount
-                    </Text>
-                    <Text style={styles.financialAmount_Primary_vertical}>
-                        {totalPayableAmount}
-                    </Text>
-                </View>
-
-                <View style={styles.financialSeparator} />
-
-                <View style={styles.financialRow}>
-                    <Text style={styles.financialLabel_vertical}>
-                        Total to be Paid
-                    </Text>
-                    <Text style={styles.financialAmount_Primary_vertical}>
-                        {totalToBePaid}
-                    </Text>
-                </View>
-
-                <View style={styles.financialSeparator} />
-
-                <View style={styles.financialRow}>
-                    <Text style={styles.financialLabel_vertical_balance}>
-                        Outstanding Balance
-                    </Text>
-                    <Text style={styles.financialAmount_Outstanding_vertical}>
-                        {balance}
-                    </Text>
-                </View>
-            </View>
-
-            <View
-                style={[
-                    styles.dateInfo_simple,
-                    {
-                        borderColor: dueColor,
-                        backgroundColor: isUrgentDue
-                            ? 'rgba(231, 76, 60, 0.05)'
-                            : 'rgba(52, 152, 219, 0.05)',
-                    },
-                ]}
-            >
-                <Feather name="calendar" size={18} color={dueColor} />
-                <View style={{ marginLeft: 10 }}>
-                    <Text style={styles.dateLabel_simple}>Next Due Date:</Text>
-                    <Text
-                        style={[styles.dateText_simple, { color: dueColor }]}
-                    >
-                        {dueDateText}
-                    </Text>
-                </View>
-            </View>
-        </View>
-    );
-});
-
-/* ------------------ Header Component ------------------ */
-const ListHeader = ({
-    reportDetails,
-    renderGroupDropdown,
-    renderDatePickers,
-    filteredGroupsCount,
-}) => (
-    <View style={styles.listHeaderContainer}>
-        <Header />
-        <View style={styles.titleContainer}>
-            <Text style={styles.title}>{reportDetails.title}</Text>
-            <Text style={styles.subtitle}>{reportDetails.subtitle}</Text>
-        </View>
-
-        <View style={styles.filterSection}>
-            {renderGroupDropdown()}
-            <View style={styles.filterSeparator} />
-            {renderDatePickers()}
-        </View>
-
-        <Text style={styles.listSectionTitle}>
-            {`${filteredGroupsCount} Pending Due Reports`}
-        </Text>
-    </View>
-);
-
-/* ------------------ Main Screen ------------------ */
 const OutstandingReports = ({ route }) => {
-    const { user } = route.params;
+  const { user } = route.params;
+  const [groups, setGroups] = useState([]);
+  const [dues, setDues] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState("all");
+  const [loading, setLoading] = useState(true);
+  // --- NEW STATE FOR TRACKING THE ACTIVE CALL/ANIMATION ---
+  const [activeCallId, setActiveCallId] = useState(null); 
 
-    const reportDetails = useMemo(
-        () => ({
-            title: 'Collection Due Report',
-            subtitle:
-                'View pending amounts for all assigned collection groups.',
-        }),
-        []
-    );
 
-    const [groups, setGroups] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedGroupValue, setSelectedGroupValue] = useState('all');
-    const [fromDate, setFromDate] = useState(null);
-    const [toDate, setToDate] = useState(() => {
-        const futureDate = new Date();
-        futureDate.setFullYear(futureDate.getFullYear() + 10);
-        return futureDate;
-    });
-    const [showDatePicker, setShowDatePicker] = useState({
-        visible: false,
-        mode: 'date',
-        type: '',
-    });
-
-    const fetchGroups = useCallback(async () => {
+  // Fetch groups + dues
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
         setLoading(true);
-        setError(null);
-        let allData = [];
+        const [groupRes, dueRes] = await Promise.all([
+          fetch(GROUP_API),
+          fetch(`${DUE_API}${user?.userId}`),
+        ]);
+        const groupJson = await groupRes.json();
+        const dueJson = await dueRes.json();
 
-        try {
-            const groupResponse = await fetch(API_URL);
-            if (!groupResponse.ok)
-                throw new Error(`Group API error! status: ${groupResponse.status}`);
-            const groupJson = await groupResponse.json();
+        const allGroups = Array.isArray(groupJson?.data)
+          ? groupJson.data
+          : Array.isArray(groupJson)
+          ? groupJson
+          : [];
 
-            let fetchedGroupData = [];
-            if (groupJson.data && Array.isArray(groupJson.data)) {
-                fetchedGroupData = groupJson.data;
-            } else if (Array.isArray(groupJson)) {
-                fetchedGroupData = groupJson;
-            }
-            allData = [...allData, ...fetchedGroupData];
+        const allDues = dueJson?.enrollments || [];
 
-            try {
-                const collectionResponse = await fetch(
-                    `${AGENT_COLLECTION_API}${user?.userId}`
-                );
-                console.log(collectionResponse, "gjsgjsgjgfggf");
-                if (!collectionResponse.ok)
-                    console.error(
-                        `Collection API error! status: ${collectionResponse.status}`
-                    );
-                else {
-                    const collectionJson = await collectionResponse.json();
-                    let fetchedCollectionData = [];
-                    if (
-                        collectionJson.data &&
-                        Array.isArray(collectionJson.data)
-                    ) {
-                        fetchedCollectionData = collectionJson.data;
-                    } else if (Array.isArray(collectionJson)) {
-                        fetchedCollectionData = collectionJson;
-                    }
-                    allData = [...allData, ...fetchedCollectionData];
-                }
-            } catch (e) {
-                console.error('Error fetching Collection API:', e);
-            }
-
-            // ---------- Flatten API fields ----------
-            const finalData = allData.map((item, index) => {
-                const extractFirst = (val) => {
-                    if (!val) return 0;
-                    if (Array.isArray(val)) {
-                        if (typeof val[0] === 'number') return val[0];
-                        if (
-                            typeof val[0] === 'object' &&
-                            val[0] &&
-                            'total' in val[0]
-                        )
-                            return Number(val[0].total);
-                    }
-                    return Number(val) || 0;
-                };
-                console.log(finalData, "yffgsdfgsdjvgg");
-
-                const totalPayable = extractFirst(item.total_payable_amount);
-                const totalToBePaid = Number(item.total_to_be_paid) || 0;
-                const balance = Number(item.balance ?? 0);
-
-                const baseDate = new Date();
-                baseDate.setTime(Date.now() + index * 86400000);
-
-                return {
-                    ...item,
-                    next_due_date_string:
-                        item.next_due_date_string || baseDate.toISOString(),
-                    id: item._id || `mock-${index}`,
-                    group_name:
-                        item.group_id?.group_name ||
-                        item.group_name ||
-                        `Group ${index + 1}`,
-                    total_payable_amount: totalPayable,
-                    total_to_be_paid: totalToBePaid,
-                    balance: balance,
-                };
-            });
-
-            setGroups(finalData);
-            setSelectedGroupValue('all');
-        } catch (e) {
-            console.error('Error fetching data:', e);
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [user]);
-
-    useEffect(() => {
-        const timer = setTimeout(fetchGroups, 500);
-        return () => clearTimeout(timer);
-    }, [fetchGroups]);
-
-    const handleDateChange = useCallback(
-        (event, selectedDate) => {
-            setShowDatePicker({ visible: false, mode: 'date', type: '' });
-
-            if (event.type === 'set' && selectedDate) {
-                const dateToSet = new Date(selectedDate);
-
-                if (showDatePicker.type === 'from') {
-                    if (toDate && dateToSet > toDate) {
-                        setFromDate(toDate);
-                        setToDate(dateToSet);
-                    } else {
-                        setFromDate(dateToSet);
-                    }
-                } else if (showDatePicker.type === 'to') {
-                    if (fromDate && dateToSet < fromDate) {
-                        setToDate(fromDate);
-                        setFromDate(dateToSet);
-                    } else {
-                        setToDate(dateToSet);
-                    }
-                }
-            }
-        },
-        [fromDate, toDate, showDatePicker.type]
-    );
-
-    const showPicker = useCallback((type) => {
-        setShowDatePicker({ visible: true, mode: 'date', type });
-    }, []);
-
-    const filteredGroups = useMemo(() => {
-        let filtered = groups;
-        if (selectedGroupValue !== 'all' && selectedGroupValue) {
-            filtered = filtered.filter(
-                (group) => group.id && group.id.toString() === selectedGroupValue
-            );
-        }
-
-        if (fromDate || toDate) {
-            filtered = filtered.filter((group) => {
-                const due_date_string = group.next_due_date_string;
-                if (!due_date_string) return false;
-
-                const due_date = new Date(due_date_string);
-                const startOfFromDate = fromDate
-                    ? new Date(
-                          fromDate.getFullYear(),
-                          fromDate.getMonth(),
-                          fromDate.getDate(),
-                          0,
-                          0,
-                          0,
-                          0
-                      )
-                    : null;
-                const endOfToDate = toDate
-                    ? new Date(
-                          toDate.getFullYear(),
-                          toDate.getMonth(),
-                          toDate.getDate(),
-                          23,
-                          59,
-                          59,
-                          999
-                      )
-                    : null;
-
-                const isAfterFrom = startOfFromDate
-                    ? due_date >= startOfFromDate
-                    : true;
-                const isBeforeTo = endOfToDate ? due_date <= endOfToDate : true;
-
-                return isAfterFrom && isBeforeTo;
-            });
-        }
-
-        return filtered;
-    }, [groups, selectedGroupValue, fromDate, toDate]);
-
-    const renderGroupDropdown = () => {
-        const availableGroups = groups
-            .map((group) => ({
-                id: group.id ? group.id.toString() : group.group_name,
-                name:
-                    group.group_name ||
-                    `Group ID: ${group.id || 'N/A'}`,
-            }))
-            .filter(
-                (v, i, a) => a.findIndex((t) => t.id === v.id) === i
-            );
-
-        if (!availableGroups.length && selectedGroupValue !== 'all')
-            return null;
-
-        return (
-            <View style={styles.dropdownContainer}>
-                <Text style={styles.filterLabel}>Group Filter</Text>
-                <View style={styles.pickerWrapper}>
-                    <Picker
-                        selectedValue={selectedGroupValue.toString()}
-                        onValueChange={(itemValue) =>
-                            setSelectedGroupValue(itemValue)
-                        }
-                        style={styles.pickerStyle}
-                        mode="dropdown"
-                    >
-                        <Picker.Item
-                            label="All Groups"
-                            value="all"
-                            style={styles.pickerItemText}
-                        />
-                        {availableGroups.map((group) => (
-                            <Picker.Item
-                                key={group.id}
-                                label={group.name}
-                                value={group.id}
-                                style={styles.pickerItemText}
-                            />
-                        ))}
-                    </Picker>
-                    <Feather
-                        name="chevron-down"
-                        size={20}
-                        color="#7f8c8d"
-                        style={styles.dropdownIcon}
-                    />
-                </View>
-            </View>
-        );
+        setGroups(allGroups);
+        setDues(allDues);
+        // ******* ANIMATION TRIGGER *******
+        // Apply LayoutAnimation to make the initial load smooth
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setFilteredData(allDues);
+      } catch (err) {
+        console.error("Error fetching:", err);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchData();
+  }, [user?.userId]);
 
-    const renderDatePickers = () => (
-        <View style={styles.dateFilterContainer}>
-            <Text style={styles.filterLabel}>Due Date Range</Text>
-            <View style={styles.datePickersRow}>
-                <View style={styles.datePickerInput}>
-                    <Text style={styles.dateInputLabel}>From</Text>
-                    <TouchableOpacity
-                        onPress={() => showPicker('from')}
-                        style={styles.dateButton}
-                    >
-                        <Feather name="calendar" size={16} color={PRIMARY_COLOR} />
-                        <Text style={styles.dateButtonText}>
-                            {formatDate(fromDate)}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+  // Filter dues by group
+  useEffect(() => {
+    // ******* ANIMATION TRIGGER *******
+    // Apply LayoutAnimation before changing state for a smooth filter transition
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (selectedGroup === "all") setFilteredData(dues);
+    else
+      setFilteredData(
+        dues.filter((item) => item.group_id?._id === selectedGroup)
+      );
+  }, [selectedGroup, dues]);
 
-                <View style={[styles.datePickerInput, { marginLeft: 10 }]}>
-                    <Text style={styles.dateInputLabel}>To</Text>
-                    <TouchableOpacity
-                        onPress={() => showPicker('to')}
-                        style={styles.dateButton}
-                    >
-                        <Feather name="calendar" size={16} color={PRIMARY_COLOR} />
-                        <Text style={styles.dateButtonText}>
-                            {formatDate(toDate)}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+  const renderItem = ({ item }) => {
+    const name = item?.user_id?.full_name || "Unknown";
+    const email = item?.user_id?.email;
+    const phone = item?.user_id?.phone_number;
+    const groupName = item?.group_id?.group_name || "N/A";
+    const paymentType = item?.payment_type || "N/A";
 
-            {showDatePicker.visible && (
-                <DateTimePicker
-                    value={
-                        showDatePicker.type === 'from'
-                            ? fromDate || new Date()
-                            : toDate || new Date()
-                    }
-                    mode={showDatePicker.mode}
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={handleDateChange}
-                />
-            )}
-        </View>
-    );
+    // --- CHECK IF THIS ITEM IS CURRENTLY "CALLING" ---
+    const isCalling = activeCallId === item?._id; 
 
-    const MainContent = () => (
-        <KeyboardAvoidingView
-            style={styles.mainContentContainer}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            {error ? (
-                <View style={styles.errorContainer}>
-                    <Feather name="alert-triangle" size={30} color={COLORS.white} />
-                    <Text style={styles.errorText_title}>Data Error</Text>
-                    <Text style={styles.errorText_subtitle}>
-                        Could not load data: {error}
-                    </Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={fetchGroups}>
-                        <Text style={styles.retryButtonText}>Try Again</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <FlatList
-                    data={filteredGroups}
-                    style={styles.flatList}
-                    contentContainerStyle={styles.flatListContent}
-                    keyExtractor={(item) => item.id.toString()}
-                    ListHeaderComponent={
-                        <ListHeader
-                            reportDetails={reportDetails}
-                            renderGroupDropdown={renderGroupDropdown}
-                            renderDatePickers={renderDatePickers}
-                            filteredGroupsCount={filteredGroups.length}
-                        />
-                    }
-                    ListEmptyComponent={() => (
-                        <View style={styles.emptyContainer}>
-                            <Image
-                                source={NO_REPORTS_IMAGE}
-                                style={styles.emptyImage}
-                                resizeMode="contain"
-                            />
-                            <Text style={styles.emptyText}>
-                                No Due Reports Found
-                            </Text>
-                            <Text style={styles.emptyText_sub}>
-                                Great job! All payments seem to be cleared for the selected
-                                filters.
-                            </Text>
-                        </View>
-                    )}
-                    renderItem={({ item }) => <GroupDueItem item={item} />}
-                    showsVerticalScrollIndicator={false}
-                />
-            )}
-        </KeyboardAvoidingView>
-    );
+    // Safely extract financial values
+    const getFinancialValue = (value) =>
+      Array.isArray(value) && value[0] ? value[0] : value || 0;
 
-    const FullScreenLoading = () => (
-        <View style={styles.fullScreenLoading}>
-            <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-        </View>
-    );
+    const totalPayable = getFinancialValue(item.total_payable_amount);
+    const totalProfit = getFinancialValue(item.total_profit);
+    const totalToBePaid = item?.total_to_be_paid || 0;
+    const balance = item?.balance || item?.Balance || 0;
+
+    // ******* UNIQUE IDEA: STATUS BAR COLOR *******
+    const statusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
+
+    // --- NEW FUNCTION TO HANDLE PRESS AND ANIMATION ---
+    const handlePhonePress = (phone) => {
+        if (phone) {
+            setActiveCallId(item?._id); // Start the "calling" state
+            handleCall(phone); // Initiate the native call
+
+            // Simulate the "agent should call to customer" animation/status
+            // by resetting the state after a short delay (e.g., 3 seconds)
+            setTimeout(() => {
+                setActiveCallId(null);
+            }, 3000);
+        }
+    }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND_GRADIENT[0] }}>
-            <StatusBar barStyle="dark-content" backgroundColor={BACKGROUND_GRADIENT[0]} />
-            <LinearGradient
-                colors={BACKGROUND_GRADIENT}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                {loading ? <FullScreenLoading /> : <MainContent />}
-            </LinearGradient>
-        </SafeAreaView>
+      <View style={styles.cardContainer}>
+        {/* Status Indicator Bar */}
+        <View style={[styles.cardStatusIndicator, { backgroundColor: statusColor }]} />
+
+        <View style={styles.card}>
+          {/* Header (Group and Type) */}
+          <View style={styles.cardHeader}>
+            <Text style={styles.groupName}>{groupName}</Text>
+            <Text style={styles.paymentType}>{paymentType}</Text>
+          </View>
+
+          {/* Customer Info */}
+          <View style={styles.cardBody}>
+            <Text style={styles.customerName}>{name}</Text>
+            {/* STYLIST: Use DARK_TEXT for icons for better contrast */}
+            {email ? <Text style={styles.customerInfo}><Text style={{color: DARK_TEXT}}>📧</Text> {email}</Text> : null}
+            
+            {/* --- MAKE PHONE NUMBER TAPPABLE --- */}
+            {phone ? (
+              <TouchableOpacity
+                onPress={() => handlePhonePress(phone)}
+                style={styles.phoneTouchable}
+              >
+                <Text style={styles.customerInfo}>
+                  <Text style={{color: DARK_TEXT}}>📞</Text> {phone}
+                  {/* Basic Animation/Status Feedback */}
+                  {isCalling && <Text style={styles.callingStatus}> - Calling...</Text>}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* Financial Info */}
+          <View style={styles.cardFinancial}>
+            {/* Total Payable */}
+            <View style={styles.financialRow}>
+              <Text style={styles.financialLabel}>Total Payable</Text>
+              {/* STYLIST: Ensure financial value is clean and uses ACCENT_GREEN for positive values */}
+              <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
+                {formatCurrency(totalPayable)}
+              </Text>
+            </View>
+
+            {/* Total Profit */}
+            <View style={styles.financialRow}>
+              <Text style={styles.financialLabel}>Total Profit</Text>
+              {/* STYLIST: Ensure financial value is clean and uses ACCENT_GREEN for positive values */}
+              <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
+                {formatCurrency(totalProfit)}
+              </Text>
+            </View>
+
+            {/* Total To Be Paid (Neutral) */}
+            <View style={styles.financialRow}>
+              <Text style={styles.financialLabel}>Total To Be Paid</Text>
+              <Text style={[styles.financialValue, { color: DARK_TEXT }]}>
+                {formatCurrency(totalToBePaid)}
+              </Text>
+            </View>
+
+            {/* Balance (Stands out) */}
+            <View style={styles.balanceRow}>
+              <Text style={styles.balanceLabel}>Outstanding Balance</Text>
+              <Text style={styles.balanceValue}>
+                {formatCurrency(balance)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
     );
+  };
+
+  const totalPending = filteredData.reduce(
+    (sum, item) => sum + (item?.balance || item?.Balance || 0),
+    0
+  );
+
+  const EmptyList = () => (
+    <View style={styles.emptyContainer}>
+      <Image source={NO_REPORTS_IMAGE} style={styles.emptyImage} />
+      <Text style={styles.emptyText}>No pending dues found</Text>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <StatusBar barStyle="dark-content" />
+      {/* USING ORIGINAL LINEAR GRADIENT */}
+      <LinearGradient colors={BACKGROUND_GRADIENT} style={{ flex: 1 }}>
+
+        {/* WRAPPER ADDED TO PUSH HEADER DOWN */}
+        <View style={styles.headerSpacer}>
+            <Header />
+        </View>
+
+        <View style={styles.container}>
+          {/* STYLIST: Use the new title style for better look */}
+          <Text style={styles.title}>Outstanding Reports</Text>
+          {/* STYLIST: Use the new subtitle style for better look */}
+          <Text style={styles.subtitle}>
+            Select a group to view pending details
+          </Text>
+
+          {/* Group Filter */}
+          <View style={styles.dropdownWrapper}>
+            <Text style={styles.dropdownLabel}>Filter by Group</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={selectedGroup}
+                onValueChange={(itemValue) => setSelectedGroup(itemValue)}
+                // FIX: Set the style and color directly on the Picker component (Good for Android contrast/style)
+                style={[styles.picker, { color: MODERN_PRIMARY }]}
+                // itemStyle is primarily for iOS list appearance
+                itemStyle={{ color: MODERN_PRIMARY, fontSize: 16 }}
+              >
+                <Picker.Item label="All Groups" value="all" />
+                {groups.map((g) => (
+                  // Use the group name as the label
+                  <Picker.Item key={g._id} label={g.group_name} value={g._id} />
+                ))}
+              </Picker>
+            </View>
+          </View>
+
+          {/* Total Summary (Highlighted Card) - STYLIST: Total is now much bolder */}
+          <View style={styles.totalWrapper}>
+            <Text style={styles.totalText}>
+              Total Pending Balance:
+            </Text>
+            <Text style={styles.totalAmount}>
+              {formatCurrency(totalPending)}
+            </Text>
+          </View>
+
+          {loading ? (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color={MODERN_PRIMARY} />
+              <Text style={{ marginTop: 10, color: NEUTRAL_GREY }}>Loading data...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredData}
+              renderItem={renderItem}
+              keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
+              ListEmptyComponent={EmptyList}
+              // STYLIST: Padding for the list moved to style prop
+              style={styles.flatListStyle}
+            />
+          )}
+        </View>
+      </LinearGradient>
+    </SafeAreaView>
+  );
 };
-
-/* ------------------ Styles ------------------ */
-
-const styles = StyleSheet.create({
-    gradientOverlay: { flex: 1 },
-    fullScreenLoading: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10,
-    },
-    mainContentContainer: {
-        flex: 1,
-        paddingHorizontal: 22,
-        paddingTop: Platform.OS === 'ios' ? 0 : 12,
-    },
-    listHeaderContainer: {
-        backgroundColor: 'transparent',
-    },
-    flatList: {
-        flex: 1,
-    },
-    flatListContent: {
-        paddingBottom: 80,
-    },
-    titleContainer: {
-        marginTop: 15,
-        marginBottom: 25,
-        alignItems: 'center',
-        paddingLeft: 0,
-    },
-    title: {
-        fontSize: 26,
-        fontWeight: '900',
-        color: SECONDARY_COLOR,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#7f8c8d',
-        marginTop: 5,
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-    filterSection: {
-        backgroundColor: COLORS.white,
-        padding: 20,
-        borderRadius: 18,
-        marginBottom: 25,
-        shadowColor: "rgba(0,0,0,0.2)",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.1,
-        shadowRadius: 15,
-        elevation: 8,
-    },
-    filterLabel: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: PRIMARY_COLOR,
-        marginBottom: 10,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    filterSeparator: {
-        height: 1,
-        backgroundColor: 'rgba(0,0,0,0.08)',
-        marginVertical: 10,
-    },
-    dropdownContainer: {},
-    pickerWrapper: {
-        borderWidth: 2,
-        borderColor: '#e1e5e8',
-        borderRadius: 12,
-        backgroundColor: '#f9f9f9',
-        overflow: 'hidden',
-        justifyContent: 'center',
-    },
-    pickerStyle: {
-        height: Platform.OS === 'ios' ? 150 : 55,
-        width: '100%',
-        color: '#333',
-    },
-    dropdownIcon: {
-        position: 'absolute',
-        right: 15,
-        pointerEvents: 'none',
-        top: Platform.OS === 'ios' ? undefined : 16,
-    },
-    pickerItemText: { fontSize: 15 },
-    dateFilterContainer: {},
-    datePickersRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    datePickerInput: { flex: 1 },
-    dateInputLabel: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#7f8c8d',
-        marginBottom: 8,
-    },
-    dateButton: {
-        backgroundColor: COLORS.white,
-        paddingVertical: 15,
-        paddingHorizontal: 15,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#e1e5e8',
-        flexDirection: 'row',
-        alignItems: 'center',
-        shadowColor: "rgba(0,0,0,0.05)",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    dateButtonText: {
-        color: '#333',
-        fontSize: 12,
-        marginLeft: 10,
-        fontWeight: '700',
-    },
-    listSectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#34495e',
-        marginBottom: 18,
-        marginTop: 5,
-        textAlign: 'center',
-    },
-    groupItem: {
-        padding: 22,
-        backgroundColor: COLORS.white,
-        borderRadius: 15,
-        marginBottom: 18,
-        shadowColor: "rgba(0,0,0,0.15)",
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 8,
-    },
-    itemHeader_vertical: {
-        marginBottom: 15,
-    },
-    groupText_title_vertical: {
-        fontSize: 20,
-        fontWeight: '900',
-        color: SECONDARY_COLOR,
-    },
-    itemFinancials_vertical: {
-        backgroundColor: '#f8f9fa',
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 15,
-        borderWidth: 1,
-        borderColor: '#ecf0f1',
-    },
-    financialRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 8,
-    },
-    financialSeparator: {
-        height: 1,
-        backgroundColor: '#e1e5e8',
-        marginVertical: 4,
-    },
-    financialLabel_vertical: {
-        fontSize: 14,
-        color: INFO_COLOR,
-        fontWeight: '600',
-    },
-    financialLabel_vertical_balance: {
-        fontSize: 15,
-        color: SECONDARY_COLOR,
-        fontWeight: '700',
-    },
-    financialAmount_Primary_vertical: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: PRIMARY_COLOR,
-    },
-    financialAmount_Outstanding_vertical: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: DUE_COLOR,
-    },
-    dateInfo_simple: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        borderRadius: 10,
-        borderWidth: 1,
-    },
-    dateLabel_simple: {
-        fontSize: 12,
-        color: '#555',
-        fontWeight: '700',
-    },
-    dateText_simple: {
-        fontSize: 15,
-        fontWeight: '800',
-        marginTop: 2,
-    },
-    errorContainer: {
-        backgroundColor: DUE_COLOR,
-        padding: 25,
-        borderRadius: 15,
-        marginTop: 50,
-        alignItems: 'center',
-        marginHorizontal: 0,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.4,
-        shadowRadius: 6,
-        elevation: 10,
-    },
-    errorText_title: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginTop: 10,
-    },
-    errorText_subtitle: {
-        fontSize: 15,
-        color: '#fefefe',
-        textAlign: 'center',
-        marginTop: 5,
-        marginBottom: 15,
-    },
-    retryButton: {
-        marginTop: 15,
-        backgroundColor: COLORS.white,
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-    },
-    retryButtonText: {
-        color: DUE_COLOR,
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    emptyContainer: {
-        padding: 40,
-        borderRadius: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 20,
-    },
-    emptyImage: {
-        width: 200,
-        height: 150,
-        marginBottom: -10,
-    },
-    emptyText: {
-        fontSize: 18,
-        color: '#555',
-        textAlign: 'center',
-        marginTop: 15,
-        fontWeight: '700',
-    },
-    emptyText_sub: {
-        fontSize: 15,
-        color: '#999',
-        textAlign: 'center',
-        marginTop: 5,
-    }
-});
 
 export default OutstandingReports;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  // --- NEW STYLE FOR HEADER SPACING ---
+  headerSpacer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10, // Adjust this value to push the header down
+  },
+  // --- TITLES (STYLIST: Bolder, use MODERN_PRIMARY for title) ---
+  title: {
+    fontSize: 28,
+    fontWeight: "900", // Bolder
+    color: MODERN_PRIMARY, // Primary color
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 15,
+    color: NEUTRAL_GREY, // Better contrast with a shade of grey
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
+  // --- DROP DOWN / FILTER ---
+  dropdownWrapper: {
+    backgroundColor: "#ffffff",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    // Stronger, cleaner shadow for better elevation
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  dropdownLabel: {
+    fontWeight: "700",
+    marginBottom: 8,
+    color: MODERN_PRIMARY,
+    fontSize: 16,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#f9fafb",
+  },
+
+  // --- TOTAL SUMMARY (STYLIST: More impact, use a deeper border color) ---
+  totalWrapper: {
+    backgroundColor: "#fff7ed", // Soft orange/yellow background
+    borderRadius: 12, // Slightly larger radius
+    padding: 18, // Slightly more padding
+    marginBottom: 20,
+    borderLeftWidth: 6, // Slightly thicker border
+    borderLeftColor: "#f97316", // Vibrant orange
+    alignItems: 'center',
+    // Slight shadow to lift it
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  totalText: {
+    color: "#c2410c",
+    fontWeight: "700", // Bolder text
+    fontSize: 17,
+    marginBottom: 4,
+  },
+  totalAmount: {
+    color: WARNING_RED,
+    fontWeight: "900",
+    fontSize: 26, // Larger amount
+  },
+
+  // --- REPORT CARD (Nicely Styled) ---
+  // NEW WRAPPER FOR STATUS INDICATOR
+  cardContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  // UNIQUE IDEA: STATUS BAR
+  cardStatusIndicator: {
+    width: 6, // Width of the indicator
+    backgroundColor: 'red', // Default, will be overridden
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    // Ensure it matches the card height (via flex: 1) and shadow offset
+    marginTop: 0,
+    marginBottom: 0,
+    height: 'auto',
+  },
+  card: {
+    flex: 1, // Take up the remaining space next to the indicator
+    backgroundColor: "#ffffff",
+    borderTopRightRadius: 16, // Only right side for the main card
+    borderBottomRightRadius: 16, // Only right side for the main card
+    padding: 20,
+    // Premium, larger shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 10,
+    marginLeft: -6, // Overlap the indicator bar to make it look cohesive
+    zIndex: 1,
+  },
+
+  // CARD CONTENT
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  groupName: {
+    fontSize: 18, // Slightly larger
+    fontWeight: "900", // Bolder
+    color: MODERN_PRIMARY,
+  },
+  paymentType: {
+    fontSize: 13,
+    color: MODERN_PRIMARY, // Use primary color for tag text
+    textTransform: "uppercase", // Uppercase tag
+    fontWeight: "700",
+    backgroundColor: "#eef2ff", // Light blue background for a tag feel
+    paddingHorizontal: 10, // More padding
+    paddingVertical: 4,
+    borderRadius: 8, // More rounded
+  },
+  cardBody: {
+    marginBottom: 15,
+  },
+  customerName: {
+    fontSize: 20, // Bolder name
+    fontWeight: "900",
+    color: DARK_TEXT,
+    marginBottom: 5,
+  },
+  customerInfo: {
+    fontSize: 14,
+    color: NEUTRAL_GREY,
+    marginTop: 3,
+    fontWeight: "500",
+  },
+
+  // --- NEW STYLES FOR CALL FEATURE ---
+  phoneTouchable: {
+    // We apply padding here so the touch area is larger
+    paddingVertical: 3, 
+    // This allows the Text to sit next to the previous Text element
+    alignSelf: 'flex-start', 
+  },
+  callingStatus: {
+    color: MODERN_PRIMARY, // Highlight the status text
+    fontWeight: '700',
+    marginLeft: 8,
+    fontStyle: 'italic', // Subtle animation look
+  },
+  // ------------------------------------
+
+  cardFinancial: {
+    paddingTop: 10,
+  },
+  financialRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 10, // More spacing
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  financialLabel: {
+    fontSize: 15,
+    color: DARK_TEXT, // Darker label for better readability
+    fontWeight: "600",
+  },
+  financialValue: {
+    fontSize: 16, // Slightly larger
+    color: DARK_TEXT,
+    fontWeight: "800",
+  },
+  // Balance Row (Stands out)
+  balanceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 12, // More padding
+    marginTop: 15, // More margin
+    backgroundColor: "#fee2e2", // Very light red background
+    borderRadius: 10, // More rounded
+    paddingHorizontal: 15,
+    // Add a light shadow to the balance row for pop
+    shadowColor: WARNING_RED,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  balanceLabel: {
+    fontSize: 17, // Larger label
+    color: WARNING_RED,
+    fontWeight: "800",
+  },
+  balanceValue: {
+    fontSize: 18, // Larger amount
+    color: WARNING_RED,
+    fontWeight: "900",
+  },
+
+  // --- FLATLIST STYLE (STYLIST: Adds padding to the bottom) ---
+  flatListStyle: {
+    paddingBottom: 50,
+  },
+
+  // --- LOADER/EMPTY STATE ---
+  loader: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 50,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    marginTop: 80,
+    padding: 20,
+  },
+  emptyImage: {
+    width: 200,
+    height: 160,
+    opacity: 0.8,
+  },
+  emptyText: {
+    color: NEUTRAL_GREY,
+    marginTop: 20,
+    fontWeight: "700",
+    fontSize: 18,
+  },
+});
