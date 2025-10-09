@@ -122,7 +122,6 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={ReferredReport}
           />
-          {/* ✅ CORRECTED: Screen name is now 'Attendance' */}
           <Stack.Screen name="Attendance" component={Attendence} options={{headerShown: false}} />
           <Stack.Screen
           name="Due"
