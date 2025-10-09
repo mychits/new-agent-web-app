@@ -8,44 +8,9 @@ import {
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-// You might need to import your custom Header component if you use it here
-// import Header from '../components/Header'; 
-
 const Attendence = ({ navigation, route }) => {
   const [isMarked, setIsMarked] = useState(false);
-  
-  // You might want to get the user ID from route.params or context
-  // const { user } = route.params;
-
   const handleMarkAttendance = () => {
-    // 1. **Implement API Call:**
-    // In a real application, you would make an axios/fetch call to your server
-    // to record the agent's attendance, time, and potentially location.
-    
-    /*
-    Example API structure (Conceptual - replace with your actual logic)
-    
-    axios.post(`${baseUrl}/attendance/mark`, { 
-      userId: user.userId, 
-      time: new Date().toISOString(),
-      // ... potentially Geolocation data
-    })
-    .then(response => {
-      if (response.data.success) {
-        setIsMarked(true);
-        Alert.alert("Success", "Attendance marked successfully!");
-      } else {
-        Alert.alert("Error", "Failed to mark attendance.");
-      }
-    })
-    .catch(error => {
-      console.error("Attendance error:", error);
-      Alert.alert("Error", "Network error or server issue.");
-    });
-    */
-
-    // --- Mock Logic for demonstration ---
     setIsMarked(true);
     Alert.alert("Success", "Attendance marked successfully!");
     // -----------------------------------
@@ -60,8 +25,6 @@ const Attendence = ({ navigation, route }) => {
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.container}>
-          {/* If you have a custom header */}
-          {/* <Header title="Attendance" /> */}
           
           <Text style={styles.title}>Daily Attendance</Text>
           <Text style={styles.dateText}>

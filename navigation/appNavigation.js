@@ -29,10 +29,11 @@ import Dashboard from "../screens/Dashboard";
 import CustomerOnHold from "../screens/CustomerOnHold";
 import MonthlyTurnover from "../screens/MonthlyTurnover";
 import EditLead from "../screens/EditLead";
-import Attendence from "../screens/Attendence";
 import QrCodePage from "../screens/QrCodePage";
 import LoanPayments from "../screens/LoanPayments";
 import PigmePayments from "../screens/PigmePayments";
+// NOTE: We import the file named 'Attendence.js' but rename the screen to 'Attendance'
+import Attendence from "../screens/Attendence"; 
 
 import GroupReport from "../screens/GroupReport";
 import ReferredReport from "../screens/ReferredReport";
@@ -63,17 +64,6 @@ export default function AppNavigation() {
           component={BottomNavigation}
           options={{ headerShown: false }}
         />
-        
-        {/*
-          Remove the standalone Home screen.
-          It should be part of the BottomNavigation Tab.
-        
-          <Stack.Screen
-            name="Home"
-            options={{ headerShown: true }}
-            component={Home}
-          />
-        */}
         
         <Stack.Screen
           name="Welcome"
@@ -107,7 +97,6 @@ export default function AppNavigation() {
           component={PigmePayments}
           options={{headerShown: false}}
           /> 
-          <Stack.Screen name="Attendence" component={Attendence} options={{headerShown: false}} />
         <Stack.Screen
           name="qrCode"
           options={{ headerShown: false }}
@@ -133,7 +122,7 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={ReferredReport}
           />
-          {/* THE ERROR WAS HERE: Removed the stray 'ReferredReport' tag. */}
+          <Stack.Screen name="Attendance" component={Attendence} options={{headerShown: false}} />
           <Stack.Screen
           name="Due"
           options={{ headerShown: false }}
