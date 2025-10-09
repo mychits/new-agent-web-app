@@ -34,7 +34,6 @@ const SUCCESS_COLOR = "#4CAF50";
 const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/mark-attendance`;
 
 const cardImagePaths = {
-
   attendence: require("../assets/ab.png"),
   collections: require("../assets/Collection2.png"),
   qrCode: require("../assets/qrcode.png"),
@@ -47,8 +46,8 @@ const cardImagePaths = {
   reports: require("../assets/Reports2.png"),
   commission: require("../assets/commissions1.png"),
   groups: require("../assets/groups1.png"),
-  customerOnHold: require("../assets/Holdon2.png"), // Image path for Customer On Hold
-  monthlyTurnover: require("../assets/MITB.png"),
+  customerOnHold: require("../assets/Holdon2.png"), 
+  monthlyTurnover: require("../assets/MITB.png"), // Monthly Turnover image path
   DueReportImage: require("../assets/dues.png"),
 };
 
@@ -133,7 +132,7 @@ const AttendanceModal = ({
           </View>
 
           <TouchableOpacity
-            disabled={!selectedStatus}
+            disabled={!selectedStatus || attendanceLoading}
             onPress={handleSubmitAttendance}
             style={modalStyles.markAttendanceButtonWrapper}
           >
@@ -148,7 +147,7 @@ const AttendanceModal = ({
               style={modalStyles.markAttendanceButton}
             >
               {attendanceLoading ? (
-                <ActivityIndicator size={"large"} />
+                <ActivityIndicator size={"small"} color={"#fff"} />
               ) : (
                 <Text style={modalStyles.markAttendanceButtonText}>
                   Submit Status
@@ -292,9 +291,16 @@ const Home = ({ route, navigation }) => {
       id: "attendence",
       name: "Attendance",
       imagePath: cardImagePaths.attendence,
-      // NOTE: Using "Attendance" to match your AppNavigation file (case-sensitive)
-      onPress: () => navigation.navigate("Attendance"),
+      onPress: () => navigation.navigate("Attendance", { user }),
       backgroundColor: "#D9D7F1",
+    },
+
+    {
+        id: "monthlyTurnover", 
+        name: "Monthly Turnover",
+        imagePath: cardImagePaths.monthlyTurnover,
+        onPress: () => navigation.navigate("MonthlyTurnover"),
+        backgroundColor: "#FFECB3", 
     },
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
@@ -317,6 +323,15 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("PayNavigation", { user }),
       backgroundColor: "#E8F5E9",
     },
+        {
+        id: "commission",
+        name: "Commissions",
+        imagePath: cardImagePaths.commission,
+        onPress: () => navigation.navigate("Commissions",{ user }),
+      backgroundColor: "#E8F5E9",
+    }, 
+
+
     agentInfo?.designation_id?.permission?.targets === "true" && {
       id: "targets",
       name: "Targets",
@@ -441,7 +456,13 @@ const Home = ({ route, navigation }) => {
             </Text>
           </View>
 
-          {netInfo.isConnected === false ? (
+          {/* FIX: Only render the main content if user.userId is available */}
+          {!user.userId ? (
+             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+                <Text style={{ marginTop: 10, color: '#666' }}>Loading Agent Data...</Text>
+            </View>
+          ) : netInfo.isConnected === false ? (
             renderNoInternet()
           ) : (
             <ScrollView

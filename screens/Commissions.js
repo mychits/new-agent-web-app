@@ -56,7 +56,7 @@ const Commissions = ({ route, navigation }) => {
     };
 
     const handleMyCommission = () => {
-        navigation.navigate("MyCommissions", { commissions: commissions });
+        navigation.navigate("MyCommission", { commissions: commissions });
     };
 
     const handleMyCustomers = () => {
@@ -66,7 +66,7 @@ const Commissions = ({ route, navigation }) => {
 
     const handleGroups = () => {
         // Pass currentUser to the next screen
-        navigation.navigate("MyGroups", { user: currentUser });
+        navigation.navigate("EnrolledGroups", { user: currentUser });
     };
 
     const scrollData = [
