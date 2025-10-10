@@ -304,13 +304,13 @@ const Home = ({ route, navigation }) => {
   };
 
   const cardsData = [
-    {
-      id: "attendence",
-      name: "Attendance",
-      imagePath: cardImagePaths.attendence,
-      onPress: () => navigation.navigate("Attendance", { user }),
-      backgroundColor: "#D9D7F1",
-    },
+    // {
+    //   id: "attendence",
+    //   name: "Attendance",
+    //   imagePath: cardImagePaths.attendence,
+    //   onPress: () => navigation.navigate("Attendance", { user }),
+    //   backgroundColor: "#D9D7F1",
+    // },
 
     {
         id: "monthlyTurnover", 
