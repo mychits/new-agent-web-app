@@ -13,6 +13,8 @@ import {
   Easing,
   ToastAndroid,
   ActivityIndicator,
+  // 💡 REQUIRED IMPORT
+  TextInput, 
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
@@ -53,14 +55,16 @@ const cardImagePaths = {
 
 const AttendanceModal = ({
   attendanceLoading,
-  setSelectedStatus,
-  selectedStatus,
+  selectedStatus, 
   visible,
   message,
   onClose,
   handleSubmitAttendance,
+  note,
+  setNote,
 }) => {
-  const attendanceStatuses = ["Absent", "Present", "On Leave", "Half Day"];
+  // NEW STATE FOR ACCORDION
+  const [isNoteOpen, setIsNoteOpen] = useState(false);
 
   const scaleAnim = useState(new Animated.Value(0.5))[0];
 
@@ -73,6 +77,9 @@ const AttendanceModal = ({
         easing: Easing.out(Easing.back(1.7)),
         useNativeDriver: true,
       }).start();
+      // Ensure note accordion is closed and note cleared when modal opens
+      setIsNoteOpen(false); 
+      setNote(""); 
     }
   }, [visible]);
 
@@ -107,29 +114,35 @@ const AttendanceModal = ({
           <Text style={modalStyles.modalHeading}>Daily Status Check</Text>
           <Text style={modalStyles.modalText}>{message}</Text>
 
-          <View style={modalStyles.statusContainer}>
-            {attendanceStatuses.map((status) => (
-              <TouchableOpacity
-                key={status}
-                style={[
-                  modalStyles.statusButton,
-                  selectedStatus === status
-                    ? modalStyles.statusButtonSelected
-                    : modalStyles.statusButtonUnselected,
-                ]}
-                onPress={() => setSelectedStatus(status)}
-              >
-                <Text
-                  style={[
-                    modalStyles.statusText,
-                    selectedStatus === status && modalStyles.statusTextSelected,
-                  ]}
-                >
-                  {status}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {/* 💡 STYLISH ACCORDION HEADER (NOTE - OPTIONAL) */}
+          <TouchableOpacity
+              style={modalStyles.accordionHeader}
+              onPress={() => setIsNoteOpen(!isNoteOpen)}
+              activeOpacity={0.8}
+          >
+              <Text style={modalStyles.noteLabel}>
+                  {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'} 
+              </Text>
+              <Text style={modalStyles.arrowIcon}>
+                  {isNoteOpen ? '▲' : '▼'}
+              </Text>
+          </TouchableOpacity>
+
+          {/* 💡 ACCORDION CONTENT (TEXT INPUT) */}
+          {isNoteOpen && (
+              <View style={modalStyles.accordionContent}>
+                  <TextInput
+                      style={modalStyles.inputField}
+                      // 💡 UPDATED SMALLER PLACEHOLDER
+                      placeholder="e.g., Working remotely today..."
+                      placeholderTextColor="#a0a0a0"
+                      value={note}
+                      onChangeText={setNote}
+                      multiline
+                  />
+              </View>
+          )}
+          {/* END ACCORDION */}
 
           <TouchableOpacity
             disabled={!selectedStatus || attendanceLoading}
@@ -150,8 +163,8 @@ const AttendanceModal = ({
                 <ActivityIndicator size={"small"} color={"#fff"} />
               ) : (
                 <Text style={modalStyles.markAttendanceButtonText}>
-                  Submit Status
-                </Text>
+                  PRESENT
+                </Text> 
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -164,22 +177,25 @@ const AttendanceModal = ({
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
   const [agent, setAgent] = useState({});
-  const [selectedStatus, setSelectedStatus] = useState("Present");
+  const [selectedStatus, setSelectedStatus] = useState("Present"); 
   const { modifyPayment, setModifyPayment } = useContext(AgentContext);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
   const netInfo = useNetInfo();
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [note, setNote] = useState("");
 
   const handleSubmitAttendance = async () => {
     const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
     try {
       setAttendanceLoading(true);
+      
       const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
         employee_id: user?.userId,
-        status: selectedStatus,
+        status: selectedStatus, // "Present"
         method: "No Auth",
         type: "in",
+        note: note,
       });
       const responseMessage = response?.data?.message;
       ToastAndroid.show(
@@ -192,6 +208,7 @@ const Home = ({ route, navigation }) => {
     } finally {
       setAttendanceLoading(false);
       setShowAttendanceModal(false)
+      setNote("");
     }
   };
   useEffect(() => {
@@ -496,12 +513,13 @@ const Home = ({ route, navigation }) => {
       <AttendanceModal
         attendanceLoading={attendanceLoading}
         selectedStatus={selectedStatus}
-        setSelectedStatus={setSelectedStatus}
         visible={showAttendanceModal}
         message={attendanceMessage}
         onClose={() => setShowAttendanceModal(false)}
         onProceed={handleMarkAttendance}
         handleSubmitAttendance={handleSubmitAttendance}
+        note={note}
+        setNote={setNote}
       />
     </SafeAreaView>
   );
@@ -576,22 +594,22 @@ const modalStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.8)", // Very dark overlay
+    backgroundColor: "rgba(0, 0, 0, 0.6)", // Slightly lighter overlay
   },
   modalView: {
     backgroundColor: "white",
-    borderRadius: 12, // Sharp, modern look
-    padding: 25,
+    borderRadius: 15, 
+    padding: 30,
     alignItems: "center",
-    width: "88%",
+    width: "90%",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
-    elevation: 15,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1, // Softer shadow
+    shadowRadius: 10,
+    elevation: 10,
     marginTop: 50,
-    borderWidth: 3,
-    borderColor: PRIMARY_COLOR,
+    borderWidth: 2,
+    borderColor: '#108da3ff', // Very light border
   },
   iconHeader: {
     width: 120,
@@ -604,7 +622,7 @@ const modalStyles = StyleSheet.create({
     shadowColor: PRIMARY_COLOR,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.6,
-    shadowRadius: 15,
+    shadowRadius: 10,
     elevation: 10,
   },
   modalImage: {
@@ -612,18 +630,18 @@ const modalStyles = StyleSheet.create({
     height: 65,
   },
   modalHeading: {
-    fontSize: 24,
+    fontSize: 26, 
     fontWeight: "900",
     color: "#2c3e50",
     marginBottom: 5,
   },
   modalText: {
-    marginBottom: 30,
     textAlign: "center",
     fontSize: 16,
     fontWeight: "500",
     color: "#7f8c8d",
     lineHeight: 22,
+    marginBottom: 25, 
   },
   closeButton: {
     position: "absolute",
@@ -632,47 +650,55 @@ const modalStyles = StyleSheet.create({
     padding: 5,
     zIndex: 10,
   },
-  closeButtonText: { fontSize: 26, fontWeight: "500", color: "#95a5a6" },
+  closeButtonText: { fontSize: 28, fontWeight: "300", color: "#95a5a6" },
 
-  // --- Status Buttons (Flat, High-Contrast) ---
-  statusContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between", // Spread out the two main buttons
+  // --- STYLISH ACCORDION STYLES (Softened) ---
+  accordionHeader: {
     width: "100%",
-  },
-  statusButton: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    margin: 4,
-    minWidth: "47%", // Take up half the width
-    alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 5,
+    backgroundColor: '#f8f9fa', // Off-white/light background
+    borderRadius: 8, // Softer radius
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: '#dcdcdc', // Lighter border
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, // Very light shadow
+    shadowRadius: 3,
+    elevation: 1,
   },
-  statusButtonUnselected: {
-    // inherits background
+  noteLabel: {
+    fontSize: 13, // Slightly smaller font for a cleaner look
+    fontWeight: '600',
+    color: '#34495e',
   },
-  statusButtonSelected: {
-    backgroundColor: SUCCESS_COLOR, // Green for selected status
-    borderColor: SUCCESS_COLOR,
-    shadowColor: SUCCESS_COLOR,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  statusText: {
-    fontWeight: "700",
+  arrowIcon: {
     fontSize: 15,
-    color: "#34495e",
+    color:'#c2c3c4ff' ,
+    fontWeight: '900',
   },
-  statusTextSelected: {
-    color: "white",
+  accordionContent: {
+    width: "100%",
+    marginTop: 8,
+    marginBottom: 10,
   },
-
+  inputField: {
+    width: "100%",
+    minHeight: 90, 
+    borderColor: '#dcdcdc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    color: '#34495e',
+    backgroundColor: '#fff',
+    textAlignVertical: 'top',
+  },
+  
   // --- Proceed Button (Sleek, Full Gradient) ---
   markAttendanceButtonWrapper: {
     width: "100%",
@@ -680,21 +706,21 @@ const modalStyles = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
     shadowColor: PRIMARY_COLOR,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 15,
+    shadowRadius: 10,
+    elevation: 10,
   },
   markAttendanceButton: {
     paddingVertical: 18,
     alignItems: "center",
   },
   markAttendanceButtonText: {
-    color: "white",
+    color: "Green",
     fontWeight: "bold",
     textAlign: "center",
-    fontSize: 18,
-    letterSpacing: 0.8,
+    fontSize: 19,
+    letterSpacing: 1,
   },
 });
 

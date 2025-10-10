@@ -1,54 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   TouchableOpacity,
-  SafeAreaView,
-  Alert,
+  Dimensions,
+  Image,
   Modal,
   Animated,
   Easing,
+  ToastAndroid,
   ActivityIndicator,
-  Dimensions,
-  Platform, 
-  ToastAndroid, 
-  Image,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import axios from 'axios';
-// Correct Import for the Base URL
-import baseUrl from '../constants/baseUrl'; 
+  TextInput,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import COLORS from "../constants/color";
+import baseUrl from "../constants/baseUrl";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { AgentContext } from "../context/AgentContextProvider";
+import { useNetInfo } from "@react-native-community/netinfo";
 
-// --- CONSTANTS ---
 const { width } = Dimensions.get("window");
 
 const PRIMARY_COLOR = "#00BCD4";
 const PRIMARY_GRADIENT_START = "#00E5FF";
 const PRIMARY_GRADIENT_END = "#0097A7";
 const SUCCESS_COLOR = "#4CAF50";
-
-const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`; 
+const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/mark-attendance`;
 
 const cardImagePaths = {
-  // Ensure this path is correct relative to Attendence.js
-  attendence: require("../assets/ab.png"), 
+  attendence: require("../assets/ab.png"),
+  collections: require("../assets/Collection2.png"),
+  qrCode: require("../assets/qrcode.png"),
+  daybook: require("../assets/Daybook2.png"),
+  targets: require("../assets/Target2.png"),
+  myLeads: require("../assets/Lead1.png"),
+  addCustomers: require("../assets/AddCutomer1.png"),
+  myCustomers: require("../assets/Mycustomers1.png"),
+  myTasks: require("../assets/Target2.png"),
+  reports: require("../assets/Reports2.png"),
+  commission: require("../assets/commissions1.png"),
+  groups: require("../assets/groups1.png"),
+  customerOnHold: require("../assets/Holdon2.png"),
+  monthlyTurnover: require("../assets/MITB.png"),
+  DueReportImage: require("../assets/dues.png"),
 };
-// -----------------------------------------------------
 
-
-// --- ATTENDANCE MODAL COMPONENT ---
 const AttendanceModal = ({
   attendanceLoading,
-  setSelectedStatus,
   selectedStatus,
   visible,
   message,
   onClose,
   handleSubmitAttendance,
+  note,
+  setNote,
+  isAlreadyMarked,
 }) => {
-  const attendanceStatuses = ["Absent", "Present", "On Leave", "Half Day"];
-  const [scaleAnim] = useState(new Animated.Value(0.5));
+  const [isNoteOpen, setIsNoteOpen] = useState(false);
+  const scaleAnim = useState(new Animated.Value(0.5))[0];
 
   useEffect(() => {
     if (visible) {
@@ -59,6 +72,8 @@ const AttendanceModal = ({
         easing: Easing.out(Easing.back(1.7)),
         useNativeDriver: true,
       }).start();
+      setIsNoteOpen(false);
+      setNote("");
     }
   }, [visible]);
 
@@ -67,12 +82,7 @@ const AttendanceModal = ({
   };
 
   return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
+    <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={modalStyles.centeredView}>
         <View style={modalStyles.modalView}>
           <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
@@ -93,29 +103,29 @@ const AttendanceModal = ({
           <Text style={modalStyles.modalHeading}>Daily Status Check</Text>
           <Text style={modalStyles.modalText}>{message}</Text>
 
-          <View style={modalStyles.statusContainer}>
-            {attendanceStatuses.map((status) => (
-              <TouchableOpacity
-                key={status}
-                style={[
-                  modalStyles.statusButton,
-                  selectedStatus === status
-                    ? modalStyles.statusButtonSelected
-                    : modalStyles.statusButtonUnselected,
-                ]}
-                onPress={() => setSelectedStatus(status)}
-              >
-                <Text
-                  style={[
-                    modalStyles.statusText,
-                    selectedStatus === status && modalStyles.statusTextSelected,
-                  ]}
-                >
-                  {status}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TouchableOpacity
+            style={modalStyles.accordionHeader}
+            onPress={() => setIsNoteOpen(!isNoteOpen)}
+            activeOpacity={0.8}
+          >
+            <Text style={modalStyles.noteLabel}>
+              {isNoteOpen ? "Hide Note" : "Add a Note (Optional)"}
+            </Text>
+            <Text style={modalStyles.arrowIcon}>{isNoteOpen ? "▲" : "▼"}</Text>
+          </TouchableOpacity>
+
+          {isNoteOpen && (
+            <View style={modalStyles.accordionContent}>
+              <TextInput
+                style={modalStyles.inputField}
+                placeholder="e.g., Working remotely today..."
+                placeholderTextColor="#a0a0a0"
+                value={note}
+                onChangeText={setNote}
+                multiline
+              />
+            </View>
+          )}
 
           <TouchableOpacity
             disabled={!selectedStatus || attendanceLoading}
@@ -135,9 +145,7 @@ const AttendanceModal = ({
               {attendanceLoading ? (
                 <ActivityIndicator size={"small"} color={"#fff"} />
               ) : (
-                <Text style={modalStyles.markAttendanceButtonText}>
-                  Submit Status
-                </Text>
+                <Text style={modalStyles.markAttendanceButtonText}>PRESENT</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -146,278 +154,234 @@ const AttendanceModal = ({
     </Modal>
   );
 };
-// -----------------------------------------------------
 
-
-// --- ATTENDENCE SCREEN COMPONENT ---
-const Attendence = ({ navigation, route }) => {
-  const { 
-    user = {}, 
-    status: markedStatus, 
-    message: statusMessage, 
-    error: isErrorParam 
-  } = route.params || {}; 
-  
-  // Initialize result states based on navigation params
-  const [attendanceMarked, setAttendanceMarked] = useState(!!markedStatus);
-  const [displayStatus, setDisplayStatus] = useState(markedStatus || '');
-  const [displayMessage, setDisplayMessage] = useState(statusMessage || '');
-  const [isError, setIsError] = useState(!!isErrorParam);
-  
-  // Modal visibility: True only if no status was passed (i.e., this is the first interaction)
-  const [showModal, setShowModal] = useState(!markedStatus); 
-  
-  // States for the running submission process
+const Home = ({ route, navigation }) => {
+  const { user = {}, agentInfo = {} } = route.params || {};
+  const [agent, setAgent] = useState({});
   const [selectedStatus, setSelectedStatus] = useState("Present");
-  const [attendanceMessage, setAttendanceMessage] = useState("Eligible to mark attendance");
+  const { modifyPayment, setModifyPayment } = useContext(AgentContext);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceMessage, setAttendanceMessage] = useState("");
+  const netInfo = useNetInfo();
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [note, setNote] = useState("");
+  const [alreadyMarked, setAlreadyMarked] = useState(false); // ✅ Added state
+  const [isAlreadyMarked, setIsAlreadyMarked] = useState(false);
 
-  // API Submission Logic
+  // ✅ Updated function to show box when already marked
   const handleSubmitAttendance = async () => {
-    if (!user.userId) {
-      Alert.alert("Error", "User ID is missing. Cannot mark attendance.");
-      return;
-    }
-
+    const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
     try {
       setAttendanceLoading(true);
       const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
-        employee_id: user.userId,
+        employee_id: user?.userId,
         status: selectedStatus,
         method: "No Auth",
         type: "in",
+        note: note,
       });
 
-      const responseMessage = response?.data?.message || "Attendance Marked Successfully";
 
-      // Set state to display success result on the main screen
-      setAttendanceMarked(true);
-      setDisplayStatus(selectedStatus);
-      setDisplayMessage(responseMessage);
-      setIsError(false);
 
-      if (Platform.OS === 'android') {
-        ToastAndroid.show(responseMessage, ToastAndroid.SHORT);
+      const responseMessage = response?.data?.message;
+
+
+      if (responseMessage === "Attendance Already Marked") {
+        setAlreadyMarked(true);
       } else {
-        Alert.alert("Attendance Marked", responseMessage, [{ text: "OK" }]);
+        ToastAndroid.show(
+          responseMessage || "Attendance Marked Successfully",
+          ToastAndroid.SHORT
+        );
+        setAlreadyMarked(false);
       }
-      
     } catch (error) {
-      console.log(error.response?.data?.message || error, "error");
-      const errorMessage = error.response?.data?.message || "Failed to Mark Attendance. Please try again.";
-      
-      // Set state to display failure result on the main screen
-      setAttendanceMarked(true);
-      setDisplayStatus(selectedStatus);
-      setDisplayMessage(errorMessage);
-      setIsError(true);
-      
-      if (Platform.OS === 'android') {
-        ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
-      } else {
-        Alert.alert("Submission Failed", errorMessage, [{ text: "OK" }]);
-      }
-
+      console.log("❌ Error marking attendance:", error.message);
+      ToastAndroid.show("Failed to Mark Attendance", ToastAndroid.SHORT);
     } finally {
       setAttendanceLoading(false);
-      // 👇 This closes the modal regardless of success/failure, preventing it from showing again automatically.
-      setShowModal(false); 
+      setShowAttendanceModal(false);
+      setNote("");
     }
   };
 
-  // Dynamic styles for the result view
-  const getStatusStyles = () => {
-    const isAbsentOrLeave = displayStatus === 'Absent' || displayStatus === 'On Leave';
-    const isFailureStyle = isError || isAbsentOrLeave; 
-    
-    return {
-      container: [
-        styles.statusContainer,
-        isFailureStyle ? styles.statusContainerNonPresent : styles.statusContainerPresent
-      ],
-      text: [
-        styles.markedText,
-        isFailureStyle ? styles.markedTextNonPresent : styles.markedTextPresent
-      ]
+  useEffect(() => {
+    if (agentInfo?.designation_id?.permission) {
+      setModifyPayment(
+        agentInfo.designation_id.permission.modify_payments === "true"
+      );
+    }
+  }, [agentInfo, setModifyPayment]);
+
+  useEffect(() => {
+    const fetchAgent = async () => {
+      if (user && user.userId) {
+        try {
+          const response = await axios.get(
+            `${baseUrl}/agent/get-agent-by-id/${user.userId}`
+          );
+          if (response.data) setAgent(response.data);
+        } catch (error) {
+          console.error("Error fetching agent data:", error.message);
+        }
+      }
     };
-  };
+    if (netInfo.isConnected) fetchAgent();
+  }, [user.userId, netInfo.isConnected]);
 
-  const { container: statusContainerStyle, text: markedTextStyle } = attendanceMarked
-    ? getStatusStyles()
-    : { container: styles.statusContainer, text: styles.markedText };
 
+
+  useEffect(() => {
+    const checkAttendance = async () => {
+      const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
+      const body = { employee_id: user.userId };
+
+      try {
+        const response = await axios.post(ATTENDANCE_MODAL_URL, body);
+        const data = response.data;
+        console.log(" Attendance API Response:", data);
+
+       
+        if (data?.showModal === true) {
+          setAttendanceMessage(data.message || "Eligible to mark attendance");
+          setAlreadyMarked(false); // show modal & buttons
+          setShowAttendanceModal(true);
+        } else {
+          setAttendanceMessage("Attendance Already Marked");
+          setAlreadyMarked(false); // show only box
+          setShowAttendanceModal(true); // hide modal
+        }
+      } catch (error) {
+        console.error(
+          "❌ Error checking attendance status:",
+          error.response?.data?.message || error.message
+        );
+
+        setAttendanceMessage(
+          error.response?.data?.message || "Unable to fetch attendance status"
+        );
+        setIsAlreadyMarked(true); // hide buttons on error
+        setShowAttendanceModal(true);
+      }
+    };
+
+    if (user.userId && netInfo.isConnected) checkAttendance();
+  }, [user.userId, netInfo.isConnected]);
+
+
+  const renderNoInternet = () => (
+    <View style={styles.noInternetContainer}>
+      <Image
+        source={require("../assets/Nointernetp.png")}
+        style={styles.noInternetImage}
+        resizeMode="contain"
+      />
+      <Text style={styles.noInternetText}>Oops! No internet connection.</Text>
+      <Text style={styles.noInternetSubText}>
+        Please check your network and try again.
+      </Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.container}>
-          
-          <Text style={styles.title}>Daily Attendance</Text>
-          <Text style={styles.dateText}>
-            Today is: {new Date().toLocaleDateString()}
-          </Text>
-
-          {/* This conditional logic prevents the modal from showing again automatically. */}
-          {attendanceMarked ? (
-            <View style={statusContainerStyle}>
-              <Text style={markedTextStyle}>
-                Status: {displayStatus} 
-              </Text>
-              {displayMessage && (
-                   <Text style={styles.timeText}>
-                    Message: {displayMessage}
-                   </Text>
-              )}
-              <Text style={styles.timeText}>
-                Time: {new Date().toLocaleTimeString()}
-              </Text>
+      <LinearGradient colors={["#dbf6faff", "#90dafcff"]} style={styles.gradientOverlay}>
+        <View style={styles.mainContentArea}>
+          {/* ✅ Show Attendance Already Marked Box */}
+          {alreadyMarked && (
+            <View style={styles.attendanceBox}>
+              <Text style={styles.attendanceBoxText}>Attendance Already Marked</Text>
             </View>
-          ) : (
-            // The button is only shown if attendance is NOT marked (either via route or this screen)
-            <TouchableOpacity
-              style={styles.markButton}
-              onPress={() => setShowModal(true)} // User must manually click to open the modal again
-              activeOpacity={0.8}
-            >
-              <Text style={styles.markButtonText}>
-                Open Attendance Check
-              </Text>
-            </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>
-              Go Back to Home
-            </Text>
-          </TouchableOpacity>
+          {!user.userId ? (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+              <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+              <Text style={{ marginTop: 10, color: "#666" }}>Loading Agent Data...</Text>
+            </View>
+          ) : netInfo.isConnected === false ? (
+            renderNoInternet()
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.cardsScrollViewContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.cardsGridContainer}></View>
+            </ScrollView>
+          )}
         </View>
       </LinearGradient>
-
-      <AttendanceModal
-        attendanceLoading={attendanceLoading}
-        selectedStatus={selectedStatus}
-        setSelectedStatus={setSelectedStatus}
-        visible={showModal}
-        message={attendanceMessage}
-        onClose={() => setShowModal(false)}
-        handleSubmitAttendance={handleSubmitAttendance}
-      />
+      {!alreadyMarked && (
+        <AttendanceModal
+          attendanceLoading={attendanceLoading}
+          selectedStatus={selectedStatus}
+          visible={showAttendanceModal}
+          message={attendanceMessage}
+          onClose={() => setShowAttendanceModal(false)}
+          handleSubmitAttendance={handleSubmitAttendance}
+          note={note}
+          setNote={setNote}
+          isAlreadyMarked={false}
+        />
+      )}
     </SafeAreaView>
   );
+
+
+
 };
 
-// --- STYLES (Omitted for brevity, assuming they are correct) ---
-
 const styles = StyleSheet.create({
+  mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 },
+  cardsScrollViewContent: { paddingBottom: 50 },
+  cardsGridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
   gradientOverlay: { flex: 1 },
-  container: {
-    flex: 1,
-    padding: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  dateText: {
-    fontSize: 18,
-    color: '#555',
-    marginBottom: 40,
-  },
-  markButton: {
-    backgroundColor: PRIMARY_COLOR, 
-    paddingVertical: 15,
-    paddingHorizontal: 50,
-    borderRadius: 10,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  markButtonText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  statusContainer: {
-    alignItems: 'center',
-    padding: 20,
+  attendanceBox: {
+    backgroundColor: "#ffe4b5",
+    padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    width: '90%', 
+    borderColor: "#ffb84d",
+    marginBottom: 10,
+    alignItems: "center",
   },
-  statusContainerPresent: {
-    backgroundColor: '#E8F5E9', 
-    borderColor: SUCCESS_COLOR,
-  },
-  statusContainerNonPresent: {
-    backgroundColor: '#FFEBEE', 
-    borderColor: '#F44336',
-  },
-  markedText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  markedTextPresent: {
-    color: SUCCESS_COLOR,
-  },
-  markedTextNonPresent: {
-    color: '#F44336',
-  },
-  timeText: {
+  attendanceBoxText: {
+    color: "#ff6600",
+    fontWeight: "bold",
     fontSize: 16,
-    color: '#555',
-    marginTop: 5,
-    textAlign: 'center',
   },
-  backButton: {
-    marginTop: 40,
-    padding: 10,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: PRIMARY_COLOR,
-    textDecorationLine: 'underline',
-  }
+  noInternetContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  noInternetImage: { width: 200, height: 200 },
+  noInternetText: { fontSize: 20, fontWeight: "bold", color: "#333", marginTop: 20 },
+  noInternetSubText: { fontSize: 16, color: "#777", marginTop: 10 },
 });
-
 
 const modalStyles = StyleSheet.create({
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.8)", 
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   modalView: {
     backgroundColor: "white",
-    borderRadius: 12, 
-    padding: 25,
+    borderRadius: 15,
+    padding: 30,
     alignItems: "center",
-    width: "88%",
+    width: "90%",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
-    elevation: 15,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
     marginTop: 50,
-    borderWidth: 3,
-    borderColor: PRIMARY_COLOR,
+    borderWidth: 2,
+    borderColor: "#108da3ff",
   },
   iconHeader: {
     width: 120,
@@ -427,98 +391,54 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     marginTop: -80,
-    shadowColor: PRIMARY_COLOR,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.6,
-    shadowRadius: 15,
-    elevation: 10,
   },
-  modalImage: {
-    width: 85,
-    height: 65,
-  },
-  modalHeading: {
-    fontSize: 24,
-    fontWeight: "900",
-    color: "#2c3e50",
-    marginBottom: 5,
-  },
-  modalText: {
-    marginBottom: 30,
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#7f8c8d",
-    lineHeight: 22,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 15,
-    right: 15,
-    padding: 5,
-    zIndex: 10,
-  },
-  closeButtonText: { fontSize: 26, fontWeight: "500", color: "#95a5a6" },
-
-  statusContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between", 
+  modalImage: { width: 85, height: 65 },
+  modalHeading: { fontSize: 26, fontWeight: "900", color: "#2c3e50", marginBottom: 5 },
+  modalText: { textAlign: "center", fontSize: 16, color: "#7f8c8d", marginBottom: 25 },
+  closeButton: { position: "absolute", top: 15, right: 15, padding: 5, zIndex: 10 },
+  closeButtonText: { fontSize: 28, fontWeight: "300", color: "#95a5a6" },
+  accordionHeader: {
     width: "100%",
-  },
-  statusButton: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    margin: 4,
-    minWidth: "47%", 
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 5,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: "#dcdcdc",
   },
-  statusButtonUnselected: {
-  },
-  statusButtonSelected: {
-    backgroundColor: SUCCESS_COLOR, 
-    borderColor: SUCCESS_COLOR,
-    shadowColor: SUCCESS_COLOR,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  statusText: {
-    fontWeight: "700",
-    fontSize: 15,
+  noteLabel: { fontSize: 13, fontWeight: "600", color: "#34495e" },
+  arrowIcon: { fontSize: 15, color: "#c2c3c4ff", fontWeight: "900" },
+  accordionContent: { width: "100%", marginTop: 8, marginBottom: 10 },
+  inputField: {
+    width: "100%",
+    minHeight: 90,
+    borderColor: "#dcdcdc",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
     color: "#34495e",
+    backgroundColor: "#fff",
+    textAlignVertical: "top",
   },
-  statusTextSelected: {
-    color: "white",
-  },
-
   markAttendanceButtonWrapper: {
     width: "100%",
     marginTop: 30,
     borderRadius: 10,
     overflow: "hidden",
-    shadowColor: PRIMARY_COLOR,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 15,
   },
-  markAttendanceButton: {
-    paddingVertical: 18,
-    alignItems: "center",
-  },
+  markAttendanceButton: { paddingVertical: 18, alignItems: "center" },
   markAttendanceButtonText: {
-    color: "white",
+    color: "green",
     fontWeight: "bold",
     textAlign: "center",
-    fontSize: 18,
-    letterSpacing: 0.8,
+    fontSize: 19,
+    letterSpacing: 1,
   },
 });
 
-export default Attendence;
+export default Home;
