@@ -11,6 +11,10 @@ import {
   // 💡 IMPORTS FOR ANIMATION
   Animated,
   Easing,
+  ToastAndroid,
+  ActivityIndicator,
+  // 💡 REQUIRED IMPORT
+  TextInput, 
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
@@ -25,14 +29,13 @@ import { useNetInfo } from "@react-native-community/netinfo";
 const { width } = Dimensions.get("window");
 
 // Primary color for this stylish version (Deep Teal/Cyan)
-const PRIMARY_COLOR = '#00BCD4';
-const PRIMARY_GRADIENT_START = '#00E5FF';
-const PRIMARY_GRADIENT_END = '#0097A7';
-const SUCCESS_COLOR = '#4CAF50';
-const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/mark-attendance`; // <-- Define attendance submit endpoint
+const PRIMARY_COLOR = "#00BCD4";
+const PRIMARY_GRADIENT_START = "#00E5FF";
+const PRIMARY_GRADIENT_END = "#0097A7";
+const SUCCESS_COLOR = "#4CAF50";
+const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/mark-attendance`;
 
 const cardImagePaths = {
-  // ✅ UPDATED TO USE 'ab.png'
   attendence: require("../assets/ab.png"),
   collections: require("../assets/Collection2.png"),
   qrCode: require("../assets/qrcode.png"),
@@ -45,15 +48,23 @@ const cardImagePaths = {
   reports: require("../assets/Reports2.png"),
   commission: require("../assets/commissions1.png"),
   groups: require("../assets/groups1.png"),
-  customerOnHold: require("../assets/Holdon2.png"), // Image path for Customer On Hold
-  monthlyTurnover: require("../assets/MITB.png"),
+  customerOnHold: require("../assets/Holdon2.png"), 
+  monthlyTurnover: require("../assets/MITB.png"), // Monthly Turnover image path
   DueReportImage: require("../assets/dues.png"),
 };
 
-// ✅ Attendance Modal with Minimalist High-Tech Styling
-const AttendanceModal = ({ visible, message, onClose, onProceed }) => {
-  const [selectedStatus, setSelectedStatus] = useState(null);
-  const attendanceStatuses = ["Absent", "Present", "On Leave", "Half Day"];
+const AttendanceModal = ({
+  attendanceLoading,
+  selectedStatus, 
+  visible,
+  message,
+  onClose,
+  handleSubmitAttendance,
+  note,
+  setNote,
+}) => {
+  // NEW STATE FOR ACCORDION
+  const [isNoteOpen, setIsNoteOpen] = useState(false);
 
   const scaleAnim = useState(new Animated.Value(0.5))[0];
 
@@ -66,6 +77,9 @@ const AttendanceModal = ({ visible, message, onClose, onProceed }) => {
         easing: Easing.out(Easing.back(1.7)),
         useNativeDriver: true,
       }).start();
+      // Ensure note accordion is closed and note cleared when modal opens
+      setIsNoteOpen(false); 
+      setNote(""); 
     }
   }, [visible]);
 
@@ -86,13 +100,12 @@ const AttendanceModal = ({ visible, message, onClose, onProceed }) => {
             <Text style={modalStyles.closeButtonText}>✕</Text>
           </TouchableOpacity>
 
-          {/* Icon Header Section with Color Splash */}
           <LinearGradient
             colors={[PRIMARY_GRADIENT_START, PRIMARY_GRADIENT_END]}
             style={modalStyles.iconHeader}
           >
             <Animated.Image
-              source={cardImagePaths.attendence} // <-- Now loads ab.png
+              source={cardImagePaths.attendence}
               style={[modalStyles.modalImage, animatedImageStyle]}
               resizeMode="contain"
             />
@@ -101,46 +114,58 @@ const AttendanceModal = ({ visible, message, onClose, onProceed }) => {
           <Text style={modalStyles.modalHeading}>Daily Status Check</Text>
           <Text style={modalStyles.modalText}>{message}</Text>
 
-          {/* Attendance Status Buttons (Clean, Flat Style) */}
-          <View style={modalStyles.statusContainer}>
-            {attendanceStatuses.map((status) => (
-              <TouchableOpacity
-                key={status}
-                style={[
-                  modalStyles.statusButton,
-                  selectedStatus === status
-                    ? modalStyles.statusButtonSelected
-                    : modalStyles.statusButtonUnselected,
-                ]}
-                onPress={() => setSelectedStatus(status)}
-              >
-                <Text
-                  style={[
-                    modalStyles.statusText,
-                    selectedStatus === status && modalStyles.statusTextSelected,
-                  ]}
-                >
-                  {status}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* OK/Proceed Button with Gradient */}
+          {/* 💡 STYLISH ACCORDION HEADER (NOTE - OPTIONAL) */}
           <TouchableOpacity
-            disabled={!selectedStatus}
-            onPress={() => { onProceed(selectedStatus); }}
+              style={modalStyles.accordionHeader}
+              onPress={() => setIsNoteOpen(!isNoteOpen)}
+              activeOpacity={0.8}
+          >
+              <Text style={modalStyles.noteLabel}>
+                  {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'} 
+              </Text>
+              <Text style={modalStyles.arrowIcon}>
+                  {isNoteOpen ? '▲' : '▼'}
+              </Text>
+          </TouchableOpacity>
+
+          {/* 💡 ACCORDION CONTENT (TEXT INPUT) */}
+          {isNoteOpen && (
+              <View style={modalStyles.accordionContent}>
+                  <TextInput
+                      style={modalStyles.inputField}
+                      // 💡 UPDATED SMALLER PLACEHOLDER
+                      placeholder="e.g., Working remotely today..."
+                      placeholderTextColor="#a0a0a0"
+                      value={note}
+                      onChangeText={setNote}
+                      multiline
+                  />
+              </View>
+          )}
+          {/* END ACCORDION */}
+
+          <TouchableOpacity
+            disabled={!selectedStatus || attendanceLoading}
+            onPress={handleSubmitAttendance}
             style={modalStyles.markAttendanceButtonWrapper}
           >
             <LinearGradient
-              colors={!selectedStatus ? ['#B0B0B0', '#909090'] : [PRIMARY_GRADIENT_START, PRIMARY_GRADIENT_END]}
+              colors={
+                !selectedStatus
+                  ? ["#B0B0B0", "#909090"]
+                  : [PRIMARY_GRADIENT_START, PRIMARY_GRADIENT_END]
+              }
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={modalStyles.markAttendanceButton}
             >
-              <Text style={modalStyles.markAttendanceButtonText}>
-                Submit Status
-              </Text>
+              {attendanceLoading ? (
+                <ActivityIndicator size={"small"} color={"#fff"} />
+              ) : (
+                <Text style={modalStyles.markAttendanceButtonText}>
+                  PRESENT
+                </Text> 
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -152,20 +177,47 @@ const AttendanceModal = ({ visible, message, onClose, onProceed }) => {
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
   const [agent, setAgent] = useState({});
+  const [selectedStatus, setSelectedStatus] = useState("Present"); 
   const { modifyPayment, setModifyPayment } = useContext(AgentContext);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
   const netInfo = useNetInfo();
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [note, setNote] = useState("");
 
-  // Ensure setModifyPayment is called only when agentInfo is available and valid
+  const handleSubmitAttendance = async () => {
+    const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
+    try {
+      setAttendanceLoading(true);
+      
+      const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
+        employee_id: user?.userId,
+        status: selectedStatus, // "Present"
+        method: "No Auth",
+        type: "in",
+        note: note,
+      });
+      const responseMessage = response?.data?.message;
+      ToastAndroid.show(
+        responseMessage ? responseMessage : "Attendance Marked Successfully",
+        ToastAndroid.SHORT
+      );
+    } catch (error) {
+      console.log(error, "error");
+      ToastAndroid.show("Failed to Mark Attendance", ToastAndroid.SHORT);
+    } finally {
+      setAttendanceLoading(false);
+      setShowAttendanceModal(false)
+      setNote("");
+    }
+  };
   useEffect(() => {
     if (agentInfo?.designation_id?.permission) {
-        setModifyPayment(
-          agentInfo.designation_id.permission.modify_payments === "true"
-        );
+      setModifyPayment(
+        agentInfo.designation_id.permission.modify_payments === "true"
+      );
     }
   }, [agentInfo, setModifyPayment]);
-  
 
   useEffect(() => {
     const fetchAgent = async () => {
@@ -186,9 +238,8 @@ const Home = ({ route, navigation }) => {
   useEffect(() => {
     const checkAttendance = async () => {
       const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
-      // Use toISOString and split to get YYYY-MM-DD format for date
-      const currentDate = new Date().toISOString().split('T')[0]; 
-      const body = { employee_id: user.userId, date: currentDate };
+      
+      const body = { employee_id: user.userId,};
 
       try {
         const response = await axios.post(ATTENDANCE_MODAL_URL, { ...body });
@@ -199,16 +250,29 @@ const Home = ({ route, navigation }) => {
           setAttendanceMessage(data.message || "Eligible to mark attendance");
           setShowAttendanceModal(true);
         } else if (data?.message) {
-          console.warn("Attendance API message:", data.message);
+          // If showModal is false but there's a message (like "Attendance Already Marked"),
+          // we treat it as a successful check and suppress the warning/error logging.
+          // console.warn("Attendance API message:", data.message); // Commented out to reduce console noise
           setShowAttendanceModal(false);
         } else {
           setShowAttendanceModal(false);
         }
       } catch (error) {
-        console.error(
-          "❌ Error checking attendance status:",
-          error.response?.data?.message || error.message
-        );
+        const errorMessage =
+          error.response?.data?.message || error.message;
+
+        // 💡 MODIFICATION HERE: Check if the "error" is actually the expected "Attendance Already Marked" status.
+        // The API might be using a non-200 status code to return this state.
+        if (errorMessage !== "Attendance Already Marked") {
+          console.error(
+            "❌ Error checking attendance status:",
+            errorMessage
+          );
+        } else {
+            // Success case, but returned as an HTTP error code (e.g., 400).
+            // We log it as an info message instead of an error.
+            console.info("✅ Attendance check complete:", errorMessage);
+        }
         setShowAttendanceModal(false);
       }
     };
@@ -216,53 +280,55 @@ const Home = ({ route, navigation }) => {
     if (user.userId && netInfo.isConnected) checkAttendance();
   }, [user.userId, netInfo.isConnected]);
 
-  // ✅ New function to handle attendance submission
   const handleMarkAttendance = async (selectedStatus) => {
-    setShowAttendanceModal(false); // Close the modal immediately
-    
-    // Get current date in YYYY-MM-DD format
-    const date = new Date().toISOString().split('T')[0];
+    setShowAttendanceModal(false);
 
     const submissionBody = {
-        employee_id: user.userId,
-        status: selectedStatus,
-        date: date,
-        // You might need to pass location/other data here based on your backend API
+      employee_id: user.userId,
+      status: selectedStatus,
+      
     };
 
     try {
-        const response = await axios.post(ATTENDANCE_SUBMIT_URL, submissionBody);
-        
-        if (response.status === 200 || response.status === 201) {
-            console.log("Attendance marked successfully:", response.data.message);
-            // Navigate to the Attendance screen after successful submission
-            navigation.navigate("Attendance", { 
-                status: selectedStatus,
-                message: response.data.message || "Attendance marked successfully!",
-            });
-        }
-    } catch (error) {
-        const errorMessage = error.response?.data?.message || "Failed to mark attendance. Please try again.";
-        console.error("❌ Error marking attendance:", errorMessage);
-        
-        // Optionally, navigate to Attendance screen with error message
-        navigation.navigate("Attendance", { 
-            status: selectedStatus,
-            message: errorMessage,
-            error: true
+      const response = await axios.post(ATTENDANCE_SUBMIT_URL, submissionBody);
+
+      if (response.status === 200 || response.status === 201) {
+        console.log("Attendance marked successfully:", response.data.message);
+
+        navigation.navigate("Attendance", {
+          status: selectedStatus,
+          message: response.data.message || "Attendance marked successfully!",
         });
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to mark attendance. Please try again.";
+      console.error("❌ Error marking attendance:", errorMessage);
+
+      navigation.navigate("Attendance", {
+        status: selectedStatus,
+        message: errorMessage,
+        error: true,
+      });
     }
   };
 
-
   const cardsData = [
+    // {
+    //   id: "attendence",
+    //   name: "Attendance",
+    //   imagePath: cardImagePaths.attendence,
+    //   onPress: () => navigation.navigate("Attendance", { user }),
+    //   backgroundColor: "#D9D7F1",
+    // },
+
     {
-      id: "attendence",
-      name: "Attendance",
-      imagePath: cardImagePaths.attendence,
-      // NOTE: Using "Attendance" to match your AppNavigation file (case-sensitive)
-      onPress: () => navigation.navigate("Attendance"),
-      backgroundColor: "#D9D7F1",
+        id: "monthlyTurnover", 
+        name: "Monthly Turnover",
+        imagePath: cardImagePaths.monthlyTurnover,
+        onPress: () => navigation.navigate("MonthlyTurnover"),
+        backgroundColor: "#FFECB3", 
     },
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
@@ -285,6 +351,16 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("PayNavigation", { user }),
       backgroundColor: "#E8F5E9",
     },
+        {
+        id: "commission",
+        name: "Commissions",
+        imagePath: cardImagePaths.commission,
+        onPress: () => navigation.navigate("Commissions",{ user }),
+      backgroundColor: "#E8F5E9",
+    }, 
+    
+
+
     agentInfo?.designation_id?.permission?.targets === "true" && {
       id: "targets",
       name: "Targets",
@@ -326,11 +402,11 @@ const Home = ({ route, navigation }) => {
       backgroundColor: "#FFECB3",
     },
     {
-        id: "customerOnHold",
-        name: "Customer On Hold",
-        imagePath: cardImagePaths.customerOnHold,
-        onPress: () => navigation.navigate("CustomerOnHold"),
-        backgroundColor: "#FFCDD2", 
+      id: "customerOnHold",
+      name: "Customer On Hold",
+      imagePath: cardImagePaths.customerOnHold,
+      onPress: () => navigation.navigate("CustomerOnHold"),
+      backgroundColor: "#FFCDD2",
     },
     {
       id: "myTasks",
@@ -365,13 +441,22 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#D1C4E9",
     },
+     {
+        id: "MIT",
+        name: "MIT",
+        imagePath: cardImagePaths.monthlyTurnover,
+        onPress: () => navigation.navigate("MIT",{ user }),
+      backgroundColor: "#E8F5E9",
+    }, 
     {
       id: "DueReport",
       name: "DueReport",
       imagePath: cardImagePaths.DueReportImage,
-      // FIX: Navigate directly to the 'Due' screen instead of via the nested navigator
       onPress: () =>
-        navigation.navigate("Due", { user }), 
+        navigation.navigate("PayNavigation", {
+          screen: "Due",
+          params: { user },
+        }),
       backgroundColor: "#e9d0e3ff",
     },
   ].filter(Boolean);
@@ -407,7 +492,13 @@ const Home = ({ route, navigation }) => {
             </Text>
           </View>
 
-          {netInfo.isConnected === false ? (
+          {/* FIX: Only render the main content if user.userId is available */}
+          {!user.userId ? (
+             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+                <Text style={{ marginTop: 10, color: '#666' }}>Loading Agent Data...</Text>
+            </View>
+          ) : netInfo.isConnected === false ? (
             renderNoInternet()
           ) : (
             <ScrollView
@@ -439,16 +530,21 @@ const Home = ({ route, navigation }) => {
       </LinearGradient>
 
       <AttendanceModal
+        attendanceLoading={attendanceLoading}
+        selectedStatus={selectedStatus}
         visible={showAttendanceModal}
         message={attendanceMessage}
         onClose={() => setShowAttendanceModal(false)}
-        onProceed={handleMarkAttendance} // <-- Call the new submission function
+        onProceed={handleMarkAttendance}
+        handleSubmitAttendance={handleSubmitAttendance}
+        note={note}
+        setNote={setNote}
       />
     </SafeAreaView>
   );
 };
 
-// --- HOME COMPONENT STYLES (Standard) ---
+
 const styles = StyleSheet.create({
   mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 },
   introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
@@ -511,41 +607,41 @@ const styles = StyleSheet.create({
   gradientOverlay: { flex: 1 },
 });
 
-// --- MINIMALIST HIGH-TECH MODAL STYLES ---
+
 const modalStyles = StyleSheet.create({
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.8)", // Very dark overlay
+    backgroundColor: "rgba(0, 0, 0, 0.6)", // Slightly lighter overlay
   },
   modalView: {
     backgroundColor: "white",
-    borderRadius: 12, // Sharp, modern look
-    padding: 25,
+    borderRadius: 15, 
+    padding: 30,
     alignItems: "center",
-    width: "88%",
+    width: "90%",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
-    elevation: 15,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1, // Softer shadow
+    shadowRadius: 10,
+    elevation: 10,
     marginTop: 50,
-    borderWidth:3,
-    borderColor: PRIMARY_COLOR,
+    borderWidth: 2,
+    borderColor: '#108da3ff', // Very light border
   },
   iconHeader: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
     marginTop: -80,
     shadowColor: PRIMARY_COLOR,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.6,
-    shadowRadius: 15,
+    shadowRadius: 10,
     elevation: 10,
   },
   modalImage: {
@@ -553,83 +649,97 @@ const modalStyles = StyleSheet.create({
     height: 65,
   },
   modalHeading: {
-    fontSize: 24,
+    fontSize: 26, 
     fontWeight: "900",
     color: "#2c3e50",
     marginBottom: 5,
   },
   modalText: {
-    marginBottom: 30,
     textAlign: "center",
     fontSize: 16,
     fontWeight: "500",
     color: "#7f8c8d",
     lineHeight: 22,
+    marginBottom: 25, 
   },
-  closeButton: { position: "absolute", top: 15, right: 15, padding: 5, zIndex: 10 },
-  closeButtonText: { fontSize: 26, fontWeight: "500", color: "#95a5a6" },
+  closeButton: {
+    position: "absolute",
+    top: 15,
+    right: 15,
+    padding: 5,
+    zIndex: 10,
+  },
+  closeButtonText: { fontSize: 28, fontWeight: "300", color: "#95a5a6" },
 
-  // --- Status Buttons (Flat, High-Contrast) ---
-  statusContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between", // Spread out the two main buttons
-    width: '100%',
-  },
-  statusButton: {
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    margin: 4,
-    minWidth: '47%', // Take up half the width
+  // --- STYLISH ACCORDION STYLES (Softened) ---
+  accordionHeader: {
+    width: "100%",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 5,
+    backgroundColor: '#f8f9fa', // Off-white/light background
+    borderRadius: 8, // Softer radius
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#dcdcdc', // Lighter border
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, // Very light shadow
+    shadowRadius: 3,
+    elevation: 1,
   },
-  statusButtonUnselected: {
-    // inherits background
+  noteLabel: {
+    fontSize: 13, // Slightly smaller font for a cleaner look
+    fontWeight: '600',
+    color: '#34495e',
   },
-  statusButtonSelected: {
-    backgroundColor: SUCCESS_COLOR, // Green for selected status
-    borderColor: SUCCESS_COLOR,
-    shadowColor: SUCCESS_COLOR,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  statusText: {
-    fontWeight: "700",
+  arrowIcon: {
     fontSize: 15,
-    color: "#34495e",
+    color:'#c2c3c4ff' ,
+    fontWeight: '900',
   },
-  statusTextSelected: {
-    color: "white",
+  accordionContent: {
+    width: "100%",
+    marginTop: 8,
+    marginBottom: 10,
   },
-
+  inputField: {
+    width: "100%",
+    minHeight: 90, 
+    borderColor: '#dcdcdc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    color: '#34495e',
+    backgroundColor: '#fff',
+    textAlignVertical: 'top',
+  },
+  
   // --- Proceed Button (Sleek, Full Gradient) ---
   markAttendanceButtonWrapper: {
-    width: '100%',
+    width: "100%",
     marginTop: 30,
     borderRadius: 10,
-    overflow: 'hidden',
+    overflow: "hidden",
     shadowColor: PRIMARY_COLOR,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 15,
+    shadowRadius: 10,
+    elevation: 10,
   },
   markAttendanceButton: {
     paddingVertical: 18,
-    alignItems: 'center',
+    alignItems: "center",
   },
   markAttendanceButtonText: {
-    color: "white",
+    color: "Green",
     fontWeight: "bold",
     textAlign: "center",
-    fontSize: 18,
-    letterSpacing: 0.8,
+    fontSize: 19,
+    letterSpacing: 1,
   },
 });
 

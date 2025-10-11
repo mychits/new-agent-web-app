@@ -19,6 +19,7 @@ import ResetPassword from "../screens/ResetPassword";
 import MyTaskListScreen from '../screens/MyTaskListScreen';
 import TaskDetailScreen from '../screens/TaskDetailScreen';
 import CompleteTaskScreen from '../screens/CompleteTaskScreen';
+import EnrolledGroups from '../screens/EnrolledGroups';
 import Becomeanagent from '../screens/Becomeanagent';
 import Register from "../screens/Register";
 import AboutMyChits from "../screens/AboutMyChits";
@@ -32,6 +33,9 @@ import EditLead from "../screens/EditLead";
 import QrCodePage from "../screens/QrCodePage";
 import LoanPayments from "../screens/LoanPayments";
 import PigmePayments from "../screens/PigmePayments";
+import MyCommission from "../screens/MyCommission";
+import ViewEnrollments from "../screens/ViewEnrollments";
+import ExpectedCommissions from "../screens/ExpectedCommissions";
 // NOTE: We import the file named 'Attendence.js' but rename the screen to 'Attendance'
 import Attendence from "../screens/Attendence"; 
 
@@ -91,6 +95,8 @@ export default function AppNavigation() {
           component={LoanPayments}
           options={{headerShown: false}}
           />
+          <Stack.Screen name="MyCommission" component={MyCommission} options={{headerShown: false}}/>
+           <Stack.Screen name="ViewEnrollments" component={ViewEnrollments} options={{headerShown: false}} />
 
           <Stack.Screen
           name="PigmePayments"
@@ -112,6 +118,7 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={OutstandingReports}
           />
+          <Stack.Screen name="EnrolledGroups" options={{headerShown: false}} component={EnrolledGroups} />
           <Stack.Screen
           name="GroupReport"
           options={{ headerShown: false }}
@@ -128,6 +135,7 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={Due}
           />
+          <Stack.Screen name="ExpectedCommissions" component={ExpectedCommissions} options={{headerShown: false}} />
         <Stack.Screen
           name="CustomerOnHold"
           options={{ headerShown: false }}
