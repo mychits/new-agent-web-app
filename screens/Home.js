@@ -239,8 +239,6 @@ const Home = ({ route, navigation }) => {
     const checkAttendance = async () => {
       const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
       
-     
-
       const body = { employee_id: user.userId,};
 
       try {
@@ -252,16 +250,29 @@ const Home = ({ route, navigation }) => {
           setAttendanceMessage(data.message || "Eligible to mark attendance");
           setShowAttendanceModal(true);
         } else if (data?.message) {
-          console.warn("Attendance API message:", data.message);
+          // If showModal is false but there's a message (like "Attendance Already Marked"),
+          // we treat it as a successful check and suppress the warning/error logging.
+          // console.warn("Attendance API message:", data.message); // Commented out to reduce console noise
           setShowAttendanceModal(false);
         } else {
           setShowAttendanceModal(false);
         }
       } catch (error) {
-        console.error(
-          "❌ Error checking attendance status:",
-          error.response?.data?.message || error.message
-        );
+        const errorMessage =
+          error.response?.data?.message || error.message;
+
+        // 💡 MODIFICATION HERE: Check if the "error" is actually the expected "Attendance Already Marked" status.
+        // The API might be using a non-200 status code to return this state.
+        if (errorMessage !== "Attendance Already Marked") {
+          console.error(
+            "❌ Error checking attendance status:",
+            errorMessage
+          );
+        } else {
+            // Success case, but returned as an HTTP error code (e.g., 400).
+            // We log it as an info message instead of an error.
+            console.info("✅ Attendance check complete:", errorMessage);
+        }
         setShowAttendanceModal(false);
       }
     };
@@ -347,6 +358,7 @@ const Home = ({ route, navigation }) => {
         onPress: () => navigation.navigate("Commissions",{ user }),
       backgroundColor: "#E8F5E9",
     }, 
+    
 
 
     agentInfo?.designation_id?.permission?.targets === "true" && {
@@ -429,6 +441,13 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#D1C4E9",
     },
+     {
+        id: "MIT",
+        name: "MIT",
+        imagePath: cardImagePaths.monthlyTurnover,
+        onPress: () => navigation.navigate("MIT",{ user }),
+      backgroundColor: "#E8F5E9",
+    }, 
     {
       id: "DueReport",
       name: "DueReport",
