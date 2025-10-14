@@ -16,7 +16,7 @@ import {
   // 💡 REQUIRED IMPORT
   TextInput, 
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// import { SafeAreaView } from "react-native-safe-area-context"; // ❌ REMOVED
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
@@ -445,7 +445,7 @@ const Home = ({ route, navigation }) => {
         id: "MIT",
         name: "MIT",
         imagePath: cardImagePaths.monthlyTurnover,
-        onPress: () => navigation.navigate("MIT",{ user }),
+        onPress: () => navigation.navigate("MonthlyTurnover",{ user }),
       backgroundColor: "#E8F5E9",
     }, 
     {
@@ -476,12 +476,15 @@ const Home = ({ route, navigation }) => {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
-        style={styles.gradientOverlay}
-      >
-        <View style={styles.mainContentArea}>
+    // 💡 FIX APPLIED: LinearGradient now wraps the entire screen for full coverage.
+    <LinearGradient
+      colors={["#dbf6faff", "#90dafcff"]}
+      style={{ flex: 1 }} // Apply flex: 1 to the gradient for full viewport height
+    >
+      {/* ❌ REMOVED SafeAreaView - now the content will start from the top edge */}
+      {/* <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}> */}
+        <View style={styles.mainContentArea_noSafeArea}> 
+        {/* 💡 MODIFIED STYLE NAME to account for no SafeAreaView */}
           <Header />
           <View style={styles.introSection}>
             <Text style={styles.welcomeText}>
@@ -527,7 +530,7 @@ const Home = ({ route, navigation }) => {
             </ScrollView>
           )}
         </View>
-      </LinearGradient>
+      {/* </SafeAreaView> */}
 
       <AttendanceModal
         attendanceLoading={attendanceLoading}
@@ -540,13 +543,17 @@ const Home = ({ route, navigation }) => {
         note={note}
         setNote={setNote}
       />
-    </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 
 const styles = StyleSheet.create({
-  mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 },
+  // 💡 NEW STYLE TO REPLACE SafeAreaView wrapper behavior (padding from the top for header and content)
+  mainContentArea_noSafeArea: { flex: 1, marginHorizontal: 22, marginTop: 40 }, // Increased marginTop to avoid status bar overlap
+  
+  // mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 }, // ORIGINAL STYLE
+
   introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
   welcomeText: {
     fontSize: 28,
@@ -604,7 +611,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   noInternetSubText: { fontSize: 16, color: "#777", marginTop: 10 },
-  gradientOverlay: { flex: 1 },
+  gradientOverlay: { flex: 1 }, // Retained this style definition although it's no longer used in the component body
 });
 
 

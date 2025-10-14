@@ -1,11 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
-
-// Assuming COLORS constant exists and has a 'white' property.
-// You might want to define a 'gold' color in it as well for consistency.
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 
@@ -27,7 +23,7 @@ const Routes = ({ route, navigation }) => {
   const { user } = route.params;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+    <View style={{ flex: 1 }}>
       <LinearGradient
         colors={['#dbf6faff', '#90dafcff']} // Refined gradient colors for a more modern, cohesive look
         style={styles.gradientOverlay}
@@ -35,11 +31,16 @@ const Routes = ({ route, navigation }) => {
         end={{ x: 1, y: 1 }}
       >
         <ScrollView
-          style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
-          contentContainerStyle={{ paddingBottom: 80 }}
+          // Removed marginTop: 12 from ScrollView style
+          style={{ flex: 1, marginHorizontal: 22 }}
+          contentContainerStyle={{ paddingBottom: 30 }}
           showsVerticalScrollIndicator={false}
         >
-          <Header />
+          {/* Added marginTop to the Header container to push it down */}
+          <View style={styles.headerSpacer}>
+            <Header />
+          </View>
+          
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Customers</Text>
             <Text style={styles.subtitle}>Select a customer type to continue</Text>
@@ -68,7 +69,7 @@ const Routes = ({ route, navigation }) => {
           </View>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -76,9 +77,13 @@ const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
+  // New style to add space above the Header
+  headerSpacer: {
+    marginTop: 50, // You can adjust this value to control how far down the header is pushed
+  },
   titleContainer: {
     marginTop: 40, // Increased top margin for more breathing room
-    marginBottom: 20,
+    marginBottom: 2,
     alignItems: 'center',
   },
   title: {

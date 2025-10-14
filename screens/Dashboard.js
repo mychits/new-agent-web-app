@@ -9,7 +9,7 @@ import {
   Animated,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// Removed: import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import Svg, { G, Circle, Defs, Stop, RadialGradient } from "react-native-svg";
@@ -228,7 +228,7 @@ const Dashboard = ({ route, navigation }) => {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      <SafeAreaView style={{ flex: 1 }}>
+      {/* Removed: <SafeAreaView style={{ flex: 1 }}> */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
@@ -392,7 +392,7 @@ const Dashboard = ({ route, navigation }) => {
             </ScrollView>
           </View>
         )}
-      </SafeAreaView>
+      {/* Removed: </SafeAreaView> */}
     </LinearGradient>
   );
 };
@@ -408,8 +408,9 @@ const styles = StyleSheet.create({
   },
   mainContentArea: {
     flex: 1,
-    paddingHorizontal: 22,
-    paddingTop: 12,
+    paddingHorizontal: 28,
+    // Pushed the Header down by increasing paddingTop
+    paddingTop: 30, 
   },
   introSection: {
     marginTop: 20,

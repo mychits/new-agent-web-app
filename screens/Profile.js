@@ -10,7 +10,6 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons, Feather } from "@expo/vector-icons";
 import Header from "../components/Header";
 import COLORS from "../constants/color";
@@ -70,7 +69,7 @@ const Profile = ({ route, navigation }) => {
 	];
 
 	return (
-		<SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+		<View style={{ flex: 1, backgroundColor: COLORS.white }}>
 			<LinearGradient
 				colors={['#dbf6faff', '#90dafcff']}
 				style={styles.gradientOverlay}
@@ -82,7 +81,7 @@ const Profile = ({ route, navigation }) => {
 					behavior={Platform.OS === "ios" ? "padding" : "height"}
 					keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
 				>
-					<View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
+					<View style={styles.contentContainer}>
 						<Header />
 						<View style={styles.container}>
 							<Text style={styles.headerTitle}>Profile</Text>
@@ -142,12 +141,17 @@ const Profile = ({ route, navigation }) => {
 					</View>
 				</KeyboardAvoidingView>
 			</LinearGradient>
-		</SafeAreaView>
+		</View>
 	);
 };
 
 const styles = StyleSheet.create({
 	gradientOverlay: {
+		flex: 1,
+	},
+	contentContainer: { 
+		marginHorizontal: 22, 
+		marginTop: 50, // Pushed the header down by increasing this value
 		flex: 1,
 	},
 	mainContainer: {
