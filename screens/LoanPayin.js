@@ -189,7 +189,6 @@ const LoanPayin = ({ route, navigation }) => {
           customer_name: full_name,
           phone_number,
           agent_name: name,
-          remainingLoanAmount,
           amount,
           pay_type,
           pay_date,
