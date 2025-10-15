@@ -184,12 +184,12 @@ const LoanPayin = ({ route, navigation }) => {
           `${baseUrl}/payment/get-total-amount`,
           { user_id: customer, loan: loanId }
         );
-        // --- End Data Fetch ---
 
         navigation.navigate("LoanPrint", {
           customer_name: full_name,
           phone_number,
           agent_name: name,
+          remainingLoanAmount,
           amount,
           pay_type,
           pay_date,
@@ -198,6 +198,7 @@ const LoanPayin = ({ route, navigation }) => {
           total_amount: totalAmountResponse?.data?.totalAmount || 0,
           custom_loan_id: selectedLoan.loan_id, 
           isLoanPayment: true,
+          remainingLoanAmount:totalAmountResponse?.data?.remainingLoanAmount,
         });
       } else {
         console.log("Error:", response.data);

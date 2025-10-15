@@ -417,6 +417,7 @@ const LoanPrint = ({ route }) => {
     receipt_no,
     isLoanPayment,
     custom_loan_id,
+    remainingLoanAmount
   } = route.params;
 
   const [isConnected, setIsConnected] = useState(false);
@@ -480,7 +481,7 @@ ${groupOrLoan}
 |   Received Amount: Rs.${amount}  |
 ==============================
 Mode: ${pay_type}
-${txnLine}Total: Rs.${total_amount || 0}
+${txnLine}Remaining Total: Rs.${remainingLoanAmount || 0}
 --------------------------------
 Collected by: ${agent_name}
 `;
@@ -495,13 +496,9 @@ Collected by: ${agent_name}
   };
 
   const handlePosPrint = async () => {
-    if (!isConnected) {
-      Alert.alert("Error", "Please connect to the Bluetooth printer first.");
-      return;
-    }
+  
 
-    setIsPrinting(true);
-
+  
     const groupOrLoanHtml = isLoanPayment
       ? `<p style="margin: 0;">Loan ID: ${custom_loan_id}</p>`
       : `<p style="margin: 0;">Group: ${"Loan"}</p><p style="margin: 0;">Ticket: ${
@@ -574,7 +571,7 @@ Collected by: ${agent_name}
           </table>
           <p>Mode: ${pay_type}</br>
           ${txnLine}
-          Total: Rs.${total_amount || 0}</p>
+          Remaining Total: Rs.${remainingLoanAmount || 0}</p>
           <div class="line"></div>
           <p>Collected By: ${agent_name}</p>
         </div>
