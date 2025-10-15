@@ -35,14 +35,14 @@ const Reports = ({ route, navigation }) => {
         end={{ x: 1, y: 1 }}
       >
         <ScrollView
-          style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
+          style={{flex: 1, marginHorizontal: 22, marginTop: 12 }}
           contentContainerStyle={{ paddingBottom: 80 }}
           showsVerticalScrollIndicator={false}
         >
           <Header />
-          <View style={styles. titleContainer}>
+          <View style={styles.titleContainer}>
             <Text style={styles.title}>Reports</Text>
-             <Text style={styles.subtitle}>Select a Report type to continue</Text>
+            <Text style={styles.subtitle}>Select a Report type to continue</Text>
           </View>
           <View style={styles.cardListContainer}>
             <CustomReportCard
@@ -57,6 +57,18 @@ const Reports = ({ route, navigation }) => {
               icon="bar-chart"
               onPress={() => navigation.navigate("GoldPayment", { user: user, areaId: "gold-chits" })}
             />
+            <CustomReportCard
+              key="loan-chits-card"
+              name="Loan Chits Report"
+              icon="bank"
+              onPress={() => navigation.navigate("LoanPayments", { user: user, areaId: "loan-chits" })}
+            />
+            <CustomReportCard
+              key="pigme-chits-card"
+              name="Pigme Chits Report"
+              icon="briefcase"
+              onPress={() => navigation.navigate("PigmePayments", { user: user, areaId: "pigme-chits" })}
+            />
           </View>
         </ScrollView>
       </LinearGradient>
@@ -69,7 +81,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleContainer: {
-    marginTop: 40, // Increased top margin for more breathing room
+    marginTop: 40,
     marginBottom: 20,
     alignItems: 'center',
   },
@@ -118,14 +130,14 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   cardText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
   cardSubText: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 5,
+    color: '#888',
+    marginTop: 2,
   },
   cardIcon: {
     fontSize: 24,

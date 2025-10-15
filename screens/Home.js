@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -185,6 +185,180 @@ const Home = ({ route, navigation }) => {
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [note, setNote] = useState("");
 
+  // 💡 ANIMATION: Create Animated.Values for each card
+  const cardAnimations = useRef([]);
+  const hasAnimated = useRef(false);
+
+  // Define cardsData early to use its length for animation array initialization
+  const cardsData = [
+    // {
+    //   id: "attendence",
+    //   name: "Attendance",
+    //   imagePath: cardImagePaths.attendence,
+    //   onPress: () => navigation.navigate("Attendance", { user }),
+    //   backgroundColor: "#D9D7F1",
+    // },
+
+    {
+        id: "monthlyTurnover", 
+        name: "Monthly Turnover",
+        imagePath: cardImagePaths.monthlyTurnover,
+        onPress: () => navigation.navigate("MonthlyTurnover"),
+        backgroundColor: "#FFECB3", 
+    },
+    agentInfo?.designation_id?.permission?.collection === "true" && {
+      id: "collections",
+      name: "Collections",
+      imagePath: cardImagePaths.collections,
+      onPress: () => navigation.navigate("PaymentNavigator"),
+      backgroundColor: "#FFEBEE",
+    },
+    agentInfo?.designation_id?.permission?.collection === "true" && {
+      id: "qrCode",
+      name: "QR Code",
+      imagePath: cardImagePaths.qrCode,
+      onPress: () => navigation.navigate("qrCode"),
+      backgroundColor: "#FFEBEE",
+    },
+    agentInfo?.designation_id?.permission?.daybook === "true" && {
+      id: "daybook",
+      name: "Daybook",
+      imagePath: cardImagePaths.daybook,
+      onPress: () => navigation.navigate("PayNavigation", { user }),
+      backgroundColor: "#E8F5E9",
+    },
+        {
+        id: "commission",
+        name: "Commissions",
+        imagePath: cardImagePaths.commission,
+        onPress: () => navigation.navigate("Commissions",{ user }),
+      backgroundColor: "#E8F5E9",
+    }, 
+    
+
+
+    agentInfo?.designation_id?.permission?.targets === "true" && {
+      id: "targets",
+      name: "Targets",
+      imagePath: cardImagePaths.targets,
+      onPress: () => navigation.navigate("Target"),
+      backgroundColor: "#FFFDE7",
+    },
+    agentInfo?.designation_id?.permission?.leads === "true" && {
+      id: "myLeads",
+      name: "My Leads",
+      imagePath: cardImagePaths.myLeads,
+      onPress: () =>
+        navigation.navigate("PayNavigation", {
+          screen: "ViewLeads",
+          params: { user },
+        }),
+      backgroundColor: "#E3F2FD",
+    },
+    {
+      id: "addCustomers",
+      name: "Add Customers",
+      imagePath: cardImagePaths.addCustomers,
+      onPress: () =>
+        navigation.navigate("CustomerNavigation", {
+          screen: "Customer",
+          params: { user },
+        }),
+      backgroundColor: "#F3E5F5",
+    },
+    {
+      id: "myCustomers",
+      name: "My Customers",
+      imagePath: cardImagePaths.myCustomers,
+      onPress: () =>
+        navigation.navigate("CustomerNavigation", {
+          screen: "ViewEnrollments",
+          params: { user },
+        }),
+      backgroundColor: "#FFECB3",
+    },
+    {
+      id: "customerOnHold",
+      name: "Customer On Hold",
+      imagePath: cardImagePaths.customerOnHold,
+      onPress: () => navigation.navigate("CustomerOnHold"),
+      backgroundColor: "#FFCDD2",
+    },
+    {
+      id: "myTasks",
+      name: "My Tasks",
+      imagePath: cardImagePaths.myTasks,
+      onPress: () =>
+        navigation.navigate("MyTasks", {
+          employeeId: user.userId,
+          agentName: agent.name,
+        }),
+      backgroundColor: "#E0F7FA",
+    },
+    agentInfo?.designation_id?.permission?.reports === "true" && {
+      id: "reports",
+      name: "Reports",
+      imagePath: cardImagePaths.reports,
+      onPress: () =>
+        navigation.navigate("PayNavigation", {
+          screen: "Reports",
+          params: { user },
+        }),
+      backgroundColor: "#FCE4EC",
+    },
+    {
+      id: "groups",
+      name: "Groups",
+      imagePath: cardImagePaths.groups,
+      onPress: () =>
+        navigation.navigate("Enrollment", {
+          screen: "Enrollment",
+          params: { user },
+        }),
+      backgroundColor: "#D1C4E9",
+    },
+    
+    {
+      id: "DueReport",
+      name: "DueReport",
+      imagePath: cardImagePaths.DueReportImage,
+      onPress: () =>
+        navigation.navigate("PayNavigation", {
+          screen: "Due",
+          params: { user },
+        }),
+      backgroundColor: "#e9d0e3ff",
+    },
+  ].filter(Boolean);
+
+  // Initialize Animated.Value for each card
+  if (cardAnimations.current.length !== cardsData.length) {
+    cardAnimations.current = cardsData.map(
+      (_, i) => cardAnimations.current[i] || new Animated.Value(0)
+    );
+  }
+  
+  // 💡 ANIMATION: Staggered animation effect
+  useEffect(() => {
+    // Only run the animation once, when data is ready and net is connected
+    if (cardsData.length > 0 && netInfo.isConnected && !hasAnimated.current) {
+      const animations = cardAnimations.current.map((anim, index) => {
+        return Animated.timing(anim, {
+          toValue: 1,
+          duration: 400, // Speed of each card's animation
+          delay: index * 50, // Staggered delay for each card
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        });
+      });
+
+      Animated.stagger(10, animations).start(() => {
+        hasAnimated.current = true; // Mark as animated
+      });
+    }
+  }, [cardsData.length, netInfo.isConnected]);
+
+
   const handleSubmitAttendance = async () => {
     const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
     try {
@@ -314,152 +488,6 @@ const Home = ({ route, navigation }) => {
     }
   };
 
-  const cardsData = [
-    // {
-    //   id: "attendence",
-    //   name: "Attendance",
-    //   imagePath: cardImagePaths.attendence,
-    //   onPress: () => navigation.navigate("Attendance", { user }),
-    //   backgroundColor: "#D9D7F1",
-    // },
-
-    {
-        id: "monthlyTurnover", 
-        name: "Monthly Turnover",
-        imagePath: cardImagePaths.monthlyTurnover,
-        onPress: () => navigation.navigate("MonthlyTurnover"),
-        backgroundColor: "#FFECB3", 
-    },
-    agentInfo?.designation_id?.permission?.collection === "true" && {
-      id: "collections",
-      name: "Collections",
-      imagePath: cardImagePaths.collections,
-      onPress: () => navigation.navigate("PaymentNavigator"),
-      backgroundColor: "#FFEBEE",
-    },
-    agentInfo?.designation_id?.permission?.collection === "true" && {
-      id: "qrCode",
-      name: "QR Code",
-      imagePath: cardImagePaths.qrCode,
-      onPress: () => navigation.navigate("qrCode"),
-      backgroundColor: "#FFEBEE",
-    },
-    agentInfo?.designation_id?.permission?.daybook === "true" && {
-      id: "daybook",
-      name: "Daybook",
-      imagePath: cardImagePaths.daybook,
-      onPress: () => navigation.navigate("PayNavigation", { user }),
-      backgroundColor: "#E8F5E9",
-    },
-        {
-        id: "commission",
-        name: "Commissions",
-        imagePath: cardImagePaths.commission,
-        onPress: () => navigation.navigate("Commissions",{ user }),
-      backgroundColor: "#E8F5E9",
-    }, 
-    
-
-
-    agentInfo?.designation_id?.permission?.targets === "true" && {
-      id: "targets",
-      name: "Targets",
-      imagePath: cardImagePaths.targets,
-      onPress: () => navigation.navigate("Target"),
-      backgroundColor: "#FFFDE7",
-    },
-    agentInfo?.designation_id?.permission?.leads === "true" && {
-      id: "myLeads",
-      name: "My Leads",
-      imagePath: cardImagePaths.myLeads,
-      onPress: () =>
-        navigation.navigate("PayNavigation", {
-          screen: "ViewLeads",
-          params: { user },
-        }),
-      backgroundColor: "#E3F2FD",
-    },
-    {
-      id: "addCustomers",
-      name: "Add Customers",
-      imagePath: cardImagePaths.addCustomers,
-      onPress: () =>
-        navigation.navigate("CustomerNavigation", {
-          screen: "Customer",
-          params: { user },
-        }),
-      backgroundColor: "#F3E5F5",
-    },
-    {
-      id: "myCustomers",
-      name: "My Customers",
-      imagePath: cardImagePaths.myCustomers,
-      onPress: () =>
-        navigation.navigate("CustomerNavigation", {
-          screen: "ViewEnrollments",
-          params: { user },
-        }),
-      backgroundColor: "#FFECB3",
-    },
-    {
-      id: "customerOnHold",
-      name: "Customer On Hold",
-      imagePath: cardImagePaths.customerOnHold,
-      onPress: () => navigation.navigate("CustomerOnHold"),
-      backgroundColor: "#FFCDD2",
-    },
-    {
-      id: "myTasks",
-      name: "My Tasks",
-      imagePath: cardImagePaths.myTasks,
-      onPress: () =>
-        navigation.navigate("MyTasks", {
-          employeeId: user.userId,
-          agentName: agent.name,
-        }),
-      backgroundColor: "#E0F7FA",
-    },
-    agentInfo?.designation_id?.permission?.reports === "true" && {
-      id: "reports",
-      name: "Reports",
-      imagePath: cardImagePaths.reports,
-      onPress: () =>
-        navigation.navigate("PayNavigation", {
-          screen: "Reports",
-          params: { user },
-        }),
-      backgroundColor: "#FCE4EC",
-    },
-    {
-      id: "groups",
-      name: "Groups",
-      imagePath: cardImagePaths.groups,
-      onPress: () =>
-        navigation.navigate("Enrollment", {
-          screen: "Enrollment",
-          params: { user },
-        }),
-      backgroundColor: "#D1C4E9",
-    },
-     {
-        id: "MIT",
-        name: "MIT",
-        imagePath: cardImagePaths.monthlyTurnover,
-        onPress: () => navigation.navigate("MonthlyTurnover",{ user }),
-      backgroundColor: "#E8F5E9",
-    }, 
-    {
-      id: "DueReport",
-      name: "DueReport",
-      imagePath: cardImagePaths.DueReportImage,
-      onPress: () =>
-        navigation.navigate("PayNavigation", {
-          screen: "Due",
-          params: { user },
-        }),
-      backgroundColor: "#e9d0e3ff",
-    },
-  ].filter(Boolean);
 
   const renderNoInternet = () => (
     <View style={styles.noInternetContainer}>
@@ -509,23 +537,43 @@ const Home = ({ route, navigation }) => {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.cardsGridContainer}>
-                {cardsData.map((card) => (
-                  <TouchableOpacity
-                    key={card.id}
-                    style={[
-                      styles.gridCard,
-                      { backgroundColor: card.backgroundColor },
-                    ]}
-                    onPress={card.onPress}
-                  >
-                    <Image
-                      source={card.imagePath}
-                      style={styles.cardImage}
-                      resizeMode="contain"
-                    />
-                    <Text style={styles.gridCardText}>{card.name}</Text>
-                  </TouchableOpacity>
-                ))}
+                {cardsData.map((card, index) => {
+                  
+                  // 💡 ANIMATION: Interpolate the scale and translateY
+                  const scale = cardAnimations.current[index].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.7, 1], // Start smaller, end at normal size
+                  });
+
+                  const translateY = cardAnimations.current[index].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [50, 0], // Start 50 points lower, slide up
+                  });
+                  
+                  const animatedStyle = {
+                    opacity: cardAnimations.current[index], // Fade in
+                    transform: [{ scale }, { translateY }],
+                  };
+
+                  return (
+                    <Animated.View key={card.id} style={[styles.gridCardWrapper, animatedStyle]}>
+                      <TouchableOpacity
+                        style={[
+                          styles.gridCard,
+                          { backgroundColor: card.backgroundColor },
+                        ]}
+                        onPress={card.onPress}
+                      >
+                        <Image
+                          source={card.imagePath}
+                          style={styles.cardImage}
+                          resizeMode="contain"
+                        />
+                        <Text style={styles.gridCardText}>{card.name}</Text>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  );
+                })}
               </View>
             </ScrollView>
           )}
@@ -574,15 +622,21 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 10,
   },
+  // 💡 NEW WRAPPER STYLE for animation (handles spacing and size)
+  gridCardWrapper: {
+    width: (width - 22 * 2 - 20) / 2, // Matches the width of gridCard
+    height: (width - 22 * 2 - 20) / 2, // Matches the height of gridCard
+    marginBottom: 20,
+  },
   gridCard: {
-    width: (width - 22 * 2 - 20) / 2,
-    height: (width - 22 * 2 - 20) / 2,
+    // Note: Dimensions are removed from here and moved to gridCardWrapper
+    flex: 1, // Fill the wrapper
     borderRadius: 15,
     borderColor: "gold",
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    // marginBottom: 20, // Removed from here, moved to gridCardWrapper
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
