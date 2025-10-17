@@ -149,8 +149,7 @@ export default function MyTaskListScreen({ navigation, route }) {
 
   return (
     // 💡 CHANGE APPLIED: LinearGradient is now the root container with style={{ flex: 1 }}
-    <LinearGradient
-      colors={["#dbf6faff", "#90dafcff"]} 
+    <LinearGradient  colors={['#b6e4ebff', '#1796d1ff']}
       style={{ flex: 1 }} 
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}

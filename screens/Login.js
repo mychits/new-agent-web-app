@@ -139,7 +139,7 @@ export default function Login({ navigation }) {
 
       {/* A richer, semi-transparent gradient overlay */}
       <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']}
+        colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -156,7 +156,7 @@ export default function Login({ navigation }) {
               <Ionicons name="call" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
               <TextInput
                 style={styles.textInput}
-                placeholder="eg. 8765349076"
+                placeholder="eg. 1234567890"
                 placeholderTextColor="#A9A9A9"
                 keyboardType="numeric"
                 value={mobile}

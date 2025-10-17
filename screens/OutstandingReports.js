@@ -22,15 +22,15 @@ import Header from "../components/Header";
 const DUE_API = "https://mychits.online/api/enroll/due/routes/agent/";
 const GROUP_API = "https://mychits.online/api/group/get-group";
 // 🚨 LINEAR GRADIENT COLOR AS PREVIOUSLY REQUESTED 🚨
-const BACKGROUND_GRADIENT = ["#dbf6faff", "#90dafcff"]; 
+const BACKGROUND_GRADIENT = ['#b6e4ebff', '#1796d1ff']; 
 const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
 
 // --- MODERN STYLING CONSTANTS (Curated for a professional, clean look) ---
-const MODERN_PRIMARY = "#1e3a8a"; // Deep, professional blue
+const MODERN_PRIMARY = "#0d0d0eff"; // Deep, professional blue
 const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
 const WARNING_RED = "#dc2626";     // Strong red for negative/balance
 const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
-const DARK_TEXT = "#1f2937";     // Darkest text color for contrast
+const DARK_TEXT = "#101111ff";     // Darkest text color for contrast
 const LIGHT_GREY_BACKGROUND = "#f9fafb"; // Very light background for elements
 const BORDER_COLOR = "#e5e7eb"; // Light border for subtle separation
 

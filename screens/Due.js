@@ -1,6 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, StatusBar } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -23,17 +22,12 @@ const CustomRouteCard = ({ name, icon, onPress }) => (
 
 const Due = ({ route, navigation }) => {
   // Defensive destructuring remains in place to prevent the previous crash
-  const { user} = route.params 
-
-
-
-  // Removed the navigateToDueReport function and replaced calls below
-  // to navigate directly to the specific report screens.
+  const { user } = route.params;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']}
+    // Replaced SafeAreaView with a standard View and applied a style for safe area padding
+    <View style={styles.mainContainer}> 
+      <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -45,39 +39,43 @@ const Due = ({ route, navigation }) => {
         >
           <Header />
           <View style={styles.titleContainer}>
-          
             <Text style={styles.title}>Outstanding Reports</Text>
             <Text style={styles.subtitle}>Select a report type to view outstanding data</Text>
           </View>
           <View style={styles.cardListContainer}>
-          
             <CustomRouteCard
-             
               name="Collection Report"
               icon="inbox" 
-              onPress={() => navigation.navigate("OutstandingReports", { user})}
+              onPress={() => navigation.navigate("OutstandingReports", { user })}
             />
             <CustomRouteCard
-             
               name="Referred Report"
               icon="share-alt" 
-              onPress={() => navigation.navigate("ReferredReport", { user})}
+              onPress={() => navigation.navigate("ReferredReport", { user })}
             />
             <CustomRouteCard
-             
               name="Group Report"
               icon="users" 
-              onPress={() => navigation.navigate("GroupReport", { user})}
+              onPress={() => navigation.navigate("GroupReport", { user })}
             />
-            
           </View>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
+// ... (Rest of the styles remain the same)
+
 const styles = StyleSheet.create({
+  // New main container style to replace SafeAreaView behavior
+  mainContainer: { 
+    flex: 1, 
+    backgroundColor: COLORS.white,
+    // Add padding top for Android and potentially a bit more for iOS 
+    // to clear the status bar if not handled by the parent navigator/stack
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, 
+  },
   gradientOverlay: {
     flex: 1,
   },
@@ -95,7 +93,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 5,
-     textAlign: 'center',
+    textAlign: 'center',
   },
   cardListContainer: {
     marginTop: 15,

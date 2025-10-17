@@ -6,11 +6,10 @@ import {
     Platform,
     TouchableOpacity,
     ActivityIndicator,
-    ScrollView,
+    ScrollView, // The key component for scrolling
     Image,
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -115,103 +114,84 @@ const Commissions = ({ route, navigation }) => {
     }, [activeTab, currentUser]); // Depend on currentUser to re-fetch if user changes
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+        <LinearGradient
+            colors={['#b6e4ebff', '#1796d1ff']}
+            style={{ flex: 1 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+        >
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
             >
-                <KeyboardAvoidingView
-                    style={{ flex: 1 }}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+                {/* Fixed Header Section */}
+                <View style={styles.fixedHeaderContainer}>
+                    <Header />
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.title}>Commissions</Text>
+                        <Text style={styles.subtitle}>Select a chit type to view details</Text>
+                    </View>
+                    <View style={styles.tabContainer}>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
+                            onPress={() => setActiveTab("CHIT")}
+                        >
+                            <Icon
+                                name="users"
+                                size={20}
+                                color={activeTab === "CHIT" ? "#333" : "#666"}
+                            />
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "CHIT" && styles.activeTabText,
+                                ]}
+                            >
+                                Chits
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
+                            onPress={() => setActiveTab("GOLD")}
+                        >
+                            <Icon
+                                name="money"
+                                size={20}
+                                color={activeTab === "GOLD" ? "#333" : "#666"}
+                            />
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "GOLD" && styles.activeTabText,
+                                ]}
+                            >
+                                Gold Chits
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Scrollable Content Section */}
+                <ScrollView
+                    style={styles.scrollContentContainer}
+                    // 🌟 THIS IS THE KEY CHANGE 🌟
+                    // Apply paddingBottom to contentContainerStyle to add space at the end of the scroll
+                    contentContainerStyle={{ paddingBottom: 120 }} 
+                    showsVerticalScrollIndicator={false}
                 >
-                    <ScrollView
-                        style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
-                        contentContainerStyle={{ paddingBottom: 80 }}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {/* Ensure Header receives necessary props if it depends on them */}
-                        <Header />
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.title}>Commissions</Text>
-                            <Text style={styles.subtitle}>Select a chit type to view details</Text>
-                        </View>
-                        <View style={styles.tabContainer}>
-                            <TouchableOpacity
-                                style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
-                                onPress={() => setActiveTab("CHIT")}
-                            >
-                                <Icon
-                                    name="users"
-                                    size={20}
-                                    color={activeTab === "CHIT" ? "#333" : "#666"}
-                                />
-                                <Text
-                                    style={[
-                                        styles.tabText,
-                                        activeTab === "CHIT" && styles.activeTabText,
-                                    ]}
-                                >
-                                    Chits
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                                onPress={() => setActiveTab("GOLD")}
-                            >
-                                <Icon
-                                    name="money"
-                                    size={20}
-                                    color={activeTab === "GOLD" ? "#333" : "#666"}
-                                />
-                                <Text
-                                    style={[
-                                        styles.tabText,
-                                        activeTab === "GOLD" && styles.activeTabText,
-                                    ]}
-                                >
-                                    Gold Chits
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.cardListContainer}>
-                            {activeTab === "CHIT" ? (
-                                isChitLoading ? (
-                                    <ActivityIndicator
-                                        size="large"
-                                        color="#000"
-                                        style={{ marginTop: 20 }}
-                                    />
-                                ) : chitCommissionLength === 0 ? (
-                                    <Text style={styles.noLeadsText}>
-                                        No Chit Commission Found
-                                    </Text>
-                                ) : (
-                                    <View style={{ gap: 20 }}>
-                                        {scrollData.map(({ title, icon, value, key, handlePress }) => (
-                                            <CustomCommissionCard
-                                                key={key}
-                                                title={title}
-                                                icon={icon}
-                                                value={commissions?.summary?.[value]}
-                                                onPress={handlePress}
-                                            />
-                                        ))}
-                                    </View>
-                                )
-                            ) : isGoldLoading ? (
+                    <View style={styles.cardListContainer}>
+                        {activeTab === "CHIT" ? (
+                            isChitLoading ? (
                                 <ActivityIndicator
                                     size="large"
                                     color="#000"
                                     style={{ marginTop: 20 }}
                                 />
-                            ) : goldCommissionLength === 0 ? (
-                                <View style={styles.noDataContainer}>
-                                    <Image source={noImage} style={styles.noImage} />
-                                    <Text style={styles.noLeadsText}>No Gold Commission Found</Text>
-                                </View>
+                            ) : chitCommissionLength === 0 ? (
+                                <Text style={styles.noLeadsText}>
+                                    No Chit Commission Found
+                                </Text>
                             ) : (
                                 <View style={{ gap: 20 }}>
                                     {scrollData.map(({ title, icon, value, key, handlePress }) => (
@@ -224,18 +204,46 @@ const Commissions = ({ route, navigation }) => {
                                         />
                                     ))}
                                 </View>
-                            )}
-                        </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
-            </LinearGradient>
-        </SafeAreaView>
+                            )
+                        ) : isGoldLoading ? (
+                            <ActivityIndicator
+                                size="large"
+                                color="#000"
+                                style={{ marginTop: 20 }}
+                            />
+                        ) : goldCommissionLength === 0 ? (
+                            <View style={styles.noDataContainer}>
+                                <Image source={noImage} style={styles.noImage} />
+                                <Text style={styles.noLeadsText}>No Gold Commission Found</Text>
+                            </View>
+                        ) : (
+                            <View style={{ gap: 20 }}>
+                                {scrollData.map(({ title, icon, value, key, handlePress }) => (
+                                    <CustomCommissionCard
+                                        key={key}
+                                        title={title}
+                                        icon={icon}
+                                        value={commissions?.summary?.[value]}
+                                        onPress={handlePress}
+                                    />
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
-    gradientOverlay: {
-        flex: 1,
+    fixedHeaderContainer: {
+        paddingHorizontal: 22,
+        paddingTop: 50, 
+        paddingBottom: 20, 
+    },
+    scrollContentContainer: {
+        flex: 1, 
     },
     titleContainer: {
         marginTop: 30,
@@ -252,23 +260,29 @@ const styles = StyleSheet.create({
         color: '#666',
         marginTop: 5,
     },
+    tabContainer: {
+        flexDirection: "row",
+        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        borderRadius: 15,
+        overflow: 'hidden',
+    },
     cardListContainer: {
-        marginTop: 15,
-        gap: 20,
+        gap: 20, 
         alignItems: 'center',
+        paddingHorizontal: 22, 
     },
     card: {
         backgroundColor: COLORS.white,
         borderRadius: 20,
         padding: 20,
-        width: '90%',
+        width: '100%', 
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         borderLeftWidth: 5,
         borderRightWidth: 5,
-         borderTopWidth: 5,
-        borderButtonWidth: 5,
+        borderTopWidth: 5,
+        borderBottomWidth: 5, 
         borderColor: '#da8201',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 10 },
@@ -310,13 +324,6 @@ const styles = StyleSheet.create({
         fontSize: 22,
         color: '#da8201',
     },
-    tabContainer: {
-        flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
-        borderRadius: 15,
-        marginBottom: 10,
-        overflow: 'hidden',
-    },
     tab: {
         flex: 1,
         paddingVertical: 10,
@@ -343,23 +350,25 @@ const styles = StyleSheet.create({
         color: '#333',
         fontWeight: 'bold',
     },
-   noDataContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  noDataText: {
-    fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
-  },
-  noImage: {
-    width: 250,
-    height: 150,
-    resizeMode: 'contain',
-    marginBottom: 20,
-  }
+    noDataContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 50,
+    },
+    noLeadsText: { 
+        fontSize: 18,
+        color: '#555',
+        textAlign: 'center',
+        marginTop: 20,
+        fontWeight: 'bold'
+    },
+    noImage: {
+        width: 250,
+        height: 150,
+        resizeMode: 'contain',
+        marginBottom: 20,
+    }
 });
 
-export default Commissions;    
+export default Commissions;

@@ -2,7 +2,6 @@ import { View,
   Text, ScrollView, 
   StyleSheet, TextInput, Modal, TouchableOpacity, 
   Alert, ActivityIndicator, Image, Dimensions} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -20,7 +19,7 @@ import PaymentChitList from "../components/PaymentChitList";
 
 const noImage = require('../assets/no.png');
 
-const LoanPayments = ({ route, navigation }) => {
+const ChitPayments = ({ route, navigation }) => {
   const { user, areaId } = route.params;
 
   const [search, setSearch] = useState("");
@@ -266,6 +265,7 @@ const LoanPayments = ({ route, navigation }) => {
               updateFilterValue('paymentMode', value);
               setShowPicker(false);
             }}>
+             <Picker.Item label="All Modes" value="" />
             {paymentModes.map((mode) => (
               <Picker.Item key={mode} label={mode} value={mode} />
             ))}
@@ -449,9 +449,9 @@ const LoanPayments = ({ route, navigation }) => {
 
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']}
+    // Replaced SafeAreaView with View
+    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
+      <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -459,10 +459,11 @@ const LoanPayments = ({ route, navigation }) => {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#f7f7f7ff" />
-           
+            
           </View>
         ) : (
-          <>
+          // Added a marginTop to account for status bar/notch space
+          <View style={styles.contentContainer}> 
             <View style={{ marginHorizontal: 22, marginTop: 12 }}>
               <Header />
               <View style={styles.titleCollectionContainer}>
@@ -478,13 +479,13 @@ const LoanPayments = ({ route, navigation }) => {
                 animationType="slide"
                 onRequestClose={() => setShowTotalCollectionDetails(false)}
               >
-                <LinearGradient
-                  colors={['#dbf6faff', '#90dafcff']}
+                <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
                   style={styles.fullScreenModalGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  <SafeAreaView style={styles.fullScreenModalContainer}>
+                  {/* Changed SafeAreaView inside Modal to a standard View */}
+                  <View style={styles.fullScreenModalContainer}> 
                     <TouchableOpacity
                       style={styles.modalCloseButton}
                       onPress={() => {
@@ -524,8 +525,11 @@ const LoanPayments = ({ route, navigation }) => {
                           <Text style={styles.noPaymentsText}>No payments for selected date.</Text>
                         )}
                       </ScrollView>
+                       <TouchableOpacity onPress={printTotalCollectionDetails} style={styles.printDetailsButton}>
+                        <Text style={styles.printDetailsButtonText}>Print Summary</Text>
+                      </TouchableOpacity>
                     </View>
-                  </SafeAreaView>
+                  </View>
                 </LinearGradient>
               </Modal>
 
@@ -599,7 +603,7 @@ const LoanPayments = ({ route, navigation }) => {
                             setShowPicker(false);
                             setSelectedFilter(null);
                           }}
-                          
+                          // Empty style provided in original. 
                         >
                           
                         </TouchableOpacity>
@@ -659,16 +663,21 @@ const LoanPayments = ({ route, navigation }) => {
                 </ScrollView>
               </>
             )}
-          </>
+          </View>
         )}
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
+  },
+  // New style to push content down from the top edge
+  contentContainer: {
+    flex: 1,
+    paddingTop: 40, // Added padding to compensate for SafeAreaView removal
   },
   loadingContainer: {
     flex: 1,
@@ -844,10 +853,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
+    paddingTop: 70, // Added padding to compensate for SafeAreaView removal
   },
   modalCloseButton: {
     position: 'absolute',
-    top: 30,
+    top: 50, // Adjusted top value
     right: 20,
     zIndex: 1,
   },
@@ -961,4 +971,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoanPayments;
+export default ChitPayments;

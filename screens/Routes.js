@@ -25,7 +25,7 @@ const Routes = ({ route, navigation }) => {
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']} // Refined gradient colors for a more modern, cohesive look
+        colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

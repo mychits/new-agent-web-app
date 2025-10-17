@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  Platform, // Import Platform for potential status bar handling
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// import { SafeAreaView } from "react-native-safe-area-context"; // ❌ REMOVED
 import Header from "../components/Header";
 import {
   Ionicons,
@@ -172,51 +173,55 @@ const CustomerOnHold = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.mainContentArea}>
-          <Header />
-          <Text style={styles.screenTitle}>Customers On Hold</Text>
-          <Text style={styles.instructionText}>
-            Follow up with these customers to resolve their hold status.
-          </Text>
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color="#007bff"
-              style={styles.loader}
-            />
-          ) : error ? (
-            <Text style={styles.statusText}>{error}</Text>
-          ) : (
-            <ScrollView contentContainerStyle={styles.cardsScrollViewContent}>
-              {customers.length > 0 ? (
-                customers.map(renderCustomerCard)
-              ) : (
-                <Text style={styles.statusText}>
-                  No customers currently on hold.
-                </Text>
-              )}
-            </ScrollView>
-          )}
-        </View>
-      </LinearGradient>
-    </SafeAreaView>
+    <LinearGradient // ⬅️ LinearGradient is now the top-level container
+      colors={['#b6e4ebff', '#1796d1ff']}
+      style={styles.gradientOverlay}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <View style={styles.mainContentArea}>
+        <Header />
+        <Text style={styles.screenTitle}>Customers On Hold</Text>
+        <Text style={styles.instructionText}>
+          Follow up with these customers to resolve their hold status.
+        </Text>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#007bff"
+            style={styles.loader}
+          />
+        ) : error ? (
+          <Text style={styles.statusText}>{error}</Text>
+        ) : (
+          <ScrollView contentContainerStyle={styles.cardsScrollViewContent}>
+            {customers.length > 0 ? (
+              customers.map(renderCustomerCard)
+            ) : (
+              <Text style={styles.statusText}>
+                No customers currently on hold.
+              </Text>
+            )}
+          </ScrollView>
+        )}
+      </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  gradientOverlay: { flex: 1 },
+  // safeArea: { flex: 1 }, ❌ REMOVED
+  gradientOverlay: { 
+    flex: 1,
+    // Add margin or padding top to avoid status bar overlap, 
+    // especially since SafeAreaView was removed.
+    // This value is a common starting point, adjust as needed.
+    paddingTop: Platform.OS === 'android' ? 0 : 30, 
+  },
   mainContentArea: {
     flex: 1,
     paddingHorizontal: 20,
-    marginTop: 15,
+    marginTop: 35,
   },
   screenTitle: {
     fontSize: 28,

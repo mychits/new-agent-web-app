@@ -1,7 +1,6 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "../screens/Home";
-import Welcome from "../screens/Welcome";
 import Login from "../screens/Login";
 import BottomNavigation from "./BottomNavigation"; // This component contains the tab navigator
 import PaymentNavigator from "./PaymentNavigator";
@@ -57,7 +56,7 @@ export default function AppNavigation() {
         barStyle="light-content"
       />
 
-      <Stack.Navigator initialRouteName="Welcome">
+      <Stack.Navigator initialRouteName="Login">
         {/*
           Keep BottomNavigation as the main entry point for the app's logged-in state.
           The BottomNavigation component will internally handle the Home screen
@@ -67,12 +66,6 @@ export default function AppNavigation() {
           name="BottomNavigation"
           component={BottomNavigation}
           options={{ headerShown: false }}
-        />
-        
-        <Stack.Screen
-          name="Welcome"
-          options={{ headerShown: false }}
-          component={Welcome}
         />
         <Stack.Screen
           name="Login"

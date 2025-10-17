@@ -199,13 +199,7 @@ const Home = ({ route, navigation }) => {
     //   backgroundColor: "#D9D7F1",
     // },
 
-    {
-        id: "monthlyTurnover", 
-        name: "Monthly Turnover",
-        imagePath: cardImagePaths.monthlyTurnover,
-        onPress: () => navigation.navigate("MonthlyTurnover"),
-        backgroundColor: "#FFECB3", 
-    },
+   
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
       name: "Collections",
@@ -316,6 +310,13 @@ const Home = ({ route, navigation }) => {
           params: { user },
         }),
       backgroundColor: "#D1C4E9",
+    },
+     {
+        id: "monthlyTurnover", 
+        name: "Monthly Turnover",
+        imagePath: cardImagePaths.monthlyTurnover,
+        onPress: () => navigation.navigate("MonthlyTurnover"),
+        backgroundColor: "#FFECB3", 
     },
     
     {
@@ -506,7 +507,7 @@ const Home = ({ route, navigation }) => {
   return (
     // 💡 FIX APPLIED: LinearGradient now wraps the entire screen for full coverage.
     <LinearGradient
-      colors={["#dbf6faff", "#90dafcff"]}
+      colors={['#b6e4ebff', '#1796d1ff']}
       style={{ flex: 1 }} // Apply flex: 1 to the gradient for full viewport height
     >
       {/* ❌ REMOVED SafeAreaView - now the content will start from the top edge */}
@@ -632,8 +633,8 @@ const styles = StyleSheet.create({
     // Note: Dimensions are removed from here and moved to gridCardWrapper
     flex: 1, // Fill the wrapper
     borderRadius: 15,
-    borderColor: "gold",
-    borderWidth: 1,
+    borderColor: "#e2a65dff",
+    borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
     // marginBottom: 20, // Removed from here, moved to gridCardWrapper

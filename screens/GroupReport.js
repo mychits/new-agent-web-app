@@ -21,12 +21,12 @@ import Header from "../components/Header";
 const DUE_API = "https://mychits.online/api/enroll/due/routes/agent/";
 const GROUP_API = "https://mychits.online/api/group/get-group";
 // Using the linear gradient from the original file
-const BACKGROUND_GRADIENT = ["#dbf6faff", "#90dafcff"]; 
+const BACKGROUND_GRADIENT = ['#b6e4ebff', '#1796d1ff']; 
 const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
 
 // --- CUSTOM STYLING CONSTANTS (Updated) ---
 // New Color Palette for a professional look
-const MODERN_PRIMARY = "#1e3a8a"; // Deep, professional blue
+const MODERN_PRIMARY = "#0f0f0fff"; // Deep, professional blue
 const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
 const WARNING_RED = "#dc2626";     // Strong red for negative/balance
 // Adding a neutral grey constant for cleaner styles

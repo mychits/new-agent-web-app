@@ -15,7 +15,7 @@ import {
 } from "react-native";
 
 import { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+// Removed: import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
@@ -33,6 +33,7 @@ const EnrolledGroups = ({ route, navigation }) => {
     const [customers, setCustomer] = useState([]);
     const [activeTab, setActiveTab] = useState("CHIT");
     const [searchQuery, setSearchQuery] = useState("");
+    
     const sendWhatsappMessage = async (item) => {
         if (item.user_id?.phone_number) {
             let url = `whatsapp://send?phone=${
@@ -52,6 +53,7 @@ const EnrolledGroups = ({ route, navigation }) => {
             return;
         }
     };
+    
     const openDialer = (item) => {
         if (item?.user_id?.phone_number) {
             Linking.canOpenURL(`tel:${item.user_id.phone_number}`)
@@ -129,9 +131,8 @@ const EnrolledGroups = ({ route, navigation }) => {
 
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
+        <View style={{ flex: 1, backgroundColor: COLORS.white }}>
+            <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -142,7 +143,7 @@ const EnrolledGroups = ({ route, navigation }) => {
                     keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
                 >
                     <ScrollView
-                        style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
+                        style={{ flex: 1, marginHorizontal: 22, marginTop: 38 }}
                         contentContainerStyle={{ paddingBottom: 80 }}
                         showsVerticalScrollIndicator={false}
                     >
@@ -246,7 +247,7 @@ const EnrolledGroups = ({ route, navigation }) => {
                     </ScrollView>
                 </KeyboardAvoidingView>
             </LinearGradient>
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     titleContainer: {
-        marginTop: 30,
+        marginTop: 20,
         marginBottom: 20,
         alignItems: 'center',
     },
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
         shadowRadius: 10,
-      
+        
         alignItems: 'center',
     },
     leftSection: {
@@ -338,16 +339,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 5,
     },
-    // name: {
-    //     fontSize: 15,
-    //     fontWeight: "600",
-    //     color: "#000",
-    //     marginBottom: 5,
-    // },
-    // groupName: {
-    //     fontSize: 12,
-    //     color: "#666",
-    // },
     name: {
         fontSize: 14,
         fontWeight: "900",

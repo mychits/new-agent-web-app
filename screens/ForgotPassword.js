@@ -90,8 +90,7 @@ export default function ForgotPassword({ navigation }) {
   };
 
   return (
-    <LinearGradient
-       colors={['#dbf6faff', '#90dafcff']}
+    <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.backgroundGradient}

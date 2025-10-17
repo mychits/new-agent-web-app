@@ -3,7 +3,6 @@ import {
     Text,
     FlatList,
     StyleSheet,
-    ScrollView,
     TouchableOpacity,
     ActivityIndicator,
     Image,
@@ -13,7 +12,7 @@ import {
     Platform
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+// Removed SafeAreaView import
 import axios from "axios";
 import moment from "moment";
 import COLORS from "../constants/color";
@@ -303,132 +302,117 @@ const ViewLeads = ({ route, navigation }) => {
         activeTab === "CHIT" ? "No chit leads found" : "No gold leads found";
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+        <View style={styles.fullScreenContainer}>
             <LinearGradient
-                colors={['#dbf6faff', '#90dafcff']}
+                colors={['#b6e4ebff', '#1796d1ff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                    <View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
-                        <Header />
+                {/* Fixed Header Content Area */}
+                <View style={styles.fixedHeaderArea}>
+                    <Header />
 
-                        <View style={styles.titleContainer}>
-                            <View style={styles.titleAndCountRow}>
-                                <Text style={styles.title}>Leads</Text>
-                                <Text style={styles.totalAmountText}>
-                                    {chitLeads.length + goldLeads.length || 0}
-                                </Text>
-                            </View>
-                            <View style={styles.searchAndFilterContainer}>
-                                <View style={styles.searchBarContainer}>
-                                    <Icon name="search" size={20} color="#888" style={styles.searchIcon} />
-                                    <TextInput
-                                        style={styles.searchBar}
-                                        placeholder="Search leads..."
-                                        onChangeText={searchFilterFunction}
-                                        value={searchQuery}
-                                        autoCapitalize="none"
-                                    />
-                                </View>
-                                <TouchableOpacity
-                                    style={styles.filterBox}
-                                    onPress={() => setModalVisible(true)}
-                                >
-                                    <Icon name="filter" size={18} color="#000" style={styles.filterIcon} />
-                                    <Text style={styles.filterText}>{filterText}</Text>
-                                </TouchableOpacity>
-                            </View>
+                    <View style={styles.titleContainer}>
+                        <View style={styles.titleAndCountRow}>
+                            <Text style={styles.title}>Leads</Text>
+                            <Text style={styles.totalAmountText}>
+                                {chitLeads.length + goldLeads.length || 0}
+                            </Text>
                         </View>
-
-                        <View style={styles.container}>
-                            <View style={styles.tabContainer}>
-                                <TouchableOpacity
-                                    style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
-                                    onPress={() => setActiveTab("CHIT")}
-                                >
-                                    <Icon
-                                        name="users"
-                                        size={20}
-                                        color={activeTab === "CHIT" ? "#333" : "#666"}
-                                        style={styles.tabIcon}
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.tabText,
-                                            activeTab === "CHIT" && styles.activeTabText,
-                                        ]}
-                                    >
-                                        Chit Leads {chitLeads.length || 0}
-                                    </Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                                    onPress={() => setActiveTab("GOLD")}
-                                >
-                                    <Icon
-                                        name="money"
-                                        size={20}
-                                        color={activeTab === "GOLD" ? "#333" : "#666"}
-                                        style={styles.tabIcon}
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.tabText,
-                                            activeTab === "GOLD" && styles.activeTabText,
-                                        ]}
-                                    >
-                                        Gold Leads {goldLeads.length || 0}
-                                    </Text>
-                                </TouchableOpacity>
+                        <View style={styles.searchAndFilterContainer}>
+                            <View style={styles.searchBarContainer}>
+                                <Icon name="search" size={20} color="#888" style={styles.searchIcon} />
+                                <TextInput
+                                    style={styles.searchBar}
+                                    placeholder="Search leads..."
+                                    onChangeText={searchFilterFunction}
+                                    value={searchQuery}
+                                    autoCapitalize="none"
+                                />
                             </View>
-
-                            <View style={{ minHeight: 200 }}>
-                                {isLoading && (
-                                    <ActivityIndicator
-                                        size="large"
-                                        color="#000"
-                                        style={{ marginTop: 20 }}
-                                    />
-                                )}
-                                {!isLoading && dataLoaded && filteredLeads.length > 0 && (
-                                    <FlatList
-                                        data={filteredLeads}
-                                        keyExtractor={(item, index) => item._id || index.toString()}
-                                        renderItem={renderLeadCard}
-                                        contentContainerStyle={styles.flatListContent}
-                                    />
-                                )}
-                                {!isLoading && dataLoaded && filteredLeads.length === 0 && (
-                                    <View style={styles.noDataContainer}>
-                                        <Image source={noImage} style={styles.noImage} />
-                                        <Text style={styles.noDataText}>{noDataMessage}</Text>
-                                    </View>
-                                )}
-                            </View>
+                            <TouchableOpacity
+                                style={styles.filterBox}
+                                onPress={() => setModalVisible(true)}
+                            >
+                                <Icon name="filter" size={18} color="#000" style={styles.filterIcon} />
+                                <Text style={styles.filterText}>{filterText}</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
-                </ScrollView>
+                    <View style={styles.tabContainer}>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
+                            onPress={() => setActiveTab("CHIT")}
+                        >
+                            <Icon
+                                name="users"
+                                size={20}
+                                color={activeTab === "CHIT" ? "#333" : "#666"}
+                                style={styles.tabIcon}
+                            />
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "CHIT" && styles.activeTabText,
+                                ]}
+                            >
+                                Chit Leads {chitLeads.length || 0}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
+                            onPress={() => setActiveTab("GOLD")}
+                        >
+                            <Icon
+                                name="money"
+                                size={20}
+                                color={activeTab === "GOLD" ? "#333" : "#666"}
+                                style={styles.tabIcon}
+                            />
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "GOLD" && styles.activeTabText,
+                                ]}
+                            >
+                                Gold Leads {goldLeads.length || 0}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                {/* Scrollable Content Area */}
+                <View style={styles.scrollableContentArea}>
+                    {isLoading && (
+                        <ActivityIndicator
+                            size="large"
+                            color="#000"
+                            style={{ marginTop: 20 }}
+                        />
+                    )}
+                    {!isLoading && dataLoaded && filteredLeads.length > 0 && (
+                        <FlatList
+                            data={filteredLeads}
+                            keyExtractor={(item, index) => item._id || index.toString()}
+                            renderItem={renderLeadCard}
+                            contentContainerStyle={styles.flatListContent}
+                        />
+                    )}
+                    {!isLoading && dataLoaded && filteredLeads.length === 0 && (
+                        <View style={styles.noDataContainer}>
+                            <Image source={noImage} style={styles.noImage} />
+                            <Text style={styles.noDataText}>{noDataMessage}</Text>
+                        </View>
+                    )}
+                </View>
             </LinearGradient>
 
             <TouchableOpacity
                 onPress={() => navigation.navigate("AddLead", { user: user })}
-                style={{
-                    position: "absolute",
-                    bottom: 20,
-                    right: 20,
-                    backgroundColor: COLORS.primary,
-                    borderRadius: 30,
-                    width: 60,
-                    height: 60,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    elevation: 5,
-                }}
+                style={styles.floatingActionButton}
             >
-                <Text style={{ color: "white", fontSize: 12, fontWeight: "bold" }}>
+                <Text style={styles.floatingActionButtonText}>
                     + Add
                 </Text>
             </TouchableOpacity>
@@ -470,12 +454,25 @@ const ViewLeads = ({ route, navigation }) => {
                     </View>
                 </View>
             </Modal>
-        </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
+    fullScreenContainer: {
+        flex: 1,
+        backgroundColor: COLORS.white,
+    },
     gradientOverlay: {
+        flex: 1,
+        paddingHorizontal: 22,
+    },
+    fixedHeaderArea: {
+        // Pushes the entire fixed area down from the top edge
+        paddingTop: Platform.OS === 'android' ? 40 : 50, 
+        marginBottom: 10,
+    },
+    scrollableContentArea: {
         flex: 1,
     },
     titleContainer: {
@@ -483,7 +480,6 @@ const styles = StyleSheet.create({
         flexDirection: "column",
         justifyContent: "flex-start",
         alignItems: "center",
-        padding: 10,
         marginTop: 20,
         marginBottom: 20,
     },
@@ -504,10 +500,6 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         color: "#333",
     },
-    container: {
-        flex: 1,
-        marginTop: -3,
-    },
     searchAndFilterContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -520,6 +512,7 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(255, 255, 255, 0.7)",
         borderRadius: 15,
         marginBottom: 10,
+        marginTop: -3,
     },
     tab: {
         flex: 1,
@@ -545,7 +538,7 @@ const styles = StyleSheet.create({
         marginRight: 5,
     },
     card: {
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        backgroundColor: "rgba(255, 255, 255, 0.9)",
         padding: 15,
         marginVertical: 5,
         borderRadius: 15,
@@ -582,7 +575,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: "600",
         color: "#000",
-        marginBottom: 5,  // gap between name and groupName
+        marginBottom: 5,
     },
     groupName: {
         fontSize: 16,
@@ -755,15 +748,6 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         textAlign: "left",
     },
-    optionItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    optionText: {
-        marginLeft: 15,
-        fontSize: 16,
-    },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
@@ -807,6 +791,24 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
     },
+    floatingActionButton: {
+        position: "absolute",
+        bottom: 20,
+        right: 20,
+        backgroundColor: COLORS.primary,
+        borderRadius: 30,
+        width: 60,
+        height: 60,
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 5,
+        zIndex: 10,
+    },
+    floatingActionButtonText: {
+        color: "white",
+        fontSize: 12,
+        fontWeight: "bold",
+    }
 });
 
 export default ViewLeads;

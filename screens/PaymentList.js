@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// Removed 'SafeAreaView' from imports
 import Icon from "react-native-vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -24,15 +24,16 @@ const PaymentList = ({ route, navigation }) => {
   const { user } = route.params;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']}
+    // Replaced SafeAreaView with a standard View
+    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
+      <LinearGradient       colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <ScrollView
-          style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
+          // Added paddingTop to compensate for the removed SafeAreaView on iOS/Android top bar
+          style={{ flex: 1, marginHorizontal: 22, marginTop: 12, paddingTop: 40 }}
           contentContainerStyle={{ paddingBottom: 80 }}
           showsVerticalScrollIndicator={false}
         >
@@ -69,16 +70,17 @@ const PaymentList = ({ route, navigation }) => {
               name="Pigmy Payments"
               icon="briefcase" // Using 'briefcase' or could use 'inr' or 'book'
               onPress={() =>
-                navigation.navigate("PigmyPayments", { user, areaId: "pigmy" })
+                navigation.navigate("PigmePayments", { user, areaId: "pigmy" })
               }
             />
           </View>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
+// ... (styles remain the same)
 const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,

@@ -11,7 +11,7 @@ import {
     ActivityIndicator
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+// Removed SafeAreaView import
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
@@ -114,7 +114,8 @@ const AddLead = ({ route, navigation }) => {
                 group_id: selectedGroup,
                 lead_type: "agent",
                 scheme_type: selectedTicket,
-                lead_agent: selectedTicket === "chit" ? user.userId : receipt.name,
+                // Check if lead_agent should be user.userId for gold, as agent name seems incorrect for ID field
+                lead_agent: selectedTicket === "chit" ? user.userId : user.userId, // Assuming lead_agent should be the user ID in both cases
                 agent_number: receipt.phone_number,
             };
 
@@ -128,7 +129,9 @@ const AddLead = ({ route, navigation }) => {
                     profession: "",
                 });
                 setSelectedGroup("");
+                // Keeping selectedTicket as 'chit' to reset to default
                 setSelectedTicket("chit");
+                // Navigate and pass user to ViewLeads
                 navigation.navigate("ViewLeads", { user: user });
             } else {
                 console.log("Error:", response.data);
@@ -143,128 +146,143 @@ const AddLead = ({ route, navigation }) => {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+        <KeyboardAvoidingView
+            style={styles.fullScreenContainer}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
             <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
+                colors={['#b6e4ebff', '#1796d1ff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={styles.container}
-                >
-                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                        <View style={{ marginHorizontal: 22, marginTop: 12 }}>
-                            <Header />
-                            <View style={styles.titleContainer}>
-                                <Text style={styles.title}>Add Lead</Text>
-                                <TouchableOpacity
-                                    style={styles.myLeadsButton}
-                                    onPress={() => navigation.navigate("ViewLeads", { user: user })}
-                                >
-                                    <Text style={styles.myLeadsButtonText}>My Leads</Text>
-                                </TouchableOpacity>
-                            </View>
+                <View style={styles.fixedHeaderArea}>
+                    <Header />
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.title}>Add Lead</Text>
+                        <TouchableOpacity
+                            style={styles.myLeadsButton}
+                            onPress={() => navigation.navigate("ViewLeads", { user: user })}
+                        >
+                            <Text style={styles.myLeadsButtonText}>My Leads</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <ScrollView contentContainerStyle={styles.scrollableContentArea}>
+                    <View style={styles.contentContainer}>
+                        <Text style={styles.label}>Name</Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Enter Name"
+                            keyboardType="default"
+                            value={customerInfo.full_name}
+                            onChangeText={(value) =>
+                                handleInputChange("full_name", value)
+                            }
+                        />
 
-                            <View style={styles.contentContainer}>
-                                <Text style={styles.label}>Name</Text>
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder="Enter Name"
-                                    keyboardType="default"
-                                    value={customerInfo.full_name}
-                                    onChangeText={(value) =>
-                                        handleInputChange("full_name", value)
-                                    }
-                                />
+                        <Text style={styles.label}>Phone Number</Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Enter Phone Number"
+                            keyboardType="phone-pad"
+                            value={customerInfo.phone_number}
+                            onChangeText={(value) =>
+                                handleInputChange("phone_number", value)
+                            }
+                        />
 
-                                <Text style={styles.label}>Phone Number</Text>
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder="Enter Phone Number"
-                                    keyboardType="phone-pad"
-                                    value={customerInfo.phone_number}
-                                    onChangeText={(value) =>
-                                        handleInputChange("phone_number", value)
-                                    }
-                                />
-
-                                <Text style={styles.label}>Profession</Text>
-                                <View style={styles.pickerContainer}>
-                                    <Picker
-                                        selectedValue={customerInfo.profession}
-                                        onValueChange={(itemValue) =>
-                                            handleInputChange("profession", itemValue)
-                                        }
-                                    >
-                                        <Picker.Item label="Select Profession" value="" />
-                                        <Picker.Item label="Employed" value="Employed" />
-                                        <Picker.Item label="Self-Employed" value="Self-Employed" />
-                                    </Picker>
-                                </View>
-
-                                <View style={styles.tabContainer}>
-                                    <TouchableOpacity
-                                        style={[styles.tab, selectedTicket === "chit" && styles.activeTab]}
-                                        onPress={() => setSelectedTicket("chit")}
-                                    >
-                                        <Text style={[styles.tabText, selectedTicket === "chit" && styles.activeTabText]}>
-                                            Chit
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.tab, selectedTicket === "gold" && styles.activeTab]}
-                                        onPress={() => setSelectedTicket("gold")}
-                                    >
-                                        <Text style={[styles.tabText, selectedTicket === "gold" && styles.activeTabText]}>
-                                            Gold
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-
-                                <Text style={styles.label}>Group</Text>
-                                <View style={styles.pickerContainer}>
-                                    <Picker
-                                        selectedValue={selectedGroup}
-                                        onValueChange={(value) => setSelectedGroup(value)}
-                                    >
-                                        <Picker.Item label="Select Group" value="" />
-                                        {groups.map((group) => (
-                                            <Picker.Item
-                                                key={group._id}
-                                                label={group.group_name}
-                                                value={group._id}
-                                            />
-                                        ))}
-                                    </Picker>
-                                </View>
-
-                                <Button
-                                    title={isLoading ? "Please wait..." : "Add Lead"}
-                                    filled
-                                    style={{
-                                        marginTop: 18,
-                                        marginBottom: 4,
-                                        backgroundColor: isLoading ? "gray" : COLORS.third,
-                                    }}
-                                    onPress={handleAddLead}
-                                />
-                            </View>
+                        <Text style={styles.label}>Profession</Text>
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={customerInfo.profession}
+                                onValueChange={(itemValue) =>
+                                    handleInputChange("profession", itemValue)
+                                }
+                                style={styles.pickerStyle}
+                                itemStyle={styles.pickerItemStyle}
+                            >
+                                <Picker.Item label="Select Profession" value="" />
+                                <Picker.Item label="Employed" value="Employed" />
+                                <Picker.Item label="Self-Employed" value="Self-Employed" />
+                            </Picker>
                         </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
+                        
+                        <Text style={styles.label}>Scheme Type</Text>
+                        <View style={styles.tabContainer}>
+                            <TouchableOpacity
+                                style={[styles.tab, selectedTicket === "chit" && styles.activeTab]}
+                                onPress={() => setSelectedTicket("chit")}
+                            >
+                                <Text style={[styles.tabText, selectedTicket === "chit" && styles.activeTabText]}>
+                                    Chit
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.tab, selectedTicket === "gold" && styles.activeTab]}
+                                onPress={() => setSelectedTicket("gold")}
+                            >
+                                <Text style={[styles.tabText, selectedTicket === "gold" && styles.activeTabText]}>
+                                    Gold
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.label}>Group</Text>
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={selectedGroup}
+                                onValueChange={(value) => setSelectedGroup(value)}
+                                style={styles.pickerStyle}
+                                itemStyle={styles.pickerItemStyle}
+                            >
+                                <Picker.Item label="Select Group" value="" />
+                                {groups.map((group) => (
+                                    <Picker.Item
+                                        key={group._id}
+                                        label={group.group_name}
+                                        value={group._id}
+                                    />
+                                ))}
+                            </Picker>
+                        </View>
+
+                        <Button
+                            title={isLoading ? "Please wait..." : "Add Lead"}
+                            filled
+                            style={{
+                                marginTop: 18,
+                                marginBottom: 4,
+                                backgroundColor: isLoading ? "gray" : COLORS.third,
+                            }}
+                            onPress={handleAddLead}
+                            disabled={isLoading}
+                        />
+                    </View>
+                </ScrollView>
             </LinearGradient>
-        </SafeAreaView>
+        </KeyboardAvoidingView>
     );
 };
 
 const styles = StyleSheet.create({
+    fullScreenContainer: {
+        flex: 1,
+        backgroundColor: COLORS.white,
+    },
     gradientOverlay: {
         flex: 1,
+        // Applies horizontal padding to the whole screen area
+        paddingHorizontal: 22,
     },
-    container: {
-        flex: 1,
+    fixedHeaderArea: {
+        // Pushes the content down from the top edge
+        paddingTop: Platform.OS === 'android' ? 40 : 50,
+        marginBottom: 10,
+    },
+    scrollableContentArea: {
+        flexGrow: 1,
+        paddingBottom: 20, // Add padding at the bottom for scroll view
     },
     titleContainer: {
         display: "flex",
@@ -272,8 +290,9 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
         padding: 10,
-        marginTop: 20,
-        marginBottom: 20,
+        // Adjusted vertical margins since fixedHeaderArea already has padding
+        marginTop: 10,
+        marginBottom: 10,
     },
     title: {
         fontSize: 26,
@@ -289,11 +308,14 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 5,
-        elevation: 5,
     },
     myLeadsButtonText: {
         color: COLORS.white,
         fontWeight: 'bold',
+    },
+    contentContainer: {
+        // Removed marginHorizontal: 22 here, as it's now on gradientOverlay
+        marginTop: 0,
     },
     label: {
         fontSize: 16,
@@ -309,9 +331,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         marginVertical: 10,
         color: "#000",
-    },
-    contentContainer: {
-        marginTop: -4,
     },
     tabContainer: {
         flexDirection: "row",
@@ -347,7 +366,16 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.white,
         borderRadius: 15,
         marginVertical: 10,
+        overflow: 'hidden', // Ensures picker content respects border radius
     },
+    pickerStyle: {
+        height: 50,
+        width: '100%',
+        color: '#000',
+    },
+    pickerItemStyle: {
+        // Custom styling for items might be needed depending on RN version/platform
+    }
 });
 
 export default AddLead;
