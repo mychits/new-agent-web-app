@@ -7,10 +7,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator, // <--- Import ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+// import { SafeAreaView } from "react-native-safe-area-context"; // REMOVED
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
@@ -30,11 +30,11 @@ const GoldPayin = ({ route, navigation }) => {
   const [amount, setAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
-  
+
   // New state for initial data loading
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   // Existing state for payment submission loading
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
 
   const [customerInfo, setCustomerInfo] = useState({});
   const [groups, setGroups] = useState([]);
@@ -43,7 +43,7 @@ const GoldPayin = ({ route, navigation }) => {
   const [selectedTicket, setSelectedTicket] = useState("");
   const [allData, setAllData] = useState([]);
   const [agent, setAgent] = useState([]);
-  
+
   // Helper to track when all initial data fetching is complete
   const [fetchStatuses, setFetchStatuses] = useState({
     customer: false,
@@ -67,11 +67,13 @@ const GoldPayin = ({ route, navigation }) => {
       const groupId = onlyGroup.group_id._id;
       setSelectedGroup(groupId);
 
+      // Filter tickets for the single group
       const groupTickets = allEnrollmentData
         .filter((item) => item.group_id._id === groupId)
         .map((item) => item.tickets);
 
-      setTickets(groupTickets);
+      // Flatten the array of ticket numbers (if necessary, though the original logic seems to expect an array of numbers)
+      setTickets(groupTickets); 
 
       if (groupTickets.length === 1) {
         setSelectedTicket(groupTickets[0].toString());
@@ -82,13 +84,14 @@ const GoldPayin = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
+        // NOTE: Hardcoded URL is used here, reflecting the original code
         const response = await axios.get(
           `http://13.51.87.99:3000/api/user/get-user-by-id/${customer}`
         );
         if (response.data) {
           setCustomerInfo(response.data);
         } else {
-          console.error("Unexpected API response format:", response.data);
+          console.error("Unexpected API response format for customer:", response.data);
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
@@ -103,51 +106,53 @@ const GoldPayin = ({ route, navigation }) => {
   useEffect(() => {
     const fetchEnrollDetails = async () => {
       try {
+        // NOTE: Hardcoded URL is used here, reflecting the original code
         const response = await axios.post(
           `http://13.51.87.99:3000/api/enroll/get-user-tickets/${customer}`
         );
         const enrollmentData = response.data;
         setAllData(enrollmentData);
-        
+
+        // Logic to get unique groups
         const uniqueGroups = enrollmentData.reduce((acc, group) => {
           if (
             !acc.some(
-              (g) => g.group_id.group_name === group.group_id.group_name
+              (g) => g.group_id._id === group.group_id._id
             )
           ) {
             acc.push(group);
           }
           return acc;
         }, []);
-        
+
         setGroups(uniqueGroups);
         handleSelectionLogic(uniqueGroups, enrollmentData);
 
       } catch (error) {
-        console.error("Error fetching customer data:", error);
+        console.error("Error fetching enrollment data:", error);
       } finally {
         setFetchStatuses(prev => ({ ...prev, enrollment: true }));
       }
     };
     fetchEnrollDetails();
-  }, [customer, baseUrl]);
+  }, [customer]); // Removed baseUrl from dependency array as it's not used in this call
 
   useEffect(() => {
     const today = moment().format("DD-MM-YYYY");
     setCurrentDate(today);
-    // Date is synchronous, so no need for fetchStatuses update here
   }, []);
 
   useEffect(() => {
     const fetchReceipt = async () => {
       try {
+        // NOTE: Hardcoded URL is used here, reflecting the original code
         const response = await axios.get(
           `http://13.51.87.99:3000/api/payment/get-latest-receipt`
         );
 
         setReceipt(response.data);
       } catch (error) {
-        console.error("Error fetching customer data:", error);
+        console.error("Error fetching receipt data:", error);
       } finally {
         setFetchStatuses(prev => ({ ...prev, receipt: true }));
       }
@@ -164,7 +169,7 @@ const GoldPayin = ({ route, navigation }) => {
         if (response.data) {
           setAgent(response.data);
         } else {
-          console.error("Unexpected API response format:", response.data);
+          console.error("Unexpected API response format for agent:", response.data);
         }
       } catch (error) {
         console.error("Error fetching agent data:", error);
@@ -184,7 +189,7 @@ const GoldPayin = ({ route, navigation }) => {
       const groupTickets = allData
         .filter((item) => item.group_id._id === groupId)
         .map((item) => item.tickets);
-      
+
       setTickets(groupTickets);
 
       if (groupTickets.length === 1) {
@@ -206,7 +211,7 @@ const GoldPayin = ({ route, navigation }) => {
       setAdditionalInfo("Cheque Number");
     } else {
       setAdditionalInfo("");
-      setTransactionId(""); 
+      setTransactionId(""); // Clear ID if changing to cash or default
     }
   };
 
@@ -237,14 +242,16 @@ const GoldPayin = ({ route, navigation }) => {
         collected_name: agent.name,
         collected_phone: agent.phone_number,
       };
-      
+
+      // NOTE: Hardcoded URL is used here, reflecting the original code
       const response = await axios.post(
         `http://13.51.87.99:3000/api/payment/add-payment`,
         data
       );
-      
+
       if (response.status === 201) {
         Alert.alert("Success", "Payment added successfully!");
+        // Navigate to a print screen with the newly created payment ID
         navigation.navigate("GoldPrint", { store_id: response.data._id });
       } else {
         console.log("Error:", response.data);
@@ -307,6 +314,7 @@ const GoldPayin = ({ route, navigation }) => {
           selectedValue={selectedTicket}
           onValueChange={(itemValue) => setSelectedTicket(itemValue)}
           style={styles.picker}
+          // Only enable the picker if a group is selected AND there's more than one ticket option
           enabled={selectedGroup !== "" && tickets.length > 1}
         >
           <Picker.Item label="Select Ticket" value="" />
@@ -325,7 +333,7 @@ const GoldPayin = ({ route, navigation }) => {
   // --- Conditional Rendering for Loading State ---
   if (isInitialLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.white }}>
         <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
           style={styles.gradientOverlay}
           start={{ x: 0, y: 0 }}
@@ -333,14 +341,15 @@ const GoldPayin = ({ route, navigation }) => {
         >
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Loading payment details...</Text>
           </View>
         </LinearGradient>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
@@ -352,7 +361,8 @@ const GoldPayin = ({ route, navigation }) => {
           keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
         >
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={{ marginHorizontal: 22, marginTop: 12 }}>
+            {/* MODIFIED: Increased marginTop from 12 to 40 to push the header below */}
+            <View style={{ marginHorizontal: 22, marginTop: 40 }}>
               <Header />
               <View style={styles.titleContainer}>
                 <Text style={styles.title}>Add Payment</Text>
@@ -476,7 +486,7 @@ const GoldPayin = ({ route, navigation }) => {
           </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -484,18 +494,18 @@ const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
-  loadingContainer: { // <--- New style for initial loading
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: { // <--- New style for loading text
+  loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: '#333',
   },
   titleContainer: {
-    marginTop: 20,
+    marginTop: 10,
     marginBottom: 20,
     alignItems: "center",
   },

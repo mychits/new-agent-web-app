@@ -10,6 +10,8 @@ import {
   Platform,
   LayoutAnimation, // <-- NEW: For Animation
   UIManager, // <-- NEW: For Animation on Android
+  TouchableOpacity, // <--- NEW: For Call Button
+  Linking, // <--- NEW: For Phone Call
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -50,6 +52,22 @@ const formatCurrency = (amount) => {
   })}`;
 };
 
+// --- FUNCTION TO HANDLE CALLS (COPIED FROM OutstandingReports.js) ---
+const handleCall = (phoneNumber) => {
+    if (phoneNumber) {
+        const url = `tel:${phoneNumber}`;
+        Linking.canOpenURL(url)
+            .then((supported) => {
+                if (supported) {
+                    return Linking.openURL(url);
+                } else {
+                    console.log(`Don't know how to open URI: ${url}`);
+                }
+            })
+            .catch((err) => console.error('An error occurred while opening dialer', err));
+    }
+};
+
 const ReferredReport = ({ route }) => {
   const { user } = route.params;
   const [groups, setGroups] = useState([]);
@@ -57,6 +75,8 @@ const ReferredReport = ({ route }) => {
   const [filteredData, setFilteredData] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState("all");
   const [loading, setLoading] = useState(true);
+  // <--- NEW STATE: For Call Button animation/feedback --->
+  const [activeCallId, setActiveCallId] = useState(null);
 
   // Fetch groups + dues
   useEffect(() => {
@@ -112,6 +132,8 @@ const ReferredReport = ({ route }) => {
     const groupName = item?.group_id?.group_name || "N/A";
     const paymentType = item?.payment_type || "N/A";
 
+    const isCalling = activeCallId === item?._id; // <--- NEW: Check calling status
+
     // Safely extract financial values
     const getFinancialValue = (value) =>
       Array.isArray(value) && value[0] ? value[0] : value || 0;
@@ -123,6 +145,18 @@ const ReferredReport = ({ route }) => {
     
     // ******* UNIQUE IDEA: STATUS BAR COLOR *******
     const statusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
+
+    // <--- NEW: Handle Call Press Logic --->
+    const handlePhonePress = (phone) => {
+      if (phone) {
+          setActiveCallId(item?._id); 
+          handleCall(phone); 
+
+          setTimeout(() => {
+              setActiveCallId(null);
+          }, 3000);
+      }
+    }
 
     return (
       <View style={styles.cardContainer}>
@@ -136,11 +170,29 @@ const ReferredReport = ({ route }) => {
             <Text style={styles.paymentType}>{paymentType}</Text>
           </View>
 
-          {/* Customer Info */}
+          {/* Customer Info and Call Button */}
           <View style={styles.cardBody}>
-            <Text style={styles.customerName}>{name}</Text>
+            <View style={styles.customerInfoRow}>
+                <Text style={styles.customerName}>{name}</Text>
+                {/* <--- NEW: Call Button ---> */}
+                {phone ? (
+                    <TouchableOpacity 
+                        onPress={() => handlePhonePress(phone)}
+                        style={[
+                            styles.callButton, 
+                            { backgroundColor: isCalling ? MODERN_PRIMARY : ACCENT_GREEN }
+                        ]}
+                        disabled={isCalling}
+                    >
+                        <Text style={styles.callButtonText}>
+                            {isCalling ? '📞 Calling...' : '📞 Call'}
+                        </Text>
+                    </TouchableOpacity>
+                ) : null}
+            </View>
+            
             {email ? <Text style={styles.customerInfo}>📧 {email}</Text> : null}
-            {phone ? <Text style={styles.customerInfo}>📞 {phone}</Text> : null}
+            {phone ? <Text style={styles.customerInfo}> {phone}</Text> : null}
           </View>
 
           {/* Financial Info */}
@@ -398,17 +450,42 @@ const styles = StyleSheet.create({
   cardBody: {
     marginBottom: 15,
   },
+  customerInfoRow: { // <--- NEW STYLE
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   customerName: {
     fontSize: 19,
     fontWeight: "800",
     color: "#1f2937",
-    marginBottom: 5,
+    flexShrink: 1,
+    marginRight: 10,
   },
   customerInfo: {
     fontSize: 14,
     color: NEUTRAL_GREY,
     marginTop: 3,
     fontWeight: "500",
+  },
+  callButton: { // <--- NEW STYLE
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  callButtonText: { // <--- NEW STYLE
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+    marginLeft: 5,
   },
   cardFinancial: {
     paddingTop: 10,

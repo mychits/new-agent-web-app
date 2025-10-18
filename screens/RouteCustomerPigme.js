@@ -1,6 +1,4 @@
-
 import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
@@ -54,18 +52,14 @@ const RouteCustomerPigme = ({ route, navigation }) => {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient
+    <LinearGradient
       colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <ScrollView
-          style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
-          contentContainerStyle={{ paddingBottom: 80 }}
-          showsVerticalScrollIndicator={false}
-        >
+        {/* Fixed Content Wrapper */}
+        <View style={styles.fixedContentWrapper}>
           <Header />
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Pigme Customers</Text>
@@ -86,12 +80,20 @@ const RouteCustomerPigme = ({ route, navigation }) => {
               style={styles.searchInput}
             />
           </View>
-          {
-            loading ? (
-              <View style={{ marginTop: 30, alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#da8201" />
-              </View>
-            ) : (
+        </View>
+
+        {/* Scrollable Customer List */}
+        {
+          loading ? (
+            <View style={{ marginTop: 30, alignItems: "center" }}>
+              <ActivityIndicator size="large" color="#da8201" />
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.scrollableListContainer} // New style for ScrollView
+              contentContainerStyle={{ paddingBottom: 80 }}
+              showsVerticalScrollIndicator={false}
+            >
               <>
                 {Array.isArray(customers) &&
                   customers
@@ -112,11 +114,10 @@ const RouteCustomerPigme = ({ route, navigation }) => {
                     ))}
 
               </>
-            )
-          }
-        </ScrollView>
+            </ScrollView>
+          )
+        }
       </LinearGradient>
-    </SafeAreaView>
   );
 };
 
@@ -124,8 +125,19 @@ const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
+  // New style for the fixed part's wrapper
+  fixedContentWrapper: {
+    paddingHorizontal: 22,
+    paddingTop: 50, // Adjust to your header placement
+  },
+  // New style for the scrollable list
+  scrollableListContainer: {
+    flex: 1, 
+    marginHorizontal: 22, 
+    // Add marginTop if needed to align with fixed content's horizontal margin
+  },
   titleContainer: {
-    marginTop: 40,
+    marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
   },

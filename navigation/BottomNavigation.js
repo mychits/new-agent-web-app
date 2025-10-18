@@ -162,27 +162,34 @@ const BottomNavigation = ({ route }) => {
         })}
       />
 
-      
-      <Tab.Screen
-        name="Attendence"
-        component={Attendence}
-        initialParams={{ user, agentInfo }}
-        options={({ route }) => ({
-          tabBarStyle: getTabBarStyle(route),
-         
-          tabBarButton: (props) => <CenterIcon {...props} />, 
-          tabBarIcon: () => (
-            
-            <MaterialCommunityIcons
-              name="calendar-clock" 
-              size={32} 
-              color={ICON_COLOR_ON_FAB}
-            />
-          ),
-        })}
+     <Tab.Screen
+  name="Attendence"
+  component={Attendence}
+  initialParams={{ user, agentInfo }}
+  options={{
+    tabBarButton: (props) => (
+      <CenterIcon
+        {...props}
+        onPress={() => {
+          
+        }}
       />
-
-    
+    ),
+    tabBarIcon: () => (
+      <MaterialCommunityIcons
+        name="calendar-clock"
+        size={32}
+        color={ICON_COLOR_ON_FAB}
+      />
+    ),
+  }}
+  listeners={{
+    tabPress: (e) => {
+      // Prevent navigation
+      e.preventDefault();
+    },
+  }}
+/>
 
 
       <Tab.Screen

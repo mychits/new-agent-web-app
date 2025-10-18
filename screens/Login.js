@@ -34,6 +34,9 @@ const backgroundImages = [
   require('../assets/i2.png'),
 ];
 
+// 1. Import the new image
+const logoImage = require('../assets/Group400.png');
+
 export default function Login({ navigation }) {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
@@ -147,6 +150,11 @@ export default function Login({ navigation }) {
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.contentWrapper}>
+          {/* 2. Add the Image component (e.g., as a logo above the title) */}
+          <Animated.View style={[styles.logoContainer, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] }]}>
+            <Image source={logoImage} style={styles.logo} resizeMode="contain" />
+          </Animated.View>
+
           <Text style={styles.welcomeTitle}>Welcome Back{"\n"}to Mychits</Text>
 
           {/* Phone Number Input */}
@@ -265,6 +273,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
+  // 3. Add styles for the new logo image
+  logoContainer: {
+    marginBottom: 1, // Space below the logo
+  },
+  logo: {
+    width: 80, // Adjust size as needed
+    height: 70, // Adjust size as needed
+  },
   welcomeTitle: {
     fontSize: 40,
     fontWeight: '800',
@@ -290,6 +306,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     height: 60,
+    borderWidth:1,
+    borderColor: 'orange',
     backgroundColor: '#FFFFFF',
     borderRadius: 30,
     paddingHorizontal: 20,

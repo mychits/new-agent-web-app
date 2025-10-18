@@ -262,7 +262,7 @@ const OutstandingReports = ({ route }) => {
                 </View>
 
                 <View style={pageStyles.container}>
-                    <Text style={pageStyles.title}>Outstanding Reports</Text>
+                    <Text style={pageStyles.title}>outstanding report</Text>
                     <Text style={pageStyles.subtitle}>
                         Easily manage and track pending payments
                     </Text>

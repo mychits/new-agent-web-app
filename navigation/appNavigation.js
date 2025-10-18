@@ -22,6 +22,7 @@ import EnrolledGroups from '../screens/EnrolledGroups';
 import Becomeanagent from '../screens/Becomeanagent';
 import Register from "../screens/Register";
 import AboutMyChits from "../screens/AboutMyChits";
+import EnrollCustomer from "../screens/EnrollCustomer";
 import HelpAndSupport from "../screens/HelpAndSupport";
 import Commissions from "../screens/Commissions";
 import Target from "../screens/Target";
@@ -111,6 +112,7 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={OutstandingReports}
           />
+          <Stack.Screen name="EnrollCustomer" options={{headerShown: false}} component={EnrollCustomer} />
           <Stack.Screen name="EnrolledGroups" options={{headerShown: false}} component={EnrolledGroups} />
           <Stack.Screen
           name="GroupReport"

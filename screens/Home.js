@@ -14,7 +14,7 @@ import {
   ToastAndroid,
   ActivityIndicator,
   // 💡 REQUIRED IMPORT
-  TextInput, 
+  TextInput,
 } from "react-native";
 // import { SafeAreaView } from "react-native-safe-area-context"; // ❌ REMOVED
 import COLORS from "../constants/color";
@@ -48,14 +48,14 @@ const cardImagePaths = {
   reports: require("../assets/Reports2.png"),
   commission: require("../assets/commissions1.png"),
   groups: require("../assets/groups1.png"),
-  customerOnHold: require("../assets/Holdon2.png"), 
+  customerOnHold: require("../assets/Holdon2.png"),
   monthlyTurnover: require("../assets/MITB.png"), // Monthly Turnover image path
   DueReportImage: require("../assets/dues.png"),
 };
 
 const AttendanceModal = ({
   attendanceLoading,
-  selectedStatus, 
+  selectedStatus,
   visible,
   message,
   onClose,
@@ -78,8 +78,8 @@ const AttendanceModal = ({
         useNativeDriver: true,
       }).start();
       // Ensure note accordion is closed and note cleared when modal opens
-      setIsNoteOpen(false); 
-      setNote(""); 
+      setIsNoteOpen(false);
+      setNote("");
     }
   }, [visible]);
 
@@ -116,31 +116,31 @@ const AttendanceModal = ({
 
           {/* 💡 STYLISH ACCORDION HEADER (NOTE - OPTIONAL) */}
           <TouchableOpacity
-              style={modalStyles.accordionHeader}
-              onPress={() => setIsNoteOpen(!isNoteOpen)}
-              activeOpacity={0.8}
+            style={modalStyles.accordionHeader}
+            onPress={() => setIsNoteOpen(!isNoteOpen)}
+            activeOpacity={0.8}
           >
-              <Text style={modalStyles.noteLabel}>
-                  {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'} 
-              </Text>
-              <Text style={modalStyles.arrowIcon}>
-                  {isNoteOpen ? '▲' : '▼'}
-              </Text>
+            <Text style={modalStyles.noteLabel}>
+              {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'}
+            </Text>
+            <Text style={modalStyles.arrowIcon}>
+              {isNoteOpen ? '▲' : '▼'}
+            </Text>
           </TouchableOpacity>
 
           {/* 💡 ACCORDION CONTENT (TEXT INPUT) */}
           {isNoteOpen && (
-              <View style={modalStyles.accordionContent}>
-                  <TextInput
-                      style={modalStyles.inputField}
-                      // 💡 UPDATED SMALLER PLACEHOLDER
-                      placeholder="e.g., Working remotely today..."
-                      placeholderTextColor="#a0a0a0"
-                      value={note}
-                      onChangeText={setNote}
-                      multiline
-                  />
-              </View>
+            <View style={modalStyles.accordionContent}>
+              <TextInput
+                style={modalStyles.inputField}
+                // 💡 UPDATED SMALLER PLACEHOLDER
+                placeholder="e.g., Working remotely today..."
+                placeholderTextColor="#a0a0a0"
+                value={note}
+                onChangeText={setNote}
+                multiline
+              />
+            </View>
           )}
           {/* END ACCORDION */}
 
@@ -164,7 +164,7 @@ const AttendanceModal = ({
               ) : (
                 <Text style={modalStyles.markAttendanceButtonText}>
                   PRESENT
-                </Text> 
+                </Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -177,7 +177,7 @@ const AttendanceModal = ({
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
   const [agent, setAgent] = useState({});
-  const [selectedStatus, setSelectedStatus] = useState("Present"); 
+  const [selectedStatus, setSelectedStatus] = useState("Present");
   const { modifyPayment, setModifyPayment } = useContext(AgentContext);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
@@ -199,7 +199,7 @@ const Home = ({ route, navigation }) => {
     //   backgroundColor: "#D9D7F1",
     // },
 
-   
+
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
       name: "Collections",
@@ -212,7 +212,15 @@ const Home = ({ route, navigation }) => {
       name: "QR Code",
       imagePath: cardImagePaths.qrCode,
       onPress: () => navigation.navigate("qrCode"),
-      backgroundColor: "#FFEBEE",
+      backgroundColor: "#e3f0e4ff",
+    },
+      {
+      id: "commission",
+      name: "My Overview",
+      imagePath: cardImagePaths.commission,
+      onPress: () => navigation.navigate("Commissions", { user }),
+      // 💡 CHANGE: Use a distinct, vibrant color for the big card
+      backgroundColor: "#97bebaff", // Light Cyan
     },
     agentInfo?.designation_id?.permission?.daybook === "true" && {
       id: "daybook",
@@ -221,14 +229,19 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("PayNavigation", { user }),
       backgroundColor: "#E8F5E9",
     },
-        {
-        id: "commission",
-        name: "Commissions",
-        imagePath: cardImagePaths.commission,
-        onPress: () => navigation.navigate("Commissions",{ user }),
-      backgroundColor: "#E8F5E9",
-    }, 
-    
+    agentInfo?.designation_id?.permission?.reports === "true" && {
+      id: "reports",
+      name: "Reports",
+      imagePath: cardImagePaths.reports,
+      onPress: () =>
+        navigation.navigate("PayNavigation", {
+          screen: "Reports",
+          params: { user },
+        }),
+      backgroundColor: "#ebe9a8ff",
+    },
+  
+
 
 
     agentInfo?.designation_id?.permission?.targets === "true" && {
@@ -289,17 +302,7 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#E0F7FA",
     },
-    agentInfo?.designation_id?.permission?.reports === "true" && {
-      id: "reports",
-      name: "Reports",
-      imagePath: cardImagePaths.reports,
-      onPress: () =>
-        navigation.navigate("PayNavigation", {
-          screen: "Reports",
-          params: { user },
-        }),
-      backgroundColor: "#FCE4EC",
-    },
+
     {
       id: "groups",
       name: "Groups",
@@ -311,17 +314,17 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#D1C4E9",
     },
-     {
-        id: "monthlyTurnover", 
-        name: "Monthly Turnover",
-        imagePath: cardImagePaths.monthlyTurnover,
-        onPress: () => navigation.navigate("MonthlyTurnover"),
-        backgroundColor: "#FFECB3", 
+    {
+      id: "monthlyTurnover",
+      name: "Monthly Turnover",
+      imagePath: cardImagePaths.monthlyTurnover,
+      onPress: () => navigation.navigate("MonthlyTurnover"),
+      backgroundColor: "#FFECB3",
     },
-    
+
     {
       id: "DueReport",
-      name: "DueReport",
+      name: "outstanding report",
       imagePath: cardImagePaths.DueReportImage,
       onPress: () =>
         navigation.navigate("PayNavigation", {
@@ -338,7 +341,7 @@ const Home = ({ route, navigation }) => {
       (_, i) => cardAnimations.current[i] || new Animated.Value(0)
     );
   }
-  
+
   // 💡 ANIMATION: Staggered animation effect
   useEffect(() => {
     // Only run the animation once, when data is ready and net is connected
@@ -364,7 +367,7 @@ const Home = ({ route, navigation }) => {
     const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
     try {
       setAttendanceLoading(true);
-      
+
       const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
         employee_id: user?.userId,
         status: selectedStatus, // "Present"
@@ -413,8 +416,8 @@ const Home = ({ route, navigation }) => {
   useEffect(() => {
     const checkAttendance = async () => {
       const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
-      
-      const body = { employee_id: user.userId,};
+
+      const body = { employee_id: user.userId, };
 
       try {
         const response = await axios.post(ATTENDANCE_MODAL_URL, { ...body });
@@ -444,9 +447,9 @@ const Home = ({ route, navigation }) => {
             errorMessage
           );
         } else {
-            // Success case, but returned as an HTTP error code (e.g., 400).
-            // We log it as an info message instead of an error.
-            console.info("✅ Attendance check complete:", errorMessage);
+          // Success case, but returned as an HTTP error code (e.g., 400).
+          // We log it as an info message instead of an error.
+          console.info("✅ Attendance check complete:", errorMessage);
         }
         setShowAttendanceModal(false);
       }
@@ -461,7 +464,7 @@ const Home = ({ route, navigation }) => {
     const submissionBody = {
       employee_id: user.userId,
       status: selectedStatus,
-      
+
     };
 
     try {
@@ -512,73 +515,94 @@ const Home = ({ route, navigation }) => {
     >
       {/* ❌ REMOVED SafeAreaView - now the content will start from the top edge */}
       {/* <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}> */}
-        <View style={styles.mainContentArea_noSafeArea}> 
+      <View style={styles.mainContentArea_noSafeArea}>
         {/* 💡 MODIFIED STYLE NAME to account for no SafeAreaView */}
-          <Header />
-          <View style={styles.introSection}>
-            <Text style={styles.welcomeText}>
-              Hello {agent.name || "Agent"},
-            </Text>
-            <Text style={styles.questionText}>
-              Welcome to MyChits Agent App
-            </Text>
-          </View>
-
-          {/* FIX: Only render the main content if user.userId is available */}
-          {!user.userId ? (
-             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-                <Text style={{ marginTop: 10, color: '#666' }}>Loading Agent Data...</Text>
-            </View>
-          ) : netInfo.isConnected === false ? (
-            renderNoInternet()
-          ) : (
-            <ScrollView
-              contentContainerStyle={styles.cardsScrollViewContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.cardsGridContainer}>
-                {cardsData.map((card, index) => {
-                  
-                  // 💡 ANIMATION: Interpolate the scale and translateY
-                  const scale = cardAnimations.current[index].interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.7, 1], // Start smaller, end at normal size
-                  });
-
-                  const translateY = cardAnimations.current[index].interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [50, 0], // Start 50 points lower, slide up
-                  });
-                  
-                  const animatedStyle = {
-                    opacity: cardAnimations.current[index], // Fade in
-                    transform: [{ scale }, { translateY }],
-                  };
-
-                  return (
-                    <Animated.View key={card.id} style={[styles.gridCardWrapper, animatedStyle]}>
-                      <TouchableOpacity
-                        style={[
-                          styles.gridCard,
-                          { backgroundColor: card.backgroundColor },
-                        ]}
-                        onPress={card.onPress}
-                      >
-                        <Image
-                          source={card.imagePath}
-                          style={styles.cardImage}
-                          resizeMode="contain"
-                        />
-                        <Text style={styles.gridCardText}>{card.name}</Text>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          )}
+        <Header />
+        <View style={styles.introSection}>
+          <Text style={styles.welcomeText}>
+            Hello {agent.name || "Agent"},
+          </Text>
+          <Text style={styles.questionText}>
+            Welcome to MyChits Agent App
+          </Text>
         </View>
+
+        {/* FIX: Only render the main content if user.userId is available */}
+        {!user.userId ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+            <Text style={{ marginTop: 10, color: '#666' }}>Loading Agent Data...</Text>
+          </View>
+        ) : netInfo.isConnected === false ? (
+          renderNoInternet()
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.cardsScrollViewContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.cardsGridContainer}>
+              {cardsData.map((card, index) => {
+
+                // 💡 ANIMATION: Interpolate the scale and translateY
+                const scale = cardAnimations.current[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.7, 1], // Start smaller, end at normal size
+                });
+
+                const translateY = cardAnimations.current[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [50, 0], // Start 50 points lower, slide up
+                });
+
+                const animatedStyle = {
+                  opacity: cardAnimations.current[index], // Fade in
+                  transform: [{ scale }, { translateY }],
+                };
+                
+                // 💡 NEW LOGIC: Determine if the card is the "Overview" card
+                const isOverviewCard = card.id === "commission";
+
+                return (
+                  <Animated.View
+                    key={card.id}
+                    style={[
+                      styles.gridCardWrapper,
+                      isOverviewCard && styles.bigCardWrapper, // 👈 extra width for Overview wrapper
+                      animatedStyle,
+                    ]}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.gridCard,
+                        { backgroundColor: card.backgroundColor },
+                        isOverviewCard && styles.bigCardStyle, // 👈 Apply special style to the card itself
+                      ]}
+                      onPress={card.onPress}
+                    >
+                      <Image
+                        source={card.imagePath}
+                        style={[
+                          styles.cardImage,
+                          isOverviewCard && styles.bigCardImage, // 👈 Apply special image style
+                        ]}
+                        resizeMode="contain"
+                      />
+                      <Text 
+                        style={[
+                          styles.gridCardText,
+                          isOverviewCard && styles.bigCardText, // 👈 Apply special text style
+                        ]}
+                      >
+                        {card.name}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          </ScrollView>
+        )}
+      </View>
       {/* </SafeAreaView> */}
 
       <AttendanceModal
@@ -600,7 +624,7 @@ const Home = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   // 💡 NEW STYLE TO REPLACE SafeAreaView wrapper behavior (padding from the top for header and content)
   mainContentArea_noSafeArea: { flex: 1, marginHorizontal: 22, marginTop: 40 }, // Increased marginTop to avoid status bar overlap
-  
+
   // mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 }, // ORIGINAL STYLE
 
   introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
@@ -616,6 +640,37 @@ const styles = StyleSheet.create({
     color: "#555",
     marginBottom: 10,
   },
+
+  // --- Big Card Styles (Overview Card) ---
+  bigCardWrapper: {
+    width: "100%", // spans full row (like two normal cards)
+    height: (width - 22 * 2 - 20) / 2, // same height as other cards
+  },
+  bigCardStyle: {
+    // 💡 MODIFIED: Center content (horizontal and vertical)
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 15,
+    borderWidth: 2, 
+  },
+  bigCardImage: {
+    // 💡 MODIFIED: Increased image size a bit from the previous version
+    width: 180, 
+    height: 100, 
+    marginBottom: 5, // Smaller margin for centered look
+    marginTop: 0,
+    alignSelf: 'center', // Ensure image is centered
+  },
+  bigCardText: {
+    // 💡 MODIFIED: Ensure text is centered
+    fontSize: 22, 
+    fontWeight: "900",
+    color: '#00796B', 
+    textAlign: "center", // Ensure text is centered
+  },
+  // --- End Big Card Styles ---
+
+
   cardsScrollViewContent: { paddingBottom: 50 },
   cardsGridContainer: {
     flexDirection: "row",
@@ -679,7 +734,7 @@ const modalStyles = StyleSheet.create({
   },
   modalView: {
     backgroundColor: "white",
-    borderRadius: 15, 
+    borderRadius: 15,
     padding: 30,
     alignItems: "center",
     width: "90%",
@@ -711,7 +766,7 @@ const modalStyles = StyleSheet.create({
     height: 65,
   },
   modalHeading: {
-    fontSize: 26, 
+    fontSize: 26,
     fontWeight: "900",
     color: "#2c3e50",
     marginBottom: 5,
@@ -722,7 +777,7 @@ const modalStyles = StyleSheet.create({
     fontWeight: "500",
     color: "#7f8c8d",
     lineHeight: 22,
-    marginBottom: 25, 
+    marginBottom: 25,
   },
   closeButton: {
     position: "absolute",
@@ -759,7 +814,7 @@ const modalStyles = StyleSheet.create({
   },
   arrowIcon: {
     fontSize: 15,
-    color:'#c2c3c4ff' ,
+    color: '#c2c3c4ff',
     fontWeight: '900',
   },
   accordionContent: {
@@ -769,7 +824,7 @@ const modalStyles = StyleSheet.create({
   },
   inputField: {
     width: "100%",
-    minHeight: 90, 
+    minHeight: 90,
     borderColor: '#dcdcdc',
     borderWidth: 1,
     borderRadius: 8,
@@ -779,7 +834,7 @@ const modalStyles = StyleSheet.create({
     backgroundColor: '#fff',
     textAlignVertical: 'top',
   },
-  
+
   // --- Proceed Button (Sleek, Full Gradient) ---
   markAttendanceButtonWrapper: {
     width: "100%",
