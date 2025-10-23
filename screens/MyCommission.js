@@ -5,21 +5,22 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
-    ScrollView,
     TouchableOpacity,
     ActivityIndicator,
     Animated,
     TextInput,
 } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
-// Removed: import { SafeAreaView } from "react-native-safe-area-context";
-import COLORS from "../constants/color";
+// Assuming COLORS is defined in a constants file
+import COLORS from "../constants/color"; 
 import Header from "../components/Header";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 const MyCommission = ({ route, navigation }) => {
-    const { commissions } = route.params;
+    // Safely destructure commissions or use an empty object fallback
+    const { commissions = {} } = route.params || {};
+    
     const [goldLeads, setGoldLeads] = useState([]);
     const [isChitLoading, setIsChitLoading] = useState(false);
     const [isGoldLoading, setIsGoldLoading] = useState(false);
@@ -31,9 +32,15 @@ const MyCommission = ({ route, navigation }) => {
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
+        // Run animations when component mounts or tab changes
         if (commissions.commission_data && activeTab === "CHIT") {
-            setIsChitLoading(false)
+            setIsChitLoading(false);
 
+            // Reset animation values before starting
+            leftAnim.setValue(-200);
+            rightAnim.setValue(200);
+            opacityAnim.setValue(0);
+            
             Animated.parallel([
                 Animated.timing(leftAnim, {
                     toValue: 0,
@@ -62,19 +69,22 @@ const MyCommission = ({ route, navigation }) => {
     }) || [];
 
     const renderCommissionCard = ({ item }) => {
+        // Only render if commission_released is true
         if(item.commission_released === false) return null;
 
         return (
             <TouchableOpacity style={styles.card}>
                 <View style={styles.leftSection}>
-                    <Text style={styles.name}>{item?.user_name}</Text>
+                    {/* FIXED: Added || "N/A" for null-safety */}
+                    <Text style={styles.name}>{item?.user_name || "N/A"}</Text> 
                     <Text style={styles.groupName}>
                         {item?.group_name ? item.group_name: "No Group Name"}
                     </Text>
                 </View>
                 <View style={styles.rightSection}>
                     <View style={styles.commissionContainer}>
-                        <Text style={styles.commissionText}>{item?.actual_commission}</Text>
+                        {/* FIXED: Added || '0' for null-safety */}
+                        <Text style={styles.commissionText}>{item?.actual_commission || '0'}</Text>
                     </View>
                      <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />
                 </View>
@@ -82,26 +92,48 @@ const MyCommission = ({ route, navigation }) => {
         );
     }
     
-    const ListHeader = () => (
-        <View style={styles.summaryBoxesContainer}>
-            <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim }]}>
-                <Text style={styles.summaryText}>Total Customers</Text>
-                <Text style={styles.summaryValue}>{commissions?.summary?.total_customers}</Text>
-            </Animated.View>
-            <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim }]}>
-                <Text style={styles.summaryText}>Total Groups</Text>
-                <Text style={styles.summaryValue}>{commissions?.summary?.total_groups}</Text>
-            </Animated.View>
-            <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim }]}>
-                <Text style={styles.summaryText}>My Business</Text>
-                <Text style={styles.summaryValue}>{commissions?.summary?.actual_business}</Text>
-            </Animated.View>
-            <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim }]}>
-                <Text style={styles.summaryText}>My Commission</Text>
-                <Text style={styles.summaryValue}>{commissions?.summary?.total_actual}</Text>
-            </Animated.View>
-        </View>
-    );
+    const ListHeader = () => {
+        // Use a safe default object for summary
+        const summary = commissions?.summary || {};
+
+        return (
+            <View style={styles.summaryBoxesContainer}>
+                
+                {/* Box 1: Total Customers - Blue/Primary Color */}
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                    <Text style={styles.summaryText}>Total Customers</Text>
+                    {/* FIXED: Use || '0' to ensure a string is always passed to <Text> */}
+                    <Text style={[styles.summaryValue, { color: '#04aefdff' }]}>
+                        {summary.total_customers || '0'}
+                    </Text>
+                </Animated.View>
+                
+                {/* Box 2: Total Groups - Green Color */}
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                    <Text style={styles.summaryText}>Total Groups</Text>
+                    <Text style={[styles.summaryValue, { color: '#3ed160ff' }]}>
+                        {summary.total_groups || '0'}
+                    </Text>
+                </Animated.View>
+                
+                {/* Box 3: My Business - Red/Accent Color */}
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                    <Text style={styles.summaryText}>My Business</Text>
+                    <Text style={[styles.summaryValue, { color: '#f70cb4ff' }]}>
+                        {summary.actual_business || '0'}
+                    </Text>
+                </Animated.View>
+                
+                {/* Box 4: My Commission - Gold/Accent Color */}
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                    <Text style={styles.summaryText}>My Commission</Text>
+                    <Text style={[styles.summaryValue, { color: '#f1960cff' }]}>
+                        {summary.total_actual || '0'}
+                    </Text>
+                </Animated.View>
+            </View>
+        );
+    };
 
     const renderContent = () => {
         const isLoading = activeTab === "CHIT" ? isChitLoading : isGoldLoading;
@@ -117,12 +149,13 @@ const MyCommission = ({ route, navigation }) => {
             );
         }
 
+        // Only show "No matching..." if a search query is present
         if (!dataAvailable || (activeTab === "CHIT" && filteredCommissions.length === 0 && searchQuery.length > 0)) {
              return (
-                <Text style={styles.noLeadsText}>
-                    {searchQuery.length > 0 ? "No matching commissions found." : "No commission data found."}
-                </Text>
-            );
+                 <Text style={styles.noLeadsText}>
+                     {searchQuery.length > 0 ? "No matching commissions found." : "No commission data found."}
+                 </Text>
+             );
         }
 
         return (
@@ -130,6 +163,7 @@ const MyCommission = ({ route, navigation }) => {
                 data={filteredCommissions}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={renderCommissionCard}
+                // Only render ListHeader for the CHIT tab
                 ListHeaderComponent={activeTab === "CHIT" ? ListHeader : null}
                 contentContainerStyle={{ paddingBottom: 80 }}
             />
@@ -138,7 +172,7 @@ const MyCommission = ({ route, navigation }) => {
 
     return (
         <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient  
+            <LinearGradient 
                 colors={['#b6e4ebff', '#1796d1ff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
@@ -226,7 +260,7 @@ const styles = StyleSheet.create({
         paddingTop: 50, // Pushes content down
     },
     titleContainer: {
-        marginTop: 30,
+        marginTop: 10,
         marginBottom: 20,
         alignItems: 'center',
     },
@@ -297,7 +331,7 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(255, 255, 255, 0.7)",
         padding: 15,
         borderRadius: 15,
-       borderColor: "#da8201",
+        // BorderColor is set inline for dynamic color
         borderWidth:2,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
@@ -314,9 +348,9 @@ const styles = StyleSheet.create({
         color: '#666',
     },
     summaryValue: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: 'bold',
-        color: '#333',
+        // Color is set inline for dynamic color
         marginTop: 5,
     },
     card: {
@@ -344,7 +378,7 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     name: {
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: "600",
         color: "#000",
         marginBottom: 5,
@@ -362,7 +396,7 @@ const styles = StyleSheet.create({
     commissionText: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#666',
+        color: '#6d56f0ff',
     },
     arrowIcon: {
         fontSize: 22,

@@ -475,10 +475,11 @@ const styles = StyleSheet.create({
         marginTop: 5,
         fontWeight: '700',
     },
-    arrowIcon: {
-        fontSize: 24, 
-        color: COLOR_PALETTE.primary,
-    },
+ arrowIcon: {
+    fontSize: 34, 
+    color: COLOR_PALETTE.primary,
+    marginLeft: -35, // Adjust this value (e.g., -5, -10) to move the icon left
+},
     tab: {
         flex: 1,
         paddingVertical: 12,
