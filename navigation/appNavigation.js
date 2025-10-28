@@ -39,7 +39,7 @@ import ExpectedCommissions from "../screens/ExpectedCommissions";
 // NOTE: We import the file named 'Attendence.js' but rename the screen to 'Attendance'
 import Attendence from "../screens/Attendence"; 
 
-import GroupReport from "../screens/GroupReport";
+import RelationshipManagerReport from "../screens/RelationshipManagerReport";
 import ReferredReport from "../screens/ReferredReport";
 import Due from "../screens/Due";
 import OutstandingReports from "../screens/OutstandingReports";
@@ -115,9 +115,9 @@ export default function AppNavigation() {
           <Stack.Screen name="EnrollCustomer" options={{headerShown: false}} component={EnrollCustomer} />
           <Stack.Screen name="EnrolledGroups" options={{headerShown: false}} component={EnrolledGroups} />
           <Stack.Screen
-          name="GroupReport"
+          name="RelationshipManagerReport"
           options={{ headerShown: false }}
-          component={GroupReport}
+          component={RelationshipManagerReport}
           />
           <Stack.Screen
           name="ReferredReport"

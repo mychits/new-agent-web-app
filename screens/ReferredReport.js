@@ -27,8 +27,8 @@ const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
 
 // --- CUSTOM STYLING CONSTANTS (Updated for Professional Look) ---
 const MODERN_PRIMARY = "#1e3a8a"; // Deep, professional blue
-const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
-const WARNING_RED = "#dc2626";     // Strong red for negative/balance
+const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
+const WARNING_RED = "#dc2626";    // Strong red for negative/balance
 const NEUTRAL_GREY = "#6b7280"; 
 
 // Enable LayoutAnimation for Android
@@ -120,7 +120,7 @@ const ReferredReport = ({ route }) => {
         const email = item?.user?.email;
         const phone = item?.user?.phone_number;
         const groupName = item?.group?.group_name || "N/A";
-        const paymentType = item?.payment_type || "N/A";
+        // const paymentType = item?.payment_type || "N/A"; // Not used in display now
 
         // Safely extract financial values which might be nested in an array
         const getFinancialValue = (value) =>
@@ -131,6 +131,17 @@ const ReferredReport = ({ route }) => {
         const totalToBePaid = item?.total_to_be_paid || 0;
         const balance = item?.balance || item?.Balance || 0;
         
+        // =========================================================================
+        // <<< ADDED DEBUGGING LOG >>>
+        // Check your console when running the app. If the keys are different, 
+        // they will show as undefined here, but you will see the correct key in the 
+        // full object log below.
+        console.log(`--- Item Debug ---
+Payable key value: ${item.total_payable_amount}
+Profit key value: ${item.total_profit}
+Raw Item Data (Check for correct key names):`, item);
+        // =========================================================================
+
         // Status bar color: Red for positive balance (outstanding), Green otherwise
         const statusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
 
@@ -143,7 +154,7 @@ const ReferredReport = ({ route }) => {
                     {/* Header (Group and Type) */}
                     <View style={styles.cardHeader}>
                         <Text style={styles.groupName} numberOfLines={1}>{groupName}</Text>
-                        <Text style={styles.paymentType}>{paymentType}</Text>
+                        {/* Removed Payment Type tag as it wasn't clear what it represented */}
                     </View>
 
                     {/* Customer Info */}
@@ -156,24 +167,7 @@ const ReferredReport = ({ route }) => {
                     {/* Financial Info */}
                     <View style={styles.cardFinancial}>
                         
-                        {/* Total Payable */}
-                        <View style={styles.financialRow}>
-                            <Text style={styles.financialLabel}>Total Payable</Text>
-                            <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
-                                {formatCurrency(totalPayable)}
-                            </Text>
-                        </View>
-
-                        {/* Total Profit - **SYNTAX ERROR FIXED HERE** */}
-                        <View style={styles.financialRow}>
-                            <Text style={styles.financialLabel}>Total Profit</Text>
-                            <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
-                                {formatCurrency(totalProfit)}
-                            </Text>
-                            {/* Removed the extra </Text> that caused the error */}
-                        </View>
-
-                        {/* Total To Be Paid */}
+                       
                         <View style={styles.financialRow}>
                             <Text style={styles.financialLabel}>Total Paid</Text>
                             <Text style={styles.financialValue}>
@@ -182,7 +176,7 @@ const ReferredReport = ({ route }) => {
                         </View>
 
                         {/* Balance (Stands out) */}
-                        <View style={[styles.balanceRow, { backgroundColor: balance > 0 ? '#fee2e2' : '#d1fae5' }]}>
+                        <View style={[styles.balanceRow, { backgroundColor: balance > 0 ? '#fee2e2' : '#d1fae5', borderColor: balance > 0 ? WARNING_RED : ACCENT_GREEN }]}>
                             <Text style={[styles.balanceLabel, { color: balance > 0 ? WARNING_RED : ACCENT_GREEN }]}>
                                 {balance > 0 ? 'Outstanding Balance' : 'Current Status'}
                             </Text>
@@ -203,7 +197,12 @@ const ReferredReport = ({ route }) => {
 
     const EmptyList = () => (
         <View style={styles.emptyContainer}>
-            <Image source={NO_REPORTS_IMAGE} style={styles.emptyImage} />
+            {/* The image requires a placeholder since I cannot load local files */}
+            <Image 
+                source={{ uri: 'https://placehold.co/200x160/d4d4d4/333333?text=No+Data' }} 
+                style={styles.emptyImage}
+                onError={(e) => console.log('Image load error:', e.nativeEvent.error)} // Debugging image load
+            />
             <Text style={styles.emptyText}>No pending dues found</Text>
             <Text style={{ color: NEUTRAL_GREY, marginTop: 5, fontSize: 14 }}>
                 Try selecting "All Groups" or check back later.

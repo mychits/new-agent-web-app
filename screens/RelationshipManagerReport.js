@@ -50,7 +50,7 @@ const formatCurrency = (amount) => {
   })}`;
 };
 
-const GroupReport = ({ route }) => {
+const RelationshipManagerReport = ({ route }) => {
   const { user } = route.params;
   const [groups, setGroups] = useState([]);
   const [dues, setDues] = useState([]);
@@ -261,7 +261,7 @@ const GroupReport = ({ route }) => {
   );
 };
 
-export default GroupReport;
+export default RelationshipManagerReport;
 
 const styles = StyleSheet.create({
   container: {

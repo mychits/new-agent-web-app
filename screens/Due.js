@@ -53,11 +53,11 @@ const Due = ({ route, navigation }) => {
               icon="share-alt" 
               onPress={() => navigation.navigate("ReferredReport", { user })}
             />
-            <CustomRouteCard
-              name="Group Report"
-              icon="users" 
-              onPress={() => navigation.navigate("GroupReport", { user })}
-            />
+          <CustomRouteCard
+  name={`Relationship Manager\nReport`}
+  icon="users"
+  onPress={() => navigation.navigate("RelationshipManagerReport", { user })}
+/>
           </View>
         </ScrollView>
       </LinearGradient>
