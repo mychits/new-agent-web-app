@@ -207,10 +207,8 @@ const GroupReport = ({ route }) => {
         </View>
 
         <View style={styles.container}>
-          <Text style={styles.title}>Group Report</Text>
-          <Text style={styles.subtitle}>
-            Select a group to view pending details
-          </Text>
+          <Text style={styles.title}>Relationship Manager Report</Text>
+         
 
           {/* Group Filter (FIXED TEXT COLOR/STYLE HERE) */}
           <View style={styles.dropdownWrapper}>
@@ -276,14 +274,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10, 
     // ADDED: Extra padding top is needed for iOS to avoid the status bar notch 
     // when SafeAreaView is removed. This value is a standard approximation.
-    paddingTop: Platform.OS === 'ios' ? 44 : 30, 
+    paddingTop: Platform.OS === 'ios' ? 44 : 40, 
   },
   // --- TITLES ---
   title: {
     fontSize: 28,
     fontWeight: "800",
     color: MODERN_PRIMARY,
-    marginBottom: 4,
+    marginBottom: 25,
     textAlign: 'center',
   },
   subtitle: {
