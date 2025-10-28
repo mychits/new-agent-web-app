@@ -324,7 +324,7 @@ const Home = ({ route, navigation }) => {
 
     {
       id: "DueReport",
-      name: "outstanding report",
+      name: "Outstanding Report",
       imagePath: cardImagePaths.DueReportImage,
       onPress: () =>
         navigation.navigate("PayNavigation", {

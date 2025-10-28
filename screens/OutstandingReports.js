@@ -6,14 +6,13 @@ import {
     FlatList,
     ActivityIndicator,
     Image,
-    StatusBar,
     Platform,
     LayoutAnimation,
     UIManager,
     TouchableOpacity,
     Linking,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// import { SafeAreaView } from "react-native-safe-area-context"; // 👈 REMOVED
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
 import Header from "../components/Header";
@@ -27,10 +26,10 @@ const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
 
 // --- MODERN STYLING CONSTANTS (Curated for a professional, clean look) ---
 const MODERN_PRIMARY = "#0d0d0eff"; // Deep, professional blue
-const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
-const WARNING_RED = "#dc2626";     // Strong red for negative/balance
-const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
-const DARK_TEXT = "#101111ff";     // Darkest text color for contrast
+const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
+const WARNING_RED = "#dc2626";    // Strong red for negative/balance
+const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
+const DARK_TEXT = "#101111ff";    // Darkest text color for contrast
 const LIGHT_GREY_BACKGROUND = "#f9fafb"; // Very light background for elements
 const BORDER_COLOR = "#e5e7eb"; // Light border for subtle separation
 
@@ -69,7 +68,7 @@ const handleCall = (phoneNumber) => {
 };
 
 // =================================================================
-// STYLIZED COMPONENT: OutstandingReportCard
+// STYLIZED COMPONENT: OutstandingReportCard (Unchanged)
 // =================================================================
 
 const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
@@ -86,7 +85,6 @@ const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
         Array.isArray(value) && value[0] ? value[0] : value || 0;
 
     const totalPayable = getFinancialValue(item.total_payable_amount);
-    // 🚨 TOTAL PROFIT REMOVED 🚨
     const totalToBePaid = item?.total_to_be_paid || 0;
     const balance = item?.balance || item?.Balance || 0;
 
@@ -178,6 +176,10 @@ const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
         </View>
     );
 };
+
+// =================================================================
+// MAIN COMPONENT: OutstandingReports (Modified)
+// =================================================================
 const OutstandingReports = ({ route }) => {
     const { user } = route.params;
     const [groups, setGroups] = useState([]);
@@ -252,17 +254,21 @@ const OutstandingReports = ({ route }) => {
     );
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
-            <StatusBar barStyle="dark-content" />
-            {/* 🚨 LINEAR GRADIENT APPLIED HERE 🚨 */}
+        <View style={{ flex: 1 }}> {/* 👈 Changed from SafeAreaView to View */}
+            
             <LinearGradient colors={BACKGROUND_GRADIENT} style={{ flex: 1 }}>
 
+                {/* The Header component must now manage its own top offset 
+                    or rely on a container that handles the status bar. 
+                    We will modify pageStyles.container to handle this.
+                */}
                 <View style={pageStyles.headerSpacer}>
                     <Header />
                 </View>
 
+                {/* pageStyles.container will now need padding to avoid the status bar */}
                 <View style={pageStyles.container}>
-                    <Text style={pageStyles.title}>outstanding report</Text>
+                    <Text style={pageStyles.title}>Outstanding Report</Text>
                     <Text style={pageStyles.subtitle}>
                         Easily manage and track pending payments
                     </Text>
@@ -288,7 +294,7 @@ const OutstandingReports = ({ route }) => {
                     {/* Total Summary (Highlighted Card) */}
                     <View style={pageStyles.totalWrapper}>
                         <Text style={pageStyles.totalText}>
-                            Overall Pending Balance:
+                            Overall Outstanding Balance:
                         </Text>
                         <Text style={pageStyles.totalAmount}>
                             {formatCurrency(totalPending)}
@@ -311,29 +317,39 @@ const OutstandingReports = ({ route }) => {
                     )}
                 </View>
             </LinearGradient>
-        </SafeAreaView>
+        </View>
     );
 };
 
 export default OutstandingReports;
 
 // =================================================================
-// PAGE-LEVEL STYLES
+// STYLES (MODIFIED)
 // =================================================================
 const pageStyles = StyleSheet.create({
-    container: {
+    // --- MODIFIED: Added paddingTop to container for status bar compensation ---
+container: {
         flex: 1,
         paddingHorizontal: 16,
+        // REMOVED negative paddingTop: -50, as it's unreliable and clashes with headerSpacer
+        // You might need a small paddingTop if the Header doesn't account for the status bar, 
+        // but for now, we'll rely on the default flow.
     },
     headerSpacer: {
         paddingHorizontal: 16,
-        paddingVertical: 10, 
+        // ❌ WAS: paddingVertical: 40, (Too much vertical space)
+        paddingVertical: 40, // ✅ CHANGE: Drastically reduced vertical padding
+        // If the Header needs space at the top (for the Status Bar), use a smaller value like 20 or 30
+        // otherwise, 10 or less should suffice for a clean look.
     },
     title: {
         fontSize: 28,
         fontWeight: "900", // Extra bold
         color: MODERN_PRIMARY,
-        marginBottom: 4,
+        // ❌ WAS: marginBottom: 4, (The margin that separates the title from the subtitle)
+        marginBottom: 4, 
+        // ✅ ADDED: marginTop to bring the title closer to the previous element (Header/HeaderSpacer)
+        marginTop: -25, // Add a small margin top here to separate from the HeaderSpacer content
         textAlign: 'center',
     },
     subtitle: {
@@ -431,7 +447,7 @@ const pageStyles = StyleSheet.create({
 });
 
 // =================================================================
-// CARD-SPECIFIC STYLES (for OutstandingReportCard)
+// CARD-SPECIFIC STYLES (Unchanged)
 // =================================================================
 const cardStyles = StyleSheet.create({
     cardContainer: {

@@ -34,7 +34,8 @@ const COLOR_PALETTE = {
 };
 
 const headerImage = require('../assets/hero1.jpg');
-const baseUrl = 'your_base_url_here'; // Placeholder for the original baseUrl
+import baseUrl from ".././constants/baseUrl" 
+
 
 const { width, height } = Dimensions.get("window");
 

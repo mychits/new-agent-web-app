@@ -33,7 +33,7 @@ const Due = ({ route, navigation }) => {
         end={{ x: 1, y: 1 }}
       >
         <ScrollView
-          style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
+          style={{ flex: 1, marginHorizontal: 22, marginTop: 40 }}
           contentContainerStyle={{ paddingBottom: 80 }}
           showsVerticalScrollIndicator={false}
         >
@@ -72,9 +72,6 @@ const styles = StyleSheet.create({
   mainContainer: { 
     flex: 1, 
     backgroundColor: COLORS.white,
-    // Add padding top for Android and potentially a bit more for iOS 
-    // to clear the status bar if not handled by the parent navigator/stack
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, 
   },
   gradientOverlay: {
     flex: 1,
