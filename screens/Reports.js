@@ -53,19 +53,19 @@ const Reports = ({ route, navigation }) => {
           />
           <CustomReportCard
             key="gold-chits-card"
-            name="Gold Chits Report"
+            name="Gold Report"
             icon="bar-chart"
             onPress={() => navigation.navigate("GoldPayment", { user: user, areaId: "gold-chits" })}
           />
           <CustomReportCard
             key="loan-chits-card"
-            name="Loan Chits Report"
+            name="Loan Report"
             icon="bank"
             onPress={() => navigation.navigate("LoanPayments", { user: user, areaId: "loan-chits" })}
           />
           <CustomReportCard
             key="pigme-chits-card"
-            name="Pigme Chits Report"
+            name="Pigme Report"
             icon="briefcase"
             onPress={() => navigation.navigate("PigmePayments", { user: user, areaId: "pigme-chits" })}
           />
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     marginTop: 45, 
   },
   titleContainer: {
-    marginTop: 40,
+    marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
   },
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   cardListContainer: {
-    marginTop: 15,
+    marginTop: 1,
     gap: 20,
     alignItems: 'center',
   },

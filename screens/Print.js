@@ -479,48 +479,42 @@ Collected by: ${agent.name}
           />
 
           <Text style={styles.textStyle}>Collected by: {agent.name}</Text>
-          <Text style={styles.textStyle}> </Text>
+          <Text style={styles.textStyle}> 
+
+          </Text>
         </View>
 
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 18,
-          }}
-        >
+        {/* Print Buttons Row 1 (Thermal and POS 58MM) */}
+        <View style={styles.buttonRow}>
           <Button
             title="Thermal Print"
             filled
-            style={{ flex: 1, marginRight: 8, backgroundColor: COLORS.third }}
+            // ONLY THIS BUTTON RETAINS THE CUSTOM COLOR
+            style={[styles.printButton, { marginRight: 8, backgroundColor: COLORS.third }]}
             onPress={handlePrint}
-            disabled={!isConnected}
+            disabled={!isConnected || isPrinting}
           />
           <Button
-            title="POS Print"
+            title="POS Print "
             filled
-            style={{ flex: 1, marginLeft: 8, backgroundColor: COLORS.third }}
-            onPress={() => handlePosPrint()}
-            disabled={false}
+            // REMOVED explicit style for COLORS.third to revert to default primary color
+            style={[styles.printButton, { marginLeft: 8 }]} 
+            onPress={handlePosPrint}
+            disabled={isPrinting}
           />
-          
         </View>
-         <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 18,
-          }}
-        >
+
+        {/* Print Buttons Row 2 (POS 80MM) */}
+        <View style={styles.buttonRow}>
           <Button
             title="POS 80MM Print"
             filled
-            style={{ flex: 1, marginLeft: 8, backgroundColor: COLORS.third }}
-            onPress={() => handlePos80MMPrint()}
-            disabled={false}
+            // REMOVED explicit style for COLORS.third to revert to default primary color
+            style={styles.printButton}
+            onPress={handlePos80MMPrint} 
+            disabled={isPrinting}
           />
         </View>
-        
       </View>
     </SafeAreaView>
   );
@@ -530,6 +524,15 @@ const styles = StyleSheet.create({
   textStyle: {
     fontSize: 13,
   },
+   buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 18,
+  },
+  printButton: {
+    flex: 1,
+    // Note: The `Button` component should default to `COLORS.primary`
+  }
 });
 
 export default Print;

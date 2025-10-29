@@ -67,7 +67,7 @@ const PaymentList = ({ route, navigation }) => {
             />
             {/* NEW CARD: Pigmy Payments */}
             <PaymentCard
-              name="Pigmy Payments"
+              name="Pigme Payments"
               icon="briefcase" // Using 'briefcase' or could use 'inr' or 'book'
               onPress={() =>
                 navigation.navigate("PigmePayments", { user, areaId: "pigmy" })
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleContainer: {
-    marginTop: 40,
+    marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
   },
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   cardListContainer: {
-    marginTop: 15,
+    marginTop: 1,
     gap: 20,
     alignItems: 'center',
   },

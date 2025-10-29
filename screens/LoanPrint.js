@@ -29,7 +29,7 @@ const LoanPrint = ({ route }) => {
     receipt_no,
     isLoanPayment,
     custom_loan_id,
-    group_name = "N/A", 
+    group_name = "N/A",
     ticket_no = "N/A",
   } = route.params;
 
@@ -37,13 +37,10 @@ const LoanPrint = ({ route }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  /**
-   * Helper function to format the date string.
-   */
   const formatDate = (dateString) => {
     if (!dateString) return "";
     try {
-      const date = new Date(dateString); 
+      const date = new Date(dateString);
       if (isNaN(date)) return dateString;
       const options = { day: "2-digit", month: "short", year: "numeric" };
       return date.toLocaleDateString("en-US", options);
@@ -52,9 +49,6 @@ const LoanPrint = ({ route }) => {
     }
   };
 
-  /**
-   * Tries to connect to the Bluetooth printer.
-   */
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
@@ -64,24 +58,21 @@ const LoanPrint = ({ route }) => {
       });
     } catch (error) {
       console.error("Bluetooth Connection Error:", error);
-      Alert.alert("Connection Error", "Failed to connect to Bluetooth printer. Ensure it's paired and on.");
+      Alert.alert(
+        "Connection Error",
+        "Failed to connect to Bluetooth printer. Ensure it's paired and on."
+      );
     } finally {
       setIsConnecting(false);
     }
   };
 
-  /**
-   * Helper function to center text for thermal receipt.
-   */
   const centerText = (text, lineWidth = 40) => {
     const totalPadding = lineWidth - text.length;
-    const paddingStart = Math.floor(totalPadding / 2); 
+    const paddingStart = Math.floor(totalPadding / 2);
     return " ".repeat(paddingStart) + text;
   };
 
-  /**
-   * Prints the receipt to the connected Bluetooth thermal printer (Text-based).
-   */
   const handlePrint = async () => {
     if (!isConnected) {
       Alert.alert("Error", "Please connect to the Bluetooth printer first.");
@@ -93,7 +84,7 @@ const LoanPrint = ({ route }) => {
     const receiptType = isLoanPayment ? "LOAN RECEIPT" : "RECEIPT";
     const groupOrLoan = isLoanPayment
       ? `Loan ID: ${custom_loan_id}`
-      : `Group: ${group_name}\nTicket: ${ticket_no}`; 
+      : `Group: ${group_name}\nTicket: ${ticket_no}`;
 
     const txnLine =
       pay_type?.toLowerCase() === "online" && transaction_id
@@ -135,23 +126,14 @@ Collected by: ${agent_name || "N/A"}
     }
   };
 
-  /**
-   * Prints the receipt using the OS's native print dialogue via RNPrint (58mm width).
-   */
   const handlePosPrint = async () => {
     await printHtmlReceipt(58);
   };
 
-  /**
-   * Prints the receipt using the OS's native print dialogue via RNPrint (80mm width).
-   */
   const handlePos80MMPrint = async () => {
     await printHtmlReceipt(80);
   };
 
-  /**
-   * Generic function to generate and print the HTML receipt using RNPrint.
-   */
   const printHtmlReceipt = async (widthMM) => {
     setIsPrinting(true);
 
@@ -174,7 +156,7 @@ Collected by: ${agent_name || "N/A"}
           }
           body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: ${widthMM > 60 ? '12px' : '10px'}; 
+            font-size: ${widthMM > 60 ? "12px" : "10px"};
             margin: 0;
             padding: 0;
             width: ${widthMM}mm;
@@ -197,7 +179,9 @@ Collected by: ${agent_name || "N/A"}
           <div class="header">
             <h3 style="margin-bottom: 5px;">MY CHITS</h3>
           </div>
-          <div style="text-align: center; font-size: ${widthMM > 60 ? '9px' : '8px'};">
+          <div style="text-align: center; font-size: ${
+            widthMM > 60 ? "9px" : "8px"
+          };">
             <p>No.11/36-25, 2nd Main,</p>
             <p>Kathriguppe Main Road,</p>
             <p>Bangalore, 560085 | 9483900777</p>
@@ -207,13 +191,19 @@ Collected by: ${agent_name || "N/A"}
             ${isLoanPayment ? "LOAN RECEIPT" : "RECEIPT"}
           </p>
           <p>
-            <span style="font-weight: bold;">Receipt No:</span> ${receipt_no || "N/A"} <br/>
+            <span style="font-weight: bold;">Receipt No:</span> ${
+              receipt_no || "N/A"
+            } <br/>
             <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
           </p>
           <div class="line" style="margin: 5px 0;"></div>
           <p>
-            <span style="font-weight: bold;">Name:</span> ${customer_name || "N/A"} <br/>
-            <span style="font-weight: bold;">Mobile No:</span> ${phone_number || "N/A"}
+            <span style="font-weight: bold;">Name:</span> ${
+              customer_name || "N/A"
+            } <br/>
+            <span style="font-weight: bold;">Mobile No:</span> ${
+              phone_number || "N/A"
+            }
           </p>
           <div class="line" style="margin: 5px 0;"></div>
           
@@ -223,16 +213,24 @@ Collected by: ${agent_name || "N/A"}
           <table style="border-collapse: collapse; width: 100%; border: 1px solid #000; margin: 5px 0; font-size: 1.2em;">
             <tr>
               <td style="padding: 5px; font-weight: bold;">Received Amount</td>
-              <td style="padding: 5px; text-align: right; font-weight: bold;">Rs.${amount || "0"}</td>
+              <td style="padding: 5px; text-align: right; font-weight: bold;">Rs.${
+                amount || "0"
+              }</td>
             </tr>
           </table>
           <p>
-            <span style="font-weight: bold;">Mode:</span> ${pay_type || "N/A"}</br>
+            <span style="font-weight: bold;">Mode:</span> ${
+              pay_type || "N/A"
+            }</br>
             ${txnLine}
-            <span style="font-weight: bold;">Total:</span> Rs.${total_amount || "0"}
+            <span style="font-weight: bold;">Total:</span> Rs.${
+              total_amount || "0"
+            }
           </p>
           <div class="line"></div>
-          <p><span style="font-weight: bold;">Collected By:</span> ${agent_name || "N/A"}</p>
+          <p><span style="font-weight: bold;">Collected By:</span> ${
+            agent_name || "N/A"
+          }</p>
           <p style="margin-top: 10px; text-align: center; font-size: 0.9em;">*** Thank You ***</p>
         </div>
       </body>
@@ -243,7 +241,10 @@ Collected by: ${agent_name || "N/A"}
       await RNPrint.print({ html: htmlContent });
     } catch (error) {
       console.error(`POS Print (${widthMM}MM) Error:`, error);
-      Alert.alert("Print Error", `Failed to print the document via OS print dialog. (Width: ${widthMM}MM)`);
+      Alert.alert(
+        "Print Error",
+        `Failed to print the document via OS print dialog. (Width: ${widthMM}MM)`
+      );
     } finally {
       setIsPrinting(false);
     }
@@ -261,7 +262,7 @@ Collected by: ${agent_name || "N/A"}
     );
 
     return () => backHandler.remove();
-  }, [navigation]); 
+  }, [navigation]);
 
   const groupOrLoanDisplay = isLoanPayment
     ? `Loan ID: ${custom_loan_id || "N/A"}`
@@ -277,13 +278,13 @@ Collected by: ${agent_name || "N/A"}
             isConnecting
               ? "Connecting..."
               : isConnected
-                ? "Connected"
-                : "Connect to Printer"
+              ? "Connected"
+              : "Connect to Printer"
           }
           filled
           style={{ marginTop: 18, marginBottom: 4 }}
           onPress={handleConnect}
-          disabled={isConnecting || isConnected} 
+          disabled={isConnecting || isConnected}
         />
 
         {isConnecting && (
@@ -312,13 +313,20 @@ Collected by: ${agent_name || "N/A"}
           >
             MY CHITS
           </Text>
-          <Text style={[styles.textStyle, { textAlign: "center", marginTop: 3 }]}>
+          <Text
+            style={[styles.textStyle, { textAlign: "center", marginTop: 3 }]}
+          >
             No.11/36-25, 2nd Main,
           </Text>
           <Text style={[styles.textStyle, { textAlign: "center" }]}>
             Kathriguppe Main Road,
           </Text>
-          <Text style={[styles.textStyle, { textAlign: "center", marginBottom: 5 }]}>
+          <Text
+            style={[
+              styles.textStyle,
+              { textAlign: "center", marginBottom: 5 },
+            ]}
+          >
             Bangalore, 560085 9483900777
           </Text>
 
@@ -335,51 +343,57 @@ Collected by: ${agent_name || "N/A"}
             {isLoanPayment ? "LOAN RECEIPT" : "RECEIPT"}
           </Text>
 
-          {/* Receipt Info */}
           <View style={{ marginBottom: 5 }}>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Receipt No:</Text> {receipt_no || "N/A"}
+              <Text style={{ fontWeight: "bold" }}>Receipt No:</Text>{" "}
+              {receipt_no || "N/A"}
             </Text>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Date:</Text> {formatDate(pay_date || "")}
+              <Text style={{ fontWeight: "bold" }}>Date:</Text>{" "}
+              {formatDate(pay_date || "")}
             </Text>
           </View>
 
-          {/* Customer Info */}
           <View style={{ marginBottom: 5 }}>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Name:</Text> {customer_name || "N/A"}
+              <Text style={{ fontWeight: "bold" }}>Name:</Text>{" "}
+              {customer_name || "N/A"}
             </Text>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Mobile No:</Text> {phone_number || "N/A"}
+              <Text style={{ fontWeight: "bold" }}>Mobile No:</Text>{" "}
+              {phone_number || "N/A"}
             </Text>
           </View>
 
-          {/* Loan/Group Info */}
           <Text
-            style={[styles.textStyle, { fontSize: 14, fontWeight: "bold", marginBottom: 5 }]}
+            style={[
+              styles.textStyle,
+              { fontSize: 14, fontWeight: "bold", marginBottom: 5 },
+            ]}
           >
             {groupOrLoanDisplay}
           </Text>
 
-          {/* Amount Box */}
           <View style={styles.amountBox}>
             <Text style={styles.amountText}>
               Received Amount | Rs.{amount || "0"}
             </Text>
           </View>
 
-          {/* Payment Details */}
           <View style={{ marginTop: 5 }}>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Mode:</Text> {pay_type || "N/A"}
+              <Text style={{ fontWeight: "bold" }}>Mode:</Text>{" "}
+              {pay_type || "N/A"}
             </Text>
             {pay_type?.toLowerCase() === "online" && transaction_id ? (
               <Text style={styles.textStyle}>
-                <Text style={{ fontWeight: "bold" }}>Transaction ID:</Text> {transaction_id}
+                <Text style={{ fontWeight: "bold" }}>Transaction ID:</Text>{" "}
+                {transaction_id}
               </Text>
             ) : null}
-            <Text style={[styles.textStyle, { fontWeight: "bold", marginTop: 2 }]}>
+            <Text
+              style={[styles.textStyle, { fontWeight: "bold", marginTop: 2 }]}
+            >
               Total: Rs.{total_amount || "0"}
             </Text>
           </View>
@@ -387,11 +401,11 @@ Collected by: ${agent_name || "N/A"}
           <View style={styles.separator} />
 
           <Text style={styles.textStyle}>
-            <Text style={{ fontWeight: "bold" }}>Collected by:</Text> {agent_name || "N/A"}
+            <Text style={{ fontWeight: "bold" }}>Collected by:</Text>{" "}
+            {agent_name || "N/A"}
           </Text>
         </View>
 
-        {/* --- Printing Status and Buttons --- */}
         {isPrinting && (
           <ActivityIndicator
             size="large"
@@ -400,34 +414,45 @@ Collected by: ${agent_name || "N/A"}
           />
         )}
 
-        {/* Print Buttons Row 1 (Thermal and POS 58MM) */}
+        {/* --- Updated Buttons with padding --- */}
         <View style={styles.buttonRow}>
           <Button
             title="Thermal Print"
             filled
-            // ONLY THIS BUTTON RETAINS THE CUSTOM COLOR
-            style={[styles.printButton, { marginRight: 8, backgroundColor: COLORS.third }]}
+            style={[
+              styles.printButton,
+              {
+                marginRight: 8,
+                backgroundColor: COLORS.third,
+                paddingVertical: 12,
+                paddingHorizontal: 10,
+              },
+            ]}
             onPress={handlePrint}
             disabled={!isConnected || isPrinting}
           />
           <Button
-            title="POS Print "
+            title="POS Print"
             filled
-            // REMOVED explicit style for COLORS.third to revert to default primary color
-            style={[styles.printButton, { marginLeft: 8 }]} 
+            style={[
+              styles.printButton,
+              {
+                marginLeft: 8,
+                paddingVertical: 12,
+                paddingHorizontal: 10,
+              },
+            ]}
             onPress={handlePosPrint}
             disabled={isPrinting}
           />
         </View>
 
-        {/* Print Buttons Row 2 (POS 80MM) */}
         <View style={styles.buttonRow}>
           <Button
             title="POS 80MM Print"
             filled
-            // REMOVED explicit style for COLORS.third to revert to default primary color
             style={styles.printButton}
-            onPress={handlePos80MMPrint} 
+            onPress={handlePos80MMPrint}
             disabled={isPrinting}
           />
         </View>
@@ -442,7 +467,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     borderBottomWidth: 1,
-    borderStyle: 'dashed', 
+    borderStyle: "dashed",
     borderColor: "#000",
     marginVertical: 10,
   },
@@ -450,9 +475,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#000",
     padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
     borderRadius: 4,
   },
   amountText: {
@@ -466,8 +491,7 @@ const styles = StyleSheet.create({
   },
   printButton: {
     flex: 1,
-    // Note: The `Button` component should default to `COLORS.primary`
-  }
+  },
 });
 
 export default LoanPrint;

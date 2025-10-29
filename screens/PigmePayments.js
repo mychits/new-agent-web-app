@@ -19,13 +19,14 @@ import PaymentChitList from "../components/PaymentChitList";
 
 const noImage = require('../assets/no.png');
 
-const ChitPayments = ({ route, navigation }) => {
+// NOTE: Component name is assumed to be ChitPayments as per the original file structure
+const ChitPayments = ({ route, navigation }) => { 
   const { user, areaId } = route.params;
 
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState([]);
   const [cus, setCus] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const [groups, setGroups] = useState([]); // Will be used for Pigme ID list
   const [loading, setLoading] = useState(true);
   const [agent, setAgent] = useState({})
 
@@ -33,10 +34,12 @@ const ChitPayments = ({ route, navigation }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState('');
+  
+  // CORRECTION: State for Pigme ID
+  const [selectedPigmyId, setSelectedPigmyId] = useState(''); 
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('');
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
-  const [selectedGroupName, setSelectedGroupName] = useState('');
+  const [selectedPigmyName, setSelectedPigmyName] = useState(''); 
   const [activeChitId, setActiveChitId] = useState(null);
   const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false);
 
@@ -61,7 +64,8 @@ const ChitPayments = ({ route, navigation }) => {
   const [filters, setFilters] = useState([
     { id: 'date', title: 'Date', value: formatDate(selectedDate), icon: 'calendar' },
     { id: 'customer', title: 'Customer', value: 'All', icon: 'user' },
-    { id: 'group', title: 'Group', value: 'All', icon: 'users' },
+    // CORRECTION: Changing 'group' to 'pigmy' in filters
+    { id: 'pigmy', title: 'Pigme ID', value: 'All', icon: 'piggy-bank' }, 
     { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'money' },
     { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'money' },
   ]);
@@ -94,8 +98,9 @@ const ChitPayments = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
+        // CORRECTION: Using the Pigme endpoint with the agent's ID
         const response = await axios.get(
-          `${baseUrl}/payment/get-payment-agent/${user.userId}`
+          `${baseUrl}/payment/pigme/agent/${user.userId}`
         );
         if (response.data) {
           setCustomers(response.data);
@@ -103,7 +108,7 @@ const ChitPayments = ({ route, navigation }) => {
           console.error("Unexpected API response format:", response.data);
         }
       } catch (error) {
-        console.error("Error fetching customer data:", error);
+        console.error("Error fetching pigme payment data:", error);
       } finally {
         setLoading(false)
       }
@@ -125,8 +130,6 @@ const ChitPayments = ({ route, navigation }) => {
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
-      } finally {
-        // You only need one place to set loading to false after all initial fetches are complete
       }
     };
 
@@ -134,6 +137,7 @@ const ChitPayments = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
+    // This fetch is not strictly necessary for Pigmy, but kept for consistency
     const fetchGroups = async () => {
       try {
         const response = await axios.get(
@@ -147,8 +151,6 @@ const ChitPayments = ({ route, navigation }) => {
       } catch (error) {
         Alert.alert("Network Error", "Failed to fetch groups. Please check your network connection.");
         console.error("Error fetching group data:", error);
-      } finally {
-        // You only need one place to set loading to false after all initial fetches are complete
       }
     };
 
@@ -176,9 +178,10 @@ const ChitPayments = ({ route, navigation }) => {
       const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
       const dateMatch = isSameDate(customer.pay_date, selectedDate);
       const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-      const groupMatch = !selectedGroup || customer?.group_id?._id === selectedGroup;
+      // CORRECTION: Filtering by 'pigme_id' from the nested 'pigme' object
+      const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
       const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-      return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
+      return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
     })
     : [];
 
@@ -211,24 +214,27 @@ const ChitPayments = ({ route, navigation }) => {
             }}
           />
         );
-      case 'group':
+      // CORRECTION: Case 'pigmy' for the Pigme ID picker
+      case 'pigme':
+        // Get unique Pigme IDs from the current customers list
+        const uniquePigmyIds = [...new Set(customers.map(c => c?.pigme?.pigme_id).filter(Boolean))];
         return (
           <Picker
-            selectedValue={selectedGroup}
+            selectedValue={selectedPigmyId}
             onValueChange={(value) => {
-              const selected = groups.find((group) => group._id === value);
-              setSelectedGroup(value);
-              setSelectedGroupName(selected?.group_name || '');
-              updateFilterValue('group', selected?.group_name);
+              // The "name" will just be the Pigme ID itself
+              setSelectedPigmyId(value);
+              setSelectedPigmyName(value || ''); 
+              updateFilterValue('pigmy', value);
               setShowPicker(false);
             }}
           >
-            <Picker.Item label="All Groups" value="" />
-            {Array.isArray(groups) && groups.map((group) => (
+            <Picker.Item label="All Pigme Accounts" value="" />
+            {uniquePigmyIds.map((pigmyId) => (
               <Picker.Item
-                key={group._id}
-                label={`${group.group_name}`}
-                value={group._id}
+                key={pigmyId}
+                label={`Pigme ID: ${pigmyId}`}
+                value={pigmyId}
               />
             ))}
           </Picker>
@@ -289,15 +295,15 @@ const ChitPayments = ({ route, navigation }) => {
         const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
         const dateMatch = isSameDate(customer.pay_date, selectedDate);
         const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-        const groupMatch = !selectedGroup || customer?.group_id?._id === selectedGroup;
+        // CORRECTION: Filtering by 'pigme_id'
+        const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
         const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-        return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
+        return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
       })
       .map((customer, index) => `
         <tr>
           <td>${index + 1}</td>
-          <td>${customer?.group_id?.group_name || "N/A"}</td>
-          <td>${customer.ticket || "N/A"}</td>
+          <td>${customer?.pigme?.pigme_id || "N/A"}</td> <td>${customer.ticket || "N/A"}</td>
           <td>${customer?.user_id?.full_name || "N/A"}</td>
           <td>${customer?.user_id?.phone_number || "N/A"}</td>
           <td>${customer.amount || "N/A"}</td>
@@ -351,13 +357,12 @@ const ChitPayments = ({ route, navigation }) => {
       </head>
       <body>
         <div class="container">
-          <h1>Collection Print</h1>
+          <h1>Pigme Payment Collection Print</h1>
           <table class="table">
             <thead>
               <tr>
                 <th>Sl.No</th>
-                <th>Group Name</th>
-                <th>Ticket</th>
+                <th>Pigme ID</th> <th>Ticket</th>
                 <th>Customer Name</th>
                 <th>Phone Number</th>
                 <th>Amount</th>
@@ -433,7 +438,7 @@ const ChitPayments = ({ route, navigation }) => {
           <p>Agent: ${agent.name || 'N/A'}</p>
           <p>Date: ${formatDate(selectedDate)}</p>
           <div class="footer">
-            <p>Generated by Chit Payments App</p>
+            <p>Generated by Pigme Payments App</p>
           </div>
         </div>
       </body>
@@ -468,7 +473,7 @@ const ChitPayments = ({ route, navigation }) => {
               <Header />
               <View style={styles.titleCollectionContainer}>
                 <View>
-                  <Text style={styles.title}>Chit Payments</Text>
+                  <Text style={styles.title}>Pigme Payments</Text>
                   <Text style={styles.totalAmountText}>₹ {totalAmount.toFixed(2)}</Text>
                 </View>
               </View>
@@ -511,6 +516,10 @@ const ChitPayments = ({ route, navigation }) => {
                                 <Text style={styles.paymentDetailLabel}>Customer:</Text> {customer?.user_id?.full_name || 'N/A'}
                               </Text>
                               <Text style={styles.paymentDetailText}>
+                                {/* CORRECTION: Displaying Pigme ID */}
+                                <Text style={styles.paymentDetailLabel}>Pigme ID:</Text> {customer?.pigme?.pigme_id || 'N/A'} 
+                              </Text>
+                              <Text style={styles.paymentDetailText}>
                                 <Text style={styles.paymentDetailLabel}>Amount:</Text> ₹ {parseFloat(customer.amount || 0).toFixed(2)}
                               </Text>
                               <Text style={styles.paymentDetailText}>
@@ -545,7 +554,7 @@ const ChitPayments = ({ route, navigation }) => {
                     <TextInput
                       value={search}
                       onChangeText={(text) => setSearch(text)}
-                      placeholder="Search chit payments..."
+                      placeholder="Search pigme payments..."
                       placeholderTextColor={COLORS.darkGray}
                       style={styles.searchInput}
                     />
@@ -622,9 +631,10 @@ const ChitPayments = ({ route, navigation }) => {
                     const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
                     const dateMatch = isSameDate(customer.pay_date, selectedDate);
                     const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                    const groupMatch = !selectedGroup || customer?.group_id?._id === selectedGroup;
+                    // CORRECTION: Filtering by 'pigme_id'
+                    const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
                     const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-                    return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
+                    return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
                   }).length === 0 ? (
                     <View style={styles.noDataContainer}>
                       <Image source={noImage} style={styles.noImage} />
@@ -636,9 +646,10 @@ const ChitPayments = ({ route, navigation }) => {
                         const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
                         const dateMatch = isSameDate(customer.pay_date, selectedDate);
                         const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                        const groupMatch = !selectedGroup || customer?.group_id?._id === selectedGroup;
+                        // CORRECTION: Filtering by 'pigme_id'
+                        const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
                         const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-                        return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
+                        return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
                       })
                       .map((customer, index) => (
                         <PaymentChitList
@@ -650,7 +661,8 @@ const ChitPayments = ({ route, navigation }) => {
                           receipt={customer.receipt_no}
                           date={customer.pay_date}
                           amount={customer.amount}
-                          group={customer?.group_id?.group_name || 'N/A'}
+                          // CORRECTION: Passing Pigme ID instead of group name
+                          group={customer?.pigme?.pigme_id || 'N/A'} 
                           type={customer.pay_type}
                           navigation={navigation}
                           user={user}
@@ -669,15 +681,13 @@ const ChitPayments = ({ route, navigation }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
-  // New style to push content down from the top edge
   contentContainer: {
     flex: 1,
-    paddingTop: 40, // Added padding to compensate for SafeAreaView removal
+    paddingTop: 40, 
   },
   loadingContainer: {
     flex: 1,
@@ -691,7 +701,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 10,
-    marginTop: 20,
+    marginTop: -2,
     marginBottom: 20,
   },
   title: {
@@ -853,11 +863,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-    paddingTop: 70, // Added padding to compensate for SafeAreaView removal
+    paddingTop: 70, 
   },
   modalCloseButton: {
     position: 'absolute',
-    top: 50, // Adjusted top value
+    top: 50, 
     right: 20,
     zIndex: 1,
   },

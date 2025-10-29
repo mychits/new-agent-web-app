@@ -139,7 +139,7 @@ const AddLead = ({ route, navigation }) => {
             }
         } catch (error) {
             console.error("Error adding lead:", error);
-            Alert.alert("Error", "Error adding lead. Please try again.");
+             Alert.alert("already exits", "Phone number already exits .");
         } finally {
             setIsLoading(false);
         }
