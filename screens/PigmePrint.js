@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   BackHandler,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color"; // Assuming this is defined
@@ -166,9 +167,8 @@ Collected by: ${agent_name || "N/A"}
     // NOTE: Hardcoded "Loan" and "loab" for non-Pigme group is preserved from original code
     const groupOrPigmeHtml = isPigmePayment
       ? `<p style="margin: 0; font-weight: bold;">Pigme ID: ${custom_pigme_id || "N/A"}</p>`
-      : `<p style="margin: 0; font-weight: bold;">Group: ${"Loan"}</p><p style="margin: 0; font-weight: bold;">Ticket: ${
-          "loab" || "N/A"
-        }</p>`;
+      : `<p style="margin: 0; font-weight: bold;">Group: ${"Loan"}</p><p style="margin: 0; font-weight: bold;">Ticket: ${"loab" || "N/A"
+      }</p>`;
 
     const txnLine =
       pay_type?.toLowerCase() === "online" && transaction_id
@@ -293,6 +293,7 @@ Collected by: ${agent_name || "N/A"}
   };
 
   return (
+    <ScrollView style={{flex:1}}>
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
         <Header />
@@ -302,8 +303,8 @@ Collected by: ${agent_name || "N/A"}
             isConnecting
               ? "Connecting..."
               : isConnected
-              ? "Connected"
-              : "Connect to Printer"
+                ? "Connected"
+                : "Connect to Printer"
           }
           filled
           style={{ marginTop: 18, marginBottom: 4 }}
@@ -426,15 +427,15 @@ Collected by: ${agent_name || "N/A"}
             <Button
               title="Thermal Print"
               filled
-              // ONLY THIS BUTTON RETAINS the custom color (COLORS.third)
-              style={[styles.printButton, { marginRight: 8, backgroundColor: COLORS.third }]}
+
+              style={styles.printButtonOne}
               onPress={handlePrint}
               disabled={!isConnected || isPrinting}
             />
             <Button
               title="POS Print"
               filled
-              style={[styles.printButton, { marginLeft: 8 }]}
+              style={styles.printButtonTwo}
               onPress={handlePosPrint}
               disabled={isPrinting}
             />
@@ -445,7 +446,7 @@ Collected by: ${agent_name || "N/A"}
             <Button
               title="POS 80MM Print"
               filled
-              style={styles.printButton}
+              style={styles.posBiggerButton}
               onPress={handlePos80MMPrint}
               disabled={isPrinting}
             />
@@ -454,6 +455,7 @@ Collected by: ${agent_name || "N/A"}
         {/* End Print Buttons */}
       </View>
     </SafeAreaView>
+    </ScrollView>
   );
 };
 
@@ -486,9 +488,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 18,
   },
-  printButton: {
+  printButtonOne: {
+    backgroundColor: COLORS.third,
+    padding: 20
+  },
+  printButtonTwo: {
+    backgroundColor: COLORS.third,
+    padding: 20
+  },
+  posBiggerButton: {
     flex: 1,
-    // The Button component itself should handle the default color (COLORS.primary)
+
+    backgroundColor: COLORS.third
   }
 });
 

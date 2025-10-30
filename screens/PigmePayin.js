@@ -308,7 +308,6 @@ const PigmePayin = ({ route, navigation }) => {
                                     </Picker>
                                 </View>
                             ) : (
-                                // Case 1: One Pigme plan - Use TextInput (Auto-selected)
                                 <TextInput
                                     style={styles.textInput}
                                     value={pigmeDisplayValue}
@@ -316,7 +315,6 @@ const PigmePayin = ({ route, navigation }) => {
                                 />
                             )}
 
-                            {/* Date and Receipt Number */}
                             <View style={styles.row}>
                                 <View style={styles.column}>
                                     <Text style={styles.label}>
@@ -343,7 +341,6 @@ const PigmePayin = ({ route, navigation }) => {
                                 </View>
                             </View>
                             
-                            {/* Payment Type and Amount */}
                             <View style={styles.row}>
                                 <View style={styles.column}>
                                     <Text style={styles.label}>
@@ -376,7 +373,6 @@ const PigmePayin = ({ route, navigation }) => {
                                 </View>
                             </View>
                             
-                            {/* Transaction/Cheque ID */}
                             {additionalInfo !== "" && (
                                 <>
                                     <Text style={styles.label}>
@@ -393,7 +389,6 @@ const PigmePayin = ({ route, navigation }) => {
                                 </>
                             )}
                             
-                            {/* Add Payment Button */}
                             <Button
                                 title={isLoading ? "Please wait..." : "Add Payment"}
                                 filled
@@ -413,17 +408,17 @@ const styles = StyleSheet.create({
     gradientOverlay: {
         flex: 1,
     },
-    // NEW: Fixed Header container to replace SafeAreaView/Header spacing
+   
     fixedHeader: {
-        // Adjust paddingTop to account for status bar since SafeAreaView is gone
+        
         paddingTop: Platform.OS === 'android' ? 40 : 40,
         paddingHorizontal: 22,
-        // The background is handled by the gradient, keep it transparent or match it if needed
+      
         backgroundColor: 'transparent', 
-        zIndex: 10, // Ensure it sits above the scrolling content
+        zIndex: 10, 
     },
     titleContainer: {
-        marginTop: 10, // Adjusted vertical margin
+        marginTop: 10, 
         marginBottom: 10,
         alignItems: 'center',
     },
@@ -432,14 +427,14 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
     },
-    // NEW: Container for the form content inside the ScrollView
+   
     scrollInnerContainer: {
         paddingHorizontal: 22,
     },
-    // NEW: Content container for ScrollView
+   
     scrollContentContainer: {
         flexGrow: 1,
-        paddingBottom: 50, // Ensure space below the form
+        paddingBottom: 50, 
     },
     formBox: {
         backgroundColor: 'rgba(255, 255, 255, 0.9)',

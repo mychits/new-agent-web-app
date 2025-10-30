@@ -179,9 +179,8 @@ Collected by: ${agent_name || "N/A"}
           <div class="header">
             <h3 style="margin-bottom: 5px;">MY CHITS</h3>
           </div>
-          <div style="text-align: center; font-size: ${
-            widthMM > 60 ? "9px" : "8px"
-          };">
+          <div style="text-align: center; font-size: ${widthMM > 60 ? "9px" : "8px"
+      };">
             <p>No.11/36-25, 2nd Main,</p>
             <p>Kathriguppe Main Road,</p>
             <p>Bangalore, 560085 | 9483900777</p>
@@ -191,19 +190,16 @@ Collected by: ${agent_name || "N/A"}
             ${isLoanPayment ? "LOAN RECEIPT" : "RECEIPT"}
           </p>
           <p>
-            <span style="font-weight: bold;">Receipt No:</span> ${
-              receipt_no || "N/A"
-            } <br/>
+            <span style="font-weight: bold;">Receipt No:</span> ${receipt_no || "N/A"
+      } <br/>
             <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
           </p>
           <div class="line" style="margin: 5px 0;"></div>
           <p>
-            <span style="font-weight: bold;">Name:</span> ${
-              customer_name || "N/A"
-            } <br/>
-            <span style="font-weight: bold;">Mobile No:</span> ${
-              phone_number || "N/A"
-            }
+            <span style="font-weight: bold;">Name:</span> ${customer_name || "N/A"
+      } <br/>
+            <span style="font-weight: bold;">Mobile No:</span> ${phone_number || "N/A"
+      }
           </p>
           <div class="line" style="margin: 5px 0;"></div>
           
@@ -213,24 +209,20 @@ Collected by: ${agent_name || "N/A"}
           <table style="border-collapse: collapse; width: 100%; border: 1px solid #000; margin: 5px 0; font-size: 1.2em;">
             <tr>
               <td style="padding: 5px; font-weight: bold;">Received Amount</td>
-              <td style="padding: 5px; text-align: right; font-weight: bold;">Rs.${
-                amount || "0"
-              }</td>
+              <td style="padding: 5px; text-align: right; font-weight: bold;">Rs.${amount || "0"
+      }</td>
             </tr>
           </table>
           <p>
-            <span style="font-weight: bold;">Mode:</span> ${
-              pay_type || "N/A"
-            }</br>
+            <span style="font-weight: bold;">Mode:</span> ${pay_type || "N/A"
+      }</br>
             ${txnLine}
-            <span style="font-weight: bold;">Total:</span> Rs.${
-              total_amount || "0"
-            }
+            <span style="font-weight: bold;">Total:</span> Rs.${total_amount || "0"
+      }
           </p>
           <div class="line"></div>
-          <p><span style="font-weight: bold;">Collected By:</span> ${
-            agent_name || "N/A"
-          }</p>
+          <p><span style="font-weight: bold;">Collected By:</span> ${agent_name || "N/A"
+      }</p>
           <p style="margin-top: 10px; text-align: center; font-size: 0.9em;">*** Thank You ***</p>
         </div>
       </body>
@@ -278,8 +270,8 @@ Collected by: ${agent_name || "N/A"}
             isConnecting
               ? "Connecting..."
               : isConnected
-              ? "Connected"
-              : "Connect to Printer"
+                ? "Connected"
+                : "Connect to Printer"
           }
           filled
           style={{ marginTop: 18, marginBottom: 4 }}
@@ -414,34 +406,23 @@ Collected by: ${agent_name || "N/A"}
           />
         )}
 
-        {/* --- Updated Buttons with padding --- */}
         <View style={styles.buttonRow}>
           <Button
             title="Thermal Print"
             filled
-            style={[
-              styles.printButton,
-              {
-                marginRight: 8,
-                backgroundColor: COLORS.third,
-                paddingVertical: 12,
-                paddingHorizontal: 10,
-              },
-            ]}
+            style={
+              styles.printButtonOne
+            }
             onPress={handlePrint}
             disabled={!isConnected || isPrinting}
           />
           <Button
             title="POS Print"
             filled
-            style={[
-              styles.printButton,
-              {
-                marginLeft: 8,
-                paddingVertical: 12,
-                paddingHorizontal: 10,
-              },
-            ]}
+            style={
+              styles.printButtonTwo
+
+            }
             onPress={handlePosPrint}
             disabled={isPrinting}
           />
@@ -451,7 +432,7 @@ Collected by: ${agent_name || "N/A"}
           <Button
             title="POS 80MM Print"
             filled
-            style={styles.printButton}
+            style={styles.posBiggerButton}
             onPress={handlePos80MMPrint}
             disabled={isPrinting}
           />
@@ -487,11 +468,22 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 18,
+    marginTop: 10,
+
   },
-  printButton: {
+  printButtonOne: {
+     backgroundColor: COLORS.third,
+     padding:20
+  },
+  printButtonTwo: {
+   
+    backgroundColor: COLORS.third,
+    padding:20
+  },
+  posBiggerButton: {
     flex: 1,
-  },
+    backgroundColor: COLORS.third
+  }
 });
 
 export default LoanPrint;
