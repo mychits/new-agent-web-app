@@ -129,7 +129,6 @@ const Becomeanagent = ({ navigation, route }) => {
 
       // Use the imported baseUrl here
       const fullUrl = `${baseUrl}/become-agent/agents/become`;
-      console.log("Attempting to post to URL:", fullUrl);
 
       const response = await axios.post(fullUrl, formData);
 
@@ -195,7 +194,7 @@ const Becomeanagent = ({ navigation, route }) => {
     >
       {/* The main gradient background for the entire safe area */}
       <LinearGradient
-         colors={['#dbf6faff', '#90dafcff']}
+          colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.safeAreaGradientBackground}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -212,14 +211,12 @@ const Becomeanagent = ({ navigation, route }) => {
         >
           <ScrollView contentContainerStyle={styles.scrollViewContent}>
             {/* Existing gradientOverlay wrapping the formContainer */}
-            <LinearGradient
-               colors={['#dbf6faff', '#90dafcff']}
+            <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
               style={styles.gradientOverlay}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
+              <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={styles.formContainer}

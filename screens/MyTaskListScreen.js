@@ -52,6 +52,7 @@ export default function MyTaskListScreen({ navigation, route }) {
   // Animation values
   const refreshScale = useRef(new Animated.Value(1)).current;
   const listFadeAnim = useRef(new Animated.Value(0)).current; // For FlatList fade-in
+  const animatedCardValues = useRef(new Map()).current; // For staggered card entry
 
   useEffect(() => {
     fetchTasks();
@@ -74,6 +75,8 @@ export default function MyTaskListScreen({ navigation, route }) {
       Animated.timing(refreshScale, { toValue: 1, duration: 150, useNativeDriver: true }),
     ]).start(() => {
       listFadeAnim.setValue(0); // Reset animation
+      // Clear card animations so they re-stagger on fetchTasks
+      animatedCardValues.clear(); 
       fetchTasks();
     });
   };
@@ -93,35 +96,64 @@ export default function MyTaskListScreen({ navigation, route }) {
     }
   };
 
-  const renderTaskItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate("Task Detail", { task: item })}
-      activeOpacity={0.7}
-    >
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.taskTitle}</Text>
-        <Text style={[
-          styles.cardSubtitle,
-          { color: item.status === "Completed" ? COLOR_PALETTE.accentGreen : COLOR_PALETTE.secondary }
-        ]}>
-          Status: {item.status}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={26} color={COLOR_PALETTE.secondary} />
-    </TouchableOpacity>
-  );
+  const getAnimatedValue = (taskId, index) => {
+    if (!animatedCardValues.has(taskId)) {
+      animatedCardValues.set(taskId, new Animated.Value(0));
+      // Stagger the animation start for a stylish cascade effect
+      Animated.timing(animatedCardValues.get(taskId), {
+        toValue: 1,
+        duration: 500,
+        delay: 50 * index, // Staggered delay
+        useNativeDriver: true,
+      }).start();
+    }
+    return animatedCardValues.get(taskId);
+  };
+
+
+  const renderTaskItem = ({ item, index }) => {
+    // Apply Card Entry Animation
+    const animValue = getAnimatedValue(item._id, index);
+    const translateY = animValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [50, 0] // Slide up from 50px below
+    });
+    const opacity = animValue; // Fade in
+
+    const cardAnimatedStyle = {
+        opacity: opacity,
+        transform: [{ translateY }],
+    };
+
+    return (
+        <Animated.View style={cardAnimatedStyle}>
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => navigation.navigate("Task Detail", { task: item })}
+                activeOpacity={0.7}
+            >
+                <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>{item.taskTitle}</Text>
+                    <Text style={[
+                        styles.cardSubtitle,
+                        { color: item.status === "Completed" ? COLOR_PALETTE.accentGreen : COLOR_PALETTE.secondary }
+                    ]}>
+                        Status: {item.status}
+                    </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={26} color={COLOR_PALETTE.secondary} />
+            </TouchableOpacity>
+        </Animated.View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Background Gradient */}
-      <LinearGradient
-         colors={['#dbf6faff', '#90dafcff']}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
-
+    // 💡 CHANGE APPLIED: LinearGradient is now the root container with style={{ flex: 1 }}
+    <LinearGradient  colors={['#b6e4ebff', '#1796d1ff']}
+      style={{ flex: 1 }} 
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         <KeyboardAvoidingView
@@ -169,12 +201,15 @@ export default function MyTaskListScreen({ navigation, route }) {
                 <MaterialCommunityIcons name="clipboard-text-off-outline" size={65} color={COLOR_PALETTE.secondary} style={styles.noDataIcon} />
                 <Text style={styles.noDataText}>No tasks assigned yet.</Text>
                 <Text style={styles.noDataSubText}>Please check back later or contact your manager.</Text>
-                <TouchableOpacity onPress={handleRefreshPress} style={styles.refreshButton}>
-                  <Text style={styles.refreshButtonText}>Refresh</Text>
-                </TouchableOpacity>
+                {/* Apply Refresh Animation */}
+                <Animated.View style={{ transform: [{ scale: refreshScale }] }}>
+                  <TouchableOpacity onPress={handleRefreshPress} style={styles.refreshButton}>
+                    <Text style={styles.refreshButtonText}>Refresh</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               </View>
             ) : (
-              <Animated.FlatList // Use Animated.FlatList
+              <Animated.FlatList // Apply List Fade-in Animation
                 data={tasks}
                 keyExtractor={(item) => item._id}
                 renderItem={renderTaskItem}
@@ -185,20 +220,13 @@ export default function MyTaskListScreen({ navigation, route }) {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    position: 'relative',
-    backgroundColor: COLORS.white,
-  },
-  gradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: -1,
-  },
+  // 💡 REMOVED: styles.container is no longer needed
+
   safeArea: {
     flex: 1,
     width: '100%',
@@ -235,14 +263,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-
-
-
   },
   backArrow: {
     padding: 10, // Increased padding for easier tap
     marginRight: 10,
-
   },
   headerRightImage: {
     width: 55, // Larger image
@@ -250,7 +274,6 @@ const styles = StyleSheet.create({
     borderRadius: 27.5, // Perfect circle
     marginLeft: 'auto',
     marginRight: 15,
-
   },
   contentWrapper: {
     flex: 1,

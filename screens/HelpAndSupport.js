@@ -93,7 +93,7 @@ const HelpAndSupport = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']}
+        colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.backgroundGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

@@ -1,7 +1,6 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "../screens/Home";
-import Welcome from "../screens/Welcome";
 import Login from "../screens/Login";
 import BottomNavigation from "./BottomNavigation"; // This component contains the tab navigator
 import PaymentNavigator from "./PaymentNavigator";
@@ -23,6 +22,7 @@ import EnrolledGroups from '../screens/EnrolledGroups';
 import Becomeanagent from '../screens/Becomeanagent';
 import Register from "../screens/Register";
 import AboutMyChits from "../screens/AboutMyChits";
+import EnrollCustomer from "../screens/EnrollCustomer";
 import HelpAndSupport from "../screens/HelpAndSupport";
 import Commissions from "../screens/Commissions";
 import Target from "../screens/Target";
@@ -39,7 +39,7 @@ import ExpectedCommissions from "../screens/ExpectedCommissions";
 // NOTE: We import the file named 'Attendence.js' but rename the screen to 'Attendance'
 import Attendence from "../screens/Attendence"; 
 
-import GroupReport from "../screens/GroupReport";
+import RelationshipManagerReport from "../screens/RelationshipManagerReport";
 import ReferredReport from "../screens/ReferredReport";
 import Due from "../screens/Due";
 import OutstandingReports from "../screens/OutstandingReports";
@@ -57,7 +57,7 @@ export default function AppNavigation() {
         barStyle="light-content"
       />
 
-      <Stack.Navigator initialRouteName="Welcome">
+      <Stack.Navigator initialRouteName="Login">
         {/*
           Keep BottomNavigation as the main entry point for the app's logged-in state.
           The BottomNavigation component will internally handle the Home screen
@@ -67,12 +67,6 @@ export default function AppNavigation() {
           name="BottomNavigation"
           component={BottomNavigation}
           options={{ headerShown: false }}
-        />
-        
-        <Stack.Screen
-          name="Welcome"
-          options={{ headerShown: false }}
-          component={Welcome}
         />
         <Stack.Screen
           name="Login"
@@ -118,11 +112,12 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={OutstandingReports}
           />
+          <Stack.Screen name="EnrollCustomer" options={{headerShown: false}} component={EnrollCustomer} />
           <Stack.Screen name="EnrolledGroups" options={{headerShown: false}} component={EnrolledGroups} />
           <Stack.Screen
-          name="GroupReport"
+          name="RelationshipManagerReport"
           options={{ headerShown: false }}
-          component={GroupReport}
+          component={RelationshipManagerReport}
           />
           <Stack.Screen
           name="ReferredReport"

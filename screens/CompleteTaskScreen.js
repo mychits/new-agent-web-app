@@ -34,7 +34,8 @@ const COLOR_PALETTE = {
 };
 
 const headerImage = require('../assets/hero1.jpg');
-const baseUrl = 'your_base_url_here'; // Placeholder for the original baseUrl
+import baseUrl from ".././constants/baseUrl" 
+
 
 const { width, height } = Dimensions.get("window");
 
@@ -89,8 +90,7 @@ export default function CompleteTaskScreen({ route, navigation }) {
     return (
         <View style={styles.container}>
             {/* Background Gradient */}
-            <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
+            <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
                 style={styles.backgroundGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}

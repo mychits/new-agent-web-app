@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -14,9 +14,9 @@ import {
   ToastAndroid,
   ActivityIndicator,
   // 💡 REQUIRED IMPORT
-  TextInput, 
+  TextInput,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// import { SafeAreaView } from "react-native-safe-area-context"; // ❌ REMOVED
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
@@ -48,14 +48,14 @@ const cardImagePaths = {
   reports: require("../assets/Reports2.png"),
   commission: require("../assets/commissions1.png"),
   groups: require("../assets/groups1.png"),
-  customerOnHold: require("../assets/Holdon2.png"), 
+  customerOnHold: require("../assets/Holdon2.png"),
   monthlyTurnover: require("../assets/MITB.png"), // Monthly Turnover image path
   DueReportImage: require("../assets/dues.png"),
 };
 
 const AttendanceModal = ({
   attendanceLoading,
-  selectedStatus, 
+  selectedStatus,
   visible,
   message,
   onClose,
@@ -78,8 +78,8 @@ const AttendanceModal = ({
         useNativeDriver: true,
       }).start();
       // Ensure note accordion is closed and note cleared when modal opens
-      setIsNoteOpen(false); 
-      setNote(""); 
+      setIsNoteOpen(false);
+      setNote("");
     }
   }, [visible]);
 
@@ -116,31 +116,31 @@ const AttendanceModal = ({
 
           {/* 💡 STYLISH ACCORDION HEADER (NOTE - OPTIONAL) */}
           <TouchableOpacity
-              style={modalStyles.accordionHeader}
-              onPress={() => setIsNoteOpen(!isNoteOpen)}
-              activeOpacity={0.8}
+            style={modalStyles.accordionHeader}
+            onPress={() => setIsNoteOpen(!isNoteOpen)}
+            activeOpacity={0.8}
           >
-              <Text style={modalStyles.noteLabel}>
-                  {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'} 
-              </Text>
-              <Text style={modalStyles.arrowIcon}>
-                  {isNoteOpen ? '▲' : '▼'}
-              </Text>
+            <Text style={modalStyles.noteLabel}>
+              {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'}
+            </Text>
+            <Text style={modalStyles.arrowIcon}>
+              {isNoteOpen ? '▲' : '▼'}
+            </Text>
           </TouchableOpacity>
 
           {/* 💡 ACCORDION CONTENT (TEXT INPUT) */}
           {isNoteOpen && (
-              <View style={modalStyles.accordionContent}>
-                  <TextInput
-                      style={modalStyles.inputField}
-                      // 💡 UPDATED SMALLER PLACEHOLDER
-                      placeholder="e.g., Working remotely today..."
-                      placeholderTextColor="#a0a0a0"
-                      value={note}
-                      onChangeText={setNote}
-                      multiline
-                  />
-              </View>
+            <View style={modalStyles.accordionContent}>
+              <TextInput
+                style={modalStyles.inputField}
+                // 💡 UPDATED SMALLER PLACEHOLDER
+                placeholder="e.g., Working remotely today..."
+                placeholderTextColor="#a0a0a0"
+                value={note}
+                onChangeText={setNote}
+                multiline
+              />
+            </View>
           )}
           {/* END ACCORDION */}
 
@@ -164,7 +164,7 @@ const AttendanceModal = ({
               ) : (
                 <Text style={modalStyles.markAttendanceButtonText}>
                   PRESENT
-                </Text> 
+                </Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -177,7 +177,7 @@ const AttendanceModal = ({
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
   const [agent, setAgent] = useState({});
-  const [selectedStatus, setSelectedStatus] = useState("Present"); 
+  const [selectedStatus, setSelectedStatus] = useState("Present");
   const { modifyPayment, setModifyPayment } = useContext(AgentContext);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
@@ -185,135 +185,11 @@ const Home = ({ route, navigation }) => {
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [note, setNote] = useState("");
 
-  const handleSubmitAttendance = async () => {
-    const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
-    try {
-      setAttendanceLoading(true);
-      
-      const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
-        employee_id: user?.userId,
-        status: selectedStatus, // "Present"
-        method: "No Auth",
-        type: "in",
-        note: note,
-      });
-      const responseMessage = response?.data?.message;
-      ToastAndroid.show(
-        responseMessage ? responseMessage : "Attendance Marked Successfully",
-        ToastAndroid.SHORT
-      );
-    } catch (error) {
-      console.log(error, "error");
-      ToastAndroid.show("Failed to Mark Attendance", ToastAndroid.SHORT);
-    } finally {
-      setAttendanceLoading(false);
-      setShowAttendanceModal(false)
-      setNote("");
-    }
-  };
-  useEffect(() => {
-    if (agentInfo?.designation_id?.permission) {
-      setModifyPayment(
-        agentInfo.designation_id.permission.modify_payments === "true"
-      );
-    }
-  }, [agentInfo, setModifyPayment]);
+  // 💡 ANIMATION: Create Animated.Values for each card
+  const cardAnimations = useRef([]);
+  const hasAnimated = useRef(false);
 
-  useEffect(() => {
-    const fetchAgent = async () => {
-      if (user && user.userId) {
-        try {
-          const response = await axios.get(
-            `${baseUrl}/agent/get-agent-by-id/${user.userId}`
-          );
-          if (response.data) setAgent(response.data);
-        } catch (error) {
-          console.error("Error fetching agent data:", error.message);
-        }
-      }
-    };
-    if (netInfo.isConnected) fetchAgent();
-  }, [user.userId, netInfo.isConnected]);
-
-  useEffect(() => {
-    const checkAttendance = async () => {
-      const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
-      
-      const body = { employee_id: user.userId,};
-
-      try {
-        const response = await axios.post(ATTENDANCE_MODAL_URL, { ...body });
-        const data = response.data;
-        console.log(" Attendance API Response:", data);
-
-        if (data?.showModal === true) {
-          setAttendanceMessage(data.message || "Eligible to mark attendance");
-          setShowAttendanceModal(true);
-        } else if (data?.message) {
-          // If showModal is false but there's a message (like "Attendance Already Marked"),
-          // we treat it as a successful check and suppress the warning/error logging.
-          // console.warn("Attendance API message:", data.message); // Commented out to reduce console noise
-          setShowAttendanceModal(false);
-        } else {
-          setShowAttendanceModal(false);
-        }
-      } catch (error) {
-        const errorMessage =
-          error.response?.data?.message || error.message;
-
-        // 💡 MODIFICATION HERE: Check if the "error" is actually the expected "Attendance Already Marked" status.
-        // The API might be using a non-200 status code to return this state.
-        if (errorMessage !== "Attendance Already Marked") {
-          console.error(
-            "❌ Error checking attendance status:",
-            errorMessage
-          );
-        } else {
-            // Success case, but returned as an HTTP error code (e.g., 400).
-            // We log it as an info message instead of an error.
-            console.info("✅ Attendance check complete:", errorMessage);
-        }
-        setShowAttendanceModal(false);
-      }
-    };
-
-    if (user.userId && netInfo.isConnected) checkAttendance();
-  }, [user.userId, netInfo.isConnected]);
-
-  const handleMarkAttendance = async (selectedStatus) => {
-    setShowAttendanceModal(false);
-
-    const submissionBody = {
-      employee_id: user.userId,
-      status: selectedStatus,
-      
-    };
-
-    try {
-      const response = await axios.post(ATTENDANCE_SUBMIT_URL, submissionBody);
-
-      if (response.status === 200 || response.status === 201) {
-        console.log("Attendance marked successfully:", response.data.message);
-
-        navigation.navigate("Attendance", {
-          status: selectedStatus,
-          message: response.data.message || "Attendance marked successfully!",
-        });
-      }
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        "Failed to mark attendance. Please try again.";
-      console.error("❌ Error marking attendance:", errorMessage);
-
-      navigation.navigate("Attendance", {
-        status: selectedStatus,
-        message: errorMessage,
-        error: true,
-      });
-    }
-  };
-
+  // Define cardsData early to use its length for animation array initialization
   const cardsData = [
     // {
     //   id: "attendence",
@@ -323,13 +199,7 @@ const Home = ({ route, navigation }) => {
     //   backgroundColor: "#D9D7F1",
     // },
 
-    {
-        id: "monthlyTurnover", 
-        name: "Monthly Turnover",
-        imagePath: cardImagePaths.monthlyTurnover,
-        onPress: () => navigation.navigate("MonthlyTurnover"),
-        backgroundColor: "#FFECB3", 
-    },
+
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
       name: "Collections",
@@ -342,7 +212,15 @@ const Home = ({ route, navigation }) => {
       name: "QR Code",
       imagePath: cardImagePaths.qrCode,
       onPress: () => navigation.navigate("qrCode"),
-      backgroundColor: "#FFEBEE",
+      backgroundColor: "#e3f0e4ff",
+    },
+      {
+      id: "commission",
+      name: "My Overview",
+      imagePath: cardImagePaths.commission,
+      onPress: () => navigation.navigate("Commissions", { user }),
+      // 💡 CHANGE: Use a distinct, vibrant color for the big card
+      backgroundColor: "#97bebaff", // Light Cyan
     },
     agentInfo?.designation_id?.permission?.daybook === "true" && {
       id: "daybook",
@@ -351,14 +229,19 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("PayNavigation", { user }),
       backgroundColor: "#E8F5E9",
     },
-        {
-        id: "commission",
-        name: "Commissions",
-        imagePath: cardImagePaths.commission,
-        onPress: () => navigation.navigate("Commissions",{ user }),
-      backgroundColor: "#E8F5E9",
-    }, 
-    
+    agentInfo?.designation_id?.permission?.reports === "true" && {
+      id: "reports",
+      name: "Reports",
+      imagePath: cardImagePaths.reports,
+      onPress: () =>
+        navigation.navigate("PayNavigation", {
+          screen: "Reports",
+          params: { user },
+        }),
+      backgroundColor: "#ebe9a8ff",
+    },
+  
+
 
 
     agentInfo?.designation_id?.permission?.targets === "true" && {
@@ -419,17 +302,7 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#E0F7FA",
     },
-    agentInfo?.designation_id?.permission?.reports === "true" && {
-      id: "reports",
-      name: "Reports",
-      imagePath: cardImagePaths.reports,
-      onPress: () =>
-        navigation.navigate("PayNavigation", {
-          screen: "Reports",
-          params: { user },
-        }),
-      backgroundColor: "#FCE4EC",
-    },
+
     {
       id: "groups",
       name: "Groups",
@@ -441,16 +314,17 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#D1C4E9",
     },
-     {
-        id: "MIT",
-        name: "MIT",
-        imagePath: cardImagePaths.monthlyTurnover,
-        onPress: () => navigation.navigate("MIT",{ user }),
-      backgroundColor: "#E8F5E9",
-    }, 
+    {
+      id: "monthlyTurnover",
+      name: "Monthly Turnover",
+      imagePath: cardImagePaths.monthlyTurnover,
+      onPress: () => navigation.navigate("MonthlyTurnover"),
+      backgroundColor: "#FFECB3",
+    },
+
     {
       id: "DueReport",
-      name: "DueReport",
+      name: "Outstanding Report",
       imagePath: cardImagePaths.DueReportImage,
       onPress: () =>
         navigation.navigate("PayNavigation", {
@@ -460,6 +334,164 @@ const Home = ({ route, navigation }) => {
       backgroundColor: "#e9d0e3ff",
     },
   ].filter(Boolean);
+
+  // Initialize Animated.Value for each card
+  if (cardAnimations.current.length !== cardsData.length) {
+    cardAnimations.current = cardsData.map(
+      (_, i) => cardAnimations.current[i] || new Animated.Value(0)
+    );
+  }
+
+  // 💡 ANIMATION: Staggered animation effect
+  useEffect(() => {
+    // Only run the animation once, when data is ready and net is connected
+    if (cardsData.length > 0 && netInfo.isConnected && !hasAnimated.current) {
+      const animations = cardAnimations.current.map((anim, index) => {
+        return Animated.timing(anim, {
+          toValue: 1,
+          duration: 400, // Speed of each card's animation
+          delay: index * 50, // Staggered delay for each card
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        });
+      });
+
+      Animated.stagger(10, animations).start(() => {
+        hasAnimated.current = true; // Mark as animated
+      });
+    }
+  }, [cardsData.length, netInfo.isConnected]);
+
+
+  const handleSubmitAttendance = async () => {
+    const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
+    try {
+      setAttendanceLoading(true);
+
+      const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
+        employee_id: user?.userId,
+        status: selectedStatus, // "Present"
+        method: "No Auth",
+        type: "in",
+        note: note,
+      });
+      const responseMessage = response?.data?.message;
+      ToastAndroid.show(
+        responseMessage ? responseMessage : "Attendance Marked Successfully",
+        ToastAndroid.SHORT
+      );
+    } catch (error) {
+      console.log(error, "error");
+      ToastAndroid.show("Failed to Mark Attendance", ToastAndroid.SHORT);
+    } finally {
+      setAttendanceLoading(false);
+      setShowAttendanceModal(false)
+      setNote("");
+    }
+  };
+  useEffect(() => {
+    if (agentInfo?.designation_id?.permission) {
+      setModifyPayment(
+        agentInfo.designation_id.permission.modify_payments === "true"
+      );
+    }
+  }, [agentInfo, setModifyPayment]);
+
+  useEffect(() => {
+    const fetchAgent = async () => {
+      if (user && user.userId) {
+        try {
+          const response = await axios.get(
+            `${baseUrl}/agent/get-agent-by-id/${user.userId}`
+          );
+          if (response.data) setAgent(response.data);
+        } catch (error) {
+          console.error("Error fetching agent data:", error.message);
+        }
+      }
+    };
+    if (netInfo.isConnected) fetchAgent();
+  }, [user.userId, netInfo.isConnected]);
+
+  useEffect(() => {
+    const checkAttendance = async () => {
+      const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
+
+      const body = { employee_id: user.userId, };
+
+      try {
+        const response = await axios.post(ATTENDANCE_MODAL_URL, { ...body });
+        const data = response.data;
+        console.log(" Attendance API Response:", data);
+
+        if (data?.showModal === true) {
+          setAttendanceMessage(data.message || "Eligible to mark attendance");
+          setShowAttendanceModal(true);
+        } else if (data?.message) {
+          // If showModal is false but there's a message (like "Attendance Already Marked"),
+          // we treat it as a successful check and suppress the warning/error logging.
+          // console.warn("Attendance API message:", data.message); // Commented out to reduce console noise
+          setShowAttendanceModal(false);
+        } else {
+          setShowAttendanceModal(false);
+        }
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message || error.message;
+
+        // 💡 MODIFICATION HERE: Check if the "error" is actually the expected "Attendance Already Marked" status.
+        // The API might be using a non-200 status code to return this state.
+        if (errorMessage !== "Attendance Already Marked") {
+          console.error(
+            "❌ Error checking attendance status:",
+            errorMessage
+          );
+        } else {
+          // Success case, but returned as an HTTP error code (e.g., 400).
+          // We log it as an info message instead of an error.
+          console.info("✅ Attendance check complete:", errorMessage);
+        }
+        setShowAttendanceModal(false);
+      }
+    };
+
+    if (user.userId && netInfo.isConnected) checkAttendance();
+  }, [user.userId, netInfo.isConnected]);
+
+  const handleMarkAttendance = async (selectedStatus) => {
+    setShowAttendanceModal(false);
+
+    const submissionBody = {
+      employee_id: user.userId,
+      status: selectedStatus,
+
+    };
+
+    try {
+      const response = await axios.post(ATTENDANCE_SUBMIT_URL, submissionBody);
+
+      if (response.status === 200 || response.status === 201) {
+        console.log("Attendance marked successfully:", response.data.message);
+
+        navigation.navigate("Attendance", {
+          status: selectedStatus,
+          message: response.data.message || "Attendance marked successfully!",
+        });
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to mark attendance. Please try again.";
+      console.error("❌ Error marking attendance:", errorMessage);
+
+      navigation.navigate("Attendance", {
+        status: selectedStatus,
+        message: errorMessage,
+        error: true,
+      });
+    }
+  };
+
 
   const renderNoInternet = () => (
     <View style={styles.noInternetContainer}>
@@ -476,58 +508,102 @@ const Home = ({ route, navigation }) => {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
-        style={styles.gradientOverlay}
-      >
-        <View style={styles.mainContentArea}>
-          <Header />
-          <View style={styles.introSection}>
-            <Text style={styles.welcomeText}>
-              Hello {agent.name || "Agent"},
-            </Text>
-            <Text style={styles.questionText}>
-              Welcome to MyChits Agent App
-            </Text>
-          </View>
+    // 💡 FIX APPLIED: LinearGradient now wraps the entire screen for full coverage.
+    <LinearGradient
+      colors={['#b6e4ebff', '#1796d1ff']}
+      style={{ flex: 1 }} // Apply flex: 1 to the gradient for full viewport height
+    >
+      {/* ❌ REMOVED SafeAreaView - now the content will start from the top edge */}
+      {/* <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}> */}
+      <View style={styles.mainContentArea_noSafeArea}>
+        {/* 💡 MODIFIED STYLE NAME to account for no SafeAreaView */}
+        <Header />
+        <View style={styles.introSection}>
+          <Text style={styles.welcomeText}>
+            Hello {agent.name || "Agent"},
+          </Text>
+          <Text style={styles.questionText}>
+            Welcome to MyChits Agent App
+          </Text>
+        </View>
 
-          {/* FIX: Only render the main content if user.userId is available */}
-          {!user.userId ? (
-             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-                <Text style={{ marginTop: 10, color: '#666' }}>Loading Agent Data...</Text>
-            </View>
-          ) : netInfo.isConnected === false ? (
-            renderNoInternet()
-          ) : (
-            <ScrollView
-              contentContainerStyle={styles.cardsScrollViewContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.cardsGridContainer}>
-                {cardsData.map((card) => (
-                  <TouchableOpacity
+        {/* FIX: Only render the main content if user.userId is available */}
+        {!user.userId ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+            <Text style={{ marginTop: 10, color: '#666' }}>Loading Agent Data...</Text>
+          </View>
+        ) : netInfo.isConnected === false ? (
+          renderNoInternet()
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.cardsScrollViewContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.cardsGridContainer}>
+              {cardsData.map((card, index) => {
+
+                // 💡 ANIMATION: Interpolate the scale and translateY
+                const scale = cardAnimations.current[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.7, 1], // Start smaller, end at normal size
+                });
+
+                const translateY = cardAnimations.current[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [50, 0], // Start 50 points lower, slide up
+                });
+
+                const animatedStyle = {
+                  opacity: cardAnimations.current[index], // Fade in
+                  transform: [{ scale }, { translateY }],
+                };
+                
+                // 💡 NEW LOGIC: Determine if the card is the "Overview" card
+                const isOverviewCard = card.id === "commission";
+
+                return (
+                  <Animated.View
                     key={card.id}
                     style={[
-                      styles.gridCard,
-                      { backgroundColor: card.backgroundColor },
+                      styles.gridCardWrapper,
+                      isOverviewCard && styles.bigCardWrapper, // 👈 extra width for Overview wrapper
+                      animatedStyle,
                     ]}
-                    onPress={card.onPress}
                   >
-                    <Image
-                      source={card.imagePath}
-                      style={styles.cardImage}
-                      resizeMode="contain"
-                    />
-                    <Text style={styles.gridCardText}>{card.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          )}
-        </View>
-      </LinearGradient>
+                    <TouchableOpacity
+                      style={[
+                        styles.gridCard,
+                        { backgroundColor: card.backgroundColor },
+                        isOverviewCard && styles.bigCardStyle, // 👈 Apply special style to the card itself
+                      ]}
+                      onPress={card.onPress}
+                    >
+                      <Image
+                        source={card.imagePath}
+                        style={[
+                          styles.cardImage,
+                          isOverviewCard && styles.bigCardImage, // 👈 Apply special image style
+                        ]}
+                        resizeMode="contain"
+                      />
+                      <Text 
+                        style={[
+                          styles.gridCardText,
+                          isOverviewCard && styles.bigCardText, // 👈 Apply special text style
+                        ]}
+                      >
+                        {card.name}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          </ScrollView>
+        )}
+      </View>
+      {/* </SafeAreaView> */}
 
       <AttendanceModal
         attendanceLoading={attendanceLoading}
@@ -540,13 +616,17 @@ const Home = ({ route, navigation }) => {
         note={note}
         setNote={setNote}
       />
-    </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 
 const styles = StyleSheet.create({
-  mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 },
+  // 💡 NEW STYLE TO REPLACE SafeAreaView wrapper behavior (padding from the top for header and content)
+  mainContentArea_noSafeArea: { flex: 1, marginHorizontal: 22, marginTop: 40 }, // Increased marginTop to avoid status bar overlap
+
+  // mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 }, // ORIGINAL STYLE
+
   introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
   welcomeText: {
     fontSize: 28,
@@ -560,6 +640,37 @@ const styles = StyleSheet.create({
     color: "#555",
     marginBottom: 10,
   },
+
+  // --- Big Card Styles (Overview Card) ---
+  bigCardWrapper: {
+    width: "100%", // spans full row (like two normal cards)
+    height: (width - 22 * 2 - 20) / 2, // same height as other cards
+  },
+  bigCardStyle: {
+    // 💡 MODIFIED: Center content (horizontal and vertical)
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 15,
+    borderWidth: 2, 
+  },
+  bigCardImage: {
+    // 💡 MODIFIED: Increased image size a bit from the previous version
+    width: 180, 
+    height: 100, 
+    marginBottom: 5, // Smaller margin for centered look
+    marginTop: 0,
+    alignSelf: 'center', // Ensure image is centered
+  },
+  bigCardText: {
+    // 💡 MODIFIED: Ensure text is centered
+    fontSize: 22, 
+    fontWeight: "900",
+    color: '#00796B', 
+    textAlign: "center", // Ensure text is centered
+  },
+  // --- End Big Card Styles ---
+
+
   cardsScrollViewContent: { paddingBottom: 50 },
   cardsGridContainer: {
     flexDirection: "row",
@@ -567,15 +678,21 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 10,
   },
+  // 💡 NEW WRAPPER STYLE for animation (handles spacing and size)
+  gridCardWrapper: {
+    width: (width - 22 * 2 - 20) / 2, // Matches the width of gridCard
+    height: (width - 22 * 2 - 20) / 2, // Matches the height of gridCard
+    marginBottom: 20,
+  },
   gridCard: {
-    width: (width - 22 * 2 - 20) / 2,
-    height: (width - 22 * 2 - 20) / 2,
+    // Note: Dimensions are removed from here and moved to gridCardWrapper
+    flex: 1, // Fill the wrapper
     borderRadius: 15,
-    borderColor: "gold",
-    borderWidth: 1,
+    borderColor: "#e2a65dff",
+    borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    // marginBottom: 20, // Removed from here, moved to gridCardWrapper
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -604,7 +721,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   noInternetSubText: { fontSize: 16, color: "#777", marginTop: 10 },
-  gradientOverlay: { flex: 1 },
+  gradientOverlay: { flex: 1 }, // Retained this style definition although it's no longer used in the component body
 });
 
 
@@ -617,7 +734,7 @@ const modalStyles = StyleSheet.create({
   },
   modalView: {
     backgroundColor: "white",
-    borderRadius: 15, 
+    borderRadius: 15,
     padding: 30,
     alignItems: "center",
     width: "90%",
@@ -649,7 +766,7 @@ const modalStyles = StyleSheet.create({
     height: 65,
   },
   modalHeading: {
-    fontSize: 26, 
+    fontSize: 26,
     fontWeight: "900",
     color: "#2c3e50",
     marginBottom: 5,
@@ -660,7 +777,7 @@ const modalStyles = StyleSheet.create({
     fontWeight: "500",
     color: "#7f8c8d",
     lineHeight: 22,
-    marginBottom: 25, 
+    marginBottom: 25,
   },
   closeButton: {
     position: "absolute",
@@ -697,7 +814,7 @@ const modalStyles = StyleSheet.create({
   },
   arrowIcon: {
     fontSize: 15,
-    color:'#c2c3c4ff' ,
+    color: '#c2c3c4ff',
     fontWeight: '900',
   },
   accordionContent: {
@@ -707,7 +824,7 @@ const modalStyles = StyleSheet.create({
   },
   inputField: {
     width: "100%",
-    minHeight: 90, 
+    minHeight: 90,
     borderColor: '#dcdcdc',
     borderWidth: 1,
     borderRadius: 8,
@@ -717,7 +834,7 @@ const modalStyles = StyleSheet.create({
     backgroundColor: '#fff',
     textAlignVertical: 'top',
   },
-  
+
   // --- Proceed Button (Sleek, Full Gradient) ---
   markAttendanceButtonWrapper: {
     width: "100%",

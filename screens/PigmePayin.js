@@ -7,26 +7,21 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    ActivityIndicator, // Import for loading indicator
+    ActivityIndicator,
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
 
+// Assuming these are defined elsewhere and available
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
 
 const PigmePayin = ({ route, navigation }) => {
-    // You are only passing one pigme_id in route.params, which suggests a single Pigme is intended.
-    // However, the original useEffect fetches ONE pigme by pigme_id but saves it as an array [response.data].
-    // To support multiple pigmes (as requested for the "more than one" case), I'm adjusting the fetch logic
-    // to potentially fetch all pigmes for the `customer` if `pigme_id` is not present, or just the one if it is.
-    // Assuming for this component, you are still primarily focused on the single `pigme_id` passed in.
     const { user, customer, pigme_id, custom_pigme_id } = route.params;
 
     const [currentDate, setCurrentDate] = useState("");
@@ -35,43 +30,38 @@ const PigmePayin = ({ route, navigation }) => {
     const [amount, setAmount] = useState("");
     const [transactionId, setTransactionId] = useState("");
     const [additionalInfo, setAdditionalInfo] = useState("");
-    const [isLoading, setIsLoading] = useState(false); // For Add Payment button
-    const [isFetchingData, setIsFetchingData] = useState(true); // For initial data fetching
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingData, setIsFetchingData] = useState(true);
 
-    const [customerInfo, setCustomerInfo] = useState(""); // Changed to string for full_name
+    const [customerInfo, setCustomerInfo] = useState("");
     const [pigmeData, setPigmeData] = useState([]);
     const [selectedPigme, setSelectedPigme] = useState(null);
-    const [agent, setAgent] = useState(null); // Changed to null/object
+    const [agent, setAgent] = useState(null);
 
     // --- Data Fetching Effects ---
 
-    // 1. Fetch Customer Pigme Data (Handles single/multiple logic)
+    // 1. Fetch Customer Pigme Data (Handles single pigme fetch)
     useEffect(() => {
         const fetchCustomerPigme = async () => {
             setIsFetchingData(true);
             try {
-                // Modified logic to simulate fetching more than one if needed, but keeping
-                // the focus on the single `pigme_id` passed in `route.params`.
-                // If you intend to fetch ALL pigmes for a customer, the API endpoint needs to change,
-                // e.g., `${baseUrl}/pigme/get-pigmes-by-customer/${customer}`
+                // Fetch the single Pigme using pigme_id
                 const response = await axios.get(
                     `${baseUrl}/pigme/get-pigme/${pigme_id}`
                 );
                 
                 if (response.data) {
-                    // Assuming the API response for one pigme includes the customer object
                     const fetchedPigme = response.data;
                     const customerName = fetchedPigme.customer?.full_name || "N/A";
 
                     setCustomerInfo(customerName);
-                    // For the purpose of the picker/auto-selection, wrap the single fetched item in an array
+                    // Wrap the single fetched item in an array for consistency
                     const dataArray = [fetchedPigme]; 
                     setPigmeData(dataArray);
 
-                    // **Auto-select if only one Pigme is found**
+                    // Auto-select and auto-set amount
                     if (dataArray.length === 1) {
                         setSelectedPigme(dataArray[0]);
-                        // Auto-set the amount if it's part of the pigme data
                         setAmount(String(dataArray[0].payable_amount || ""));
                     }
                 } else {
@@ -85,7 +75,7 @@ const PigmePayin = ({ route, navigation }) => {
         };
 
         fetchCustomerPigme();
-    }, [pigme_id]); // Depend on pigme_id instead of customer for this specific screen
+    }, [pigme_id]);
 
     // 2. Set Current Date
     useEffect(() => {
@@ -134,7 +124,7 @@ const PigmePayin = ({ route, navigation }) => {
 
     const handlePaymentTypeChange = (type) => {
         setPaymentDetails(type);
-        setTransactionId(""); // Clear transaction ID on type change
+        setTransactionId("");
         if (type === "online") {
             setAdditionalInfo("Transaction ID");
         } else if (type === "cheque") {
@@ -151,7 +141,6 @@ const PigmePayin = ({ route, navigation }) => {
                 !selectedPigme ||
                 !paymentDetails ||
                 !amount ||
-                // Check if transaction ID is required but missing
                 (paymentDetails !== "cash" && !transactionId)
             ) {
                 Alert.alert("Validation Error", "Please fill all mandatory fields.");
@@ -159,7 +148,6 @@ const PigmePayin = ({ route, navigation }) => {
                 return;
             }
 
-            // Simple check to ensure amount is a positive number
             if (isNaN(Number(amount)) || Number(amount) <= 0) {
                  Alert.alert("Validation Error", "Please enter a valid amount.");
                 setIsLoading(false);
@@ -168,7 +156,6 @@ const PigmePayin = ({ route, navigation }) => {
 
             const PigmeId = selectedPigme?._id;
             const data = {
-                // Use the customer ID from route params as user_id for the payment
                 user_id: customer, 
                 pay_date: new Date().toISOString().split("T")[0],
                 pay_type: paymentDetails,
@@ -187,7 +174,6 @@ const PigmePayin = ({ route, navigation }) => {
             if (response.status === 201) {
                 Alert.alert("Success", "Payment added successfully!");
 
-                // Fetch customer and agent details again for the receipt data
                 const userResponse = await axios.get(
                     `${baseUrl}/user/get-user-by-id/${customer}`
                 );
@@ -196,7 +182,6 @@ const PigmePayin = ({ route, navigation }) => {
                 const { pay_date, amount: paidAmount, pay_type, transaction_id: tId, receipt_no } =
                     response.data?.response;
                 
-                // Use the agent name fetched in the useEffect or fetch it again if needed
                 const agentName = agent?.name || "N/A"; 
 
                 const totalAmountResponse = await axios.post(
@@ -229,192 +214,193 @@ const PigmePayin = ({ route, navigation }) => {
         }
     };
     
-    // --- Render Logic for Single/Multiple Pigme Plans ---
+    // --- Render Logic ---
     
-    // Determine if we should show the Picker or the auto-populated TextInput
     const showPigmePicker = pigmeData.length > 1;
     const pigmeDisplayValue = selectedPigme 
         ? `ID: ${selectedPigme.pigme_id} | Amount: ${selectedPigme.payable_amount}`
         : "Loading...";
 
 
-    // --- Render Component ---
-
+    // Initial Data Fetching Loading Screen
     if (isFetchingData) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-                 <LinearGradient
-                    colors={['#dbf6faff', '#90dafcff']}
-                    style={styles.gradientOverlay}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                >
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <ActivityIndicator size="large" color={COLORS.primary} />
-                    </View>
-                </LinearGradient>
-            </SafeAreaView>
-        );
-    }
-
-
-    return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient
-                colors={['#dbf6faff', '#90dafcff']}
+            // Replaced SafeAreaView with LinearGradient
+            <LinearGradient 
+                colors={['#b6e4ebff', '#1796d1ff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
-                <KeyboardAvoidingView
-                    style={{ flex: 1 }}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-                >
-                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                        <View style={{ marginHorizontal: 22, marginTop: 12 }}>
-                            <Header />
-                            <View style={styles.titleContainer}>
-                                <Text style={styles.title}>Add Pigme Payment</Text>
-                            </View>
-                            <View style={styles.container}>
-                                <View style={styles.formBox}>
-                                    {/* Customer Name */}
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                </View>
+            </LinearGradient>
+        );
+    }
+
+
+    // Main Component View
+    return (
+        <LinearGradient 
+            colors={['#b6e4ebff', '#1796d1ff']}
+            style={styles.gradientOverlay} // Takes up full screen
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+        >
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                // Reduced vertical offset as SafeAreaView is removed
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0} 
+            >
+                {/* 1. FIXED HEADER AND TITLE AREA - Fixed at the top */}
+                <View style={styles.fixedHeader}>
+                    <Header />
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.title}>Add Pigme Payment</Text>
+                    </View>
+                </View>
+
+                {/* 2. SCROLLABLE FORM CONTENT AREA - Takes up the remaining space */}
+                <ScrollView contentContainerStyle={styles.scrollContentContainer}>
+                    <View style={styles.scrollInnerContainer}>
+                        <View style={styles.formBox}>
+                            {/* Customer Name */}
+                            <Text style={styles.label}>
+                                Name<Text style={styles.star}>*</Text>
+                            </Text>
+                            <TextInput
+                                style={styles.textInput}
+                                placeholder="Enter The Name"
+                                keyboardType="default"
+                                value={customerInfo || "N/A"}
+                                editable={false}
+                            />
+                            
+                            {/* Pigme ID & Payable Amount - Conditional Rendering */}
+                            <Text style={styles.label}>
+                                Pigme ID & Payable Amount<Text style={styles.star}>*</Text>
+                            </Text>
+                            
+                            {showPigmePicker ? (
+                                // Case 2: More than one Pigme plan - Use Picker
+                                <View style={styles.pickerContainer}>
+                                    <Picker
+                                        selectedValue={selectedPigme}
+                                        onValueChange={(itemValue) => {
+                                            setSelectedPigme(itemValue);
+                                            // Update amount when a new Pigme is selected
+                                            if (itemValue) {
+                                                setAmount(String(itemValue.payable_amount || ""));
+                                            }
+                                        }}
+                                        style={styles.picker}
+                                    >
+                                        <Picker.Item label="Select Pigme ID & Amount" value={null} />
+                                        {pigmeData.map((data) => (
+                                            <Picker.Item
+                                                key={data._id}
+                                                label={`ID: ${data.pigme_id} | Amount: ${data.payable_amount}`}
+                                                value={data}
+                                            />
+                                        ))}
+                                    </Picker>
+                                </View>
+                            ) : (
+                                <TextInput
+                                    style={styles.textInput}
+                                    value={pigmeDisplayValue}
+                                    editable={false}
+                                />
+                            )}
+
+                            <View style={styles.row}>
+                                <View style={styles.column}>
                                     <Text style={styles.label}>
-                                        Name<Text style={styles.star}>*</Text>
+                                        Date<Text style={styles.star}>*</Text>
                                     </Text>
                                     <TextInput
                                         style={styles.textInput}
-                                        placeholder="Enter The Name"
-                                        keyboardType="default"
-                                        value={customerInfo || "N/A"}
+                                        placeholder="Select Date"
+                                        value={currentDate}
                                         editable={false}
                                     />
-                                    
-                                    {/* Pigme ID & Payable Amount - Conditional Rendering */}
+                                </View>
+                                <View style={styles.column}>
                                     <Text style={styles.label}>
-                                        Pigme ID & Payable Amount<Text style={styles.star}>*</Text>
+                                        Receipt<Text style={styles.star}>*</Text>
                                     </Text>
-                                    
-                                    {showPigmePicker ? (
-                                        // Case 2: More than one Pigme plan - Use Picker
-                                        <View style={styles.pickerContainer}>
-                                            <Picker
-                                                selectedValue={selectedPigme}
-                                                onValueChange={(itemValue) => setSelectedPigme(itemValue)}
-                                                style={styles.picker}
-                                            >
-                                                <Picker.Item label="Select Pigme ID & Amount" value={null} />
-                                                {pigmeData.map((data) => (
-                                                    <Picker.Item
-                                                        key={data._id}
-                                                        label={`ID: ${data.pigme_id} | Amount: ${data.payable_amount}`}
-                                                        value={data}
-                                                    />
-                                                ))}
-                                            </Picker>
-                                        </View>
-                                    ) : (
-                                        // Case 1: One Pigme plan - Use TextInput (Auto-selected)
-                                        <TextInput
-                                            style={styles.textInput}
-                                            value={pigmeDisplayValue}
-                                            editable={false}
-                                        />
-                                    )}
-
-                                    {/* Date and Receipt Number */}
-                                    <View style={styles.row}>
-                                        <View style={styles.column}>
-                                            <Text style={styles.label}>
-                                                Date<Text style={styles.star}>*</Text>
-                                            </Text>
-                                            <TextInput
-                                                style={styles.textInput}
-                                                placeholder="Select Date"
-                                                value={currentDate}
-                                                editable={false}
-                                            />
-                                        </View>
-                                        <View style={styles.column}>
-                                            <Text style={styles.label}>
-                                                Receipt<Text style={styles.star}>*</Text>
-                                            </Text>
-                                            <TextInput
-                                                style={styles.textInput}
-                                                placeholder="Select Receipt"
-                                                keyboardType="numeric"
-                                                value={receipt.receipt_no ? String(receipt.receipt_no) : "N/A"}
-                                                editable={false}
-                                            />
-                                        </View>
-                                    </View>
-                                    
-                                    {/* Payment Type and Amount */}
-                                    <View style={styles.row}>
-                                        <View style={styles.column}>
-                                            <Text style={styles.label}>
-                                                Payment Type<Text style={styles.star}>*</Text>
-                                            </Text>
-                                            <View style={styles.pickerContainer}>
-                                                <Picker
-                                                    selectedValue={paymentDetails}
-                                                    onValueChange={handlePaymentTypeChange}
-                                                    style={styles.picker}
-                                                >
-                                                    <Picker.Item label="Select" value="" />
-                                                    <Picker.Item label="Cash" value="cash" />
-                                                    <Picker.Item label="Online" value="online" />
-                                                    <Picker.Item label="Cheque" value="cheque" /> 
-                                                </Picker>
-                                            </View>
-                                        </View>
-                                        <View style={styles.column}>
-                                            <Text style={styles.label}>
-                                                Amount<Text style={styles.star}>*</Text>
-                                            </Text>
-                                            <TextInput
-                                                style={styles.textInput}
-                                                placeholder="Enter The Amount"
-                                                keyboardType="numeric"
-                                                value={amount}
-                                                onChangeText={setAmount}
-                                            />
-                                        </View>
-                                    </View>
-                                    
-                                    {/* Transaction/Cheque ID */}
-                                    {additionalInfo !== "" && (
-                                        <>
-                                            <Text style={styles.label}>
-                                                {additionalInfo}
-                                                <Text style={styles.star}>*</Text>
-                                            </Text>
-                                            <TextInput
-                                                style={styles.textInput}
-                                                placeholder={`Enter ${additionalInfo}`}
-                                                keyboardType="default"
-                                                value={transactionId}
-                                                onChangeText={setTransactionId}
-                                            />
-                                        </>
-                                    )}
-                                    
-                                    {/* Add Payment Button */}
-                                    <Button
-                                        title={isLoading ? "Please wait..." : "Add Payment"}
-                                        filled
-                                        disabled={isLoading || !selectedPigme || isFetchingData}
-                                        style={styles.button}
-                                        onPress={handleAddPayment}
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="Select Receipt"
+                                        keyboardType="numeric"
+                                        value={receipt.receipt_no ? String(receipt.receipt_no) : "N/A"}
+                                        editable={false}
                                     />
                                 </View>
                             </View>
+                            
+                            <View style={styles.row}>
+                                <View style={styles.column}>
+                                    <Text style={styles.label}>
+                                        Payment Type<Text style={styles.star}>*</Text>
+                                    </Text>
+                                    <View style={styles.pickerContainer}>
+                                        <Picker
+                                            selectedValue={paymentDetails}
+                                            onValueChange={handlePaymentTypeChange}
+                                            style={styles.picker}
+                                        >
+                                            <Picker.Item label="Select" value="" />
+                                            <Picker.Item label="Cash" value="cash" />
+                                            <Picker.Item label="Online" value="online" />
+                                            <Picker.Item label="Cheque" value="cheque" /> 
+                                        </Picker>
+                                    </View>
+                                </View>
+                                <View style={styles.column}>
+                                    <Text style={styles.label}>
+                                        Amount<Text style={styles.star}>*</Text>
+                                    </Text>
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder="Enter The Amount"
+                                        keyboardType="numeric"
+                                        value={amount}
+                                        onChangeText={setAmount}
+                                    />
+                                </View>
+                            </View>
+                            
+                            {additionalInfo !== "" && (
+                                <>
+                                    <Text style={styles.label}>
+                                        {additionalInfo}
+                                        <Text style={styles.star}>*</Text>
+                                    </Text>
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder={`Enter ${additionalInfo}`}
+                                        keyboardType="default"
+                                        value={transactionId}
+                                        onChangeText={setTransactionId}
+                                    />
+                                </>
+                            )}
+                            
+                            <Button
+                                title={isLoading ? "Please wait..." : "Add Payment"}
+                                filled
+                                disabled={isLoading || !selectedPigme || isFetchingData}
+                                style={styles.button}
+                                onPress={handleAddPayment}
+                            />
                         </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
-            </LinearGradient>
-        </SafeAreaView>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </LinearGradient>
     );
 };
 
@@ -422,9 +408,18 @@ const styles = StyleSheet.create({
     gradientOverlay: {
         flex: 1,
     },
+   
+    fixedHeader: {
+        
+        paddingTop: Platform.OS === 'android' ? 40 : 40,
+        paddingHorizontal: 22,
+      
+        backgroundColor: 'transparent', 
+        zIndex: 10, 
+    },
     titleContainer: {
-        marginTop: 20,
-        marginBottom: 20,
+        marginTop: 10, 
+        marginBottom: 10,
         alignItems: 'center',
     },
     title: {
@@ -432,8 +427,14 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
     },
-    container: {
-        flex: 1,
+   
+    scrollInnerContainer: {
+        paddingHorizontal: 22,
+    },
+   
+    scrollContentContainer: {
+        flexGrow: 1,
+        paddingBottom: 50, 
     },
     formBox: {
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -458,8 +459,6 @@ const styles = StyleSheet.create({
         marginHorizontal: 3,
     },
     textInput: {
-        
-        
         width: "100%",
         borderColor: "#d0d0d0",
         borderWidth: 1,
@@ -476,16 +475,11 @@ const styles = StyleSheet.create({
         ...Platform.select({
             ios:{
                 height:55
-
             },
             android:{
                 height:55
             }
         })
-
-    },
-    contentContainer: {
-        marginTop: 20,
     },
     pickerContainer: {
         borderColor: "#d0d0d0",

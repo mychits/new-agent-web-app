@@ -12,13 +12,9 @@ import {
   Image,
   ActivityIndicator,
 } from "react-native";
-import React, {
-  useState,
-  useEffect,
-  useContext,
-} from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Buffer } from "buffer";
-import { SafeAreaView } from "react-native-safe-area-context";
+// import { SafeAreaView } from "react-native-safe-area-context"; // REMOVED
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
@@ -62,7 +58,6 @@ const Payin = ({ route, navigation }) => {
   const [customerLoaded, setCustomerLoaded] = useState(false);
   const [enrollmentLoaded, setEnrollmentLoaded] = useState(false);
   const [receiptLoaded, setReceiptLoaded] = useState(false);
-
 
   // 1. Fetch customer details
   useEffect(() => {
@@ -113,7 +108,7 @@ const Payin = ({ route, navigation }) => {
         if (uniqueGroups.length === 1) {
           const groupId = uniqueGroups[0].group_id._id;
           setSelectedGroup(groupId);
-          
+
           // Automatically set tickets for the single group
           const groupTickets = response.data
             .filter((item) => item.group_id && item.group_id._id === groupId)
@@ -159,7 +154,6 @@ const Payin = ({ route, navigation }) => {
       setIsInitialLoading(false);
     }
   }, [customerLoaded, enrollmentLoaded, receiptLoaded]);
-
 
   const handleDateChange = (event, selectedDate) => {
     const newDate = selectedDate || currentDate;
@@ -294,20 +288,20 @@ const Payin = ({ route, navigation }) => {
       setQrLoading(false);
     }
   };
-  
+
   // --- Loading Screen Component ---
   if (isInitialLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-      </SafeAreaView>
+      </View>
     );
   }
   // ---------------------------------
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      {/* --- QR CODE MODAL --- */}
+    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
+      {/* --- QR CODE MODAL --- (Unchanged) */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -400,7 +394,7 @@ const Payin = ({ route, navigation }) => {
       {/* --------------------------- */}
 
       <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
+        colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -410,222 +404,241 @@ const Payin = ({ route, navigation }) => {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
         >
-          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={{ marginHorizontal: 8, marginTop: 12 }}>
-              <Header />
-              <View style={styles.titleContainer}>
-                <Text style={styles.title}>Add Payment</Text>
-              </View>
-              <View style={styles.container}>
-                <View style={styles.formBox}>
-                  <Text style={styles.label}>
-                    Name<Text style={styles.star}>*</Text>
-                  </Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Enter The Name"
-                    keyboardType="default"
-                    value={customerInfo.full_name}
-                    editable={false}
-                  />
-                  <Text style={styles.label}>
-                    Group<Text style={styles.star}>*</Text>
-                  </Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={selectedGroup}
-                      onValueChange={handleGroupChange}
-                      style={styles.picker}
-                      // Disable picker if only one group is available
-                      enabled={groups.length > 1}
-                    >
-                      {/* Show 'Select Group' only if more than 1 group */}
-                      {groups.length !== 1 && (
-                        <Picker.Item label="Select Group" value="" />
-                      )}
-                      {groups.map((group, index) => (
-                        <Picker.Item
-                          key={index}
-                          label={group.group_id.group_name}
-                          value={group.group_id._id}
-                        />
-                      ))}
-                    </Picker>
-                  </View>
-                  <Text style={styles.label}>
-                    Ticket<Text style={styles.star}>*</Text>
-                  </Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={selectedTicket}
-                      onValueChange={(itemValue) =>
-                        setSelectedTicket(itemValue)
+          {/* =======================================================
+            NEW FIXED HEADER SECTION (Header and Title)
+            =======================================================
+          */}
+          <View style={styles.fixedHeaderContainer}>
+            <Header />
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>Add Payment</Text>
+            </View>
+          </View>
+          {/* =======================================================
+            SCROLLABLE CONTENT SECTION (Form)
+            =======================================================
+          */}
+          <ScrollView
+            contentContainerStyle={styles.scrollContentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.container}>
+              <View style={styles.formBox}>
+                <Text style={styles.label}>
+                  Name<Text style={styles.star}>*</Text>
+                </Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter The Name"
+                  keyboardType="default"
+                  value={customerInfo.full_name}
+                  editable={false}
+                />
+                <Text style={styles.label}>
+                  Group<Text style={styles.star}>*</Text>
+                </Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={selectedGroup}
+                    onValueChange={handleGroupChange}
+                    style={styles.picker}
+                    // Disable picker if only one group is available
+                    enabled={groups.length > 1}
+                  >
+                    {/* Show 'Select Group' only if more than 1 group */}
+                    {groups.length !== 1 && (
+                      <Picker.Item label="Select Group" value="" />
+                    )}
+                    {groups.map((group, index) => (
+                      <Picker.Item
+                        key={index}
+                        label={group.group_id.group_name}
+                        value={group.group_id._id}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+                <Text style={styles.label}>
+                  Ticket<Text style={styles.star}>*</Text>
+                </Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={selectedTicket}
+                    onValueChange={(itemValue) =>
+                      setSelectedTicket(itemValue)
+                    }
+                    style={styles.picker}
+                    // Disable picker if no group is selected or only one ticket is available
+                    enabled={selectedGroup !== "" && tickets.length !== 1}
+                  >
+                    {/* Show 'Select Ticket' only if more than 1 ticket */}
+                    {tickets.length !== 1 && (
+                      <Picker.Item label="Select Ticket" value="" />
+                    )}
+                    {tickets.map((ticket, index) => (
+                      <Picker.Item
+                        key={index}
+                        label={`${ticket}`}
+                        value={ticket.toString()}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+                <View style={styles.row}>
+                  <View style={styles.column}>
+                    <Text style={styles.label}>
+                      Date<Text style={styles.star}>*</Text>
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setShowDatePicker(
+                          modifyPayment === true ? true : false
+                        )
                       }
-                      style={styles.picker}
-                      // Disable picker if no group is selected or only one ticket is available
-                      enabled={selectedGroup !== "" && tickets.length !== 1}
                     >
-                      {/* Show 'Select Ticket' only if more than 1 ticket */}
-                      {tickets.length !== 1 && (
-                        <Picker.Item label="Select Ticket" value="" />
-                      )}
-                      {tickets.map((ticket, index) => (
-                        <Picker.Item
-                          key={index}
-                          label={`${ticket}`}
-                          value={ticket.toString()}
-                        />
-                      ))}
-                    </Picker>
-                  </View>
-                  <View style={styles.row}>
-                    <View style={styles.column}>
-                      <Text style={styles.label}>
-                        Date<Text style={styles.star}>*</Text>
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() =>
-                          setShowDatePicker(
-                            modifyPayment === true ? true : false
-                          )
-                        }
-                      >
-                        <TextInput
-                          style={styles.textInput}
-                          placeholder="Select Date"
-                          keyboardType="default"
-                          value={moment(currentDate).format("DD-MM-YYYY")}
-                          editable={false}
-                        />
-                      </TouchableOpacity>
-                      {showDatePicker && (
-                        <DateTimePicker
-                          testID="dateTimePicker"
-                          value={currentDate}
-                          mode="date"
-                          display="default"
-                          onChange={handleDateChange}
-                        />
-                      )}
-                    </View>
-                    <View style={styles.column}>
-                      <Text style={styles.label}>
-                        Receipt<Text style={styles.star}>*</Text>
-                      </Text>
                       <TextInput
                         style={styles.textInput}
-                        placeholder="Select Receipt"
-                        keyboardType="numeric"
-                        value={
-                          receipt.receipt_no !== undefined &&
-                          receipt.receipt_no !== null
-                            ? String(receipt.receipt_no)
-                            : ""
-                        }
+                        placeholder="Select Date"
+                        keyboardType="default"
+                        value={moment(currentDate).format("DD-MM-YYYY")}
                         editable={false}
                       />
-                    </View>
-                  </View>
-                  <View style={styles.row}>
-                    <View style={styles.column}>
-                      <Text style={styles.label}>
-                        Payment Type<Text style={styles.star}>*</Text>
-                      </Text>
-                      <View style={styles.pickerContainer}>
-                        <Picker
-                          selectedValue={paymentDetails}
-                          onValueChange={(itemValues) =>
-                            handlePaymentTypeChange(itemValues)
-                          }
-                          style={styles.picker}
-                        >
-                          <Picker.Item label="Cash" value="cash" />
-                          <Picker.Item label="Online" value="online" />
-                        </Picker>
-                      </View>
-                    </View>
-                    <View style={styles.column}>
-                      <Text style={styles.label}>
-                        Amount<Text style={styles.star}>*</Text>
-                      </Text>
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="Enter The Amount"
-                        keyboardType="numeric"
-                        value={amount}
-                        onChangeText={(value) => setAmount(value)}
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                      <DateTimePicker
+                        testID="dateTimePicker"
+                        value={currentDate}
+                        mode="date"
+                        display="default"
+                        onChange={handleDateChange}
                       />
-                    </View>
-                  </View>
-                  {additionalInfo !== "" && (
-                    <>
-                      <Text style={styles.label}>
-                        {additionalInfo}
-                        <Text style={styles.star}>*</Text>
-                      </Text>
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder={`Enter ${additionalInfo}`}
-                        keyboardType="default"
-                        value={transactionId}
-                        onChangeText={(value) => setTransactionId(value)}
-                      />
-                    </>
-                  )}
-                  
-                  {/* BUTTON CONTAINER WITH CENTERING LOGIC */}
-                  <View
-                    style={[
-                      styles.buttonContainer,
-                      // Apply centering style if QR button is NOT visible
-                      !(amount && paymentDetails === "online") && styles.buttonContainerCentered,
-                    ]}
-                  >
-                    {/* QR Code Button */}
-                    {amount && paymentDetails === "online" && (
-                      <TouchableOpacity
-                        onPress={generateQrCode}
-                        style={styles.qrButton}
-                      >
-                        {qrLoading ? (
-                          <ActivityIndicator size="small" color={"green"} />
-                        ) : (
-                          <MaterialIcons name="qr-code-2" size={40} />
-                        )}
-                      </TouchableOpacity>
                     )}
-
-                    <Button
-                      title={isLoading ? "Please wait..." : "Add Payment"}
-                      filled
-                      disabled={isLoading}
-                      style={styles.button}
-                      onPress={handleAddPayment}
+                  </View>
+                  <View style={styles.column}>
+                    <Text style={styles.label}>
+                      Receipt<Text style={styles.star}>*</Text>
+                    </Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Select Receipt"
+                      keyboardType="numeric"
+                      value={
+                        receipt.receipt_no !== undefined &&
+                        receipt.receipt_no !== null
+                          ? String(receipt.receipt_no)
+                          : ""
+                      }
+                      editable={false}
                     />
                   </View>
+                </View>
+                <View style={styles.row}>
+                  <View style={styles.column}>
+                    <Text style={styles.label}>
+                      Payment Type<Text style={styles.star}>*</Text>
+                    </Text>
+                    <View style={styles.pickerContainer}>
+                      <Picker
+                        selectedValue={paymentDetails}
+                        onValueChange={(itemValues) =>
+                          handlePaymentTypeChange(itemValues)
+                        }
+                        style={styles.picker}
+                      >
+                        <Picker.Item label="Cash" value="cash" />
+                        <Picker.Item label="Online" value="online" />
+                      </Picker>
+                    </View>
+                  </View>
+                  <View style={styles.column}>
+                    <Text style={styles.label}>
+                      Amount<Text style={styles.star}>*</Text>
+                    </Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter The Amount"
+                      keyboardType="numeric"
+                      value={amount}
+                      onChangeText={(value) => setAmount(value)}
+                    />
+                  </View>
+                </View>
+                {additionalInfo !== "" && (
+                  <>
+                    <Text style={styles.label}>
+                      {additionalInfo}
+                      <Text style={styles.star}>*</Text>
+                    </Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder={`Enter ${additionalInfo}`}
+                      keyboardType="default"
+                      value={transactionId}
+                      onChangeText={(value) => setTransactionId(value)}
+                    />
+                  </>
+                )}
+
+                {/* BUTTON CONTAINER WITH CENTERING LOGIC */}
+                <View
+                  style={[
+                    styles.buttonContainer,
+                    // Apply centering style if QR button is NOT visible
+                    !(amount && paymentDetails === "online") &&
+                      styles.buttonContainerCentered,
+                  ]}
+                >
+                  {/* QR Code Button */}
+                  {amount && paymentDetails === "online" && (
+                    <TouchableOpacity
+                      onPress={generateQrCode}
+                      style={styles.qrButton}
+                    >
+                      {qrLoading ? (
+                        <ActivityIndicator size="small" color={"green"} />
+                      ) : (
+                        <MaterialIcons name="qr-code-2" size={40} />
+                      )}
+                    </TouchableOpacity>
+                  )}
+
+                  <Button
+                    title={isLoading ? "Please wait..." : "Add Payment"}
+                    filled
+                    disabled={isLoading}
+                    style={styles.button}
+                    onPress={handleAddPayment}
+                  />
                 </View>
               </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: COLORS.white,
   },
   gradientOverlay: {
     flex: 1,
   },
+  // NEW STYLE: Container for the fixed header and title
+  fixedHeaderContainer: {
+    paddingHorizontal: 8,
+    paddingTop: 40, // Match the original top margin
+    backgroundColor: 'transparent', // Ensure gradient shows through, or use a specific color if needed
+    zIndex: 10, // Ensure it's above the scrollable content
+  },
   titleContainer: {
     marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 30,
     alignItems: "center",
   },
   title: {
@@ -633,8 +646,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
+  // NEW STYLE: Padding for ScrollView content
+  scrollContentContainer: {
+    paddingHorizontal: 8, // Match the original marginHorizontal on the main View
+    paddingBottom: 20, // Add some space at the bottom of the scroll view
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
+    // The fixed header takes up the space now, so we can remove the previous margins from the wrapper View
   },
   formBox: {
     backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -737,7 +757,7 @@ const styles = StyleSheet.create({
   },
   // Style to center the content when only one button is present
   buttonContainerCentered: {
-    justifyContent: 'center',
+    justifyContent: "center",
   },
 });
 

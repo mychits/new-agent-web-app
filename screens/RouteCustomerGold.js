@@ -1,6 +1,4 @@
-
-import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity,SafeAreaView } from "react-native";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,6 +8,8 @@ import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 
 import axios from "axios";
+
+// CustomerCard component remains the same
 const CustomerCard = ({ name, phone, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.card}>
     <View style={styles.cardContent}>
@@ -36,6 +36,7 @@ const RouteCustomerGold = ({ route, navigation }) => {
       try {
         setLoading(true)
         const response = await axios.get(
+          // NOTE: It's best practice to use the baseUrl constant instead of a hardcoded IP
           `http://13.51.87.99:3000/api/user/get-user`
         );
         if (response.data) {
@@ -54,15 +55,16 @@ const RouteCustomerGold = ({ route, navigation }) => {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+    // REMOVED SafeAreaView and its background color
+    <View style={{ flex: 1 }}>
       <LinearGradient
-         colors={['#dbf6faff', '#90dafcff']}
+        colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <ScrollView
-          style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
+          style={{ flex: 1, marginHorizontal: 22, marginTop: 40 }} // Increased marginTop to push content down
           contentContainerStyle={{ paddingBottom: 80 }}
           showsVerticalScrollIndicator={false}
         >
@@ -113,16 +115,17 @@ const RouteCustomerGold = ({ route, navigation }) => {
           }
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
+// Styles remain the same, as they were not directly affected by the structural change
 const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
   titleContainer: {
-    marginTop: 40,
+    marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
   },

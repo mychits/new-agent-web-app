@@ -217,7 +217,7 @@ export default function Register() {
           track_source: "mobile",
         }),
       });
-      console.log(response.data,"preeeetha is not adding usrhgjsdf");
+      
 
       if (response.ok) {
         const data = await response.json();
@@ -258,7 +258,7 @@ export default function Register() {
 
       {/* A richer, semi-transparent gradient overlay */}
       <LinearGradient
-         colors={['#dbf6faff', '#90dafcff']}
+colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

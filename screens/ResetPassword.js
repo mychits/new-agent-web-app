@@ -68,13 +68,11 @@ export default function ResetPassword({ route, navigation }) {
     try {
       // IMPORTANT: Clean the password before sending to match login behavior
       const cleanedPassword = password.replace(/\s/g, "");
-      console.log("Resetting password for mobile number:", mobile, "with cleaned password:", cleanedPassword);
 
       const response = await axios.post(`${baseUrl}/agent/reset-password`, {
         phone_number: mobile,
         newPassword: cleanedPassword, // Use the cleaned password here
       });
-      console.log(response.data,"checking passsssss");
 
       if (response.status === 200) {
         Alert.alert("Success", "Password reset successfully.");
@@ -92,7 +90,7 @@ export default function ResetPassword({ route, navigation }) {
 
   return (
     <LinearGradient
-       colors={['#dbf6faff', '#90dafcff']}
+       colors={['#b6e4ebff', '#1796d1ff']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.backgroundGradient}

@@ -221,7 +221,22 @@ Thank You
             filled
             style={{ flex: 1, marginLeft: 8, backgroundColor: COLORS.third }}
             onPress={() => handlePosPrint()}
-            disabled={!isConnected}
+            disabled={false}
+          />
+           </View>
+         <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 18,
+          }}
+        >
+          <Button
+            title="POS 80MM Print"
+            filled
+            style={{ flex: 1, marginLeft: 8, backgroundColor: COLORS.third }}
+            onPress={() => handlePos80MMPrint()}
+            disabled={false}
           />
         </View>
       </View>

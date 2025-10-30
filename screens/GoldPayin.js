@@ -7,10 +7,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator, // <--- Import ActivityIndicator
+  ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
@@ -30,11 +31,11 @@ const GoldPayin = ({ route, navigation }) => {
   const [amount, setAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
-  
+
   // New state for initial data loading
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   // Existing state for payment submission loading
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
 
   const [customerInfo, setCustomerInfo] = useState({});
   const [groups, setGroups] = useState([]);
@@ -43,7 +44,7 @@ const GoldPayin = ({ route, navigation }) => {
   const [selectedTicket, setSelectedTicket] = useState("");
   const [allData, setAllData] = useState([]);
   const [agent, setAgent] = useState([]);
-  
+
   // Helper to track when all initial data fetching is complete
   const [fetchStatuses, setFetchStatuses] = useState({
     customer: false,
@@ -54,7 +55,7 @@ const GoldPayin = ({ route, navigation }) => {
 
   // Master useEffect to control isInitialLoading
   useEffect(() => {
-    const allLoaded = Object.values(fetchStatuses).every(status => status);
+    const allLoaded = Object.values(fetchStatuses).every((status) => status);
     if (allLoaded) {
       setIsInitialLoading(false);
     }
@@ -64,11 +65,11 @@ const GoldPayin = ({ route, navigation }) => {
   const handleSelectionLogic = (uniqueGroups, allEnrollmentData) => {
     if (uniqueGroups.length === 1) {
       const onlyGroup = uniqueGroups[0];
-      const groupId = onlyGroup.group_id._id;
+      const groupId = onlyGroup?.group_id?._id;
       setSelectedGroup(groupId);
 
       const groupTickets = allEnrollmentData
-        .filter((item) => item.group_id._id === groupId)
+        .filter((item) => item?.group_id?._id === groupId)
         .map((item) => item.tickets);
 
       setTickets(groupTickets);
@@ -93,7 +94,7 @@ const GoldPayin = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching customer data:", error);
       } finally {
-        setFetchStatuses(prev => ({ ...prev, customer: true }));
+        setFetchStatuses((prev) => ({ ...prev, customer: true }));
       }
     };
 
@@ -108,25 +109,24 @@ const GoldPayin = ({ route, navigation }) => {
         );
         const enrollmentData = response.data;
         setAllData(enrollmentData);
-        
+
         const uniqueGroups = enrollmentData.reduce((acc, group) => {
           if (
             !acc.some(
-              (g) => g.group_id.group_name === group.group_id.group_name
+              (g) => g?.group_id?.group_name === group?.group_id?.group_name
             )
           ) {
             acc.push(group);
           }
           return acc;
         }, []);
-        
+
         setGroups(uniqueGroups);
         handleSelectionLogic(uniqueGroups, enrollmentData);
-
       } catch (error) {
         console.error("Error fetching customer data:", error);
       } finally {
-        setFetchStatuses(prev => ({ ...prev, enrollment: true }));
+        setFetchStatuses((prev) => ({ ...prev, enrollment: true }));
       }
     };
     fetchEnrollDetails();
@@ -149,7 +149,7 @@ const GoldPayin = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching customer data:", error);
       } finally {
-        setFetchStatuses(prev => ({ ...prev, receipt: true }));
+        setFetchStatuses((prev) => ({ ...prev, receipt: true }));
       }
     };
     fetchReceipt();
@@ -169,7 +169,7 @@ const GoldPayin = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching agent data:", error);
       } finally {
-        setFetchStatuses(prev => ({ ...prev, agent: true }));
+        setFetchStatuses((prev) => ({ ...prev, agent: true }));
       }
     };
 
@@ -182,9 +182,9 @@ const GoldPayin = ({ route, navigation }) => {
 
     if (groupId) {
       const groupTickets = allData
-        .filter((item) => item.group_id._id === groupId)
+        .filter((item) => item?.group_id?._id === groupId)
         .map((item) => item.tickets);
-      
+
       setTickets(groupTickets);
 
       if (groupTickets.length === 1) {
@@ -206,7 +206,7 @@ const GoldPayin = ({ route, navigation }) => {
       setAdditionalInfo("Cheque Number");
     } else {
       setAdditionalInfo("");
-      setTransactionId(""); 
+      setTransactionId("");
     }
   };
 
@@ -230,22 +230,24 @@ const GoldPayin = ({ route, navigation }) => {
         group_id: selectedGroup,
         ticket: selectedTicket,
         pay_date: new Date().toISOString().split("T")[0],
-        receipt_no: receipt.receipt_no ? (receipt.receipt_no + 1).toString() : "1",
+        receipt_no: receipt.receipt_no
+          ? (receipt.receipt_no + 1).toString()
+          : "1",
         pay_type: paymentDetails,
         amount: amount,
         transaction_id: transactionId,
         collected_name: agent.name,
         collected_phone: agent.phone_number,
       };
-      
+
       const response = await axios.post(
         `http://13.51.87.99:3000/api/payment/add-payment`,
         data
       );
-      
+
       if (response.status === 201) {
         Alert.alert("Success", "Payment added successfully!");
-        navigation.navigate("GoldPrint", { store_id: response.data._id });
+        navigation.navigate("GoldPrint", { store_id: response.data?._id });
       } else {
         console.log("Error:", response.data);
         Alert.alert("Error", response.data.message || "Something went wrong.");
@@ -260,7 +262,7 @@ const GoldPayin = ({ route, navigation }) => {
 
   const renderGroupPicker = () => {
     if (groups.length === 1 && selectedGroup) {
-      const groupName = groups[0].group_id.group_name;
+      const groupName = groups[0]?.group_id?.group_name;
       return (
         <TextInput
           style={styles.textInput}
@@ -281,8 +283,8 @@ const GoldPayin = ({ route, navigation }) => {
           {groups.map((group, index) => (
             <Picker.Item
               key={index}
-              label={group.group_id.group_name}
-              value={group.group_id._id}
+              label={group?.group_id?.group_name}
+              value={group?.group_id?._id}
             />
           ))}
         </Picker>
@@ -327,7 +329,7 @@ const GoldPayin = ({ route, navigation }) => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
         <LinearGradient
-          colors={["#dbf6faff", "#90dafcff"]}
+          colors={["#b6e4ebff", "#1796d1ff"]}
           style={styles.gradientOverlay}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -343,7 +345,7 @@ const GoldPayin = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
+        colors={["#b6e4ebff", "#1796d1ff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -351,11 +353,14 @@ const GoldPayin = ({ route, navigation }) => {
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+          // Removed the explicit keyboardVerticalOffset or set to 0.
+          // Let the default behavior handle it first to fix vibration.
+          keyboardVerticalOffset={0} 
         >
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={{ marginHorizontal: 22, marginTop: 12 }}>
+            <View style={{ marginHorizontal: 22, marginTop: 42 }}>
               <Header />
+
               <View style={styles.titleContainer}>
                 <Text style={styles.title}>Add Payment</Text>
               </View>
@@ -407,7 +412,11 @@ const GoldPayin = ({ route, navigation }) => {
                         style={styles.textInput}
                         placeholder="Select Receipt"
                         keyboardType="numeric"
-                        value={receipt.receipt_no ? (receipt.receipt_no + 1).toString() : "1"}
+                        value={
+                          receipt.receipt_no
+                            ? (receipt.receipt_no + 1).toString()
+                            : "1"
+                        }
                         editable={false}
                       />
                     </View>
@@ -486,18 +495,20 @@ const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
-  loadingContainer: { // <--- New style for initial loading
+  loadingContainer: {
+    // <--- New style for initial loading
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
-  loadingText: { // <--- New style for loading text
+  loadingText: {
+    // <--- New style for loading text
     marginTop: 10,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   titleContainer: {
-    marginTop: 20,
+    marginTop: 10,
     marginBottom: 20,
     alignItems: "center",
   },

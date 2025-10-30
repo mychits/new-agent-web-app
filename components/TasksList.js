@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import React from "react";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import { TouchableOpacity } from "react-native";
 import COLORS from "../constants/color";
 
 const StocksList = ({ text, cat_count, sub_count, item_count, idx }) => {

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import React, { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+// Removed SafeAreaView import
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
@@ -33,7 +33,7 @@ const LoanPayin = ({ route, navigation }) => {
   // Loading state for the payment submission button
   const [isLoading, setIsLoading] = useState(false);
   // Loading state for the initial customer/loan data fetch
-  const [isDataLoading, setIsDataLoading] = useState(true); 
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   const [customerInfo, setCustomerInfo] = useState({});
   const [loanData, setLoanData] = useState([]);
@@ -85,12 +85,6 @@ const LoanPayin = ({ route, navigation }) => {
     setCurrentDate(today);
   }, []);
 
-  // Removed fetchReceipt and fetchAgent from their individual useEffects
-  // and placed logic here to run concurrently with the loan fetch, 
-  // or simply keep them separate as they were originally, and let isDataLoading
-  // only control the primary data (customer/loan). I'll keep the original
-  // structure for simplicity and only add loading for the main form data.
-  
   useEffect(() => {
     const fetchReceipt = async () => {
       try {
@@ -129,13 +123,13 @@ const LoanPayin = ({ route, navigation }) => {
     setPaymentDetails(type);
     if (type === "online") {
       setAdditionalInfo("Transaction ID");
-      setTransactionId(""); 
+      setTransactionId("");
     } else if (type === "cheque") {
       setAdditionalInfo("Cheque Number");
       setTransactionId("");
     } else {
       setAdditionalInfo("");
-      setTransactionId(""); 
+      setTransactionId("");
     }
   };
 
@@ -165,7 +159,7 @@ const LoanPayin = ({ route, navigation }) => {
 
       const loanId = selectedLoan?._id;
       const response = await axios.post(`${url}/payment/loan/${loanId}`, data);
-      
+
       if (response.status === 201) {
         Alert.alert("Success", "Payment added successfully!");
 
@@ -184,6 +178,7 @@ const LoanPayin = ({ route, navigation }) => {
           `${baseUrl}/payment/get-total-amount`,
           { user_id: customer, loan: loanId }
         );
+        // --- End Data Fetch ---
 
         navigation.navigate("LoanPrint", {
           customer_name: full_name,
@@ -195,9 +190,8 @@ const LoanPayin = ({ route, navigation }) => {
           transaction_id,
           receipt_no,
           total_amount: totalAmountResponse?.data?.totalAmount || 0,
-          custom_loan_id: selectedLoan.loan_id, 
+          custom_loan_id: selectedLoan.loan_id,
           isLoanPayment: true,
-          remainingLoanAmount:totalAmountResponse?.data?.remainingLoanAmount,
         });
       } else {
         console.log("Error:", response.data);
@@ -243,161 +237,161 @@ const LoanPayin = ({ route, navigation }) => {
       </View>
     );
   };
-  
+
   const renderContent = () => {
     if (isDataLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
-        );
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      );
     }
 
     // If no loans were found and we've finished loading, show an error state or an empty message
     if (!customerInfo.full_name || loanData.length === 0) {
-        return (
-            <View style={styles.loadingContainer}>
-                <Text style={styles.errorText}>No open loans found for this customer.</Text>
-                <Button 
-                    title="Go Back" 
-                    filled 
-                    onPress={() => navigation.goBack()}
-                    style={{marginTop: 20}}
-                />
-            </View>
-        );
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>No open loans found for this customer.</Text>
+          <Button
+            title="Go Back"
+            filled
+            onPress={() => navigation.goBack()}
+            style={{ marginTop: 20 }}
+          />
+        </View>
+      );
     }
 
-    // Otherwise, render the form
+    // Otherwise, render the form fields within a ScrollView content style
     return (
-        <View style={styles.container}>
-            <View style={styles.formBox}>
-                <Text style={styles.label}>
-                    Name<Text style={styles.star}>*</Text>
-                </Text>
-                <TextInput
-                    style={styles.textInput}
-                    placeholder="Enter The Name"
-                    keyboardType="default"
-                    value={customerInfo.full_name}
-                    editable={false}
-                />
-                <Text style={styles.label}>
-                    Loan ID & Amount<Text style={styles.star}>*</Text>
-                </Text>
-                {renderLoanSelection()}
-                <View style={styles.row}>
-                    <View style={styles.column}>
-                        <Text style={styles.label}>
-                            Date<Text style={styles.star}>*</Text>
-                        </Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Select Date"
-                            keyboardType="default"
-                            value={currentDate}
-                            editable={false}
-                        />
-                    </View>
-                    <View style={styles.column}>
-                        <Text style={styles.label}>
-                            Receipt<Text style={styles.star}>*</Text>
-                        </Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Select Receipt"
-                            keyboardType="numeric"
-                            value={receipt.receipt_no ? String(receipt.receipt_no) : ""}
-                            editable={false}
-                        />
-                    </View>
-                </View>
-                <View style={styles.row}>
-                    <View style={styles.column}>
-                        <Text style={styles.label}>
-                            Payment Type<Text style={styles.star}>*</Text>
-                        </Text>
-                        <View style={styles.pickerContainer}>
-                            <Picker
-                                selectedValue={paymentDetails}
-                                onValueChange={(itemValues) =>
-                                    handlePaymentTypeChange(itemValues)
-                                }
-                                style={styles.picker}
-                            >
-                                <Picker.Item label="Select" value="" />
-                                <Picker.Item label="Cash" value="cash" />
-                                <Picker.Item label="Online" value="online" />
-                                <Picker.Item label="Cheque" value="cheque" />
-                            </Picker>
-                        </View>
-                    </View>
-                    <View style={styles.column}>
-                        <Text style={styles.label}>
-                            Amount<Text style={styles.star}>*</Text>
-                        </Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Enter The Amount"
-                            keyboardType="numeric"
-                            value={amount}
-                            onChangeText={(value) => setAmount(value)}
-                        />
-                    </View>
-                </View>
-                {additionalInfo !== "" && (
-                    <>
-                        <Text style={styles.label}>
-                            {additionalInfo}
-                            <Text style={styles.star}>*</Text>
-                        </Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder={`Enter ${additionalInfo}`}
-                            keyboardType="default"
-                            value={transactionId}
-                            onChangeText={(value) => setTransactionId(value)}
-                        />
-                    </>
-                )}
-                <Button
-                    title={isLoading ? "Please wait..." : "Add Payment"}
-                    filled
-                    disabled={isLoading || !selectedLoan} // Disable button if form is loading or no loan is selected
-                    style={styles.button}
-                    onPress={handleAddPayment}
-                />
-            </View>
+      <View style={styles.formBox}>
+        <Text style={styles.label}>
+          Name<Text style={styles.star}>*</Text>
+        </Text>
+        <TextInput
+          style={styles.textInput}
+          placeholder="Enter The Name"
+          keyboardType="default"
+          value={customerInfo.full_name}
+          editable={false}
+        />
+        <Text style={styles.label}>
+          Loan ID & Amount<Text style={styles.star}>*</Text>
+        </Text>
+        {renderLoanSelection()}
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <Text style={styles.label}>
+              Date<Text style={styles.star}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Select Date"
+              keyboardType="default"
+              value={currentDate}
+              editable={false}
+            />
+          </View>
+          <View style={styles.column}>
+            <Text style={styles.label}>
+              Receipt<Text style={styles.star}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Select Receipt"
+              keyboardType="numeric"
+              value={receipt.receipt_no ? String(receipt.receipt_no) : ""}
+              editable={false}
+            />
+          </View>
         </View>
+        <View style={styles.row}>
+          <View style={styles.column}>
+            <Text style={styles.label}>
+              Payment Type<Text style={styles.star}>*</Text>
+            </Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={paymentDetails}
+                onValueChange={(itemValues) =>
+                  handlePaymentTypeChange(itemValues)
+                }
+                style={styles.picker}
+              >
+                <Picker.Item label="Select" value="" />
+                <Picker.Item label="Cash" value="cash" />
+                <Picker.Item label="Online" value="online" />
+                <Picker.Item label="Cheque" value="cheque" />
+              </Picker>
+            </View>
+          </View>
+          <View style={styles.column}>
+            <Text style={styles.label}>
+              Amount<Text style={styles.star}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter The Amount"
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={(value) => setAmount(value)}
+            />
+          </View>
+        </View>
+        {additionalInfo !== "" && (
+          <>
+            <Text style={styles.label}>
+              {additionalInfo}
+              <Text style={styles.star}>*</Text>
+            </Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder={`Enter ${additionalInfo}`}
+              keyboardType="default"
+              value={transactionId}
+              onChangeText={(value) => setTransactionId(value)}
+            />
+          </>
+        )}
+        <Button
+          title={isLoading ? "Please wait..." : "Add Payment"}
+          filled
+          disabled={isLoading || !selectedLoan} // Disable button if form is loading or no loan is selected
+          style={styles.button}
+          onPress={handleAddPayment}
+        />
+      </View>
     );
   };
 
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+    // Removed SafeAreaView and set flex: 1 on the main View
+    <LinearGradient
+      colors={['#b6e4ebff', '#1796d1ff']}
+      style={styles.gradientOverlay}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-        >
-          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={{ marginHorizontal: 22, marginTop: 12 }}>
-              <Header />
-              <View style={styles.titleContainer}>
-                <Text style={styles.title}>Add Loan Payment</Text>
-              </View>
-              {renderContent()}
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </LinearGradient>
-    </SafeAreaView>
+        <View style={styles.fixedHeaderContainer}>
+          {/* Fixed Header Content */}
+          <Header />
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Add Loan Payment</Text>
+          </View>
+        </View>
+
+        {/* Scrollable Content */}
+        <ScrollView style={styles.scrollableContent}>
+          {renderContent()}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
 
@@ -405,8 +399,20 @@ const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
+  // New style for the fixed part of the screen
+  fixedHeaderContainer: {
+    // We remove the marginHorizontal from here and apply it to the children
+    paddingHorizontal: 22, 
+    // Add some padding to adjust the header/title positioning a bit lower
+    paddingTop: Platform.OS === 'android' ? 40 : 0, 
+    backgroundColor: 'transparent', // Ensure gradient shows through
+  },
+  scrollableContent: {
+    flex: 1, // Allow the scroll view to take up remaining space
+    paddingHorizontal: 22, // Apply horizontal margin here
+  },
   titleContainer: {
-    marginTop: 20,
+    marginTop: 10, // Adjusted margin to be a "bit below" the header
     marginBottom: 20,
     alignItems: "center",
   },
@@ -417,6 +423,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    // This is now inside the ScrollView, so we don't need flex: 1 here
   },
   loadingContainer: {
     flex: 1,
@@ -442,7 +449,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: "#ddd",
-    marginBottom: 20,
+    marginBottom: 50, // Added extra margin for scrolling past the button
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -498,7 +505,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    overflow: 'hidden', 
+    overflow: 'hidden',
   },
   picker: {
 
@@ -521,7 +528,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 18,
-    marginBottom: 50,
+    marginBottom: 0, // Removed bottom margin from button in formBox
     backgroundColor: "#da8201",
   },
 });

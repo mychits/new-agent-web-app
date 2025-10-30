@@ -9,7 +9,7 @@ import {
   TextInput,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+// SafeAreaView removed as requested
 import Header from "../components/Header";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
@@ -35,7 +35,15 @@ const MonthlyTurnover = () => {
     const fetchMonthlyData = async () => {
       try {
         setLoading(true);
-        const user = JSON.parse(await AsyncStorage.getItem("user"));
+        // Ensure user data is available before proceeding
+        const userJson = await AsyncStorage.getItem("user");
+        if (!userJson) {
+          setError("User session expired. Please login again.");
+          setLoading(false);
+          return;
+        }
+        
+        const user = JSON.parse(userJson);
         const agentId = user?.userId;
         if (!agentId) {
           setError("No agentId found. Please login again.");
@@ -44,51 +52,59 @@ const MonthlyTurnover = () => {
         }
 
         const year = moment(selectedDate).year();
-        const month = moment(selectedDate).month() + 1;
+        const month = moment(selectedDate).month() + 1; // month() is 0-indexed
 
         const apiUrl = `${baseUrl}/user/agent-monthly-turnover-by-id/${agentId}?year=${year}&month=${month}`;
         const response = await axios.get(apiUrl);
 
         if (response.data?.success) {
           setTurnoverData(response.data.agentData);
-          console.log(response.data.agentData, "test");
+          
           const customersWithStatus =
             response.data.agentData.payingCustomers.map((c) => {
-              const totalPaid = parseFloat(c.totalPaid);
-              const monthlyInstallment = parseFloat(c.monthly_installment);
-               let lastPaymentDate = null;
-          if (c.payments && c.payments.length > 0) {
-            // Sort payments by date descending and pick the first one
-            lastPaymentDate = c.payments
-              .map(p => p.pay_date)
-              .sort((a, b) => new Date(b) - new Date(a))[0];
-          }
+              const totalPaid = parseFloat(c.totalPaid || 0);
+              const monthlyInstallment = parseFloat(c.monthly_installment || 0);
+              let lastPaymentDate = 'N/A';
+
+              // Logic to find the last payment date
+              if (c.payments && c.payments.length > 0) {
+                // Get all pay_dates, sort descending, and take the first one
+                const latestDate = c.payments
+                  .map(p => p.pay_date)
+                  .filter(date => date) // Filter out null/empty dates
+                  .sort((a, b) => new Date(b) - new Date(a))[0];
+                
+                if (latestDate) {
+                    lastPaymentDate = moment(latestDate).format("DD MMM YYYY");
+                }
+              }
+
               return {
                 ...c,
                 paymentStatus:
                   totalPaid >= monthlyInstallment ? "PAID" : "UNPAID",
-                  lastPaymentDate,
+                lastPaymentDate: lastPaymentDate,
               };
             });
           setCustomersData(customersWithStatus);
         } else {
-          setError("Failed to fetch data. No success message from API.");
+          setError(response.data?.message || "Failed to fetch data.");
         }
       } catch (err) {
         console.error("Fetch error:", err);
-        setError("Failed to load data. Please check your network.");
+        setError("Failed to load data. Please check your network connection.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchMonthlyData();
-  }, [selectedDate]);
+  }, [selectedDate]); // Re-fetch data whenever the month/year changes
 
   const onDateChange = (_event, newDate) => {
     setShowPicker(false);
     if (newDate) {
-      // snap to first of the month so only Month & Year matter
+      // Snap to the first of the month, as only Month & Year are relevant
       const firstDay = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
       setSelectedDate(firstDay);
       setFormattedDate(moment(firstDay).format("MMMM YYYY"));
@@ -148,14 +164,14 @@ const MonthlyTurnover = () => {
           <View style={styles.turnoverSection}>
             <Text style={styles.turnoverLabel}>Expected</Text>
             <Text style={styles.turnoverValue}>
-              ₹{turnoverData?.expectedTurnover}
+              ₹{turnoverData?.expectedTurnover || '0.00'}
             </Text>
           </View>
           <View style={styles.verticalDivider} />
           <View style={styles.turnoverSection}>
             <Text style={styles.turnoverLabel}>Actual</Text>
             <Text style={styles.turnoverValue}>
-              ₹{turnoverData?.totalTurnover}
+              ₹{turnoverData?.totalTurnover || '0.00'}
             </Text>
           </View>
         </View>
@@ -227,16 +243,21 @@ const MonthlyTurnover = () => {
 
   const filteredCustomers = customersData.filter((c) => {
     const term = searchText.toLowerCase();
+    // Safely access nested properties
+    const fullName = c.user_id?.full_name?.toLowerCase() || '';
+    const groupName = c.group_id?.group_name?.toLowerCase() || '';
+
     return (
-      c.user_id.full_name.toLowerCase().includes(term) ||
-      c.group_id.group_name.toLowerCase().includes(term)
+      fullName.includes(term) ||
+      groupName.includes(term)
     );
   });
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={["#dbf6faff", "#90dafcff"]}
+    // Replaced SafeAreaView with standard View and added padding
+    <View style={styles.fullScreen}>
+      <LinearGradient 
+        colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -260,27 +281,48 @@ const MonthlyTurnover = () => {
               keyExtractor={(_, index) => index.toString()}
               ListHeaderComponent={renderTurnoverCard()}
               contentContainerStyle={styles.flatListContent}
+              // FIX: Set FlatList style to transparent so the LinearGradient shows through
+              style={styles.transparentBackground} 
+              // Optional: Add empty component message
+              ListEmptyComponent={() => (
+                  <View style={styles.emptyListContainer}>
+                      <Text style={styles.statusText}>No customer data found for this month or search criteria.</Text>
+                  </View>
+              )}
             />
           )}
         </View>
 
         {showPicker && (
+          // We only care about Month and Year, but DateTimePicker only supports date/time/datetime modes.
+          // We set mode="date" and handle the month/year selection logic in onDateChange.
           <DateTimePicker
             value={selectedDate}
-            mode="date"
+            mode="date" 
             display={Platform.OS === "ios" ? "spinner" : "calendar"}
             onChange={onDateChange}
           />
         )}
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
+  // Adjusted: Replaced safeArea and added paddingTop for status bar clearance
+  fullScreen: { 
+    flex: 1, 
+    // Manual top padding to prevent overlap with status bar on iOS/Android
+    paddingTop: Platform.OS === 'android' ? 25 : 40, 
+  },
   gradientOverlay: { flex: 1 },
-  mainContentArea: { flex: 1, paddingHorizontal: 20, marginTop: 15 },
+  mainContentArea: { flex: 1, paddingHorizontal: 20 }, // Removed redundant marginTop
+  
+  // FIX: New style to make the FlatList itself transparent
+  transparentBackground: {
+    backgroundColor: 'transparent',
+  },
+
   screenTitle: {
     fontSize: 28,
     fontWeight: "bold",
@@ -298,6 +340,14 @@ const styles = StyleSheet.create({
   loader: { marginTop: 50 },
   statusText: { fontSize: 16, color: "#555", textAlign: "center", marginTop: 20 },
   flatListContent: { paddingBottom: 20 },
+  emptyListContainer: { 
+      paddingVertical: 50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#ffffffaa',
+      borderRadius: 15,
+      marginTop: 20,
+  },
 
   card: {
     backgroundColor: "#FFFFFF",
@@ -331,11 +381,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a9e1aff",
+    backgroundColor: "#007bff",
     borderRadius: 12,
     paddingVertical: 12,
     marginBottom: 20,
-    shadowColor: "#1ddd4dff",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -372,7 +422,7 @@ const styles = StyleSheet.create({
   turnoverValue: { fontSize: 17, fontWeight: "bold", color: "#2C3E50", marginTop: 5 },
   verticalDivider: { width: 1, backgroundColor: "#EAEAEA" },
 
-  customersListContainer: { marginTop: 30, paddingHorizontal: 10 },
+  customersListContainer: { marginTop: 30, paddingHorizontal: 0 }, // Adjusted padding to 0, since mainContentArea already has padding
   customersListTitle: {
     fontSize: 20,
     fontWeight: "bold",

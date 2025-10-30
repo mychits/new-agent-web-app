@@ -120,7 +120,6 @@ const Target = ({ route, navigation }) => {
                 return;
             }
 
-            console.log("Fetching target for agent:", agentId, "Designation:", designationId);
 
             const res = await axios.get(`${baseUrl}/target/get-targets`, {
                 params: {
@@ -213,7 +212,7 @@ const Target = ({ route, navigation }) => {
             />
 
             <LinearGradient
-                 colors={['#dbf6faff', '#90dafcff']}
+                colors={['#b6e4ebff', '#1796d1ff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}

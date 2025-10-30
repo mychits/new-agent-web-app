@@ -5,21 +5,22 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
-    ScrollView,
     TouchableOpacity,
     ActivityIndicator,
     Animated,
     TextInput,
 } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import COLORS from "../constants/color";
+// Assuming COLORS is defined in a constants file
+import COLORS from "../constants/color"; 
 import Header from "../components/Header";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 const MyCommission = ({ route, navigation }) => {
-    const { commissions } = route.params;
+    // Safely destructure commissions or use an empty object fallback
+    const { commissions = {} } = route.params || {};
+    
     const [goldLeads, setGoldLeads] = useState([]);
     const [isChitLoading, setIsChitLoading] = useState(false);
     const [isGoldLoading, setIsGoldLoading] = useState(false);
@@ -31,29 +32,32 @@ const MyCommission = ({ route, navigation }) => {
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        console.log(commissions.commission_data, "commission data")
-        if (commissions.commission_data) {
-            setIsChitLoading(false)
+        // Run animations when component mounts or tab changes
+        if (commissions.commission_data && activeTab === "CHIT") {
+            setIsChitLoading(false);
 
-            if (activeTab === "CHIT") {
-                Animated.parallel([
-                    Animated.timing(leftAnim, {
-                        toValue: 0,
-                        duration: 800,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(rightAnim, {
-                        toValue: 0,
-                        duration: 800,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(opacityAnim, {
-                        toValue: 1,
-                        duration: 800,
-                        useNativeDriver: true,
-                    }),
-                ]).start();
-            }
+            // Reset animation values before starting
+            leftAnim.setValue(-200);
+            rightAnim.setValue(200);
+            opacityAnim.setValue(0);
+            
+            Animated.parallel([
+                Animated.timing(leftAnim, {
+                    toValue: 0,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(rightAnim, {
+                    toValue: 0,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 1,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+            ]).start();
         }
     }, [activeTab, commissions.commission_data]);
 
@@ -65,161 +69,184 @@ const MyCommission = ({ route, navigation }) => {
     }) || [];
 
     const renderCommissionCard = ({ item }) => {
-        if(item.commission_released === false) return;
+        // Only render if commission_released is true
+        if(item.commission_released === false) return null;
 
         return (
             <TouchableOpacity style={styles.card}>
                 <View style={styles.leftSection}>
-                    <Text style={styles.name}>{item?.user_name}</Text>
+                    {/* FIXED: Added || "N/A" for null-safety */}
+                    <Text style={styles.name}>{item?.user_name || "N/A"}</Text> 
                     <Text style={styles.groupName}>
                         {item?.group_name ? item.group_name: "No Group Name"}
                     </Text>
                 </View>
                 <View style={styles.rightSection}>
                     <View style={styles.commissionContainer}>
-                        <Text style={styles.commissionText}>{item?.actual_commission}</Text>
+                        {/* FIXED: Added || '0' for null-safety */}
+                        <Text style={styles.commissionText}>{item?.actual_commission || '0'}</Text>
                     </View>
                      <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />
                 </View>
             </TouchableOpacity>
         );
     }
+    
+    const ListHeader = () => {
+        // Use a safe default object for summary
+        const summary = commissions?.summary || {};
+
+        return (
+            <View style={styles.summaryBoxesContainer}>
+                
+                {/* Box 1: Total Customers - Blue/Primary Color */}
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                    <Text style={styles.summaryText}>Total Customers</Text>
+                    {/* FIXED: Use || '0' to ensure a string is always passed to <Text> */}
+                    <Text style={[styles.summaryValue, { color: '#04aefdff' }]}>
+                        {summary.total_customers || '0'}
+                    </Text>
+                </Animated.View>
+                
+                {/* Box 2: Total Groups - Green Color */}
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                    <Text style={styles.summaryText}>Total Groups</Text>
+                    <Text style={[styles.summaryValue, { color: '#3ed160ff' }]}>
+                        {summary.total_groups || '0'}
+                    </Text>
+                </Animated.View>
+                
+                {/* Box 3: My Business - Red/Accent Color */}
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                    <Text style={styles.summaryText}>My Business</Text>
+                    <Text style={[styles.summaryValue, { color: '#f70cb4ff' }]}>
+                        {summary.actual_business || '0'}
+                    </Text>
+                </Animated.View>
+                
+                {/* Box 4: My Commission - Gold/Accent Color */}
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                    <Text style={styles.summaryText}>My Commission</Text>
+                    <Text style={[styles.summaryValue, { color: '#f1960cff' }]}>
+                        {summary.total_actual || '0'}
+                    </Text>
+                </Animated.View>
+            </View>
+        );
+    };
+
+    const renderContent = () => {
+        const isLoading = activeTab === "CHIT" ? isChitLoading : isGoldLoading;
+        const dataAvailable = activeTab === "CHIT" ? commissions?.success : goldLeads.length > 0;
+        
+        if (isLoading) {
+            return (
+                <ActivityIndicator
+                    size="large"
+                    color="#000"
+                    style={{ marginTop: 20 }}
+                />
+            );
+        }
+
+        // Only show "No matching..." if a search query is present
+        if (!dataAvailable || (activeTab === "CHIT" && filteredCommissions.length === 0 && searchQuery.length > 0)) {
+             return (
+                 <Text style={styles.noLeadsText}>
+                     {searchQuery.length > 0 ? "No matching commissions found." : "No commission data found."}
+                 </Text>
+             );
+        }
+
+        return (
+            <FlatList
+                data={filteredCommissions}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={renderCommissionCard}
+                // Only render ListHeader for the CHIT tab
+                ListHeaderComponent={activeTab === "CHIT" ? ListHeader : null}
+                contentContainerStyle={{ paddingBottom: 80 }}
+            />
+        );
+    };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient
-                colors={['#dbf6faff', '#90dafcff']}
+        <View style={{ flex: 1, backgroundColor: COLORS.white }}>
+            <LinearGradient 
+                colors={['#b6e4ebff', '#1796d1ff']}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
                 <KeyboardAvoidingView
-                    style={{ flex: 1 }}
+                    style={styles.contentWrapper}
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
                 >
-                    <ScrollView
-                        style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
-                        contentContainerStyle={{ paddingBottom: 80 }}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        <Header />
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.title}>My Commission</Text>
-                            <Text style={styles.subtitle}>My business performance</Text>
-                        </View>
-                        <View style={styles.searchContainer}>
-                            <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search by name or group"
-                                placeholderTextColor="#888"
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
+                    {/* --- FIXED TOP CONTENT --- */}
+                    <Header />
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.title}>My Commission</Text>
+                        <Text style={styles.subtitle}>My business performance</Text>
+                    </View>
+                    <View style={styles.searchContainer}>
+                        <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search by name or group"
+                            placeholderTextColor="#888"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                    </View>
+                    <View style={styles.tabContainer}>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
+                            onPress={() => setActiveTab("CHIT")}
+                        >
+                            <MaterialIcons
+                                name="groups"
+                                size={20}
+                                color={activeTab === "CHIT" ? "#333" : "#666"}
                             />
-                        </View>
-                        <View style={styles.tabContainer}>
-                            <TouchableOpacity
-                                style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
-                                onPress={() => setActiveTab("CHIT")}
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "CHIT" && styles.activeTabText,
+                                ]}
                             >
-                                <MaterialIcons
-                                    name="groups"
-                                    size={20}
-                                    color={activeTab === "CHIT" ? "#333" : "#666"}
-                                />
-                                <Text
-                                    style={[
-                                        styles.tabText,
-                                        activeTab === "CHIT" && styles.activeTabText,
-                                    ]}
-                                >
-                                    Chits
-                                </Text>
-                            </TouchableOpacity>
+                                Chits
+                            </Text>
+                        </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                                onPress={() => setActiveTab("GOLD")}
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
+                            onPress={() => setActiveTab("GOLD")}
+                        >
+                            <MaterialIcons
+                                name="diamond"
+                                size={20}
+                                color={activeTab === "GOLD" ? "#333" : "#666"}
+                            />
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "GOLD" && styles.activeTabText,
+                                ]}
                             >
-                                <MaterialIcons
-                                    name="diamond"
-                                    size={20}
-                                    color={activeTab === "GOLD" ? "#333" : "#666"}
-                                />
-                                <Text
-                                    style={[
-                                        styles.tabText,
-                                        activeTab === "GOLD" && styles.activeTabText,
-                                    ]}
-                                >
-                                    Gold Chits
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
+                                Gold Chits
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    
+                    {/* --- SCROLLABLE CONTENT AREA --- */}
+                    <View style={{ flex: 1 }}>
+                        {renderContent()}
+                    </View>
 
-                        {activeTab === "CHIT" ? (
-                            isChitLoading ? (
-                                <ActivityIndicator
-                                    size="large"
-                                    color="#000"
-                                    style={{ marginTop: 20 }}
-                                />
-                            ) : !(commissions?.success) ? (
-                                <Text style={styles.noLeadsText}>No Commission Data Found</Text>
-                            ) : (
-
-                                <FlatList
-                                    data={filteredCommissions}
-                                    keyExtractor={(item, index) => index.toString()}
-                                    renderItem={renderCommissionCard}
-                                    ListHeaderComponent={() => (
-                                        <View style={styles.summaryBoxesContainer}>
-                                            <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim }]}>
-                                                <Text style={styles.summaryText}>Total Customers</Text>
-                                                <Text style={styles.summaryValue}>{commissions?.summary?.total_customers}</Text>
-                                            </Animated.View>
-                                            <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim }]}>
-                                                <Text style={styles.summaryText}>Total Groups</Text>
-                                                <Text style={styles.summaryValue}>{commissions?.summary?.total_groups}</Text>
-                                            </Animated.View>
-                                            <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim }]}>
-                                                <Text style={styles.summaryText}>My Business</Text>
-                                                <Text style={styles.summaryValue}>{commissions?.summary?.actual_business}</Text>
-                                            </Animated.View>
-                                            <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim }]}>
-                                                <Text style={styles.summaryText}>My Commission</Text>
-                                                <Text style={styles.summaryValue}>{commissions?.summary?.total_actual}</Text>
-                                            </Animated.View>
-                                        </View>
-                                    )}
-                                    ListEmptyComponent={() => (
-                                        <Text style={styles.noLeadsText}>No matching commissions found.</Text>
-                                    )}
-                                />
-                            )
-                        ) : isGoldLoading ? (
-                            <ActivityIndicator
-                                size="large"
-                                color="#000"
-                                style={{ marginTop: 20 }}
-                            />
-                        ) : goldLeads.length === 0 ? (
-                            <Text style={styles.noLeadsText}>No commission Data Found</Text>
-                        ) : (
-                            <FlatList
-                                data={filteredCommissions}
-                                keyExtractor={(item, index) => index.toString()}
-                                renderItem={renderCommissionCard}
-                                ListEmptyComponent={() => (
-                                    <Text style={styles.noLeadsText}>No matching commissions found.</Text>
-                                )}
-                            />
-                        )}
-                    </ScrollView>
                 </KeyboardAvoidingView>
             </LinearGradient>
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -227,8 +254,13 @@ const styles = StyleSheet.create({
     gradientOverlay: {
         flex: 1,
     },
+    contentWrapper: { 
+        flex: 1, 
+        marginHorizontal: 22, 
+        paddingTop: 50, // Pushes content down
+    },
     titleContainer: {
-        marginTop: 30,
+        marginTop: 10,
         marginBottom: 20,
         alignItems: 'center',
     },
@@ -291,20 +323,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        marginTop: 10,
+        marginTop: 5, 
+        marginBottom: 10,
         borderColor: "#da8201",
     },
     summaryBox: {
         backgroundColor: "rgba(255, 255, 255, 0.7)",
         padding: 15,
         borderRadius: 15,
-       borderColor: "#da8201",
-       borderWidth:2,
+        // BorderColor is set inline for dynamic color
+        borderWidth:2,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
         shadowRadius: 10,
-       
+        
         width: '48%',
         marginBottom: 15,
         alignItems: 'center',
@@ -315,9 +348,9 @@ const styles = StyleSheet.create({
         color: '#666',
     },
     summaryValue: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: 'bold',
-        color: '#333',
+        // Color is set inline for dynamic color
         marginTop: 5,
     },
     card: {
@@ -333,7 +366,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
         shadowRadius: 10,
-       
+        
         alignItems: 'center',
     },
     leftSection: {
@@ -345,7 +378,7 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     name: {
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: "600",
         color: "#000",
         marginBottom: 5,
@@ -363,7 +396,7 @@ const styles = StyleSheet.create({
     commissionText: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#666',
+        color: '#6d56f0ff',
     },
     arrowIcon: {
         fontSize: 22,

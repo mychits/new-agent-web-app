@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform } from "react-native"; // Import Platform
+// import { SafeAreaView } from "react-native-safe-area-context"; // ❌ Removed
 import Icon from "react-native-vector-icons/FontAwesome";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,55 +27,76 @@ const Reports = ({ route, navigation }) => {
   const { user } = route.params;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient
-        colors={['#dbf6faff', '#90dafcff']} // Refined gradient colors for a more modern, cohesive look
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+    // ❌ Removed SafeAreaView, now LinearGradient is the top-level container
+    <LinearGradient
+      colors={['#b6e4ebff', '#1796d1ff']}
+      style={styles.gradientOverlay}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <ScrollView
+        style={styles.mainScrollView} // Using a dedicated style
+        contentContainerStyle={{ paddingBottom: 80 }}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          style={{ flex: 1, marginHorizontal: 22, marginTop: 12 }}
-          contentContainerStyle={{ paddingBottom: 80 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <Header />
-          <View style={styles. titleContainer}>
-            <Text style={styles.title}>Reports</Text>
-             <Text style={styles.subtitle}>Select a Report type to continue</Text>
-          </View>
-          <View style={styles.cardListContainer}>
-            <CustomReportCard
-              key="chits-card"
-              name="Chits Report"
-              icon="line-chart"
-              onPress={() => navigation.navigate("ChitPayment", { user: user, areaId: "chits" })}
-            />
-            <CustomReportCard
-              key="gold-chits-card"
-              name="Gold Chits Report"
-              icon="bar-chart"
-              onPress={() => navigation.navigate("GoldPayment", { user: user, areaId: "gold-chits" })}
-            />
-          </View>
-        </ScrollView>
-      </LinearGradient>
-    </SafeAreaView>
+        <Header />
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Reports</Text>
+          <Text style={styles.subtitle}>Select a Report type to continue</Text>
+        </View>
+        <View style={styles.cardListContainer}>
+          <CustomReportCard
+            key="chits-card"
+            name="Chits Report"
+            icon="line-chart"
+            onPress={() => navigation.navigate("ChitPayment", { user: user, areaId: "chits" })}
+          />
+          <CustomReportCard
+            key="gold-chits-card"
+            name="Gold Report"
+            icon="bar-chart"
+            onPress={() => navigation.navigate("GoldPayment", { user: user, areaId: "gold-chits" })}
+          />
+          <CustomReportCard
+            key="loan-chits-card"
+            name="Loan Report"
+            icon="bank"
+            onPress={() => navigation.navigate("LoanPayments", { user: user, areaId: "loan-chits" })}
+          />
+          <CustomReportCard
+            key="pigme-chits-card"
+            name="Pigme Report"
+            icon="briefcase"
+            onPress={() => navigation.navigate("PigmePayments", { user: user, areaId: "pigme-chits" })}
+          />
+        </View>
+      </ScrollView>
+    </LinearGradient>
+    // ❌ Removed </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
+    // Add platform-specific padding to clear the status bar
+    paddingTop: Platform.OS === 'android' ? 0 : 35, 
+  },
+  mainScrollView: {
+    flex: 1, 
+    marginHorizontal: 22, 
+    // ➡️ Increased marginTop to push the Header down
+    marginTop: 45, 
   },
   titleContainer: {
-    marginTop: 40, // Increased top margin for more breathing room
+    marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28, // Using the smaller title size for consistency
     fontWeight: 'bold',
+    marginBottom: 0,
     color: '#333',
   },
   subtitle: {
@@ -83,14 +104,8 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 5,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 0,
-    color: '#333',
-  },
   cardListContainer: {
-    marginTop: 15,
+    marginTop: 1,
     gap: 20,
     alignItems: 'center',
   },
@@ -118,22 +133,22 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   cardText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
   cardSubText: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 5,
+    color: '#888',
+    marginTop: 2,
   },
   cardIcon: {
     fontSize: 24,
-    color: '#da8201', // Changed to gold color for consistency with the routes page
+    color: '#da8201',
   },
   arrowIcon: {
     fontSize: 20,
-    color: '#da8201', // Changed to gold color for consistency with the routes page
+    color: '#da8201',
   },
 });
 

@@ -10,8 +10,8 @@ import ViewEnrollments from "../screens/ViewEnrollments";
 import Commissions from "../screens/Commissions";
 import ActualCommissions from "../screens/ActualCommissions";
 import ExpectedCommissions from "../screens/ExpectedCommissions";
-import MyGroups from "../screens/EnrolledGroups";
 import EnrolledGroups from "../screens/EnrolledGroups";
+
 import MyCommission from "../screens/MyCommission";
 
 enableScreens();
@@ -49,7 +49,7 @@ const CustomerNavigation = ({ route }) => {
 				options={{ headerShown: false }}
 			/>
 			<stack.Screen
-				name="MyGroups"
+				name="EnrolledGroups"
 				component={EnrolledGroups}
 				initialParams={{ user }}
 				options={{ headerShown: false }}
@@ -73,7 +73,7 @@ const CustomerNavigation = ({ route }) => {
 				options={{ headerShown: false }}
 			/>
 			<stack.Screen
-				name="MyCommissions"
+				name="MyCommission"
 				component={MyCommission}
 				initialParams={{ commissions }}
 				options={{ headerShown: false }}
