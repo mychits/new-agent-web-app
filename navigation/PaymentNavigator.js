@@ -14,10 +14,14 @@ import Print from "../screens/Print";
 import GoldPayin from "../screens/GoldPayin";
 import GoldPrint from "../screens/GoldPrint";
 import LoanPrint from "../screens/LoanPrint";
-import PaymentList from "../screens/PaymentList";
 import ChitPayments from "../screens/ChitPayments";
 import Reprint from "../screens/Reprint";
 import PigmePrint from "../screens/PigmePrint";
+import PigmeRePrint from "../screens/PigmeRePrint";
+// import LoanRePrint from "../screens/LoanRePrint";
+
+
+
 
 
 enableScreens();
@@ -97,11 +101,23 @@ const ScannerNavigator = ({ route }) => {
 				options={{ headerShown: false }}
 			/>
 			<stack.Screen
+				name="LoanReprint"
+				component={Reprint}
+				initialParams={{ user, store_id }}
+				options={{ headerShown: false }}
+			/>
+			<stack.Screen
+				name="PigmeReprint"
+				component={PigmeRePrint}
+				initialParams={{ user, store_id }}
+				options={{ headerShown: false }}
+			/>
+			<stack.Screen
 				name="GoldPrint"
 				component={GoldPrint}
 				initialParams={{ user, store_id }}
 				options={{ headerShown: false }}
-			/>
+			/>r
 			<stack.Screen
 				name="LoanPrint"
 				component={LoanPrint}

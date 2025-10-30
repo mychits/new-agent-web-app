@@ -88,7 +88,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Scrollable Customer List */}
+       
         {loading ? (
             <View style={{ marginTop: 30, alignItems: "center" }}>
               <ActivityIndicator size="large" color="#da8201" />
