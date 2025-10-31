@@ -15,12 +15,12 @@ import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 
 import axios from "axios";
-import PaymentChitList from "../components/PaymentChitList";
+import PigmePaymentList from "../components/PigmePaymentList";
 
 const noImage = require('../assets/no.png');
 
 // NOTE: Component name is assumed to be ChitPayments as per the original file structure
-const ChitPayments = ({ route, navigation }) => { 
+const PigmePayments = ({ route, navigation }) => { 
   const { user, areaId } = route.params;
 
   const [search, setSearch] = useState("");
@@ -64,8 +64,7 @@ const ChitPayments = ({ route, navigation }) => {
   const [filters, setFilters] = useState([
     { id: 'date', title: 'Date', value: formatDate(selectedDate), icon: 'calendar' },
     { id: 'customer', title: 'Customer', value: 'All', icon: 'user' },
-    // CORRECTION: Changing 'group' to 'pigmy' in filters
-    { id: 'pigmy', title: 'Pigme ID', value: 'All', icon: 'piggy-bank' }, 
+    { id: 'pigmy', title: 'Pigme ID', value: 'All', icon: 'money' }, 
     { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'money' },
     { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'money' },
   ]);
@@ -98,7 +97,6 @@ const ChitPayments = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        // CORRECTION: Using the Pigme endpoint with the agent's ID
         const response = await axios.get(
           `${baseUrl}/payment/pigme/agent/${user.userId}`
         );
@@ -137,7 +135,6 @@ const ChitPayments = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
-    // This fetch is not strictly necessary for Pigmy, but kept for consistency
     const fetchGroups = async () => {
       try {
         const response = await axios.get(
@@ -178,7 +175,6 @@ const ChitPayments = ({ route, navigation }) => {
       const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
       const dateMatch = isSameDate(customer.pay_date, selectedDate);
       const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-      // CORRECTION: Filtering by 'pigme_id' from the nested 'pigme' object
       const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
       const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
       return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
@@ -190,7 +186,6 @@ const ChitPayments = ({ route, navigation }) => {
     return sum + amount;
   }, 0);
 
-  // Update total collection filter value whenever totalAmount changes
   useEffect(() => {
     if (!loading) {
       updateFilterValue('totalCollection', `₹ ${totalAmount.toFixed(2)}`);
@@ -214,9 +209,7 @@ const ChitPayments = ({ route, navigation }) => {
             }}
           />
         );
-      // CORRECTION: Case 'pigmy' for the Pigme ID picker
       case 'pigme':
-        // Get unique Pigme IDs from the current customers list
         const uniquePigmyIds = [...new Set(customers.map(c => c?.pigme?.pigme_id).filter(Boolean))];
         return (
           <Picker
@@ -454,7 +447,6 @@ const ChitPayments = ({ route, navigation }) => {
 
 
   return (
-    // Replaced SafeAreaView with View
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
         style={styles.gradientOverlay}
@@ -467,7 +459,6 @@ const ChitPayments = ({ route, navigation }) => {
             
           </View>
         ) : (
-          // Added a marginTop to account for status bar/notch space
           <View style={styles.contentContainer}> 
             <View style={{ marginHorizontal: 22, marginTop: 12 }}>
               <Header />
@@ -489,7 +480,6 @@ const ChitPayments = ({ route, navigation }) => {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  {/* Changed SafeAreaView inside Modal to a standard View */}
                   <View style={styles.fullScreenModalContainer}> 
                     <TouchableOpacity
                       style={styles.modalCloseButton}
@@ -516,7 +506,6 @@ const ChitPayments = ({ route, navigation }) => {
                                 <Text style={styles.paymentDetailLabel}>Customer:</Text> {customer?.user_id?.full_name || 'N/A'}
                               </Text>
                               <Text style={styles.paymentDetailText}>
-                                {/* CORRECTION: Displaying Pigme ID */}
                                 <Text style={styles.paymentDetailLabel}>Pigme ID:</Text> {customer?.pigme?.pigme_id || 'N/A'} 
                               </Text>
                               <Text style={styles.paymentDetailText}>
@@ -612,7 +601,6 @@ const ChitPayments = ({ route, navigation }) => {
                             setShowPicker(false);
                             setSelectedFilter(null);
                           }}
-                          // Empty style provided in original. 
                         >
                           
                         </TouchableOpacity>
@@ -631,7 +619,6 @@ const ChitPayments = ({ route, navigation }) => {
                     const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
                     const dateMatch = isSameDate(customer.pay_date, selectedDate);
                     const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                    // CORRECTION: Filtering by 'pigme_id'
                     const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
                     const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
                     return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
@@ -646,24 +633,26 @@ const ChitPayments = ({ route, navigation }) => {
                         const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
                         const dateMatch = isSameDate(customer.pay_date, selectedDate);
                         const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                        // CORRECTION: Filtering by 'pigme_id'
                         const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
                         const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
                         return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
                       })
                       .map((customer, index) => (
-                        <PaymentChitList
+                        <PigmePaymentList
                           key={index}
                           idx={index}
                           name={customer?.user_id?.full_name || 'N/A'}
-                          cus_id={customer._id}
+                          cus_id={customer?.user_id?._id}
                           phone={customer?.user_id?.phone_number || 'N/A'}
-                          receipt={customer.receipt_no}
-                          date={customer.pay_date}
+                          receipt={customer?.receipt_no}
+                          date={customer?.pay_date}
                           amount={customer.amount}
-                          // CORRECTION: Passing Pigme ID instead of group name
-                          group={customer?.pigme?.pigme_id || 'N/A'} 
-                          type={customer.pay_type}
+                          pigmeId={customer?.pigme?.pigme_id || 'N/A'} 
+                          actual_pigme_id={customer?.pigme?._id || "N/A"}
+                         
+                          pigmeAmount={customer?.pigme?.payable_amount || 'N/A'} 
+                          type={customer?.pay_type}
+                          agent_name={agent.name || "N/A"}
                           navigation={navigation}
                           user={user}
                           onPress={() => handleChitPress(customer._id)}
@@ -981,4 +970,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChitPayments;
+export default PigmePayments;

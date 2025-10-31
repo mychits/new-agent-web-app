@@ -9,7 +9,7 @@ import RNPrint from "react-native-print";
 import baseUrl from "../constants/baseUrl";
 import axios from "axios";
 
-const LoanPrint = ({ route }) => {
+const LoanRePrint = ({ route }) => {
   const {
     customer_name,
     phone_number,
@@ -27,6 +27,7 @@ const LoanPrint = ({ route }) => {
     cus_id,
     actual_loan_id,
   } = route.params;
+  
 
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -512,4 +513,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoanPrint;
+export default LoanRePrint;

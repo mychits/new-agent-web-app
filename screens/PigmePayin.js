@@ -32,6 +32,7 @@ const PigmePayin = ({ route, navigation }) => {
     const [additionalInfo, setAdditionalInfo] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingData, setIsFetchingData] = useState(true);
+    const [pigmeAmt,setPigmeAmt] = useState("")
 
     const [customerInfo, setCustomerInfo] = useState("");
     const [pigmeData, setPigmeData] = useState([]);
@@ -53,6 +54,7 @@ const PigmePayin = ({ route, navigation }) => {
                 if (response.data) {
                     const fetchedPigme = response.data;
                     const customerName = fetchedPigme.customer?.full_name || "N/A";
+                    setPigmeAmt(fetchedPigme?.payable_amount || "0")
 
                     setCustomerInfo(customerName);
                     // Wrap the single fetched item in an array for consistency
@@ -69,6 +71,8 @@ const PigmePayin = ({ route, navigation }) => {
                 }
             } catch (error) {
                 console.error("Error fetching customer pigme data:", error);
+                    setPigmeAmt( "0")
+
             } finally {
                 setIsFetchingData(false);
             }
@@ -191,6 +195,7 @@ const PigmePayin = ({ route, navigation }) => {
 
                 navigation.navigate("PigmePrint", {
                     customer_name: full_name,
+                    cus_id:customer,
                     phone_number: phone_number,
                     agent_name: agentName,
                     amount: paidAmount,
@@ -201,7 +206,8 @@ const PigmePayin = ({ route, navigation }) => {
                     total_amount: totalAmountResponse?.data?.totalAmount || 0,
                     custom_pigme_id: custom_pigme_id,
                     isPigmePayment: true,
-                    pigme_id: pigme_id,
+                    actual_pigme_id: pigme_id,
+                    pigme_amount:pigmeAmt,
                 });
             } else {
                 Alert.alert("Error", response.data.message || "Something went wrong.");

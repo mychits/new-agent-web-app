@@ -32,7 +32,7 @@ const centerText = (text, lineWidth = 40) => {
   return " ".repeat(paddingStart) + text;
 };
 
-const PigmePrint = ({ route }) => {
+const PigmeRePrint = ({ route }) => {
   const {
     customer_name,
     phone_number,
@@ -47,31 +47,27 @@ const PigmePrint = ({ route }) => {
     custom_pigme_id,
     receipt_no,
     isPigmePayment,
-    user
+    user,
   } = route.params;
   const [totalPaidAmount, setTotalPaidAmount] = useState("");
- useEffect( () => {
-  (async () => {
-    try {
-    
-      setLoading(false);
-      const response = await axios.get(
-        `${baseUrl}/payment/user/${cus_id}/pigme/${actual_pigme_id}/summary`
-      );
-      console.log(response.data,"response data")
-      if(Array.isArray(response.data))
-      {
-        setTotalPaidAmount(response?.data?.[0]?.totalPaidAmount);
-
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(false);
+        const response = await axios.get(
+          `${baseUrl}/payment/user/${cus_id}/pigme/${actual_pigme_id}/summary`
+        );
+        console.log(response.data, "response data");
+        if (Array.isArray(response.data)) {
+          setTotalPaidAmount(response?.data?.[0]?.totalPaidAmount);
+        }
+      } catch (error) {
+        setTotalPaidAmount("0");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setTotalPaidAmount("0")
-    } finally {
-      setLoading(false);
-    }
-  })();
-}, []);
-
+    })();
+  }, []);
 
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -371,7 +367,7 @@ Collected by: ${agent_name || "N/A"}
             >
               {isPigmePayment ? "Pigme Receipt" : "Receipt"}
             </Text>
-<Text style={styles.textStyle}>
+            <Text style={styles.textStyle}>
               <Text style={{ fontWeight: "bold" }}>Pigme Amount:</Text>{" "}
               {pigme_amount || "N/A"}
             </Text>
@@ -525,4 +521,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PigmePrint;
+export default PigmeRePrint;

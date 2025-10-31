@@ -16,10 +16,12 @@ import baseUrl from "../constants/baseUrl";
 
 import axios from "axios";
 import PaymentChitList from "../components/PaymentChitList";
+import LoanPaymentList from "../components/LoanPaymentList";
 
 const noImage = require('../assets/no.png');
 
-const ChitPayments = ({ route, navigation }) => {
+// NOTE: Component name is assumed to be ChitPayments as per the original file structure
+const LoanPayments = ({ route, navigation }) => { 
   const { user, areaId } = route.params;
 
   const [search, setSearch] = useState("");
@@ -33,14 +35,12 @@ const ChitPayments = ({ route, navigation }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [agentName,setAgentName] = useState("")
   
-  // CORRECTION: Changing selectedGroup and related state to use Loan ID instead 
-  // of Group ID, as the data is for Loan Payments and does not contain group_id.
-  const [selectedLoan, setSelectedLoan] = useState('');
+  const [selectedloanId, setSelectedloanId] = useState(''); 
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('');
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
-  // Changed selectedGroupName to selectedLoanName
-  const [selectedLoanName, setSelectedLoanName] = useState(''); 
+  const [selectedloanName, setSelectedloanName] = useState(''); 
   const [activeChitId, setActiveChitId] = useState(null);
   const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false);
 
@@ -65,7 +65,7 @@ const ChitPayments = ({ route, navigation }) => {
   const [filters, setFilters] = useState([
     { id: 'date', title: 'Date', value: formatDate(selectedDate), icon: 'calendar' },
     { id: 'customer', title: 'Customer', value: 'All', icon: 'user' },
-    // CORRECTION: Changing 'group' to 'loan' in filters
+    
     { id: 'loan', title: 'Loan ID', value: 'All', icon: 'money' }, 
     { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'money' },
     { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'money' },
@@ -99,7 +99,6 @@ const ChitPayments = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        // CORRECTION: Updated to fetch loan payments for the agent's ID as per Postman
         const response = await axios.get(
           `${baseUrl}/payment/loan/agent/${user.userId}`
         );
@@ -116,7 +115,7 @@ const ChitPayments = ({ route, navigation }) => {
     };
 
     fetchCustomers();
-  }, [user.userId]); // Added user.userId to dependencies
+  }, [user.userId]);
 
   useEffect(() => {
     const fetchCus = async () => {
@@ -131,8 +130,6 @@ const ChitPayments = ({ route, navigation }) => {
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
-      } finally {
-        // You only need one place to set loading to false after all initial fetches are complete
       }
     };
 
@@ -145,8 +142,6 @@ const ChitPayments = ({ route, navigation }) => {
         const response = await axios.get(
           `${baseUrl}/group/get-group`
         );
-        // CORRECTION: Keeping groups fetch but not using it for Loan Payments, 
-        // will use the 'loan' field from the customer object instead.
         if (response.data && Array.isArray(response.data)) {
           setGroups(response.data);
         } else {
@@ -155,8 +150,6 @@ const ChitPayments = ({ route, navigation }) => {
       } catch (error) {
         Alert.alert("Network Error", "Failed to fetch groups. Please check your network connection.");
         console.error("Error fetching group data:", error);
-      } finally {
-        // You only need one place to set loading to false after all initial fetches are complete
       }
     };
 
@@ -170,8 +163,10 @@ const ChitPayments = ({ route, navigation }) => {
           `${baseUrl}/agent/get-agent-by-id/${user.userId}`
         );
         setAgent(response.data)
+        setAgentName(response?.data?.name)
 
       } catch (error) {
+        setAgentName("")
         console.error("Error fetching customer data:", error);
       }
     };
@@ -184,8 +179,8 @@ const ChitPayments = ({ route, navigation }) => {
       const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
       const dateMatch = isSameDate(customer.pay_date, selectedDate);
       const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-      // CORRECTION: Filtering by 'loan' ID instead of 'group_id'
-      const loanMatch = !selectedLoan || customer.loan === selectedLoan; 
+      // CORRECTION: Filtering by 'loan_id' from the nested 'loan' object
+      const loanMatch = !selectedloanId || customer?.loan?.loan_id === selectedloanId; 
       const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
       return nameMatch && dateMatch && customerMatch && loanMatch && paymentModeMatch;
     })
@@ -196,7 +191,6 @@ const ChitPayments = ({ route, navigation }) => {
     return sum + amount;
   }, 0);
 
-  // Update total collection filter value whenever totalAmount changes
   useEffect(() => {
     if (!loading) {
       updateFilterValue('totalCollection', `₹ ${totalAmount.toFixed(2)}`);
@@ -220,26 +214,23 @@ const ChitPayments = ({ route, navigation }) => {
             }}
           />
         );
-      // CORRECTION: Changing case 'group' to case 'loan' for the Loan ID picker
       case 'loan':
-        // Get unique loan IDs from the current customers list
-        const uniqueLoans = [...new Set(customers.map(c => c.loan).filter(Boolean))];
+        const uniqueloanIds = [...new Set(customers.map(c => c?.loan?.loan_id).filter(Boolean))];
         return (
           <Picker
-            selectedValue={selectedLoan}
+            selectedValue={selectedloanId}
             onValueChange={(value) => {
-              // The "name" will just be the Loan ID itself
-              setSelectedLoan(value);
-              setSelectedLoanName(value || ''); 
+              setSelectedloanId(value);
+              setSelectedloanName(value || ''); 
               updateFilterValue('loan', value);
               setShowPicker(false);
             }}
           >
-            <Picker.Item label="All Loans" value="" />
-            {uniqueLoans.map((loanId) => (
+            <Picker.Item label="All loan Accounts" value="" />
+            {uniqueloanIds.map((loanId) => (
               <Picker.Item
                 key={loanId}
-                label={`Loan: ${loanId}`}
+                label={`Loan ID: ${loanId}`}
                 value={loanId}
               />
             ))}
@@ -301,15 +292,14 @@ const ChitPayments = ({ route, navigation }) => {
         const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
         const dateMatch = isSameDate(customer.pay_date, selectedDate);
         const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-        // CORRECTION: Filtering by 'loan' ID instead of 'group_id'
-        const loanMatch = !selectedLoan || customer.loan === selectedLoan; 
+        const loanMatch = !selectedloanId || customer?.loan?.loan_id === selectedloanId; 
         const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
         return nameMatch && dateMatch && customerMatch && loanMatch && paymentModeMatch;
       })
       .map((customer, index) => `
         <tr>
           <td>${index + 1}</td>
-          <td>${customer.loan || "N/A"}</td> <td>${customer.ticket || "N/A"}</td>
+          <td>${customer?.loan?.loan_id || "N/A"}</td> <td>${customer.ticket || "N/A"}</td>
           <td>${customer?.user_id?.full_name || "N/A"}</td>
           <td>${customer?.user_id?.phone_number || "N/A"}</td>
           <td>${customer.amount || "N/A"}</td>
@@ -363,7 +353,7 @@ const ChitPayments = ({ route, navigation }) => {
       </head>
       <body>
         <div class="container">
-          <h1>Loan Payment Collection Print</h1>
+          <h1>loan Payment Collection Print</h1>
           <table class="table">
             <thead>
               <tr>
@@ -444,7 +434,7 @@ const ChitPayments = ({ route, navigation }) => {
           <p>Agent: ${agent.name || 'N/A'}</p>
           <p>Date: ${formatDate(selectedDate)}</p>
           <div class="footer">
-            <p>Generated by Chit Payments App</p>
+            <p>Generated by loan Payments App</p>
           </div>
         </div>
       </body>
@@ -522,7 +512,8 @@ const ChitPayments = ({ route, navigation }) => {
                                 <Text style={styles.paymentDetailLabel}>Customer:</Text> {customer?.user_id?.full_name || 'N/A'}
                               </Text>
                               <Text style={styles.paymentDetailText}>
-                                <Text style={styles.paymentDetailLabel}>Loan ID:</Text> {customer.loan || 'N/A'}
+                               
+                                <Text style={styles.paymentDetailLabel}>Loan ID:</Text> {customer?.loan?.loan_id || 'N/A'} 
                               </Text>
                               <Text style={styles.paymentDetailText}>
                                 <Text style={styles.paymentDetailLabel}>Amount:</Text> ₹ {parseFloat(customer.amount || 0).toFixed(2)}
@@ -617,9 +608,7 @@ const ChitPayments = ({ route, navigation }) => {
                             setShowPicker(false);
                             setSelectedFilter(null);
                           }}
-                          // Empty style provided in original. 
                         >
-                          
                         </TouchableOpacity>
                         {renderPicker()}
                       </View>
@@ -634,11 +623,10 @@ const ChitPayments = ({ route, navigation }) => {
                 >
                   {Array.isArray(customers) && customers.filter((customer) => {
                     const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
-                    const dateMatch = isSameDate(customer.pay_date, selectedDate);
+                    const dateMatch = isSameDate(customer?.pay_date, selectedDate);
                     const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                    // CORRECTION: Filtering by 'loan' ID instead of 'group_id'
-                    const loanMatch = !selectedLoan || customer.loan === selectedLoan; 
-                    const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
+                    const loanMatch = !selectedloanId || customer?.loan?.loan_id === selectedloanId; 
+                    const paymentModeMatch = !selectedPaymentMode || customer?.pay_type === selectedPaymentMode;
                     return nameMatch && dateMatch && customerMatch && loanMatch && paymentModeMatch;
                   }).length === 0 ? (
                     <View style={styles.noDataContainer}>
@@ -649,26 +637,27 @@ const ChitPayments = ({ route, navigation }) => {
                     customers
                       .filter((customer) => {
                         const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
-                        const dateMatch = isSameDate(customer.pay_date, selectedDate);
+                        const dateMatch = isSameDate(customer?.pay_date, selectedDate);
                         const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                        // CORRECTION: Filtering by 'loan' ID instead of 'group_id'
-                        const loanMatch = !selectedLoan || customer.loan === selectedLoan; 
-                        const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
+                        const loanMatch = !selectedloanId || customer?.loan?.loan_id === selectedloanId; 
+                        const paymentModeMatch = !selectedPaymentMode || customer?.pay_type === selectedPaymentMode;
                         return nameMatch && dateMatch && customerMatch && loanMatch && paymentModeMatch;
                       })
                       .map((customer, index) => (
-                        <PaymentChitList
+                        <LoanPaymentList
                           key={index}
                           idx={index}
                           name={customer?.user_id?.full_name || 'N/A'}
-                          cus_id={customer._id}
+                          cus_id={customer?.user_id?._id}
                           phone={customer?.user_id?.phone_number || 'N/A'}
                           receipt={customer.receipt_no}
                           date={customer.pay_date}
                           amount={customer.amount}
-                          // CORRECTION: Passing loan ID instead of group name
-                          group={customer.loan || 'N/A'} 
+                          actual_loan_id={customer?.loan?._id || 'N/A'}
+                          loanId={customer?.loan?.loan_id || 'N/A'} 
+                          loanAmount={customer?.loan?.loan_amount || "N/A"}
                           type={customer.pay_type}
+                          agentName={agentName}
                           navigation={navigation}
                           user={user}
                           onPress={() => handleChitPress(customer._id)}
@@ -686,15 +675,13 @@ const ChitPayments = ({ route, navigation }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   gradientOverlay: {
     flex: 1,
   },
-  // New style to push content down from the top edge
   contentContainer: {
     flex: 1,
-    paddingTop: 40, // Added padding to compensate for SafeAreaView removal
+    paddingTop: 40, 
   },
   loadingContainer: {
     flex: 1,
@@ -708,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 10,
-    marginTop: -4,
+    marginTop: -2,
     marginBottom: 20,
   },
   title: {
@@ -870,11 +857,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-    paddingTop: 70, // Added padding to compensate for SafeAreaView removal
+    paddingTop: 70, 
   },
   modalCloseButton: {
     position: 'absolute',
-    top: 50, // Adjusted top value
+    top: 50, 
     right: 20,
     zIndex: 1,
   },
@@ -988,4 +975,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChitPayments;
+export default LoanPayments;
