@@ -14,7 +14,8 @@ import Header from "../components/Header"; // Assuming this is defined
 import blePrinter from "../components/BluetoothPrinter"; // Assuming this is defined
 import Button from "../components/Button"; // Assuming this is defined
 import RNPrint from "react-native-print";
-import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
+import baseUrl from "../constants/baseUrl";
 
 // Utility function to format the date
 const formatDate = (dateString) => {
@@ -26,18 +27,19 @@ const formatDate = (dateString) => {
 
 const centerText = (text, lineWidth = 40) => {
   const totalPadding = lineWidth - text.length;
- 
+
   const paddingStart = Math.max(0, Math.floor(totalPadding / 2));
   return " ".repeat(paddingStart) + text;
 };
 
 const PigmeRePrint = ({ route }) => {
-  const navigation = useNavigation();
   const {
     customer_name,
     phone_number,
     agent_name,
-    total_amount,
+    cus_id,
+    actual_pigme_id,
+    pigme_amount,
     pay_date,
     amount,
     pay_type,
@@ -45,36 +47,32 @@ const PigmeRePrint = ({ route }) => {
     custom_pigme_id,
     receipt_no,
     isPigmePayment,
-    // pigme_id, // Not used in the final display logic
+    user,
   } = route.params;
+  const [totalPaidAmount, setTotalPaidAmount] = useState("");
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(false);
+        const response = await axios.get(
+          `${baseUrl}/payment/user/${cus_id}/pigme/${actual_pigme_id}/summary`
+        );
+        console.log(response.data, "response data");
+        if (Array.isArray(response.data)) {
+          setTotalPaidAmount(response?.data?.[0]?.totalPaidAmount);
+        }
+      } catch (error) {
+        setTotalPaidAmount("0");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-
-  useEffect(() => {
-    const handleBackPress = () => {
-      // Navigate back to PigmePayment on hardware back press
-      navigation.navigate("PigmePayment");
-      return true;
-    };
-
-    // The modern way: addEventListener returns a function to remove the listener
-    const backHandlerSubscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      handleBackPress
-    );
-
-    return () => {
-
-      if (backHandlerSubscription && backHandlerSubscription.remove) {
-        backHandlerSubscription.remove();
-      } else if (BackHandler.removeEventListener) {
-        // Fallback for older RN versions or if subscription.remove is unavailable
-        BackHandler.removeEventListener("hardwareBackPress", handleBackPress);
-      }
-    };
-  }, [navigation]); // Depend on navigation
+  const [loading, setLoading] = useState(false);
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -124,7 +122,7 @@ ${centerText("Kathriguppe Main Road,")}
 ${centerText("Bangalore, 560085 9483900777")}
 --------------------------------
 ${centerText(receiptType)}
-
+Pigme Amount: ${pigme_amount || "N/A"}
 Receipt No: ${receipt_no || "N/A"}
 Date: ${formatDate(pay_date)}
 
@@ -136,7 +134,7 @@ ${groupOrPigme}
 | Received Amount: Rs.${amount || 0} |
 ==============================
 Mode: ${pay_type || "N/A"}
-${txnLine}Total: Rs.${total_amount || 0}
+${txnLine}Total: Rs.${totalPaidAmount || 0}
 --------------------------------
 Collected by: ${agent_name || "N/A"}
 
@@ -153,17 +151,15 @@ Collected by: ${agent_name || "N/A"}
     }
   };
 
-  /**
-   * Generates the HTML content for POS printing, configurable by paper size.
-   * @param {string} size - The physical width of the paper (e.g., '58mm', '80mm').
-   * @returns {string} The HTML content string.
-   */
   const generatePosReceiptHtml = (size) => {
     // NOTE: Hardcoded "Loan" and "loab" for non-Pigme group is preserved from original code
     const groupOrPigmeHtml = isPigmePayment
-      ? `<p style="margin: 0; font-weight: bold;">Pigme ID: ${custom_pigme_id || "N/A"}</p>`
-      : `<p style="margin: 0; font-weight: bold;">Group: ${"Loan"}</p><p style="margin: 0; font-weight: bold;">Ticket: ${"loab" || "N/A"
-      }</p>`;
+      ? `<p style="margin: 0; font-weight: bold;">Pigme ID: ${
+          custom_pigme_id || "N/A"
+        }</p>`
+      : `<p style="margin: 0; font-weight: bold;">Group: ${"Loan"}</p><p style="margin: 0; font-weight: bold;">Ticket: ${
+          "loab" || "N/A"
+        }</p>`;
 
     const txnLine =
       pay_type?.toLowerCase() === "online" && transaction_id
@@ -224,13 +220,25 @@ Collected by: ${agent_name || "N/A"}
           <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
             ${isPigmePayment ? "Pigme Receipt" : "Receipt"}
           </p>
-          <p style="margin: 0;">
-          <span style="font-weight: bold;">Receipt No:</span> ${receipt_no || "N/A"} <br/>
+            <p style="margin: 0;">
+          <span style="font-weight: bold;">Pigme Amount:</span> ${
+            pigme_amount || "N/A"
+          } <br/>
           <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
           </p>
+          <p style="margin: 0;">
+          <span style="font-weight: bold;">Receipt No:</span> ${
+            receipt_no || "N/A"
+          } <br/>
+          
+          </p>
           <p style="margin: 10px 0 0 0;">
-          <span style="font-weight: bold;">Name:</span> ${customer_name || "N/A"} <br/>
-          <span style="font-weight: bold;">Mobile No:</span> ${phone_number || "N/A"}
+          <span style="font-weight: bold;">Name:</span> ${
+            customer_name || "N/A"
+          } <br/>
+          <span style="font-weight: bold;">Mobile No:</span> ${
+            phone_number || "N/A"
+          }
           </p>
           <div style="margin: 10px 0;">
             ${groupOrPigmeHtml}
@@ -244,10 +252,14 @@ Collected by: ${agent_name || "N/A"}
           <p style="margin-top: 10px; margin-bottom: 5px;">
           <span style="font-weight: bold;">Mode:</span> ${pay_type || "N/A"}</p>
           ${txnLine}
-          <p style="margin-top: 5px; margin-bottom: 10px; font-weight: bold;">Total: Rs.${total_amount || 0}</p>
+          <p style="margin-top: 5px; margin-bottom: 10px; font-weight: bold;">Total: Rs.${
+            totalPaidAmount || 0
+          }</p>
           <div class="line"></div>
           <p style="text-align: center; margin-bottom: 0;">
-          <span style="font-weight: bold;">Collected By:</span> ${agent_name || "N/A"}</p>
+          <span style="font-weight: bold;">Collected By:</span> ${
+            agent_name || "N/A"
+          }</p>
           <p style="text-align: center; font-size: 12px; margin-top: 10px;">*** Thank You ***</p>
           <p style="height: 100px;">&nbsp;</p> </div>
       </body>
@@ -271,9 +283,6 @@ Collected by: ${agent_name || "N/A"}
     }
   };
 
-  /**
-   * Handles the general print function using react-native-print for 80mm paper.
-   */
   const handlePos80MMPrint = async () => {
     setIsPrinting(true);
     const htmlContent = generatePosReceiptHtml("80mm");
@@ -288,168 +297,182 @@ Collected by: ${agent_name || "N/A"}
   };
 
   return (
-    <ScrollView style={{flex:1}}>
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
-        <Header />
+    <ScrollView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+        <View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
+          <Header />
 
-        <Button
-          title={
-            isConnecting
-              ? "Connecting..."
-              : isConnected
+          <Button
+            title={
+              isConnecting
+                ? "Connecting..."
+                : isConnected
                 ? "Connected"
                 : "Connect to Printer"
-          }
-          filled
-          style={{ marginTop: 18, marginBottom: 4 }}
-          onPress={handleConnect}
-          disabled={isConnecting || isConnected}
-        />
-
-        {isConnecting && (
-          <ActivityIndicator
-            size="small"
-            color={COLORS.primary}
-            style={{ marginVertical: 8 }}
+            }
+            filled
+            style={{ marginTop: 18, marginBottom: 4 }}
+            onPress={handleConnect}
+            disabled={isConnecting || isConnected}
           />
-        )}
 
-        {/* Receipt Preview */}
-        <View
-          style={{
-            padding: 12, // Increased padding for better look
-            backgroundColor: "#f0eeee",
-            borderRadius: 8,
-            marginTop: 5,
-            flexGrow: 1, // Allows the content to grow
-          }}
-        >
-          <Text
+          {isConnecting && (
+            <ActivityIndicator
+              size="small"
+              color={COLORS.primary}
+              style={{ marginVertical: 8 }}
+            />
+          )}
+
+          {/* Receipt Preview */}
+          <View
             style={{
-              fontWeight: "bold",
-              fontSize: 18,
-              textAlign: "center",
+              padding: 12, // Increased padding for better look
+              backgroundColor: "#f0eeee",
+              borderRadius: 8,
+              marginTop: 5,
+              flexGrow: 1, // Allows the content to grow
             }}
           >
-            MY CHITS
-          </Text>
-          <Text style={[styles.textStyle, { textAlign: "center", marginTop: 3 }]}>
-            No.11/36-25, 2nd Main,
-          </Text>
-          <Text style={[styles.textStyle, { textAlign: "center" }]}>
-            Kathriguppe Main Road,
-          </Text>
-          <Text style={[styles.textStyle, { textAlign: "center" }]}>
-            Bangalore, 560085 9483900777
-          </Text>
-
-          <View style={styles.separator} />
-
-          <Text
-            style={{
-              fontWeight: "bold",
-              fontSize: 13,
-              textAlign: "center",
-              marginBottom: 10,
-            }}
-          >
-            {isPigmePayment ? "Pigme Receipt" : "Receipt"}
-          </Text>
-
-          <Text style={styles.textStyle}>
-            <Text style={{ fontWeight: 'bold' }}>Receipt No:</Text> {receipt_no || "N/A"}
-          </Text>
-          <Text style={styles.textStyle}>
-            <Text style={{ fontWeight: 'bold' }}>Date:</Text> {formatDate(pay_date || "")}
-          </Text>
-
-          <Text style={{ ...styles.textStyle, marginVertical: 5 }} />
-
-          <Text style={styles.textStyle}>
-            <Text style={{ fontWeight: 'bold' }}>Name:</Text> {customer_name || "N/A"}
-          </Text>
-          <Text style={styles.textStyle}>
-            <Text style={{ fontWeight: 'bold' }}>Mobile No:</Text> {phone_number || "N/A"}
-          </Text>
-
-          <Text style={{ ...styles.textStyle, marginVertical: 5 }} />
-
-          <Text style={[styles.textStyle, { fontSize: 14, fontWeight: "bold" }]}>
-            {isPigmePayment ? `Pigme ID: ${custom_pigme_id || "N/A"}` : `Group: 000 Error 000`}
-          </Text>
-
-          <View style={{ ...styles.amountBox, marginVertical: 10 }}>
-            <Text style={styles.amountText}>
-              Received Amount | Rs.{amount || 0}
+            <Text
+              style={{
+                fontWeight: "bold",
+                fontSize: 18,
+                textAlign: "center",
+              }}
+            >
+              MY CHITS
             </Text>
-          </View>
+            <Text
+              style={[styles.textStyle, { textAlign: "center", marginTop: 3 }]}
+            >
+              No.11/36-25, 2nd Main,
+            </Text>
+            <Text style={[styles.textStyle, { textAlign: "center" }]}>
+              Kathriguppe Main Road,
+            </Text>
+            <Text style={[styles.textStyle, { textAlign: "center" }]}>
+              Bangalore, 560085 9483900777
+            </Text>
 
-          <Text style={styles.textStyle}>
-            <Text style={{ fontWeight: 'bold' }}>Mode:</Text> {pay_type || "N/A"}
-          </Text>
-          {pay_type?.toLowerCase() === "online" && transaction_id ? (
+            <View style={styles.separator} />
+
+            <Text
+              style={{
+                fontWeight: "bold",
+                fontSize: 13,
+                textAlign: "center",
+                marginBottom: 10,
+              }}
+            >
+              {isPigmePayment ? "Pigme Receipt" : "Receipt"}
+            </Text>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: 'bold' }}>Transaction ID:</Text> {transaction_id}
+              <Text style={{ fontWeight: "bold" }}>Pigme Amount:</Text>{" "}
+              {pigme_amount || "N/A"}
             </Text>
-          ) : null}
-          <Text style={[styles.textStyle, { fontWeight: 'bold' }]}>
-            Total: Rs.{total_amount || 0}
-          </Text>
+            <Text style={styles.textStyle}>
+              <Text style={{ fontWeight: "bold" }}>Receipt No:</Text>{" "}
+              {receipt_no || "N/A"}
+            </Text>
+            <Text style={styles.textStyle}>
+              <Text style={{ fontWeight: "bold" }}>Date:</Text>{" "}
+              {formatDate(pay_date || "")}
+            </Text>
 
-          <View style={styles.separator} />
+            <Text style={{ ...styles.textStyle, marginVertical: 5 }} />
 
-          <Text style={styles.textStyle}>
-            <Text style={{ fontWeight: 'bold' }}>Collected by:</Text> {agent_name || "N/A"}
-          </Text>
-          <Text style={styles.textStyle}> </Text>
-        </View>
-        {/* End Receipt Preview */}
+            <Text style={styles.textStyle}>
+              <Text style={{ fontWeight: "bold" }}>Name:</Text>{" "}
+              {customer_name || "N/A"}
+            </Text>
+            <Text style={styles.textStyle}>
+              <Text style={{ fontWeight: "bold" }}>Mobile No:</Text>{" "}
+              {phone_number || "N/A"}
+            </Text>
 
+            <Text style={{ ...styles.textStyle, marginVertical: 5 }} />
 
-        {isPrinting && (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={{ marginTop: 12 }}
-          />
-        )}
+            <Text
+              style={[styles.textStyle, { fontSize: 14, fontWeight: "bold" }]}
+            >
+              {isPigmePayment
+                ? `Pigme ID: ${custom_pigme_id || "N/A"}`
+                : `Group: 000 Error 000`}
+            </Text>
 
-        {/* Print Buttons */}
-        <View style={{ marginBottom: 18 }}>
-          {/* Print Buttons Row 1 (Thermal and POS 58MM) */}
-          <View style={[styles.buttonRow, { marginTop: 18 }]}>
-            <Button
-              title="Thermal Print"
-              filled
+            <View style={{ ...styles.amountBox, marginVertical: 10 }}>
+              <Text style={styles.amountText}>
+                Received Amount | Rs.{amount || 0}
+              </Text>
+            </View>
 
-              style={styles.printButtonOne}
-              onPress={handlePrint}
-              disabled={!isConnected || isPrinting}
-            />
-            <Button
-              title="POS Print"
-              filled
-              style={styles.printButtonTwo}
-              onPress={handlePosPrint}
-              disabled={isPrinting}
-            />
+            <Text style={styles.textStyle}>
+              <Text style={{ fontWeight: "bold" }}>Mode:</Text>{" "}
+              {pay_type || "N/A"}
+            </Text>
+            {pay_type?.toLowerCase() === "online" && transaction_id ? (
+              <Text style={styles.textStyle}>
+                <Text style={{ fontWeight: "bold" }}>Transaction ID:</Text>{" "}
+                {transaction_id}
+              </Text>
+            ) : null}
+            <Text style={[styles.textStyle, { fontWeight: "bold" }]}>
+              Total: Rs.{totalPaidAmount || 0}
+            </Text>
+
+            <View style={styles.separator} />
+
+            <Text style={styles.textStyle}>
+              <Text style={{ fontWeight: "bold" }}>Collected by:</Text>{" "}
+              {agent_name || "N/A"}
+            </Text>
+            <Text style={styles.textStyle}> </Text>
           </View>
+          {/* End Receipt Preview */}
 
-          {/* Print Buttons Row 2 (POS 80MM) */}
-          <View style={styles.buttonRow}>
-            <Button
-              title="POS 80MM Print"
-              filled
-              style={styles.posBiggerButton}
-              onPress={handlePos80MMPrint}
-              disabled={isPrinting}
+          {isPrinting && (
+            <ActivityIndicator
+              size="large"
+              color={COLORS.primary}
+              style={{ marginTop: 12 }}
             />
+          )}
+
+          {/* Print Buttons */}
+          <View style={{ marginBottom: 18 }}>
+            {/* Print Buttons Row 1 (Thermal and POS 58MM) */}
+            <View style={[styles.buttonRow, { marginTop: 18 }]}>
+              <Button
+                title="Thermal Print"
+                filled
+                style={styles.printButtonOne}
+                onPress={handlePrint}
+                disabled={!isConnected || isPrinting}
+              />
+              <Button
+                title="POS Print"
+                filled
+                style={styles.printButtonTwo}
+                onPress={handlePosPrint}
+                disabled={isPrinting}
+              />
+            </View>
+
+            {/* Print Buttons Row 2 (POS 80MM) */}
+            <View style={styles.buttonRow}>
+              <Button
+                title="POS 80MM Print"
+                filled
+                style={styles.posBiggerButton}
+                onPress={handlePos80MMPrint}
+                disabled={isPrinting}
+              />
+            </View>
           </View>
+          {/* End Print Buttons */}
         </View>
-        {/* End Print Buttons */}
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
     </ScrollView>
   );
 };
@@ -460,7 +483,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     borderBottomWidth: 1,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     borderColor: "#000",
     marginVertical: 10,
   },
@@ -468,9 +491,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#000",
     padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
     borderRadius: 4,
   },
   amountText: {
@@ -485,17 +508,17 @@ const styles = StyleSheet.create({
   },
   printButtonOne: {
     backgroundColor: COLORS.third,
-    padding: 20
+    padding: 20,
   },
   printButtonTwo: {
     backgroundColor: COLORS.third,
-    padding: 20
+    padding: 20,
   },
   posBiggerButton: {
     flex: 1,
 
-    backgroundColor: COLORS.third
-  }
+    backgroundColor: COLORS.third,
+  },
 });
 
 export default PigmeRePrint;

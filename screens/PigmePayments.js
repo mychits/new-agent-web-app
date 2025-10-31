@@ -642,14 +642,17 @@ const PigmePayments = ({ route, navigation }) => {
                           key={index}
                           idx={index}
                           name={customer?.user_id?.full_name || 'N/A'}
-                          cus_id={customer._id}
+                          cus_id={customer?.user_id?._id}
                           phone={customer?.user_id?.phone_number || 'N/A'}
                           receipt={customer?.receipt_no}
                           date={customer?.pay_date}
                           amount={customer.amount}
                           pigmeId={customer?.pigme?.pigme_id || 'N/A'} 
+                          actual_pigme_id={customer?.pigme?._id || "N/A"}
+                         
                           pigmeAmount={customer?.pigme?.payable_amount || 'N/A'} 
                           type={customer?.pay_type}
+                          agent_name={agent.name || "N/A"}
                           navigation={navigation}
                           user={user}
                           onPress={() => handleChitPress(customer._id)}

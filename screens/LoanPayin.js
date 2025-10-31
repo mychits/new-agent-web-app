@@ -178,10 +178,11 @@ const LoanPayin = ({ route, navigation }) => {
           `${baseUrl}/payment/get-total-amount`,
           { user_id: customer, loan: loanId }
         );
-        // --- End Data Fetch ---
+        console.log(selectedLoan,"this is selected loan")
 
         navigation.navigate("LoanPrint", {
           customer_name: full_name,
+          cus_id:customer,
           phone_number,
           agent_name: name,
           amount,
@@ -190,11 +191,13 @@ const LoanPayin = ({ route, navigation }) => {
           transaction_id,
           receipt_no,
           total_amount: totalAmountResponse?.data?.totalAmount || 0,
-          custom_loan_id: selectedLoan.loan_id,
+          custom_loan_id: selectedLoan?.loan_id,
+          loanAmount: selectedLoan?.loan_amount,
           isLoanPayment: true,
+          actual_loan_id:selectedLoan?._id,
         });
       } else {
-        console.log("Error:", response.data);
+        
         Alert.alert("Payment Error", response.data?.message || "An unexpected error occurred during payment.");
       }
     } catch (error) {

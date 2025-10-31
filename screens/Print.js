@@ -479,28 +479,23 @@ Collected by: ${agent.name}
           />
 
           <Text style={styles.textStyle}>Collected by: {agent.name}</Text>
-          <Text style={styles.textStyle}> 
-
-          </Text>
+          <Text style={styles.textStyle}></Text>
         </View>
 
         {/* Print Buttons Row 1 (Thermal and POS 58MM) */}
-        <View style={styles.buttonRow}>
+        <View style={[styles.buttonRow, { marginTop: 18 }]}>
           <Button
             title="Thermal Print"
             filled
-            // ONLY THIS BUTTON RETAINS THE CUSTOM COLOR
-            style={[styles.printButton, { marginRight: 8, backgroundColor: COLORS.third }]}
+            style={styles.printButtonOne}
             onPress={handlePrint}
-            disabled={!isConnected || isPrinting}
+            disabled={!isConnected}
           />
           <Button
-            title="POS Print "
+            title="POS Print"
             filled
-            // REMOVED explicit style for COLORS.third to revert to default primary color
-            style={[styles.printButton, { marginLeft: 8 }]} 
+            style={styles.printButtonTwo}
             onPress={handlePosPrint}
-            disabled={isPrinting}
           />
         </View>
 
@@ -509,10 +504,8 @@ Collected by: ${agent.name}
           <Button
             title="POS 80MM Print"
             filled
-            // REMOVED explicit style for COLORS.third to revert to default primary color
-            style={styles.printButton}
-            onPress={handlePos80MMPrint} 
-            disabled={isPrinting}
+            style={styles.posBiggerButton}
+            onPress={handlePos80MMPrint}
           />
         </View>
       </View>
@@ -524,15 +517,24 @@ const styles = StyleSheet.create({
   textStyle: {
     fontSize: 13,
   },
-   buttonRow: {
+  buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 18,
   },
-  printButton: {
+  printButtonOne: {
+    backgroundColor: COLORS.third,
+    padding: 20,
+  },
+  printButtonTwo: {
+    backgroundColor: COLORS.third,
+    padding: 20,
+  },
+  posBiggerButton: {
     flex: 1,
-    // Note: The `Button` component should default to `COLORS.primary`
-  }
+
+    backgroundColor: COLORS.third,
+  },
 });
 
 export default Print;

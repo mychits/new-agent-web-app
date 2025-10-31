@@ -27,7 +27,7 @@ const LoanPayments = ({ route, navigation }) => {
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState([]);
   const [cus, setCus] = useState([]);
-  const [groups, setGroups] = useState([]); // Will be used for Loan ID list
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [agent, setAgent] = useState({})
 
@@ -35,8 +35,8 @@ const LoanPayments = ({ route, navigation }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [agentName,setAgentName] = useState("")
   
-  // CORRECTION: State for Loan ID
   const [selectedloanId, setSelectedloanId] = useState(''); 
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('');
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
@@ -99,7 +99,6 @@ const LoanPayments = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        // CORRECTION: Using the loan endpoint with the agent's ID
         const response = await axios.get(
           `${baseUrl}/payment/loan/agent/${user.userId}`
         );
@@ -138,7 +137,6 @@ const LoanPayments = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
-    // This fetch is not strictly necessary for loan, but kept for consistency
     const fetchGroups = async () => {
       try {
         const response = await axios.get(
@@ -165,8 +163,10 @@ const LoanPayments = ({ route, navigation }) => {
           `${baseUrl}/agent/get-agent-by-id/${user.userId}`
         );
         setAgent(response.data)
+        setAgentName(response?.data?.name)
 
       } catch (error) {
+        setAgentName("")
         console.error("Error fetching customer data:", error);
       }
     };
@@ -191,7 +191,6 @@ const LoanPayments = ({ route, navigation }) => {
     return sum + amount;
   }, 0);
 
-  // Update total collection filter value whenever totalAmount changes
   useEffect(() => {
     if (!loading) {
       updateFilterValue('totalCollection', `₹ ${totalAmount.toFixed(2)}`);
@@ -215,15 +214,12 @@ const LoanPayments = ({ route, navigation }) => {
             }}
           />
         );
-      // CORRECTION: Case 'loan' for the Loan ID picker
       case 'loan':
-        // Get unique Loan IDs from the current customers list
         const uniqueloanIds = [...new Set(customers.map(c => c?.loan?.loan_id).filter(Boolean))];
         return (
           <Picker
             selectedValue={selectedloanId}
             onValueChange={(value) => {
-              // The "name" will just be the Loan ID itself
               setSelectedloanId(value);
               setSelectedloanName(value || ''); 
               updateFilterValue('loan', value);
@@ -296,7 +292,6 @@ const LoanPayments = ({ route, navigation }) => {
         const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
         const dateMatch = isSameDate(customer.pay_date, selectedDate);
         const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-        // CORRECTION: Filtering by 'loan_id'
         const loanMatch = !selectedloanId || customer?.loan?.loan_id === selectedloanId; 
         const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
         return nameMatch && dateMatch && customerMatch && loanMatch && paymentModeMatch;
@@ -613,9 +608,7 @@ const LoanPayments = ({ route, navigation }) => {
                             setShowPicker(false);
                             setSelectedFilter(null);
                           }}
-                         
                         >
-                          
                         </TouchableOpacity>
                         {renderPicker()}
                       </View>
@@ -655,14 +648,16 @@ const LoanPayments = ({ route, navigation }) => {
                           key={index}
                           idx={index}
                           name={customer?.user_id?.full_name || 'N/A'}
-                          cus_id={customer._id}
+                          cus_id={customer?.user_id?._id}
                           phone={customer?.user_id?.phone_number || 'N/A'}
                           receipt={customer.receipt_no}
                           date={customer.pay_date}
                           amount={customer.amount}
+                          actual_loan_id={customer?.loan?._id || 'N/A'}
                           loanId={customer?.loan?.loan_id || 'N/A'} 
                           loanAmount={customer?.loan?.loan_amount || "N/A"}
                           type={customer.pay_type}
+                          agentName={agentName}
                           navigation={navigation}
                           user={user}
                           onPress={() => handleChitPress(customer._id)}

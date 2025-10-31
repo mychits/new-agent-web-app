@@ -1,41 +1,39 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Alert,
-  StyleSheet,
-  ActivityIndicator,
-  BackHandler,
-} from "react-native";
+import { View, Text, Alert, StyleSheet, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import blePrinter from "../components/BluetoothPrinter";
 import Button from "../components/Button";
 import RNPrint from "react-native-print";
-import { useNavigation } from "@react-navigation/native";
+import baseUrl from "../constants/baseUrl";
+import axios from "axios";
 
 const LoanPrint = ({ route }) => {
-  const navigation = useNavigation();
   const {
     customer_name,
     phone_number,
     agent_name,
-    total_amount,
     pay_date,
     amount,
     pay_type,
     transaction_id,
     receipt_no,
     isLoanPayment,
+    loanAmount,
     custom_loan_id,
     group_name = "N/A",
     ticket_no = "N/A",
+    cus_id,
+    actual_loan_id,
   } = route.params;
 
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [totalPaidAmount, setTotalPaidAmount] = useState("");
+  const [remainingLoan, setRemainingLoan] = useState("");
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -48,7 +46,30 @@ const LoanPrint = ({ route }) => {
       return dateString;
     }
   };
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(false);
+        console.log(cus_id,actual_loan_id,"actaula")
+        const response = await axios.get(
+          `${baseUrl}/payment/user/${cus_id}/loan/${actual_loan_id}/summary`
+        );
+        console.log(response.data,"response date")
 
+        if (Array.isArray(response.data)) {
+          const totalPaid = response?.data?.[0]?.totalPaidAmount;
+          const remainLoan = (Number(loanAmount) || 0) - (Number(totalPaid) || 0);
+          setTotalPaidAmount(totalPaid);
+          setRemainingLoan(remainLoan);
+        }
+      } catch (error) {
+        setTotalPaidAmount("0");
+         console.log(error,"response date")
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
@@ -99,6 +120,7 @@ ${centerText("Bangalore, 560085 9483900777")}
 --------------------------------
 ${centerText(receiptType)}
 
+Loan Amount: ${loanAmount || "N/A"}
 Receipt No: ${receipt_no || "N/A"}
 Date: ${formatDate(pay_date)}
 
@@ -110,7 +132,8 @@ ${groupOrLoan}
 |   Received Amount: Rs.${amount || "0"}   |
 ================================
 Mode: ${pay_type || "N/A"}
-${txnLine}Total: Rs.${total_amount || "0"}
+${txnLine}Remaining Loan: Rs.${remainingLoan || "0"}
+${txnLine}Total: Rs.${totalPaidAmount || "0"}
 --------------------------------
 Collected by: ${agent_name || "N/A"}
 \n\n\n
@@ -138,7 +161,9 @@ Collected by: ${agent_name || "N/A"}
     setIsPrinting(true);
 
     const groupOrLoanHtml = isLoanPayment
-      ? `<p style="margin: 0; font-weight: bold;">Loan ID: ${custom_loan_id || "N/A"}</p>`
+      ? `<p style="margin: 0; font-weight: bold;">Loan ID: ${
+          custom_loan_id || "N/A"
+        }</p>`
       : `<p style="margin: 0; font-weight: bold;">Group: ${group_name}</p><p style="margin: 0; font-weight: bold;">Ticket: ${ticket_no}</p>`;
 
     const txnLine =
@@ -179,8 +204,9 @@ Collected by: ${agent_name || "N/A"}
           <div class="header">
             <h3 style="margin-bottom: 5px;">MY CHITS</h3>
           </div>
-          <div style="text-align: center; font-size: ${widthMM > 60 ? "9px" : "8px"
-      };">
+          <div style="text-align: center; font-size: ${
+            widthMM > 60 ? "9px" : "8px"
+          };">
             <p>No.11/36-25, 2nd Main,</p>
             <p>Kathriguppe Main Road,</p>
             <p>Bangalore, 560085 | 9483900777</p>
@@ -190,16 +216,24 @@ Collected by: ${agent_name || "N/A"}
             ${isLoanPayment ? "LOAN RECEIPT" : "RECEIPT"}
           </p>
           <p>
-            <span style="font-weight: bold;">Receipt No:</span> ${receipt_no || "N/A"
-      } <br/>
-            <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
+           <span style="font-weight: bold;">Loan Amount:</span> ${
+              loanAmount || "N/A"
+            } <br/>
+            <span style="font-weight: bold;">Receipt No:</span> ${
+              receipt_no || "N/A"
+            } <br/>
+            <span style="font-weight: bold;">Date:</span> ${formatDate(
+              pay_date
+            )}
           </p>
           <div class="line" style="margin: 5px 0;"></div>
           <p>
-            <span style="font-weight: bold;">Name:</span> ${customer_name || "N/A"
-      } <br/>
-            <span style="font-weight: bold;">Mobile No:</span> ${phone_number || "N/A"
-      }
+            <span style="font-weight: bold;">Name:</span> ${
+              customer_name || "N/A"
+            } <br/>
+            <span style="font-weight: bold;">Mobile No:</span> ${
+              phone_number || "N/A"
+            }
           </p>
           <div class="line" style="margin: 5px 0;"></div>
           
@@ -209,20 +243,27 @@ Collected by: ${agent_name || "N/A"}
           <table style="border-collapse: collapse; width: 100%; border: 1px solid #000; margin: 5px 0; font-size: 1.2em;">
             <tr>
               <td style="padding: 5px; font-weight: bold;">Received Amount</td>
-              <td style="padding: 5px; text-align: right; font-weight: bold;">Rs.${amount || "0"
-      }</td>
+              <td style="padding: 5px; text-align: right; font-weight: bold;">Rs.${
+                amount || "0"
+              }</td>
             </tr>
           </table>
           <p>
-            <span style="font-weight: bold;">Mode:</span> ${pay_type || "N/A"
-      }</br>
+            <span style="font-weight: bold;">Mode:</span> ${
+              pay_type || "N/A"
+            }</br>
             ${txnLine}
-            <span style="font-weight: bold;">Total:</span> Rs.${total_amount || "0"
-      }
+            <span style="font-weight: bold;">Remaining Loan:</span> ${
+              remainingLoan || "N/A"
+            }</br>
+            <span style="font-weight: bold;">Total:</span> Rs.${
+              totalPaidAmount || "0"
+            }
           </p>
           <div class="line"></div>
-          <p><span style="font-weight: bold;">Collected By:</span> ${agent_name || "N/A"
-      }</p>
+          <p><span style="font-weight: bold;">Collected By:</span> ${
+            agent_name || "N/A"
+          }</p>
           <p style="margin-top: 10px; text-align: center; font-size: 0.9em;">*** Thank You ***</p>
         </div>
       </body>
@@ -242,20 +283,6 @@ Collected by: ${agent_name || "N/A"}
     }
   };
 
-  useEffect(() => {
-    const backAction = () => {
-      navigation.navigate("RouteCustomerChit");
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, [navigation]);
-
   const groupOrLoanDisplay = isLoanPayment
     ? `Loan ID: ${custom_loan_id || "N/A"}`
     : `Group: ${group_name || "N/A"} | Ticket: ${ticket_no || "N/A"} `;
@@ -270,8 +297,8 @@ Collected by: ${agent_name || "N/A"}
             isConnecting
               ? "Connecting..."
               : isConnected
-                ? "Connected"
-                : "Connect to Printer"
+              ? "Connected"
+              : "Connect to Printer"
           }
           filled
           style={{ marginTop: 18, marginBottom: 4 }}
@@ -287,7 +314,6 @@ Collected by: ${agent_name || "N/A"}
           />
         )}
 
-        {/* --- Receipt Preview Section --- */}
         <View
           style={{
             padding: 15,
@@ -314,10 +340,7 @@ Collected by: ${agent_name || "N/A"}
             Kathriguppe Main Road,
           </Text>
           <Text
-            style={[
-              styles.textStyle,
-              { textAlign: "center", marginBottom: 5 },
-            ]}
+            style={[styles.textStyle, { textAlign: "center", marginBottom: 5 }]}
           >
             Bangalore, 560085 9483900777
           </Text>
@@ -336,6 +359,11 @@ Collected by: ${agent_name || "N/A"}
           </Text>
 
           <View style={{ marginBottom: 5 }}>
+
+             <Text style={styles.textStyle}>
+              <Text style={{ fontWeight: "bold" }}>Loan Amount:</Text>{" "}
+              {loanAmount || "N/A"}
+            </Text>
             <Text style={styles.textStyle}>
               <Text style={{ fontWeight: "bold" }}>Receipt No:</Text>{" "}
               {receipt_no || "N/A"}
@@ -386,7 +414,12 @@ Collected by: ${agent_name || "N/A"}
             <Text
               style={[styles.textStyle, { fontWeight: "bold", marginTop: 2 }]}
             >
-              Total: Rs.{total_amount || "0"}
+              Remaining Loan: Rs.{remainingLoan || "0"}
+            </Text>
+            <Text
+              style={[styles.textStyle, { fontWeight: "bold", marginTop: 2 }]}
+            >
+              Total: Rs.{totalPaidAmount || "0"}
             </Text>
           </View>
 
@@ -410,19 +443,14 @@ Collected by: ${agent_name || "N/A"}
           <Button
             title="Thermal Print"
             filled
-            style={
-              styles.printButtonOne
-            }
+            style={styles.printButtonOne}
             onPress={handlePrint}
             disabled={!isConnected || isPrinting}
           />
           <Button
             title="POS Print"
             filled
-            style={
-              styles.printButtonTwo
-
-            }
+            style={styles.printButtonTwo}
             onPress={handlePosPrint}
             disabled={isPrinting}
           />
@@ -469,21 +497,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
-
   },
   printButtonOne: {
-     backgroundColor: COLORS.third,
-     padding:20
+    backgroundColor: COLORS.third,
+    padding: 20,
   },
   printButtonTwo: {
-   
     backgroundColor: COLORS.third,
-    padding:20
+    padding: 20,
   },
   posBiggerButton: {
     flex: 1,
-    backgroundColor: COLORS.third
-  }
+    backgroundColor: COLORS.third,
+  },
 });
 
 export default LoanPrint;
