@@ -22,6 +22,7 @@
     "esc-pos-encoder": "^3.0.0",
     "expo": "^54.0.7",
     "expo-blur": "~15.0.7",
+    "expo-contacts": "^15.0.10",
     "expo-document-picker": "~14.0.7",
     "expo-font": "~14.0.8",
     "expo-image-picker": "~17.0.8",

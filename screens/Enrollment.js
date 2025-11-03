@@ -55,6 +55,19 @@ const formatNumberIndianStyle = (num) => {
   }
 };
 
+// **NEW HELPER FUNCTION for Vacant Seat Display**
+const getDisplayVacantSeats = (group, vacantSeatsState) => {
+  // 1. Prioritize 'app_display_vacany_seat' if it exists and is a non-negative number
+  const appDisplaySeats = parseInt(group.app_display_vacany_seat, 10);
+  if (!isNaN(appDisplaySeats) && appDisplaySeats >= 0) {
+    return appDisplaySeats;
+  }
+  
+  // 2. Fallback to the count fetched by fetchVacantSeats (stored in state)
+  return vacantSeatsState[group._id];
+};
+// **END NEW HELPER FUNCTION**
+
 const Enrollment = ({ route, navigation }) => {
   const { groupFilter, user } = route.params || {};
   const [cardsData, setCardsData] = useState([]);
@@ -74,6 +87,7 @@ const Enrollment = ({ route, navigation }) => {
     if (groupFilter) setSelectedGroup(normalizeFilter(groupFilter));
   }, [groupFilter]);
 
+  // THIS FUNCTION REMAINS THE SOURCE OF TRUTH FOR VACANT SEATS IN Enrollment.js
   const fetchVacantSeats = async (groupId) => {
     try {
       const res = await axios.post(`${baseUrl}/enroll/get-next-tickets/${groupId}`);
@@ -105,12 +119,24 @@ const Enrollment = ({ route, navigation }) => {
       if (response.status === 200) {
         const groups = response.data.groups || response.data;
         const vacantSeatCounts = {};
-        for (const group of groups) {
+        
+        // Fetch vacant seats for all groups concurrently
+        // NOTE: This call is required for VACANT GROUPS FILTERING and as a fallback display.
+        const fetchPromises = groups.map(async (group) => {
           const count = await fetchVacantSeats(group._id);
           vacantSeatCounts[group._id] = count;
-        }
+        });
+
+        await Promise.all(fetchPromises);
+        
+        // Filter for VacantGroups based on the fetched counts
         if (selectedGroup === "VacantGroups") {
-          const onlyVacant = groups.filter((g) => vacantSeatCounts[g._id] > 0);
+          // If the group has 'app_display_vacany_seat', use that for filtering, otherwise use the fetched count.
+          const onlyVacant = groups.filter((g) => {
+            const appDisplaySeats = parseInt(g.app_display_vacany_seat, 10);
+            if (!isNaN(appDisplaySeats) && appDisplaySeats > 0) return true;
+            return vacantSeatCounts[g._id] > 0;
+          });
           setCardsData(onlyVacant);
         } else {
           setCardsData(groups);
@@ -212,7 +238,10 @@ const Enrollment = ({ route, navigation }) => {
                         Members: {group.group_members}
                       </Text>
                       <Text style={styles.vacantSeatText}>
-                        Vacant Seats: {vacantSeats[group._id] ?? "Loading..."}
+                        {/* CRITICAL CHANGE: Use the new helper function for display,
+                          prioritizing 'app_display_vacany_seat'
+                        */}
+                        Vacant Seats: {getDisplayVacantSeats(group, vacantSeats) ?? "Loading..."}
                       </Text>
                     </View>
                   </View>
