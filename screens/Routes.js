@@ -62,7 +62,7 @@ const Routes = ({ route, navigation }) => {
               onPress={() => navigation.navigate("RouteCustomerLoan", { user, areaId: "loan-customer" })}
             />
             <CustomRouteCard
-              name="Pigme Customer"
+              name="Pigmy Customer"
               icon="credit-card"
               onPress={() => navigation.navigate("RouteCustomerPigme", { user, areaId: "Pigme-customer" })}
             />

@@ -943,4 +943,4 @@ const modalStyles = StyleSheet.create({
   },
 });
 
-export default Home;
+export default Home;    

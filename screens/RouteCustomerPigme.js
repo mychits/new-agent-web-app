@@ -62,8 +62,8 @@ const RouteCustomerPigme = ({ route, navigation }) => {
         <View style={styles.fixedContentWrapper}>
           <Header />
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Pigme Customers</Text>
-            <Text style={styles.subtitle}>Manage Pigme accounts</Text>
+            <Text style={styles.title}>Pigmy Customers</Text>
+            <Text style={styles.subtitle}>Manage Pigmy accounts</Text>
           </View>
           <View style={styles.searchContainer}>
             <Icon
@@ -75,7 +75,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
             <TextInput
               value={search}
               onChangeText={(text) => setSearch(text)}
-              placeholder="Search Pigme customers..."
+              placeholder="Search Pigmy customers..."
               placeholderTextColor="#888"
               style={styles.searchInput}
             />

@@ -106,7 +106,7 @@ const PigmePrint = ({ route }) => {
 
     setIsPrinting(true);
 
-    const receiptType = isPigmePayment ? "Pigme Receipt" : "Receipt";
+    const receiptType = isPigmePayment ? "Pigmy Receipt" : "Receipt";
     // NOTE: Hardcoded "000 Error 000" for non-Pigme group is preserved from original code
     const groupOrPigme = isPigmePayment
       ? `Pigme ID: ${custom_pigme_id || "N/A"}`
@@ -219,7 +219,7 @@ Collected by: ${agent_name || "N/A"}
           </div>
           <div class="line"></div>
           <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
-            ${isPigmePayment ? "Pigme Receipt" : "Receipt"}
+            ${isPigmePayment ? "Pigmy Receipt" : "Receipt"}
           </p>
             <p style="margin: 0;">
           <span style="font-weight: bold;">Pigme Amount:</span> ${pigme_amount || "N/A"
@@ -360,10 +360,10 @@ Collected by: ${agent_name || "N/A"}
                 marginBottom: 10,
               }}
             >
-              {isPigmePayment ? "Pigme Receipt" : "Receipt"}
+              {isPigmePayment ? "Pigmy Receipt" : "Receipt"}
             </Text>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Pigme Amount:</Text>{" "}
+              <Text style={{ fontWeight: "bold" }}>Pigmy Amount:</Text>{" "}
               {pigme_amount || "N/A"}
             </Text>
             <Text style={styles.textStyle}>
@@ -392,7 +392,7 @@ Collected by: ${agent_name || "N/A"}
               style={[styles.textStyle, { fontSize: 14, fontWeight: "bold" }]}
             >
               {isPigmePayment
-                ? `Pigme ID: ${custom_pigme_id || "N/A"}`
+                ? `Pigmy ID: ${custom_pigme_id || "N/A"}`
                 : `Group: 000 Error 000`}
             </Text>
 

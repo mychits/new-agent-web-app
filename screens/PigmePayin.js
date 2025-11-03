@@ -264,7 +264,7 @@ const PigmePayin = ({ route, navigation }) => {
                 <View style={styles.fixedHeader}>
                     <Header />
                     <View style={styles.titleContainer}>
-                        <Text style={styles.title}>Add Pigme Payment</Text>
+                        <Text style={styles.title}>Add Pigmy Payment</Text>
                     </View>
                 </View>
 
@@ -286,7 +286,7 @@ const PigmePayin = ({ route, navigation }) => {
                             
                             {/* Pigme ID & Payable Amount - Conditional Rendering */}
                             <Text style={styles.label}>
-                                Pigme ID & Payable Amount<Text style={styles.star}>*</Text>
+                                Pigmy ID & Payable Amount<Text style={styles.star}>*</Text>
                             </Text>
                             
                             {showPigmePicker ? (

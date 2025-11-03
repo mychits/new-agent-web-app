@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
     },
     floatingActionButton: {
         position: "absolute",
-        bottom: 20,
+        bottom: 50,
         right: 20,
         backgroundColor: COLORS.primary,
         borderRadius: 30,
