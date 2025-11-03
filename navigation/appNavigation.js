@@ -98,7 +98,7 @@ export default function AppNavigation() {
           options={{headerShown: false}}
           /> 
         <Stack.Screen
-          name="qrCode"
+          name="QrCodePage"
           options={{ headerShown: false }}
           component={QrCodePage}
         />
