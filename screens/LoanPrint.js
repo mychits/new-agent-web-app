@@ -176,15 +176,15 @@ Collected by: ${agent_name || "N/A"}
       <head>
         <style>
           @page {
-            size: ${size} auto;
-              margin: 0 0 0 4mm;
+            size: ${widthMM}mm auto;
+            margin: 0 0 0 0;
           }
-           body {
-            font-family: Arial, sans-serif;
-            font-size: 14px;
+          body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: ${widthMM > 60 ? "14px" : "10px"};
             margin: 0;
             padding: 0;
-            width: ${size};
+            width: ${widthMM}mm;
           }
           .receipt {
             padding: 5mm;
@@ -194,7 +194,7 @@ Collected by: ${agent_name || "N/A"}
           }
           .line {
             border-top: 1px dashed #000;
-            margin: 5px 0;
+            margin: 2mm 0;
           }
           p { margin: 0; line-height: 1.5; }
         </style>
@@ -204,13 +204,15 @@ Collected by: ${agent_name || "N/A"}
           <div class="header">
             <h3 style="margin-bottom: 5px;">MY CHITS</h3>
           </div>
-         <div style="text-align: center; font-size: 12px;">
-            <p style="margin: 0;">No.11/36-25, 2nd Main,</p>
-            <p style="margin: 0;">Kathriguppe Main Road,</p>
-            <p style="margin: 0;">Bangalore, 560085 | 9483900777</p>
+          <div style="text-align: center; font-size: ${
+            widthMM > 60 ? "9px" : "8px"
+          };">
+            <p>No.11/36-25, 2nd Main,</p>
+            <p>Kathriguppe Main Road,</p>
+            <p>Bangalore, 560085 | 9483900777</p>
           </div>
           <div class="line"></div>
-           <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
+          <p style="text-align:center; font-weight:bold; font-size: 1.1em; margin-bottom: 5px;">
             ${isLoanPayment ? "LOAN RECEIPT" : "RECEIPT"}
           </p>
           <p>
@@ -287,7 +289,7 @@ Collected by: ${agent_name || "N/A"}
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
+      <View style={{ marginHorizontal: 22, marginTop: 12 }}>
         <Header />
 
         <Button
@@ -313,13 +315,12 @@ Collected by: ${agent_name || "N/A"}
         )}
 
         <View
-        style={{
-              padding: 12, // Increased padding for better look
-              backgroundColor: "#f0eeee",
-              borderRadius: 8,
-              marginTop: 5,
-              flexGrow: 1, // Allows the content to grow
-            }}
+          style={{
+            padding: 15,
+            backgroundColor: "#f0eeee",
+            borderRadius: 8,
+            marginTop: 10,
+          }}
         >
           <Text
             style={{
@@ -339,7 +340,7 @@ Collected by: ${agent_name || "N/A"}
             Kathriguppe Main Road,
           </Text>
           <Text
-            style={[styles.textStyle, { textAlign: "center" }]}
+            style={[styles.textStyle, { textAlign: "center", marginBottom: 5 }]}
           >
             Bangalore, 560085 9483900777
           </Text>
@@ -347,12 +348,12 @@ Collected by: ${agent_name || "N/A"}
           <View style={styles.separator} />
 
           <Text
-           style={{
-                fontWeight: "bold",
-                fontSize: 13,
-                textAlign: "center",
-                marginBottom: 10,
-              }}
+            style={{
+              fontWeight: "bold",
+              fontSize: 14,
+              textAlign: "center",
+              marginBottom: 10,
+            }}
           >
             {isLoanPayment ? "LOAN RECEIPT" : "RECEIPT"}
           </Text>
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 18,
+    marginTop: 10,
   },
   printButtonOne: {
     backgroundColor: COLORS.third,

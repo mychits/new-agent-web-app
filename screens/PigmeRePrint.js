@@ -122,7 +122,7 @@ ${centerText("Kathriguppe Main Road,")}
 ${centerText("Bangalore, 560085 9483900777")}
 --------------------------------
 ${centerText(receiptType)}
-Pigmy Amount: ${pigme_amount || "N/A"}
+Pigme Amount: ${pigme_amount || "N/A"}
 Receipt No: ${receipt_no || "N/A"}
 Date: ${formatDate(pay_date)}
 
@@ -154,7 +154,7 @@ Collected by: ${agent_name || "N/A"}
   const generatePosReceiptHtml = (size) => {
     // NOTE: Hardcoded "Loan" and "loab" for non-Pigme group is preserved from original code
     const groupOrPigmeHtml = isPigmePayment
-      ? `<p style="margin: 0; font-weight: bold;">Pigmy ID: ${
+      ? `<p style="margin: 0; font-weight: bold;">Pigme ID: ${
           custom_pigme_id || "N/A"
         }</p>`
       : `<p style="margin: 0; font-weight: bold;">Group: ${"Loan"}</p><p style="margin: 0; font-weight: bold;">Ticket: ${
@@ -218,10 +218,10 @@ Collected by: ${agent_name || "N/A"}
           </div>
           <div class="line"></div>
           <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
-            ${isPigmePayment ? "Pigmy Receipt" : "Receipt"}
+            ${isPigmePayment ? "Pigme Receipt" : "Receipt"}
           </p>
             <p style="margin: 0;">
-          <span style="font-weight: bold;">Pigmy Amount:</span> ${
+          <span style="font-weight: bold;">Pigme Amount:</span> ${
             pigme_amount || "N/A"
           } <br/>
           <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
@@ -365,10 +365,10 @@ Collected by: ${agent_name || "N/A"}
                 marginBottom: 10,
               }}
             >
-              {isPigmePayment ? "Pigmy Receipt" : "Receipt"}
+              {isPigmePayment ? "Pigme Receipt" : "Receipt"}
             </Text>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Pigmy Amount:</Text>{" "}
+              <Text style={{ fontWeight: "bold" }}>Pigme Amount:</Text>{" "}
               {pigme_amount || "N/A"}
             </Text>
             <Text style={styles.textStyle}>
@@ -397,7 +397,7 @@ Collected by: ${agent_name || "N/A"}
               style={[styles.textStyle, { fontSize: 14, fontWeight: "bold" }]}
             >
               {isPigmePayment
-                ? `Pigmy ID: ${custom_pigme_id || "N/A"}`
+                ? `Pigme ID: ${custom_pigme_id || "N/A"}`
                 : `Group: 000 Error 000`}
             </Text>
 
@@ -419,7 +419,7 @@ Collected by: ${agent_name || "N/A"}
             ) : null}
             <Text style={[styles.textStyle, { fontWeight: "bold" }]}>
               Total: Rs.{totalPaidAmount || 0}
-            </Text>  
+            </Text>
 
             <View style={styles.separator} />
 
@@ -429,6 +429,7 @@ Collected by: ${agent_name || "N/A"}
             </Text>
             <Text style={styles.textStyle}> </Text>
           </View>
+          {/* End Receipt Preview */}
 
           {isPrinting && (
             <ActivityIndicator
@@ -437,7 +438,10 @@ Collected by: ${agent_name || "N/A"}
               style={{ marginTop: 12 }}
             />
           )}
+
+          {/* Print Buttons */}
           <View style={{ marginBottom: 18 }}>
+            {/* Print Buttons Row 1 (Thermal and POS 58MM) */}
             <View style={[styles.buttonRow, { marginTop: 18 }]}>
               <Button
                 title="Thermal Print"
@@ -454,6 +458,8 @@ Collected by: ${agent_name || "N/A"}
                 disabled={isPrinting}
               />
             </View>
+
+            {/* Print Buttons Row 2 (POS 80MM) */}
             <View style={styles.buttonRow}>
               <Button
                 title="POS 80MM Print"
@@ -464,6 +470,7 @@ Collected by: ${agent_name || "N/A"}
               />
             </View>
           </View>
+          {/* End Print Buttons */}
         </View>
       </SafeAreaView>
     </ScrollView>
@@ -493,6 +500,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  // Corrected style for button rows
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
