@@ -29,7 +29,7 @@ const Reports = ({ route, navigation }) => {
   return (
     // ❌ Removed SafeAreaView, now LinearGradient is the top-level container
     <LinearGradient
-      colors={['#b6e4ebff', '#1796d1ff']}
+      colors={["#1aa2ccff", "#1aa2ccff"]}
       style={styles.gradientOverlay}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderLeftWidth: 5,
-    borderColor: '#da8201',
+    borderColor: '#f8c009ff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -144,11 +144,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 24,
-    color: '#da8201',
+    color: '#f8c009ff',
   },
   arrowIcon: {
     fontSize: 20,
-    color: '#da8201',
+    color: '#f8c009ff',
   },
 });
 

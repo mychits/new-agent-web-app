@@ -153,7 +153,7 @@ const EditLead = ({ route, navigation }) => {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
+            <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     activeTab: {
-        backgroundColor: '#da8201',
+        backgroundColor: '#f8c009ff',
     },
     tabText: {
         fontSize: 16,

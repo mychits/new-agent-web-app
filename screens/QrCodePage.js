@@ -6,7 +6,7 @@ const QrCodePage = () => {
   const qrCodeImage = require("../assets/kotak_bank_qr.jpeg");
 
   return (
-    <LinearGradient       colors={['#b6e4ebff', '#1796d1ff']}
+    <LinearGradient       colors={["#1aa2ccff", "#1aa2ccff"]}
       style={styles.gradientBackground}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}

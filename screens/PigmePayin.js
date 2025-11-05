@@ -233,7 +233,7 @@ const PigmePayin = ({ route, navigation }) => {
         return (
             // Replaced SafeAreaView with LinearGradient
             <LinearGradient 
-                colors={['#b6e4ebff', '#1796d1ff']}
+                colors={["#1aa2ccff", "#1aa2ccff"]}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -249,7 +249,7 @@ const PigmePayin = ({ route, navigation }) => {
     // Main Component View
     return (
         <LinearGradient 
-            colors={['#b6e4ebff', '#1796d1ff']}
+            colors={["#1aa2ccff", "#1aa2ccff"]}
             style={styles.gradientOverlay} // Takes up full screen
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -264,7 +264,7 @@ const PigmePayin = ({ route, navigation }) => {
                 <View style={styles.fixedHeader}>
                     <Header />
                     <View style={styles.titleContainer}>
-                        <Text style={styles.title}>Add Pigme Payment</Text>
+                        <Text style={styles.title}>Add Pigmy Payment</Text>
                     </View>
                 </View>
 
@@ -286,7 +286,7 @@ const PigmePayin = ({ route, navigation }) => {
                             
                             {/* Pigme ID & Payable Amount - Conditional Rendering */}
                             <Text style={styles.label}>
-                                Pigme ID & Payable Amount<Text style={styles.star}>*</Text>
+                                Pigmy ID & Payable Amount<Text style={styles.star}>*</Text>
                             </Text>
                             
                             {showPigmePicker ? (
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     button: {
         marginTop: 18,
         marginBottom: 50,
-        backgroundColor: '#da8201',
+        backgroundColor: '#f8c009ff',
     }
 });
 

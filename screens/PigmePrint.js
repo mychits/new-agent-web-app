@@ -50,27 +50,26 @@ const PigmePrint = ({ route }) => {
     user
   } = route.params;
   const [totalPaidAmount, setTotalPaidAmount] = useState("");
- useEffect( () => {
-  (async () => {
-    try {
-    
-      setLoading(false);
-      const response = await axios.get(
-        `${baseUrl}/payment/user/${cus_id}/pigme/${actual_pigme_id}/summary`
-      );
-      console.log(response.data,"response data")
-      if(Array.isArray(response.data))
-      {
-        setTotalPaidAmount(response?.data?.[0]?.totalPaidAmount);
+  useEffect(() => {
+    (async () => {
+      try {
 
+        setLoading(false);
+        const response = await axios.get(
+          `${baseUrl}/payment/user/${cus_id}/pigme/${actual_pigme_id}/summary`
+        );
+        console.log(response.data, "response data")
+        if (Array.isArray(response.data)) {
+          setTotalPaidAmount(response?.data?.[0]?.totalPaidAmount);
+
+        }
+      } catch (error) {
+        setTotalPaidAmount("0")
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setTotalPaidAmount("0")
-    } finally {
-      setLoading(false);
-    }
-  })();
-}, []);
+    })();
+  }, []);
 
 
   const [isConnected, setIsConnected] = useState(false);
@@ -107,10 +106,10 @@ const PigmePrint = ({ route }) => {
 
     setIsPrinting(true);
 
-    const receiptType = isPigmePayment ? "Pigme Receipt" : "Receipt";
+    const receiptType = isPigmePayment ? "Pigmy Receipt" : "Receipt";
     // NOTE: Hardcoded "000 Error 000" for non-Pigme group is preserved from original code
     const groupOrPigme = isPigmePayment
-      ? `Pigme ID: ${custom_pigme_id || "N/A"}`
+      ? `Pigmy ID: ${custom_pigme_id || "N/A"}`
       : `Group: ${"000 Error 000"}`;
 
     const txnLine =
@@ -126,7 +125,7 @@ ${centerText("Kathriguppe Main Road,")}
 ${centerText("Bangalore, 560085 9483900777")}
 --------------------------------
 ${centerText(receiptType)}
-Pigme Amount: ${pigme_amount || "N/A"}
+Pigmy Amount: ${pigme_amount || "N/A"}
 Receipt No: ${receipt_no || "N/A"}
 Date: ${formatDate(pay_date)}
 
@@ -158,12 +157,10 @@ Collected by: ${agent_name || "N/A"}
   const generatePosReceiptHtml = (size) => {
     // NOTE: Hardcoded "Loan" and "loab" for non-Pigme group is preserved from original code
     const groupOrPigmeHtml = isPigmePayment
-      ? `<p style="margin: 0; font-weight: bold;">Pigme ID: ${
-          custom_pigme_id || "N/A"
-        }</p>`
-      : `<p style="margin: 0; font-weight: bold;">Group: ${"Loan"}</p><p style="margin: 0; font-weight: bold;">Ticket: ${
-          "loab" || "N/A"
-        }</p>`;
+      ? `<p style="margin: 0; font-weight: bold;">Pigmy ID: ${custom_pigme_id || "N/A"
+      }</p>`
+      : `<p style="margin: 0; font-weight: bold;">Group: ${"Loan"}</p><p style="margin: 0; font-weight: bold;">Ticket: ${"loab" || "N/A"
+      }</p>`;
 
     const txnLine =
       pay_type?.toLowerCase() === "online" && transaction_id
@@ -222,27 +219,24 @@ Collected by: ${agent_name || "N/A"}
           </div>
           <div class="line"></div>
           <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
-            ${isPigmePayment ? "Pigme Receipt" : "Receipt"}
+            ${isPigmePayment ? "Pigmy Receipt" : "Receipt"}
           </p>
             <p style="margin: 0;">
-          <span style="font-weight: bold;">Pigme Amount:</span> ${
-            pigme_amount || "N/A"
-          } <br/>
+          <span style="font-weight: bold;">Pigmy Amount:</span> ${pigme_amount || "N/A"
+      } <br/>
           <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
           </p>
           <p style="margin: 0;">
-          <span style="font-weight: bold;">Receipt No:</span> ${
-            receipt_no || "N/A"
-          } <br/>
+          <span style="font-weight: bold;">Receipt No:</span> ${receipt_no || "N/A"
+      } <br/>
           
           </p>
-          <p style="margin: 10px 0 0 0;">
-          <span style="font-weight: bold;">Name:</span> ${
-            customer_name || "N/A"
-          } <br/>
-          <span style="font-weight: bold;">Mobile No:</span> ${
-            phone_number || "N/A"
-          }
+          <p style="margin: 10px 0 0 0;"> 
+          
+          <span style="font-weight: bold;">Name:</span> ${customer_name || "N/A"
+      } <br/>
+          <span style="font-weight: bold;">Mobile No:</span> ${phone_number || "N/A"
+      }
           </p>
           <div style="margin: 10px 0;">
             ${groupOrPigmeHtml}
@@ -256,14 +250,12 @@ Collected by: ${agent_name || "N/A"}
           <p style="margin-top: 10px; margin-bottom: 5px;">
           <span style="font-weight: bold;">Mode:</span> ${pay_type || "N/A"}</p>
           ${txnLine}
-          <p style="margin-top: 5px; margin-bottom: 10px; font-weight: bold;">Total: Rs.${
-            totalPaidAmount || 0
-          }</p>
+          <p style="margin-top: 5px; margin-bottom: 10px; font-weight: bold;">Total: Rs.${totalPaidAmount || 0
+      }</p>
           <div class="line"></div>
           <p style="text-align: center; margin-bottom: 0;">
-          <span style="font-weight: bold;">Collected By:</span> ${
-            agent_name || "N/A"
-          }</p>
+          <span style="font-weight: bold;">Collected By:</span> ${agent_name || "N/A"
+      }</p>
           <p style="text-align: center; font-size: 12px; margin-top: 10px;">*** Thank You ***</p>
           <p style="height: 100px;">&nbsp;</p> </div>
       </body>
@@ -311,8 +303,8 @@ Collected by: ${agent_name || "N/A"}
               isConnecting
                 ? "Connecting..."
                 : isConnected
-                ? "Connected"
-                : "Connect to Printer"
+                  ? "Connected"
+                  : "Connect to Printer"
             }
             filled
             style={{ marginTop: 18, marginBottom: 4 }}
@@ -369,10 +361,10 @@ Collected by: ${agent_name || "N/A"}
                 marginBottom: 10,
               }}
             >
-              {isPigmePayment ? "Pigme Receipt" : "Receipt"}
+              {isPigmePayment ? "Pigmy Receipt" : "Receipt"}
             </Text>
-<Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Pigme Amount:</Text>{" "}
+            <Text style={styles.textStyle}>
+              <Text style={{ fontWeight: "bold" }}>Pigmy Amount:</Text>{" "}
               {pigme_amount || "N/A"}
             </Text>
             <Text style={styles.textStyle}>
@@ -401,7 +393,7 @@ Collected by: ${agent_name || "N/A"}
               style={[styles.textStyle, { fontSize: 14, fontWeight: "bold" }]}
             >
               {isPigmePayment
-                ? `Pigme ID: ${custom_pigme_id || "N/A"}`
+                ? `Pigmy ID: ${custom_pigme_id || "N/A"}`
                 : `Group: 000 Error 000`}
             </Text>
 

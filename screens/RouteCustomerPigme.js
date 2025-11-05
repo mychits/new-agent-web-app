@@ -60,7 +60,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
 
   return (
     <LinearGradient
-      colors={["#b6e4ebff", "#1796d1ff"]}
+      colors={["#1aa2ccff", "#1aa2ccff"]}
       style={styles.gradientOverlay}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -69,8 +69,8 @@ const RouteCustomerPigme = ({ route, navigation }) => {
       <View style={styles.fixedContentWrapper}>
         <Header />
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Pigme Customers</Text>
-          <Text style={styles.subtitle}>Manage Pigme accounts</Text>
+          <Text style={styles.title}>Pigmy Customers</Text>
+          <Text style={styles.subtitle}>Manage Pigmy accounts</Text>
         </View>
         <View style={styles.searchContainer}>
           <Icon
@@ -82,7 +82,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
           <TextInput
             value={search}
             onChangeText={(text) => setSearch(text)}
-            placeholder="Search Pigme customers..."
+            placeholder="Search Pigmy customers..."
             placeholderTextColor="#888"
             style={styles.searchInput}
           />
@@ -92,7 +92,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
       {/* Scrollable Customer List */}
       {loading ? (
         <View style={{ marginTop: 30, alignItems: "center" }}>
-          <ActivityIndicator size="large" color="#da8201" />
+          <ActivityIndicator size="large" color="#f8c009ff" />
         </View>
       ) : (
         <ScrollView
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderLeftWidth: 5,
-    borderColor: "#da8201",
+    borderColor: "#f8c009ff",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -222,11 +222,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 32,
-    color: "#da8201",
+    color: "#f8c009ff",
   },
   arrowIcon: {
     fontSize: 22,
-    color: "#da8201",
+    color: "#f8c009ff",
   },
 });
 

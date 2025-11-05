@@ -258,7 +258,7 @@ export default function Register() {
 
       {/* A richer, semi-transparent gradient overlay */}
       <LinearGradient
-colors={['#b6e4ebff', '#1796d1ff']}
+colors={["#1aa2ccff", "#1aa2ccff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

@@ -90,7 +90,7 @@ export default function ResetPassword({ route, navigation }) {
 
   return (
     <LinearGradient
-       colors={['#b6e4ebff', '#1796d1ff']}
+       colors={["#1aa2ccff", "#1aa2ccff"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.backgroundGradient}

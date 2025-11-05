@@ -50,11 +50,11 @@ const LoanPrint = ({ route }) => {
     (async () => {
       try {
         setLoading(false);
-        console.log(cus_id,actual_loan_id,"actaula")
+        console.log(cus_id, actual_loan_id, "actaula")
         const response = await axios.get(
           `${baseUrl}/payment/user/${cus_id}/loan/${actual_loan_id}/summary`
         );
-        console.log(response.data,"response date")
+        console.log(response.data, "response date")
 
         if (Array.isArray(response.data)) {
           const totalPaid = response?.data?.[0]?.totalPaidAmount;
@@ -64,7 +64,7 @@ const LoanPrint = ({ route }) => {
         }
       } catch (error) {
         setTotalPaidAmount("0");
-         console.log(error,"response date")
+        console.log(error, "response date")
       } finally {
         setLoading(false);
       }
@@ -161,9 +161,8 @@ Collected by: ${agent_name || "N/A"}
     setIsPrinting(true);
 
     const groupOrLoanHtml = isLoanPayment
-      ? `<p style="margin: 0; font-weight: bold;">Loan ID: ${
-          custom_loan_id || "N/A"
-        }</p>`
+      ? `<p style="margin: 0; font-weight: bold;">Loan ID: ${custom_loan_id || "N/A"
+      }</p>`
       : `<p style="margin: 0; font-weight: bold;">Group: ${group_name}</p><p style="margin: 0; font-weight: bold;">Ticket: ${ticket_no}</p>`;
 
     const txnLine =
@@ -176,15 +175,15 @@ Collected by: ${agent_name || "N/A"}
       <head>
         <style>
           @page {
-            size: ${widthMM}mm auto;
-            margin: 0 0 0 0;
+          size: ${size} auto;
+            margin: 0 0 0 4mm;
           }
-          body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            font-size: ${widthMM > 60 ? "12px" : "10px"};
+               body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
             margin: 0;
             padding: 0;
-            width: ${widthMM}mm;
+            width: ${size};
           }
           .receipt {
             padding: 5mm;
@@ -194,7 +193,7 @@ Collected by: ${agent_name || "N/A"}
           }
           .line {
             border-top: 1px dashed #000;
-            margin: 2mm 0;
+            margin: 5px 0;
           }
           p { margin: 0; line-height: 1.5; }
         </style>
@@ -202,69 +201,58 @@ Collected by: ${agent_name || "N/A"}
       <body>
         <div class="receipt">
           <div class="header">
-            <h3 style="margin-bottom: 5px;">MY CHITS</h3>
+             <h3 style="margin-bottom: 5px;">MY CHITS</h3>
           </div>
-          <div style="text-align: center; font-size: ${
-            widthMM > 60 ? "9px" : "8px"
-          };">
-            <p>No.11/36-25, 2nd Main,</p>
-            <p>Kathriguppe Main Road,</p>
-            <p>Bangalore, 560085 | 9483900777</p>
+          <div style="text-align: center; font-size: 12px;">
+            <p style="margin: 0;">No.11/36-25, 2nd Main,</p>
+            <p style="margin: 0;">Kathriguppe Main Road,</p>
+            <p style="margin: 0;">Bangalore, 560085 | 9483900777</p>
           </div>
           <div class="line"></div>
-          <p style="text-align:center; font-weight:bold; font-size: 1.1em; margin-bottom: 5px;">
+          <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
             ${isLoanPayment ? "LOAN RECEIPT" : "RECEIPT"}
           </p>
           <p>
-           <span style="font-weight: bold;">Loan Amount:</span> ${
-              loanAmount || "N/A"
-            } <br/>
-            <span style="font-weight: bold;">Receipt No:</span> ${
-              receipt_no || "N/A"
-            } <br/>
+           <span style="font-weight: bold;">Loan Amount:</span> ${loanAmount || "N/A"
+      } <br/>
+            <span style="font-weight: bold;">Receipt No:</span> ${receipt_no || "N/A"
+      } <br/>
             <span style="font-weight: bold;">Date:</span> ${formatDate(
-              pay_date
-            )}
+        pay_date
+      )}
           </p>
-          <div class="line" style="margin: 5px 0;"></div>
+          <div style="margin: 10px 0 0 0;"></div>
           <p>
-            <span style="font-weight: bold;">Name:</span> ${
-              customer_name || "N/A"
-            } <br/>
-            <span style="font-weight: bold;">Mobile No:</span> ${
-              phone_number || "N/A"
-            }
+            <span style="font-weight: bold;">Name:</span> ${customer_name || "N/A"
+      } <br/>
+            <span style="font-weight: bold;">Mobile No:</span> ${phone_number || "N/A"
+      }
           </p>
-          <div class="line" style="margin: 5px 0;"></div>
+          <div style="margin: 10px 0;"></div>
           
           ${groupOrLoanHtml}
           
           <div class="line" style="margin: 5px 0;"></div>
+
           <table style="border-collapse: collapse; width: 100%; border: 1px solid #000; margin: 5px 0; font-size: 1.2em;">
             <tr>
               <td style="padding: 5px; font-weight: bold;">Received Amount</td>
-              <td style="padding: 5px; text-align: right; font-weight: bold;">Rs.${
-                amount || "0"
-              }</td>
+              <td style="padding: 5px; text-align: right; font-weight: bold;">Rs.${amount || "0"
+      }</td>
             </tr>
           </table>
           <p>
-            <span style="font-weight: bold;">Mode:</span> ${
-              pay_type || "N/A"
-            }</br>
+            <span style="font-weight: bold;">Mode:</span> ${pay_type || "N/A"}</br>
             ${txnLine}
-            <span style="font-weight: bold;">Remaining Loan:</span> ${
-              remainingLoan || "N/A"
-            }</br>
-            <span style="font-weight: bold;">Total:</span> Rs.${
-              totalPaidAmount || "0"
-            }
+            <span style="font-weight: bold;">Remaining Loan:</span> ${remainingLoan || "N/A"
+      }</br>
+            <span style="font-weight: bold;">Total:</span> Rs.${totalPaidAmount || "0"
+      }
           </p>
           <div class="line"></div>
-          <p><span style="font-weight: bold;">Collected By:</span> ${
-            agent_name || "N/A"
-          }</p>
-          <p style="margin-top: 10px; text-align: center; font-size: 0.9em;">*** Thank You ***</p>
+          <p><span style="font-weight: bold;">Collected By:</span> ${agent_name || "N/A"
+      }</p>
+                    <p style="text-align: center; font-size: 12px; margin-top: 10px;">*** Thank You ***</p>
         </div>
       </body>
       </html>
@@ -297,8 +285,8 @@ Collected by: ${agent_name || "N/A"}
             isConnecting
               ? "Connecting..."
               : isConnected
-              ? "Connected"
-              : "Connect to Printer"
+                ? "Connected"
+                : "Connect to Printer"
           }
           filled
           style={{ marginTop: 18, marginBottom: 4 }}
@@ -316,10 +304,11 @@ Collected by: ${agent_name || "N/A"}
 
         <View
           style={{
-            padding: 15,
+            padding: 12, // Increased padding for better look
             backgroundColor: "#f0eeee",
             borderRadius: 8,
-            marginTop: 10,
+            marginTop: 5,
+            flexGrow: 1, // Allows the content to grow
           }}
         >
           <Text
@@ -339,9 +328,7 @@ Collected by: ${agent_name || "N/A"}
           <Text style={[styles.textStyle, { textAlign: "center" }]}>
             Kathriguppe Main Road,
           </Text>
-          <Text
-            style={[styles.textStyle, { textAlign: "center", marginBottom: 5 }]}
-          >
+          <Text style={[styles.textStyle, { textAlign: "center" }]}>
             Bangalore, 560085 9483900777
           </Text>
 
@@ -350,7 +337,7 @@ Collected by: ${agent_name || "N/A"}
           <Text
             style={{
               fontWeight: "bold",
-              fontSize: 14,
+              fontSize: 13,
               textAlign: "center",
               marginBottom: 10,
             }}
@@ -360,7 +347,7 @@ Collected by: ${agent_name || "N/A"}
 
           <View style={{ marginBottom: 5 }}>
 
-             <Text style={styles.textStyle}>
+            <Text style={styles.textStyle}>
               <Text style={{ fontWeight: "bold" }}>Loan Amount:</Text>{" "}
               {loanAmount || "N/A"}
             </Text>

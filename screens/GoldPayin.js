@@ -329,7 +329,7 @@ const GoldPayin = ({ route, navigation }) => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
         <LinearGradient
-          colors={["#b6e4ebff", "#1796d1ff"]}
+          colors={["#1aa2ccff", "#1aa2ccff"]}
           style={styles.gradientOverlay}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -345,7 +345,7 @@ const GoldPayin = ({ route, navigation }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
       <LinearGradient
-        colors={["#b6e4ebff", "#1796d1ff"]}
+        colors={["#1aa2ccff", "#1aa2ccff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 18,
     marginBottom: 50,
-    backgroundColor: "#da8201",
+    backgroundColor: "#f8c009ff",
   },
 });
 

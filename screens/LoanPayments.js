@@ -452,7 +452,7 @@ const LoanPayments = ({ route, navigation }) => {
   return (
     // Replaced SafeAreaView with View
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
+      <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -480,7 +480,7 @@ const LoanPayments = ({ route, navigation }) => {
                 animationType="slide"
                 onRequestClose={() => setShowTotalCollectionDetails(false)}
               >
-                <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
+                <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
                   style={styles.fullScreenModalGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -816,7 +816,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "center",
     padding: 10,
-    backgroundColor: '#da8201',
+    backgroundColor: '#f8c009ff',
     borderRadius: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -906,7 +906,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 12,
     paddingHorizontal: 25,
-    backgroundColor: '#FFC000',
+    backgroundColor: '#f8c009ff',
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

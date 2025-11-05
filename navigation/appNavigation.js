@@ -22,6 +22,7 @@ import EnrolledGroups from '../screens/EnrolledGroups';
 import Becomeanagent from '../screens/Becomeanagent';
 import Register from "../screens/Register";
 import AboutMyChits from "../screens/AboutMyChits";
+
 import EnrollCustomer from "../screens/EnrollCustomer";
 import HelpAndSupport from "../screens/HelpAndSupport";
 import Commissions from "../screens/Commissions";
@@ -36,14 +37,16 @@ import PigmePayments from "../screens/PigmePayments";
 import MyCommission from "../screens/MyCommission";
 import ViewEnrollments from "../screens/ViewEnrollments";
 import ExpectedCommissions from "../screens/ExpectedCommissions";
-// NOTE: We import the file named 'Attendence.js' but rename the screen to 'Attendance'
 import Attendence from "../screens/Attendence"; 
 
 import RelationshipManagerReport from "../screens/RelationshipManagerReport";
 import ReferredReport from "../screens/ReferredReport";
 import Due from "../screens/Due";
 import OutstandingReports from "../screens/OutstandingReports";
-
+import RouteCustomerGold from "../screens/RouteCustomerGold";
+import RouteCustomerLoan from "../screens/RouteCustomerLoan";
+import RouteCustomerPigme from "../screens/RouteCustomerPigme";
+import RouteCustomerChit from "../screens/RouteCustomerChit";
 enableScreens();
 
 const Stack = createNativeStackNavigator();
@@ -68,6 +71,7 @@ export default function AppNavigation() {
           component={BottomNavigation}
           options={{ headerShown: false }}
         />
+       
         <Stack.Screen
           name="Login"
           options={{ headerShown: false }}
@@ -124,6 +128,14 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={ReferredReport}
           />
+          <Stack.Screen name="RouteCustomerChit" options={{headerShown: false}} component={RouteCustomerChit}/>
+
+           <Stack.Screen name="RouteCustomerLoan" options={{headerShown: false}} component={RouteCustomerLoan}/>
+            <Stack.Screen name="RouteCustomerGold" options={{headerShown: false}} component={RouteCustomerGold}/>
+             <Stack.Screen name="RouteCustomerPigme" options={{headerShown: false}} component={RouteCustomerPigme}/>
+
+
+
           <Stack.Screen name="Attendance" component={Attendence} options={{headerShown: false}} />
           <Stack.Screen
           name="Due"

@@ -184,12 +184,8 @@ const Home = ({ route, navigation }) => {
   const netInfo = useNetInfo();
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [note, setNote] = useState("");
-
-  // 💡 ANIMATION: Create Animated.Values for each card
   const cardAnimations = useRef([]);
   const hasAnimated = useRef(false);
-
-  // Define cardsData early to use its length for animation array initialization
   const cardsData = [
     // {
     //   id: "attendence",
@@ -510,7 +506,7 @@ const Home = ({ route, navigation }) => {
   return (
     // 💡 FIX APPLIED: LinearGradient now wraps the entire screen for full coverage.
     <LinearGradient
-      colors={['#b6e4ebff', '#1796d1ff']}
+  colors={["#1aa2ccff", "#1aa2ccff"]}
       style={{ flex: 1 }} // Apply flex: 1 to the gradient for full viewport height
     >
       {/* ❌ REMOVED SafeAreaView - now the content will start from the top edge */}
@@ -688,7 +684,7 @@ const styles = StyleSheet.create({
     // Note: Dimensions are removed from here and moved to gridCardWrapper
     flex: 1, // Fill the wrapper
     borderRadius: 15,
-    borderColor: "#e2a65dff",
+    borderColor: "#f8c009ff",
     borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",

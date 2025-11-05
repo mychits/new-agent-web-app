@@ -16,8 +16,8 @@ const Tab = createBottomTabNavigator();
 
 
 const INACTIVE_COLOR = "#A2B2A7"; 
-const ACTIVE_COLOR = "#DAA520"; 
-const FAB_BACKGROUND_COLOR = "#DAA520"; 
+const ACTIVE_COLOR = "#f8c009ff"; 
+const FAB_BACKGROUND_COLOR = "#f8c009ff"; 
 const ICON_COLOR_ON_FAB = "#FFFFFF"; 
 const BACKGROUND_COLOR = "#445C4B"; 
 const FAB_BORDER_COLOR = "#FFFFFF"; 

@@ -371,7 +371,7 @@ const LoanPayin = ({ route, navigation }) => {
   return (
     // Removed SafeAreaView and set flex: 1 on the main View
     <LinearGradient
-      colors={['#b6e4ebff', '#1796d1ff']}
+      colors={["#1aa2ccff", "#1aa2ccff"]}
       style={styles.gradientOverlay}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 18,
     marginBottom: 0, // Removed bottom margin from button in formBox
-    backgroundColor: "#da8201",
+    backgroundColor: "#f8c009ff",
   },
 });
 

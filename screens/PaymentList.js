@@ -26,7 +26,7 @@ const PaymentList = ({ route, navigation }) => {
   return (
     // Replaced SafeAreaView with a standard View
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient       colors={['#b6e4ebff', '#1796d1ff']}
+      <LinearGradient       colors={["#1aa2ccff", "#1aa2ccff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderLeftWidth: 5,
-    borderColor: '#da8201',
+    borderColor: '#f8c009ff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -140,11 +140,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 32,
-    color: '#da8201',
+    color: '#f8c009ff',
   },
   arrowIcon: {
     fontSize: 22,
-    color: '#da8201',
+    color: '#f8c009ff',
   },
 });
 
