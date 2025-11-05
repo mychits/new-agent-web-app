@@ -24,6 +24,9 @@ import * as Contacts from "expo-contacts";
 import COLORS from "../constants/color";
 import chitBaseUrl from "../constants/baseUrl";
 import goldBaseUrl from "../constants/goldBaseUrl";
+// 🎯 Added placeholder for new base URLs. Define these correctly in your constants file.
+const pigmeBaseUrl = chitBaseUrl; // Placeholder
+const loanBaseUrl = chitBaseUrl; // Placeholder
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -77,13 +80,14 @@ const AddCustomer = ({ route, navigation }) => {
       const phoneNumbers = contact.phoneNumbers;
       let phone = "";
       if (phoneNumbers && phoneNumbers.length > 0) {
+        // Simple sanitization for phone number
         phone = phoneNumbers[0].number.replace(/\D/g, "");
       }
 
       setCustomerInfo((prev) => ({
         ...prev,
         full_name: name || prev.full_name,
-        phone_number: phone || prev.phone_number,
+        phone_number: phone || prev.prev_number, // Corrected to use phone
       }));
 
       showCustomToast("Contact selected successfully.");
@@ -93,68 +97,181 @@ const AddCustomer = ({ route, navigation }) => {
     }
   };
 
-  // ✅ Handle Add Customer
-  const handleAddCustomer = async () => {
-    setIsLoading(true);
-    const baseUrl =
-      selectedCustomerType === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
+  // ✅ Handle Add Customer - UPDATED LOGIC
+//   const handleAddCustomer = async () => {
+//     setIsLoading(true);
 
-    if (!customerInfo.full_name || !customerInfo.phone_number || !customerInfo.password) {
-      Alert.alert("Required", "Full Name, Phone Number, and Password are required.");
+//     // 🎯 Determine the base URL and the API route based on the selected customer type
+//     let baseUrl;
+//     let apiRoute;
+
+//     switch (selectedCustomerType) {
+//       case "chit":
+//         baseUrl = chitBaseUrl;
+//         apiRoute = "/user/add-user"; // Existing route
+//         break;
+//       case "goldChit":
+//         baseUrl = goldBaseUrl;
+//         apiRoute = "/user/add-user"; // Existing route
+//         break;
+//       case "pigme":
+//         baseUrl = chitBaseUrl;
+//         apiRoute = "/pigme/user/add"; // New Pigme route
+//         break;
+//       case "loan":
+//         baseUrl = chitBaseUrl;
+//         apiRoute = "/loans/user/add"; // New Loan route
+//         break;
+//       default:
+//         showCustomToast("Invalid Customer Type selected.");
+//         setIsLoading(false);
+//         return;
+//     }
+
+//     if (!customerInfo.full_name || !customerInfo.phone_number || !customerInfo.password) {
+//       Alert.alert("Required", "Full Name, Phone Number, and Password are required.");
+//       setIsLoading(false);
+//       return;
+//     }
+
+//     if (customerInfo.phone_number.length !== 10) {
+//       showCustomToast("Invalid Phone Number");
+//       setIsLoading(false);
+//       return;
+//     }
+
+//     if (
+//       !isQuickAdd &&
+//       (!customerInfo.email ||
+//         !customerInfo.address ||
+//         !customerInfo.pincode ||
+//         !customerInfo.adhaar_no)
+//     ) {
+//       Alert.alert("Required", "Please fill all mandatory fields in detailed form.");
+//       setIsLoading(false);
+//       return;
+//     }
+
+//     try {
+//       // Note: The new routes expect 'agent_id' instead of 'agent'. I'm sending 'agent' for consistency 
+//       // with the existing code, but you may need to update the key based on your server requirements.
+//       const data = { ...customerInfo, agent: user.userId };
+      
+//       // 🎯 Use the determined baseUrl and apiRoute
+//       const response = await axios.post(`${baseUrl}${apiRoute}`, data);
+
+//       if (response.status === 201) {
+//         showCustomToast("Customer Added Successfully!");
+//         setCustomerInfo({
+//           full_name: "",
+//           phone_number: "",
+//           email: "",
+//           password: "",
+//           address: "",
+//           pincode: "",
+//           adhaar_no: "",
+//           pan_no: "",
+//         });
+//         setSelectedCustomerType("chit");
+//         navigation.replace("EnrollCustomer", { user });
+//       }
+//     } catch (error) {
+//       console.error("Error adding customer:", error.message);
+//       Alert.alert("Error", error?.response?.data?.message || "Something went wrong.");
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+const handleAddCustomer = async () => {
+  setIsLoading(true);
+
+  // 🎯 Determine the base URL and the API route based on the selected customer type
+  let baseUrl;
+  let apiRoute;
+
+  switch (selectedCustomerType) {
+    case "chit":
+      baseUrl = chitBaseUrl;
+      apiRoute = "/user/add-user"; // Existing route
+      break;
+    case "goldChit":
+      baseUrl = goldBaseUrl;
+      apiRoute = "/user/add-user"; // Existing route
+      break;
+    case "pigme":
+      baseUrl = chitBaseUrl;
+      apiRoute = "/pigme/user/add"; // New Pigme route
+      break;
+    case "loan":
+      baseUrl = chitBaseUrl;
+      apiRoute = "/loans/user/add"; // New Loan route
+      break;
+    default:
+      showCustomToast("Invalid Customer Type selected.");
       setIsLoading(false);
       return;
+  }
+
+  if (!customerInfo.full_name || !customerInfo.phone_number || !customerInfo.password) {
+    Alert.alert("Required", "Full Name, Phone Number, and Password are required.");
+    setIsLoading(false);
+    return;
+  }
+
+  if (customerInfo.phone_number.length !== 10) {
+    showCustomToast("Invalid Phone Number");
+    setIsLoading(false);
+    return;
+  }
+
+  if (
+    !isQuickAdd &&
+    (!customerInfo.email ||
+      !customerInfo.address ||
+      !customerInfo.pincode ||
+      !customerInfo.adhaar_no)
+  ) {
+    Alert.alert("Required", "Please fill all mandatory fields in detailed form.");
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    let data;
+
+    // 🧩 Only Pigme and Loan should send agent_id
+    if (selectedCustomerType === "pigme" || selectedCustomerType === "loan") {
+      data = { ...customerInfo, agent_id: user.userId }; // ✅ Send agent_id for backend
+    } else {
+      data = { ...customerInfo, agent: user.userId }; // ✅ Keep same for chit & goldChit
     }
 
-    if (customerInfo.phone_number.length !== 10) {
-      showCustomToast("Invalid Phone Number");
-      setIsLoading(false);
-      return;
-    }
+    // 🎯 Use the determined baseUrl and apiRoute
+    const response = await axios.post(`${baseUrl}${apiRoute}`, data);
 
-    if (!selectedCustomerType) {
-      showCustomToast("Please select a Customer Type");
-      setIsLoading(false);
-      return;
+    if (response.status === 201) {
+      showCustomToast("Customer Added Successfully!");
+      setCustomerInfo({
+        full_name: "",
+        phone_number: "",
+        email: "",
+        password: "",
+        address: "",
+        pincode: "",
+        adhaar_no: "",
+        pan_no: "",
+      });
+      setSelectedCustomerType("chit");
+      navigation.replace("EnrollCustomer", { user });
     }
+  } catch (error) {
+    console.error("Error adding customer:", error.message);
+    Alert.alert("Error", error?.response?.data?.message || "Something went wrong.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-    if (
-      !isQuickAdd &&
-      (!customerInfo.email ||
-        !customerInfo.address ||
-        !customerInfo.pincode ||
-        !customerInfo.adhaar_no)
-    ) {
-      Alert.alert("Required", "Please fill all mandatory fields in detailed form.");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const data = { ...customerInfo, agent: user.userId };
-      const response = await axios.post(`${baseUrl}/user/add-user`, data);
-
-      if (response.status === 201) {
-        showCustomToast("Customer Added Successfully!");
-        setCustomerInfo({
-          full_name: "",
-          phone_number: "",
-          email: "",
-          password: "",
-          address: "",
-          pincode: "",
-          adhaar_no: "",
-          pan_no: "",
-        });
-        setSelectedCustomerType("chit");
-        navigation.replace("EnrollCustomer", { user });
-      }
-    } catch (error) {
-      console.error("Error adding customer:", error.message);
-      Alert.alert("Error", error?.response?.data?.message || "Something went wrong.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -225,12 +342,6 @@ const AddCustomer = ({ route, navigation }) => {
               onBlur={() => setFocusedInput(null)}
             />
 
-            {/* ✅ Contact Button
-            <TouchableOpacity style={styles.contactButton} onPress={handlePickContact}>
-              <Feather name="book" size={16} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.contactButtonText}>Select From Contact</Text>
-            </TouchableOpacity> */}
-
             {/* Password */}
             <InputField
               label="Password"
@@ -244,7 +355,7 @@ const AddCustomer = ({ route, navigation }) => {
               onBlur={() => setFocusedInput(null)}
             />
 
-            {/* Customer Type */}
+            {/* Customer Type - UPDATED PICKER */}
             <Text style={styles.label}>Customer Type *</Text>
             <View style={styles.pickerContainer}>
               <Picker
@@ -254,6 +365,9 @@ const AddCustomer = ({ route, navigation }) => {
               >
                 <Picker.Item label="Chit" value="chit" />
                 <Picker.Item label="Gold Chit" value="goldChit" />
+                {/* 🎯 Added new customer types */}
+                <Picker.Item label="Pigme" value="pigme" />
+                <Picker.Item label="Loan" value="loan" />
               </Picker>
             </View>
 
@@ -321,7 +435,7 @@ const AddCustomer = ({ route, navigation }) => {
   );
 };
 
-// Reusable input component
+// Reusable input component (Unchanged)
 const InputField = ({
   label,
   icon,

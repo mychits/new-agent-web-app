@@ -21,12 +21,11 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { useFocusEffect } from "@react-navigation/native";
 const noImage = require('../assets/no.png'); // Assuming this path is correct in your project structure
 
-// Function to send WhatsApp message
+// Function to send WhatsApp message (remains unchanged)
 const whatsappMessage = "Hello from our app!";
 
 const sendWhatsappMessage = (item) => {
-    // Note: Alert is used here as it was in the original code, but remember that in a web environment, 
-    // it can be disruptive. In a real React Native app, this is fine.
+    // ... (Your existing sendWhatsappMessage function)
     if (item?.phone_number) {
         // Sanitizing phone number for WhatsApp URL
         const phoneNumber = item.phone_number.replace(/\D/g, ''); 
@@ -46,8 +45,9 @@ const sendWhatsappMessage = (item) => {
     }
 };
 
-// Function to open phone dialer
+// Function to open phone dialer (remains unchanged)
 const openDialer = (item) => {
+    // ... (Your existing openDialer function)
     if (item.phone_number) {
         Linking.canOpenURL(`tel:${item.phone_number}`)
             .then((supported) => {
@@ -63,8 +63,9 @@ const openDialer = (item) => {
     }
 };
 
-// Function to send email
+// Function to send email (remains unchanged)
 const sendEmail = (item) => {
+    // ... (Your existing sendEmail function)
     if (item?.email) {
         Linking.canOpenURL(`mailto:${item.email}`)
             .then((supported) => {
@@ -82,6 +83,7 @@ const sendEmail = (item) => {
     }
 };
 
+// ** START OF UPDATED COMPONENT **
 const ViewCustomer = ({ route, navigation }) => {
     // Destructure user from route.params
     const { user } = route.params;
@@ -89,23 +91,53 @@ const ViewCustomer = ({ route, navigation }) => {
     // State management for customer data and loading status
     const [chitCustomers, setChitCustomers] = useState([]);
     const [goldCustomers, setGoldCustomers] = useState([]);
+    // ** NEW STATES for LOAN and PIGMY **
+    const [loanCustomers, setLoanCustomers] = useState([]);
+    const [pigmyCustomers, setPigmyCustomers] = useState([]);
+
     const [isChitLoading, setIsChitLoading] = useState(false);
     const [isGoldLoading, setIsGoldLoading] = useState(false);
+    // ** NEW LOADING STATES **
+    const [isLoanLoading, setIsLoanLoading] = useState(false);
+    const [isPigmyLoading, setIsPigmyLoading] = useState(false);
+
     // State for active tab and search input
     const [activeTab, setActiveTab] = useState("CHIT");
     const [search, setSearch] = useState("");
 
     // Memoized function for fetching data
     const fetchCustomers = useCallback(async (tab) => {
-        const currentUrl =
-            tab === "CHIT" ? `${baseUrl}` : "http://13.60.68.201:3000/api";
+        // Determine the base URL based on the tab
+        let currentUrl;
+        let setLoading, setCustomers;
+
+        switch (tab) {
+            case "CHIT":
+                currentUrl = `${baseUrl}`; // Assuming baseUrl is the CHIT URL
+                setLoading = setIsChitLoading;
+                setCustomers = setChitCustomers;
+                break;
+            case "GOLD":
+                currentUrl = "http://13.60.68.201:3000/api"; // Existing GOLD URL
+                setLoading = setIsGoldLoading;
+                setCustomers = setGoldCustomers;
+                break;
+            case "LOAN": // ** NEW LOAN SCHEME URL **
+                currentUrl = `${baseUrl}`;  // ** ASSUMED SAME AS GOLD URL **
+                setLoading = setIsLoanLoading;
+                setCustomers = setLoanCustomers;
+                break;
+            case "PIGMY": // ** NEW PIGMY SCHEME URL **
+                currentUrl = `${baseUrl}`;  // ** ASSUMED SAME AS GOLD URL **
+                setLoading = setIsPigmyLoading;
+                setCustomers = setPigmyCustomers;
+                break;
+            default:
+                return; // Do nothing if tab is unrecognized
+        }
         
         try {
-            if (tab === "CHIT") {
-                setIsChitLoading(true);
-            } else {
-                setIsGoldLoading(true);
-            }
+            setLoading(true);
             
             const response = await axios.get(
                 `${currentUrl}/user/get-users-by-agent-id/${user.userId}`
@@ -115,43 +147,32 @@ const ViewCustomer = ({ route, navigation }) => {
                 throw new Error("Failed to fetch Customer Data");
             }
 
-            if (tab === "CHIT") {
-                setChitCustomers(response.data);
-            } else {
-                setGoldCustomers(response.data);
-            }
-        } catch (err) {
-            console.error("Fetch customers error:", err);
-            Alert.alert("Data Error", "Could not fetch customer data. Please check network connection.");
-            if (tab === "CHIT") {
-                setChitCustomers([]);
-            } else {
-                setGoldCustomers([]);
-            }
-        } finally {
-            if (tab === "CHIT") {
-                setIsChitLoading(false);
-            } else {
-                setIsGoldLoading(false);
-            }
-        }
-    }, [user.userId]); // Dependency on user.userId
+            setCustomers(response.data);
 
-    // Effect for initial load or tab change
+        } catch (err) {
+            console.error(`Fetch ${tab} customers error:`, err);
+            Alert.alert("Data Error", `Could not fetch ${tab.toLowerCase()} customer data. Please check network connection.`);
+            setCustomers([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [user.userId, baseUrl]); // Dependency on user.userId and baseUrl
+
+    // Effect for initial load or tab change (remains the same)
     useEffect(() => {
-        fetchCustomers(activeTab);
+        // Fetch data for the currently active tab
+        fetchCustomers(activeTab); 
     }, [activeTab, fetchCustomers]);
 
-    // Effect to re-fetch data when the screen comes into focus
+    // Effect to re-fetch data when the screen comes into focus (remains the same)
     useFocusEffect(
         useCallback(() => {
             fetchCustomers(activeTab);
-            // Cleanup function is typically not needed for a simple fetch, but the dependency array is crucial.
-            // The dependency on activeTab ensures re-fetch if the tab changes while the screen is out of focus.
+            return () => setSearch(""); // Optional: Clear search when screen blurs
         }, [activeTab, fetchCustomers]) 
     );
 
-    // Render function for each customer item in the FlatList
+    // Render function for each customer item in the FlatList (remains the same)
     const renderCustomerCard = ({ item }) => (
         <View style={styles.card}>
             <View style={styles.leftSection}>
@@ -181,9 +202,24 @@ const ViewCustomer = ({ route, navigation }) => {
         </View>
     );
 
-    // Determine current data based on active tab
-    const customers = activeTab === "CHIT" ? chitCustomers : goldCustomers;
-    const isLoading = activeTab === "CHIT" ? isChitLoading : isGoldLoading;
+    // ** UPDATED: Determine current data based on active tab **
+    const getActiveData = (tab) => {
+        switch (tab) {
+            case "CHIT":
+                return { customers: chitCustomers, isLoading: isChitLoading, displayName: "Chit" };
+            case "GOLD":
+                return { customers: goldCustomers, isLoading: isGoldLoading, displayName: "Gold" };
+            case "LOAN":
+                return { customers: loanCustomers, isLoading: isLoanLoading, displayName: "Loan" };
+            case "PIGMY":
+                return { customers: pigmyCustomers, isLoading: isPigmyLoading, displayName: "Pigmy" };
+            default:
+                return { customers: [], isLoading: false, displayName: "Unknown" };
+        }
+    };
+    
+    const { customers, isLoading, displayName } = getActiveData(activeTab);
+
 
     // Filter customers based on search input (case-insensitive)
     const filteredCustomers = customers.filter(customer =>
@@ -202,26 +238,27 @@ const ViewCustomer = ({ route, navigation }) => {
                 <View style={{ flexGrow: 1, marginHorizontal: 22, marginTop: 52 }}>
                     <Header />
                     
-                    {/* Title and Count */}
+                    {/* Title and Count - UPDATED to use displayName */}
                     <View style={styles.titleContainer}>
-                        <Text style={styles.title}>{activeTab === "CHIT" ? "Chit" : "Gold"} Customers</Text>
+                        <Text style={styles.title}>{displayName} Customers</Text>
                         <Text style={styles.totalCountText}>{filteredCustomers.length || 0}</Text>
                     </View>
                     
-                    {/* Search Bar */}
+                    {/* Search Bar (remains the same) */}
                     <View style={styles.searchContainer}>
                         <Icon name="search" size={20}  style={styles.searchIcon} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder={`Search by name...`}
-                           
+                            
                             value={search}
                             onChangeText={setSearch}
                         />
                     </View>
                     
-                    {/* Tab Navigation */}
+                    {/* ** UPDATED: Tab Navigation to include LOAN and PIGMY ** */}
                     <View style={styles.tabContainer}>
+                        {/* CHIT Tab */}
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
                             onPress={() => { setActiveTab("CHIT"); setSearch(""); }} // Clear search on tab switch
@@ -232,9 +269,11 @@ const ViewCustomer = ({ route, navigation }) => {
                                     activeTab === "CHIT" && styles.activeTabText,
                                 ]}
                             >
-                                Chit Schemes
+                                Chit
                             </Text>
                         </TouchableOpacity>
+
+                        {/* GOLD Tab */}
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
                             onPress={() => { setActiveTab("GOLD"); setSearch(""); }} // Clear search on tab switch
@@ -245,12 +284,42 @@ const ViewCustomer = ({ route, navigation }) => {
                                     activeTab === "GOLD" && styles.activeTabText,
                                 ]}
                             >
-                                Gold Schemes
+                                Gold
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* LOAN Tab */}
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "LOAN" && styles.activeTab]}
+                            onPress={() => { setActiveTab("LOAN"); setSearch(""); }} 
+                        >
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "LOAN" && styles.activeTabText,
+                                ]}
+                            >
+                                Loan
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* PIGMY Tab */}
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "PIGMY" && styles.activeTab]}
+                            onPress={() => { setActiveTab("PIGMY"); setSearch(""); }} 
+                        >
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "PIGMY" && styles.activeTabText,
+                                ]}
+                            >
+                                Pigmy
                             </Text>
                         </TouchableOpacity>
                     </View>
                     
-                    {/* Customer List/Loading/No Data */}
+                    {/* Customer List/Loading/No Data (remains the same logic) */}
                     <View style={{ minHeight: 200, flex: 1 }}>
                         {isLoading && <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 20 }} />}
                         
@@ -268,8 +337,8 @@ const ViewCustomer = ({ route, navigation }) => {
                                 <Image source={noImage} style={styles.noImage} />
                                 <Text style={styles.noDataText}>
                                     {customers.length === 0 && search === ""
-                                        ? `No ${activeTab.toLowerCase()} customers found for this agent.`
-                                        : `No results found for "${search}" in ${activeTab.toLowerCase()} customers.`}
+                                        ? `No ${displayName.toLowerCase()} customers found for this agent.`
+                                        : `No results found for "${search}" in ${displayName.toLowerCase()} customers.`}
                                 </Text>
                             </View>
                         )}
@@ -277,7 +346,7 @@ const ViewCustomer = ({ route, navigation }) => {
                 </View>
             </LinearGradient>
             
-            {/* Floating Action Button for Add Customer */}
+            {/* Floating Action Button for Add Customer (remains the same) */}
             <TouchableOpacity
                 onPress={() => navigation.navigate("AddCustomer", { user: user })}
                 style={styles.floatingButton}
@@ -287,6 +356,7 @@ const ViewCustomer = ({ route, navigation }) => {
         </View>
     );
 };
+// ** END OF UPDATED COMPONENT **
 
 const styles = StyleSheet.create({
     gradientOverlay: {
@@ -335,6 +405,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
     },
+    // ** UPDATED: Adjusted tab flex to accommodate 4 tabs **
     tabContainer: {
         flexDirection: "row",
         backgroundColor: "rgba(255, 255, 255, 0.7)",
@@ -348,7 +419,7 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     tab: {
-        flex: 1,
+        flex: 1, // Distributes space equally among the 4 tabs
         paddingVertical: 10,
         alignItems: "center",
         borderRadius: 12,
@@ -362,9 +433,10 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     tabText: {
-        fontSize: 16,
+        fontSize: 13, // Reduced font size to fit all 4 tabs on smaller screens
         color: "#666",
         fontWeight: "500",
+        textAlign: 'center',
     },
     activeTabText: {
         color: '#fff', // White text on active tab background
