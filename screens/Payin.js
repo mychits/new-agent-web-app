@@ -394,7 +394,7 @@ const Payin = ({ route, navigation }) => {
       {/* --------------------------- */}
 
       <LinearGradient
-        colors={['#b6e4ebff', '#1796d1ff']}
+        colors={["#1aa2ccff", "#1aa2ccff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
     margin: 3,
     marginTop: 0,
     marginBottom: 50,
-    backgroundColor: "#da8201",
+    backgroundColor: "#f8c009ff",
     height: 55,
   },
   // STYLES for button centering

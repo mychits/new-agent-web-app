@@ -132,7 +132,7 @@ const EnrolledGroups = ({ route, navigation }) => {
 
     return (
         <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
+            <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     activeTab: {
-        backgroundColor: '#da8201',
+        backgroundColor: '#f8c009ff',
     },
     tabText: {
         fontSize: 16,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
         marginVertical: 5,
         borderRadius: 15,
         borderLeftWidth: 5,
-        borderColor: '#da8201',
+        borderColor: '#f8c009ff',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     },
     arrowIcon: {
         fontSize: 22,
-        color: '#da8201',
+        color: '#f8c009ff',
     },
     noLeadsText: {
         textAlign: "center",

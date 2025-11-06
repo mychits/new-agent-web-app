@@ -174,7 +174,7 @@ const CustomerOnHold = () => {
 
   return (
     <LinearGradient // ⬅️ LinearGradient is now the top-level container
-      colors={['#b6e4ebff', '#1796d1ff']}
+      colors={["#1aa2ccff", "#1aa2ccff"]}
       style={styles.gradientOverlay}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8,
     borderLeftWidth: 5,
-    borderColor: "#da8201",
+    borderColor: "#f8c009ff",
   },
   cardHeader: {
     flexDirection: "row",
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     gap: 8,
   },
-  callButton: { backgroundColor: "#ff8c00" },
+  callButton: { backgroundColor: "#f8c009ff" },
   whatsappButton: { backgroundColor: "#25D366" },
   emailButton: { backgroundColor: "#3498db" },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },

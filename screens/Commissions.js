@@ -24,7 +24,7 @@ const { width, height } = Dimensions.get('window');
 const noImage = require('../assets/no.png'); // Assuming this path is correct
 
 const COLOR_PALETTE = {
-    primary: '#da8201', // Gold/Orange accent
+    primary: '#f8c009ff', // Gold/Orange accent
     secondary: '#333', // Dark text
     backgroundLight: '#f0f0f0',
     cardBackground: '#FFFFFF',
@@ -299,7 +299,7 @@ const Commissions = ({ route, navigation }) => {
 
     return (
         <LinearGradient
-            colors={['#b6e4ebff', '#1796d1ff']}
+            colors={["#1aa2ccff", "#1aa2ccff"]}
             style={{ flex: 1 }}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}

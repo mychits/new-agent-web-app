@@ -100,7 +100,7 @@ const MyCommission = ({ route, navigation }) => {
             <View style={styles.summaryBoxesContainer}>
                 
                 {/* Box 1: Total Customers - Blue/Primary Color */}
-                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#f8c009ff' }]}>
                     <Text style={styles.summaryText}>Total Customers</Text>
                     {/* FIXED: Use || '0' to ensure a string is always passed to <Text> */}
                     <Text style={[styles.summaryValue, { color: '#04aefdff' }]}>
@@ -109,7 +109,7 @@ const MyCommission = ({ route, navigation }) => {
                 </Animated.View>
                 
                 {/* Box 2: Total Groups - Green Color */}
-                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#f8c009ff' }]}>
                     <Text style={styles.summaryText}>Total Groups</Text>
                     <Text style={[styles.summaryValue, { color: '#3ed160ff' }]}>
                         {summary.total_groups || '0'}
@@ -117,7 +117,7 @@ const MyCommission = ({ route, navigation }) => {
                 </Animated.View>
                 
                 {/* Box 3: My Business - Red/Accent Color */}
-                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#f8c009ff' }]}>
                     <Text style={styles.summaryText}>My Business</Text>
                     <Text style={[styles.summaryValue, { color: '#f70cb4ff' }]}>
                         {summary.actual_business || '0'}
@@ -125,7 +125,7 @@ const MyCommission = ({ route, navigation }) => {
                 </Animated.View>
                 
                 {/* Box 4: My Commission - Gold/Accent Color */}
-                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#c98f39ff' }]}>
+                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#f8c009ff' }]}>
                     <Text style={styles.summaryText}>My Commission</Text>
                     <Text style={[styles.summaryValue, { color: '#f1960cff' }]}>
                         {summary.total_actual || '0'}
@@ -173,7 +173,7 @@ const MyCommission = ({ route, navigation }) => {
     return (
         <View style={{ flex: 1, backgroundColor: COLORS.white }}>
             <LinearGradient 
-                colors={['#b6e4ebff', '#1796d1ff']}
+                colors={["#1aa2ccff", "#1aa2ccff"]}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     activeTab: {
-        backgroundColor: '#da8201',
+        backgroundColor: '#f8c009ff',
     },
     tabText: {
         fontSize: 16,
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginTop: 5, 
         marginBottom: 10,
-        borderColor: "#da8201",
+        borderColor: "#f8c009ff",
     },
     summaryBox: {
         backgroundColor: "rgba(255, 255, 255, 0.7)",
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
         marginVertical: 5,
         borderRadius: 15,
         borderLeftWidth: 5,
-        borderColor: '#da8201',
+        borderColor: '#f8c009ff',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     },
     arrowIcon: {
         fontSize: 22,
-        color: '#da8201',
+        color: '#f8c009ff',
     },
     noLeadsText: {
         textAlign: "center",

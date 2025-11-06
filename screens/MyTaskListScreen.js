@@ -31,7 +31,7 @@ const COLOR_PALETTE = {
   errorRed: '#E74C3C', // Vibrant error red
   greyText: '#4C4C4C', // Dark grey for general text
   accentGreen: '#2ECC71', // Vibrant emerald green for success (matching Target.js)
-  accentOrange: '#F39C12', // Warm, energetic orange for attention/progress (matching Target.js)
+  accentOrange: '#f8c009ff', // Warm, energetic orange for attention/progress (matching Target.js)
   backgroundLight: '#E0F7FA', // Soft, light aqua blue (matching Target.js)
   backgroundDark: '#BBDEFB',  // Slightly deeper, calm blue (matching Target.js)
   softBorder: 'rgba(200, 200, 200, 0.4)', // Very soft, translucent grey for borders
@@ -149,7 +149,7 @@ export default function MyTaskListScreen({ navigation, route }) {
 
   return (
     // 💡 CHANGE APPLIED: LinearGradient is now the root container with style={{ flex: 1 }}
-    <LinearGradient  colors={['#b6e4ebff', '#1796d1ff']}
+    <LinearGradient  colors={["#1aa2ccff", "#1aa2ccff"]}
       style={{ flex: 1 }} 
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}

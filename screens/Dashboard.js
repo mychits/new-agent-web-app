@@ -196,7 +196,7 @@ const Dashboard = ({ route, navigation }) => {
 
   const getProgressColor = () => {
     if (progress < 50) return "#FF4B2B";
-    if (progress < 80) return "#FFD349";
+    if (progress < 80) return "#f8c009ff";
     return "#5EBD3E";
   };
 
@@ -222,7 +222,7 @@ const Dashboard = ({ route, navigation }) => {
   };
 
   return (
-    <LinearGradient colors={['#b6e4ebff', '#1796d1ff']}
+    <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
       style={styles.gradientOverlay}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -270,7 +270,7 @@ const Dashboard = ({ route, navigation }) => {
                               fy="50%"
                             >
                               <Stop offset="0%" stopColor="#FF4B2B" />
-                              <Stop offset="50%" stopColor="#FFD349" />
+                              <Stop offset="50%" stopColor="#f8c009ff" />
                               <Stop offset="100%" stopColor="#5EBD3E" />
                             </RadialGradient>
                           </Defs>
@@ -327,7 +327,7 @@ const Dashboard = ({ route, navigation }) => {
               <View style={styles.collectionSection}>
                 <View style={styles.collectionCard}>
                   <LinearGradient
-                    colors={["#ecc281ff", "#da8201"]}
+                    colors={["#ecc281ff", "#f8c009ff"]}
                     style={styles.collectionGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}

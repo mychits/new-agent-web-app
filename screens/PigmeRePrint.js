@@ -103,10 +103,10 @@ const PigmeRePrint = ({ route }) => {
 
     setIsPrinting(true);
 
-    const receiptType = isPigmePayment ? "Pigme Receipt" : "Receipt";
+    const receiptType = isPigmePayment ? "Pigmy Receipt" : "Receipt";
     // NOTE: Hardcoded "000 Error 000" for non-Pigme group is preserved from original code
     const groupOrPigme = isPigmePayment
-      ? `Pigme ID: ${custom_pigme_id || "N/A"}`
+      ? `Pigmy ID: ${custom_pigme_id || "N/A"}`
       : `Group: ${"000 Error 000"}`;
 
     const txnLine =
@@ -122,7 +122,7 @@ ${centerText("Kathriguppe Main Road,")}
 ${centerText("Bangalore, 560085 9483900777")}
 --------------------------------
 ${centerText(receiptType)}
-Pigme Amount: ${pigme_amount || "N/A"}
+Pigmy Amount: ${pigme_amount || "N/A"}
 Receipt No: ${receipt_no || "N/A"}
 Date: ${formatDate(pay_date)}
 
@@ -154,7 +154,7 @@ Collected by: ${agent_name || "N/A"}
   const generatePosReceiptHtml = (size) => {
     // NOTE: Hardcoded "Loan" and "loab" for non-Pigme group is preserved from original code
     const groupOrPigmeHtml = isPigmePayment
-      ? `<p style="margin: 0; font-weight: bold;">Pigme ID: ${
+      ? `<p style="margin: 0; font-weight: bold;">Pigmy ID: ${
           custom_pigme_id || "N/A"
         }</p>`
       : `<p style="margin: 0; font-weight: bold;">Group: ${"Loan"}</p><p style="margin: 0; font-weight: bold;">Ticket: ${
@@ -163,7 +163,7 @@ Collected by: ${agent_name || "N/A"}
 
     const txnLine =
       pay_type?.toLowerCase() === "online" && transaction_id
-        ? `<p style="margin-top: 5px;">Transaction ID: ${transaction_id}</p>`
+        ? `<p style="margin-top: 5px ;">Transaction ID: ${transaction_id}</p>`
         : "";
 
     return `
@@ -218,10 +218,10 @@ Collected by: ${agent_name || "N/A"}
           </div>
           <div class="line"></div>
           <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
-            ${isPigmePayment ? "Pigme Receipt" : "Receipt"}
+            ${isPigmePayment ? "Pigmy Receipt" : "Receipt"}
           </p>
             <p style="margin: 0;">
-          <span style="font-weight: bold;">Pigme Amount:</span> ${
+          <span style="font-weight: bold;">Pigmy Amount:</span> ${
             pigme_amount || "N/A"
           } <br/>
           <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
@@ -368,7 +368,7 @@ Collected by: ${agent_name || "N/A"}
               {isPigmePayment ? "Pigme Receipt" : "Receipt"}
             </Text>
             <Text style={styles.textStyle}>
-              <Text style={{ fontWeight: "bold" }}>Pigme Amount:</Text>{" "}
+              <Text style={{ fontWeight: "bold" }}>Pigmy Amount:</Text>{" "}
               {pigme_amount || "N/A"}
             </Text>
             <Text style={styles.textStyle}>
@@ -397,7 +397,7 @@ Collected by: ${agent_name || "N/A"}
               style={[styles.textStyle, { fontSize: 14, fontWeight: "bold" }]}
             >
               {isPigmePayment
-                ? `Pigme ID: ${custom_pigme_id || "N/A"}`
+                ? `Pigmy ID: ${custom_pigme_id || "N/A"}`
                 : `Group: 000 Error 000`}
             </Text>
 

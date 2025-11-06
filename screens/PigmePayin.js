@@ -233,7 +233,7 @@ const PigmePayin = ({ route, navigation }) => {
         return (
             // Replaced SafeAreaView with LinearGradient
             <LinearGradient 
-                colors={['#b6e4ebff', '#1796d1ff']}
+                colors={["#1aa2ccff", "#1aa2ccff"]}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -249,7 +249,7 @@ const PigmePayin = ({ route, navigation }) => {
     // Main Component View
     return (
         <LinearGradient 
-            colors={['#b6e4ebff', '#1796d1ff']}
+            colors={["#1aa2ccff", "#1aa2ccff"]}
             style={styles.gradientOverlay} // Takes up full screen
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     button: {
         marginTop: 18,
         marginBottom: 50,
-        backgroundColor: '#da8201',
+        backgroundColor: '#f8c009ff',
     }
 });
 

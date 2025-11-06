@@ -25,7 +25,7 @@ const Routes = ({ route, navigation }) => {
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
-        colors={['#b6e4ebff', '#1796d1ff']}
+        colors={["#1aa2ccff", "#1aa2ccff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between', // Distributes content and arrow evenly
     borderLeftWidth: 5, // Added a prominent left border for a stylish accent
-    borderColor: '#da8201', // Gold color for the accent border
+    borderColor: '#f8c009ff', // Gold color for the accent border
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 }, // Deeper shadow for a "floating" effect
     shadowOpacity: 0.15,
@@ -136,11 +136,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 25, // Increased icon size for more visual impact
-    color: '#da8201', // Gold color for consistency
+    color: '#f8c009ff', // Gold color for consistency
   },
   arrowIcon: {
     fontSize: 22, // Adjusted size to fit the new card design
-    color: '#da8201',
+    color: '#f8c009ff',
   },
 });
 

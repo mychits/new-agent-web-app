@@ -32,7 +32,7 @@ const COLOR_PALETTE = {
     errorRed: '#E74C3C', // Vibrant error red
     greyText: '#4C4C4C', // Dark grey for general text
     accentGreen: '#27AE60', // Stronger green for success
-    accentOrange: '#F39C12', // More vivid orange for attention
+    accentOrange: '#f8c009ff', // More vivid orange for attention
     backgroundLight: '#DFF6FC', // Very light, cool blue
     backgroundDark: '#BDE0F3',  // Slightly deeper, cool blue
     softBorder: '#c2b9f3ff', // Soft blue for general borders
@@ -212,7 +212,7 @@ const Target = ({ route, navigation }) => {
             />
 
             <LinearGradient
-                colors={['#b6e4ebff', '#1796d1ff']}
+                colors={["#1aa2ccff", "#1aa2ccff"]}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}

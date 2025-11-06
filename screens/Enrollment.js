@@ -28,7 +28,7 @@ if (
 }
 
 // Background Gradient
-const BACKGROUND_GRADIENT = ["#b6e4ebff", "#1796d1ff"];
+const BACKGROUND_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
 
 // Design Constants
 const MODERN_PRIMARY = "#0d0d0eff";

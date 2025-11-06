@@ -39,8 +39,6 @@ const cardImagePaths = {
   attendence: require("../assets/ab.png"),
   collections: require("../assets/Collection2.png"),
   qrCode: require("../assets/qrcode.png"),
-  // 💡 NEW QR CODE IMAGE PATH (Assuming this file exists in your assets folder)
-  kotakQr: require("../assets/kotak_bank_qr.jpeg"),
   daybook: require("../assets/Daybook2.png"),
   targets: require("../assets/Target2.png"),
   myLeads: require("../assets/Lead1.png"),
@@ -176,34 +174,6 @@ const AttendanceModal = ({
   );
 };
 
-// 💡 MODIFIED: Dedicated QR Code component now accepts navigation prop
-const KotakQRView = ({ navigation }) => {
-  const handleViewUpiDetails = () => {
-      // Assuming 'QrCodePage' is the name registered in your React Navigation stack
-      navigation.navigate('QrCodePage'); 
-  };
-  
-  return (
-    <View style={styles.kotakQrContainer}>
-      <View style={styles.kotakQrCard}>
-        <Text style={styles.kotakQrBankName}>Kotak Bank - MyChits</Text>
-        <Image
-          source={cardImagePaths.kotakQr}
-          style={styles.kotakQrImage}
-          resizeMode="contain"
-        />
-        <Text style={styles.kotakQrUpiId}>UPI ID mychits@kotak</Text>
-        <TouchableOpacity 
-            style={styles.kotakQrDetailsButton}
-            onPress={handleViewUpiDetails} // 💡 NEW: Navigation action
-        >
-          <Text style={styles.kotakQrDetailsButtonText}>View UPI details</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
-
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
   const [agent, setAgent] = useState({});
@@ -214,19 +184,15 @@ const Home = ({ route, navigation }) => {
   const netInfo = useNetInfo();
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [note, setNote] = useState("");
-
-  // 💡 ANIMATION: Create Animated.Values for each card
   const cardAnimations = useRef([]);
   const hasAnimated = useRef(false);
-
-  // Define cardsData early to use its length for animation array initialization
   const cardsData = [
     // {
-    // 	id: "attendence",
-    // 	name: "Attendance",
-    // 	imagePath: cardImagePaths.attendence,
-    // 	onPress: () => navigation.navigate("Attendance", { user }),
-    // 	backgroundColor: "#D9D7F1",
+    //   id: "attendence",
+    //   name: "Attendance",
+    //   imagePath: cardImagePaths.attendence,
+    //   onPress: () => navigation.navigate("Attendance", { user }),
+    //   backgroundColor: "#D9D7F1",
     // },
 
 
@@ -238,13 +204,13 @@ const Home = ({ route, navigation }) => {
       backgroundColor: "#FFEBEE",
     },
     agentInfo?.designation_id?.permission?.collection === "true" && {
-      id: "QrCodePage",
+      id: "qrCode",
       name: "QR Code",
       imagePath: cardImagePaths.qrCode,
-      onPress: () => navigation.navigate("QrCodePage"),
+      onPress: () => navigation.navigate("qrCode"),
       backgroundColor: "#e3f0e4ff",
     },
-    {
+      {
       id: "commission",
       name: "My Overview",
       imagePath: cardImagePaths.commission,
@@ -270,6 +236,7 @@ const Home = ({ route, navigation }) => {
         }),
       backgroundColor: "#ebe9a8ff",
     },
+  
 
 
 
@@ -539,7 +506,7 @@ const Home = ({ route, navigation }) => {
   return (
     // 💡 FIX APPLIED: LinearGradient now wraps the entire screen for full coverage.
     <LinearGradient
-      colors={['#b6e4ebff', '#1796d1ff']}
+  colors={["#1aa2ccff", "#1aa2ccff"]}
       style={{ flex: 1 }} // Apply flex: 1 to the gradient for full viewport height
     >
       {/* ❌ REMOVED SafeAreaView - now the content will start from the top edge */}
@@ -587,7 +554,7 @@ const Home = ({ route, navigation }) => {
                   opacity: cardAnimations.current[index], // Fade in
                   transform: [{ scale }, { translateY }],
                 };
-
+                
                 // 💡 NEW LOGIC: Determine if the card is the "Overview" card
                 const isOverviewCard = card.id === "commission";
 
@@ -616,7 +583,7 @@ const Home = ({ route, navigation }) => {
                         ]}
                         resizeMode="contain"
                       />
-                      <Text
+                      <Text 
                         style={[
                           styles.gridCardText,
                           isOverviewCard && styles.bigCardText, // 👈 Apply special text style
@@ -629,10 +596,6 @@ const Home = ({ route, navigation }) => {
                 );
               })}
             </View>
-            
-            {/* 💡 MODIFIED: Pass navigation prop to KotakQRView */}
-            <KotakQRView navigation={navigation} /> 
-
           </ScrollView>
         )}
       </View>
@@ -681,24 +644,24 @@ const styles = StyleSheet.create({
   },
   bigCardStyle: {
     // 💡 MODIFIED: Center content (horizontal and vertical)
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center', 
+    alignItems: 'center', 
     padding: 15,
-    borderWidth: 2,
+    borderWidth: 2, 
   },
   bigCardImage: {
     // 💡 MODIFIED: Increased image size a bit from the previous version
-    width: 180,
-    height: 100,
+    width: 180, 
+    height: 100, 
     marginBottom: 5, // Smaller margin for centered look
     marginTop: 0,
     alignSelf: 'center', // Ensure image is centered
   },
   bigCardText: {
     // 💡 MODIFIED: Ensure text is centered
-    fontSize: 22,
+    fontSize: 22, 
     fontWeight: "900",
-    color: '#00796B',
+    color: '#00796B', 
     textAlign: "center", // Ensure text is centered
   },
   // --- End Big Card Styles ---
@@ -721,7 +684,7 @@ const styles = StyleSheet.create({
     // Note: Dimensions are removed from here and moved to gridCardWrapper
     flex: 1, // Fill the wrapper
     borderRadius: 15,
-    borderColor: "#e2a65dff",
+    borderColor: "#f8c009ff",
     borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
@@ -755,56 +718,6 @@ const styles = StyleSheet.create({
   },
   noInternetSubText: { fontSize: 16, color: "#777", marginTop: 10 },
   gradientOverlay: { flex: 1 }, // Retained this style definition although it's no longer used in the component body
-  
-  // --- KOTAK QR VIEW STYLES (Based on the reference image) ---
-  kotakQrContainer: {
-    width: '100%',
-    paddingVertical: 10,
-    marginTop: 10,
-    marginBottom: 30, // Extra padding at the bottom of the list
-  },
-  kotakQrCard: {
-    width: '100%',
-    backgroundColor: '#333', // Dark background similar to the image
-    borderRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  kotakQrBankName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 15,
-  },
-  kotakQrImage: {
-    width: width * 0.6,
-    height: width * 0.6,
-    backgroundColor: 'white', // QR codes are usually on white background
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 15,
-  },
-  kotakQrUpiId: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#00BCD4', // Highlight UPI ID with primary color
-    marginBottom: 15,
-  },
-  kotakQrDetailsButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  kotakQrDetailsButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  // --- END KOTAK QR VIEW STYLES ---
 });
 
 
@@ -935,7 +848,7 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
   },
   markAttendanceButtonText: {
-    color: "white", // Changed to white for better contrast on gradient
+    color: "Green",
     fontWeight: "bold",
     textAlign: "center",
     fontSize: 19,
@@ -943,4 +856,4 @@ const modalStyles = StyleSheet.create({
   },
 });
 
-export default Home;    
+export default Home;

@@ -1,4 +1,12 @@
-import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,7 +29,6 @@ const CustomerCard = ({ name, phone, onPress }) => (
   </TouchableOpacity>
 );
 
-
 const RouteCustomerPigme = ({ route, navigation }) => {
   const { user, areaId } = route.params;
 
@@ -32,7 +39,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
   useEffect(() => {
     const fetchPigmeCustomers = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const response = await axios.get(
           `${baseUrl}/pigme/get-all-pigme-customers`
         );
@@ -44,7 +51,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching customer data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     };
 
@@ -53,71 +60,75 @@ const RouteCustomerPigme = ({ route, navigation }) => {
 
   return (
     <LinearGradient
-      colors={['#b6e4ebff', '#1796d1ff']}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        {/* Fixed Content Wrapper */}
-        <View style={styles.fixedContentWrapper}>
-          <Header />
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Pigmy Customers</Text>
-            <Text style={styles.subtitle}>Manage Pigmy accounts</Text>
-          </View>
-          <View style={styles.searchContainer}>
-            <Icon
-              name="search"
-              size={20}
-              color="#888"
-              style={styles.searchIcon}
-            />
-            <TextInput
-              value={search}
-              onChangeText={(text) => setSearch(text)}
-              placeholder="Search Pigmy customers..."
-              placeholderTextColor="#888"
-              style={styles.searchInput}
-            />
-          </View>
+      colors={["#1aa2ccff", "#1aa2ccff"]}
+      style={styles.gradientOverlay}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      {/* Fixed Content Wrapper */}
+      <View style={styles.fixedContentWrapper}>
+        <Header />
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Pigmy Customers</Text>
+          <Text style={styles.subtitle}>Manage Pigmy accounts</Text>
         </View>
+        <View style={styles.searchContainer}>
+          <Icon
+            name="search"
+            size={20}
+            color="#888"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            value={search}
+            onChangeText={(text) => setSearch(text)}
+            placeholder="Search Pigmy customers..."
+            placeholderTextColor="#888"
+            style={styles.searchInput}
+          />
+        </View>
+      </View>
 
-        {/* Scrollable Customer List */}
-        {
-          loading ? (
-            <View style={{ marginTop: 30, alignItems: "center" }}>
-              <ActivityIndicator size="large" color="#da8201" />
-            </View>
-          ) : (
-            <ScrollView
-              style={styles.scrollableListContainer} // New style for ScrollView
-              contentContainerStyle={{ paddingBottom: 80 }}
-              showsVerticalScrollIndicator={false}
-            >
-              <>
-                {Array.isArray(customers) &&
-                  customers
-                     
-                    .filter((item) => 
-                      item.customer?.full_name?.toLowerCase().includes(search.toLowerCase()) || ""
+      {/* Scrollable Customer List */}
+      {loading ? (
+        <View style={{ marginTop: 30, alignItems: "center" }}>
+          <ActivityIndicator size="large" color="#f8c009ff" />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scrollableListContainer} // New style for ScrollView
+          contentContainerStyle={{ paddingBottom: 80 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <>
+            {Array.isArray(customers) &&
+              customers
 
-                    )
-                    .map((item, index) => (
-                      <CustomerCard
-                        key={index}
-                        name={item.customer?.full_name || "Unknown Customer"}
-                        phone={item.customer?.phone_number || "N/A"}
-                        onPress={() =>{
-                          navigation.navigate("PigmePayin", { user, customer: item.customer?._id, pigme_id: item._id ,custom_pigme_id:item?.pigme_id})}
-                        }
-                      />
-                    ))}
-
-              </>
-            </ScrollView>
-          )
-        }
-      </LinearGradient>
+                .filter(
+                  (item) =>
+                    item.customer?.full_name
+                      ?.toLowerCase()
+                      .includes(search.toLowerCase()) || ""
+                )
+                .map((item, index) => (
+                  <CustomerCard
+                    key={index}
+                    name={item.customer?.full_name || "Unknown Customer"}
+                    phone={item.customer?.phone_number || "N/A"}
+                    onPress={() => {
+                      navigation.navigate("PigmePayin", {
+                        user,
+                        customer: item.customer?._id,
+                        pigme_id: item._id,
+                        custom_pigme_id: item?.pigme_id,
+                      });
+                    }}
+                  />
+                ))}
+          </>
+        </ScrollView>
+      )}
+    </LinearGradient>
   );
 };
 
@@ -132,23 +143,23 @@ const styles = StyleSheet.create({
   },
   // New style for the scrollable list
   scrollableListContainer: {
-    flex: 1, 
-    marginHorizontal: 22, 
+    flex: 1,
+    marginHorizontal: 22,
     // Add marginTop if needed to align with fixed content's horizontal margin
   },
   titleContainer: {
     marginTop: 10,
     marginBottom: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
     marginTop: 5,
   },
   searchContainer: {
@@ -157,8 +168,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 10,
-    width: '100%',
-    shadowColor: '#000',
+    width: "100%",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -179,13 +190,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 20,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderLeftWidth: 5,
-    borderColor: '#da8201',
-    shadowColor: '#000',
+    borderColor: "#f8c009ff",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -193,29 +204,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   textContainer: {
     marginLeft: 15,
   },
   cardText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   cardSubText: {
     fontSize: 14,
-    color: '#888',
+    color: "#888",
     marginTop: 2,
   },
   cardIcon: {
     fontSize: 32,
-    color: '#da8201',
+    color: "#f8c009ff",
   },
   arrowIcon: {
     fontSize: 22,
-    color: '#da8201',
+    color: "#f8c009ff",
   },
 });
 

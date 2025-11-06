@@ -23,7 +23,7 @@ const COLOR_PALETTE = {
     lightText: '#FFFFFF', // Pure white
     darkText: '#4C4C4C', // Dark grey for general text
     accentGreen: '#2ECC71', // Vibrant emerald green for success
-    accentOrange: '#F39C12', // Warm, energetic orange for attention/progress
+    accentOrange: '#f8c009ff', // Warm, energetic orange for attention/progress
     cardBackground: 'rgba(255, 255, 255, 0.75)', // Translucent white for glass effect
     glassBorder: 'rgba(255, 255, 255, 0.3)', // Lighter, more translucent border for glassmorphism
     shadowColor: 'rgba(0, 0, 0, 0.15)', // Default shadow color
@@ -53,7 +53,7 @@ export default function TaskDetailScreen({ navigation, route }) {
     return (
         <View style={styles.container}>
             <LinearGradient
-             colors={['#b6e4ebff', '#1796d1ff']}
+             colors={["#1aa2ccff", "#1aa2ccff"]}
                 style={styles.backgroundGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}

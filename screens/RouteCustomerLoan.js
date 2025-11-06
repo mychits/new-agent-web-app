@@ -59,7 +59,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
 
   return (
     <LinearGradient
-       colors={['#b6e4ebff', '#1796d1ff']}
+       colors={["#1aa2ccff", "#1aa2ccff"]}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -88,10 +88,10 @@ const RouteCustomerLoan = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Scrollable Customer List */}
+       
         {loading ? (
             <View style={{ marginTop: 30, alignItems: "center" }}>
-              <ActivityIndicator size="large" color="#da8201" />
+              <ActivityIndicator size="large" color="#f8c009ff" />
             </View>
           ) : (
             <ScrollView
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderLeftWidth: 5,
-    borderColor: "#da8201",
+    borderColor: "#f8c009ff",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
@@ -216,11 +216,11 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 32,
-    color: "#da8201",
+    color: "#f8c009ff",
   },
   arrowIcon: {
     fontSize: 22,
-    color: "#da8201",
+    color: "#f8c009ff",
   },
 });
 

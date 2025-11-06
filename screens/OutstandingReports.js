@@ -21,7 +21,7 @@ import Header from "../components/Header";
 const DUE_API = "https://mychits.online/api/enroll/due/routes/agent/";
 const GROUP_API = "https://mychits.online/api/group/get-group";
 // 🚨 LINEAR GRADIENT COLOR AS PREVIOUSLY REQUESTED 🚨
-const BACKGROUND_GRADIENT = ['#b6e4ebff', '#1796d1ff']; 
+const BACKGROUND_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
 const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
 
 // --- MODERN STYLING CONSTANTS (Curated for a professional, clean look) ---

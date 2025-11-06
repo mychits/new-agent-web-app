@@ -93,7 +93,7 @@ const HelpAndSupport = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#b6e4ebff', '#1796d1ff']}
+        colors={["#1aa2ccff", "#1aa2ccff"]}
         style={styles.backgroundGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderLeftWidth: 4,
-    borderColor: '#da8201',
+    borderColor: '#f8c009ff',
     shadowColor: "rgba(0, 0, 0, 0.04)",
     shadowOffset: { width: 0, height: 1.5 },
     shadowOpacity: 0.06,
