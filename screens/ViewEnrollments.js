@@ -273,7 +273,7 @@ const ViewEnrollments = ({ route, navigation }) => {
                         onPress={() => navigation.navigate("EnrollCustomer", { user: user })}
                         style={{
                             position: "absolute",
-                            bottom: 20,
+                            bottom: 60,
                             right: 20,
                             backgroundColor: COLORS.primary,
                             borderRadius: 30,

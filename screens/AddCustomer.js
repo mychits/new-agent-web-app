@@ -25,6 +25,7 @@ import COLORS from "../constants/color";
 import chitBaseUrl from "../constants/baseUrl";
 import goldBaseUrl from "../constants/goldBaseUrl";
 // 🎯 Added placeholder for new base URLs. Define these correctly in your constants file.
+// Assuming pigmeBaseUrl and loanBaseUrl are the same as chitBaseUrl unless defined separately.
 const pigmeBaseUrl = chitBaseUrl; // Placeholder
 const loanBaseUrl = chitBaseUrl; // Placeholder
 
@@ -34,6 +35,9 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 
 const AddCustomer = ({ route, navigation }) => {
   const { user } = route.params;
+  
+  // 🎯 STEP 1: Define the referred type based on your context (Employee/Agent)
+  const REFERRED_TYPE = "Employee"; 
 
   const [isQuickAdd, setIsQuickAdd] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +91,7 @@ const AddCustomer = ({ route, navigation }) => {
       setCustomerInfo((prev) => ({
         ...prev,
         full_name: name || prev.full_name,
-        phone_number: phone || prev.prev_number, // Corrected to use phone
+        phone_number: phone || prev.prev_number, 
       }));
 
       showCustomToast("Contact selected successfully.");
@@ -96,98 +100,13 @@ const AddCustomer = ({ route, navigation }) => {
       showCustomToast("Failed to pick contact.");
     }
   };
-
-  // ✅ Handle Add Customer - UPDATED LOGIC
-//   const handleAddCustomer = async () => {
-//     setIsLoading(true);
-
-//     // 🎯 Determine the base URL and the API route based on the selected customer type
-//     let baseUrl;
-//     let apiRoute;
-
-//     switch (selectedCustomerType) {
-//       case "chit":
-//         baseUrl = chitBaseUrl;
-//         apiRoute = "/user/add-user"; // Existing route
-//         break;
-//       case "goldChit":
-//         baseUrl = goldBaseUrl;
-//         apiRoute = "/user/add-user"; // Existing route
-//         break;
-//       case "pigme":
-//         baseUrl = chitBaseUrl;
-//         apiRoute = "/pigme/user/add"; // New Pigme route
-//         break;
-//       case "loan":
-//         baseUrl = chitBaseUrl;
-//         apiRoute = "/loans/user/add"; // New Loan route
-//         break;
-//       default:
-//         showCustomToast("Invalid Customer Type selected.");
-//         setIsLoading(false);
-//         return;
-//     }
-
-//     if (!customerInfo.full_name || !customerInfo.phone_number || !customerInfo.password) {
-//       Alert.alert("Required", "Full Name, Phone Number, and Password are required.");
-//       setIsLoading(false);
-//       return;
-//     }
-
-//     if (customerInfo.phone_number.length !== 10) {
-//       showCustomToast("Invalid Phone Number");
-//       setIsLoading(false);
-//       return;
-//     }
-
-//     if (
-//       !isQuickAdd &&
-//       (!customerInfo.email ||
-//         !customerInfo.address ||
-//         !customerInfo.pincode ||
-//         !customerInfo.adhaar_no)
-//     ) {
-//       Alert.alert("Required", "Please fill all mandatory fields in detailed form.");
-//       setIsLoading(false);
-//       return;
-//     }
-
-//     try {
-//       // Note: The new routes expect 'agent_id' instead of 'agent'. I'm sending 'agent' for consistency 
-//       // with the existing code, but you may need to update the key based on your server requirements.
-//       const data = { ...customerInfo, agent: user.userId };
-      
-//       // 🎯 Use the determined baseUrl and apiRoute
-//       const response = await axios.post(`${baseUrl}${apiRoute}`, data);
-
-//       if (response.status === 201) {
-//         showCustomToast("Customer Added Successfully!");
-//         setCustomerInfo({
-//           full_name: "",
-//           phone_number: "",
-//           email: "",
-//           password: "",
-//           address: "",
-//           pincode: "",
-//           adhaar_no: "",
-//           pan_no: "",
-//         });
-//         setSelectedCustomerType("chit");
-//         navigation.replace("EnrollCustomer", { user });
-//       }
-//     } catch (error) {
-//       console.error("Error adding customer:", error.message);
-//       Alert.alert("Error", error?.response?.data?.message || "Something went wrong.");
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
 const handleAddCustomer = async () => {
   setIsLoading(true);
 
   // 🎯 Determine the base URL and the API route based on the selected customer type
   let baseUrl;
   let apiRoute;
+  let successMessage = "Customer Added Successfully!";
 
   switch (selectedCustomerType) {
     case "chit":
@@ -199,12 +118,14 @@ const handleAddCustomer = async () => {
       apiRoute = "/user/add-user"; // Existing route
       break;
     case "pigme":
-      baseUrl = chitBaseUrl;
+      baseUrl = pigmeBaseUrl;
       apiRoute = "/pigme/user/add"; // New Pigme route
+      successMessage = "Pigme Customer Added Successfully!";
       break;
     case "loan":
-      baseUrl = chitBaseUrl;
+      baseUrl = loanBaseUrl;
       apiRoute = "/loans/user/add"; // New Loan route
+      successMessage = "Loan Customer Added Successfully!";
       break;
     default:
       showCustomToast("Invalid Customer Type selected.");
@@ -219,7 +140,7 @@ const handleAddCustomer = async () => {
   }
 
   if (customerInfo.phone_number.length !== 10) {
-    showCustomToast("Invalid Phone Number");
+    showCustomToast("Invalid Phone Number (must be 10 digits)");
     setIsLoading(false);
     return;
   }
@@ -239,18 +160,22 @@ const handleAddCustomer = async () => {
   try {
     let data;
 
-    // 🧩 Only Pigme and Loan should send agent_id
+    // 🎯 STEP 2: Include 'referred_type' for Pigme and Loan schemes
     if (selectedCustomerType === "pigme" || selectedCustomerType === "loan") {
-      data = { ...customerInfo, agent_id: user.userId }; // ✅ Send agent_id for backend
+      data = { 
+        ...customerInfo, 
+        agent_id: user.userId, 
+        referred_type: REFERRED_TYPE // <-- **This is the critical addition**
+      }; 
     } else {
-      data = { ...customerInfo, agent: user.userId }; // ✅ Keep same for chit & goldChit
+      data = { ...customerInfo, agent: user.userId }; // Keep 'agent' for chit & goldChit
     }
 
     // 🎯 Use the determined baseUrl and apiRoute
     const response = await axios.post(`${baseUrl}${apiRoute}`, data);
 
     if (response.status === 201) {
-      showCustomToast("Customer Added Successfully!");
+      showCustomToast(successMessage);
       setCustomerInfo({
         full_name: "",
         phone_number: "",
@@ -262,7 +187,9 @@ const handleAddCustomer = async () => {
         pan_no: "",
       });
       setSelectedCustomerType("chit");
-      navigation.replace("EnrollCustomer", { user });
+      
+      // Navigate to ViewCustomer (assuming this is the screen name "Customer")
+      navigation.navigate("Customer", { user }); 
     }
   } catch (error) {
     console.error("Error adding customer:", error.message);

@@ -83,21 +83,21 @@ const sendEmail = (item) => {
     }
 };
 
-// ** START OF UPDATED COMPONENT **
 const ViewCustomer = ({ route, navigation }) => {
     // Destructure user from route.params
     const { user } = route.params;
+    
+    // 🎯 Define the referred type (must match what is used in AddCustomer.js and your backend)
+    const REFERRED_TYPE = "Employee"; 
 
     // State management for customer data and loading status
     const [chitCustomers, setChitCustomers] = useState([]);
     const [goldCustomers, setGoldCustomers] = useState([]);
-    // ** NEW STATES for LOAN and PIGMY **
     const [loanCustomers, setLoanCustomers] = useState([]);
     const [pigmyCustomers, setPigmyCustomers] = useState([]);
 
     const [isChitLoading, setIsChitLoading] = useState(false);
     const [isGoldLoading, setIsGoldLoading] = useState(false);
-    // ** NEW LOADING STATES **
     const [isLoanLoading, setIsLoanLoading] = useState(false);
     const [isPigmyLoading, setIsPigmyLoading] = useState(false);
 
@@ -107,28 +107,37 @@ const ViewCustomer = ({ route, navigation }) => {
 
     // Memoized function for fetching data
     const fetchCustomers = useCallback(async (tab) => {
-        // Determine the base URL based on the tab
+        // Determine the base URL and API path based on the tab
         let currentUrl;
+        let apiPath; 
         let setLoading, setCustomers;
 
         switch (tab) {
             case "CHIT":
-                currentUrl = `${baseUrl}`; // Assuming baseUrl is the CHIT URL
+                // 🎯 Chit Route: /user/get-users-by-agent-id/:agent_id
+                currentUrl = `${baseUrl}`; 
+                apiPath = `/user/get-users-by-agent-id/${user.userId}`; 
                 setLoading = setIsChitLoading;
                 setCustomers = setChitCustomers;
                 break;
             case "GOLD":
+                // 🎯 Gold Route: /user/get-users-by-agent-id/:agent_id (assuming different base URL)
                 currentUrl = "http://13.60.68.201:3000/api"; // Existing GOLD URL
+                apiPath = `/user/get-users-by-agent-id/${user.userId}`;
                 setLoading = setIsGoldLoading;
                 setCustomers = setGoldCustomers;
                 break;
-            case "LOAN": // ** NEW LOAN SCHEME URL **
-                currentUrl = `${baseUrl}`;  // ** ASSUMED SAME AS GOLD URL **
+            case "LOAN": 
+                // 🎯 CORRECTED Loan Route: /loans/agent-employee/:referred_type/:agent_id/customer
+                currentUrl = `${baseUrl}`;  // Assuming loan service uses the main baseUrl
+                apiPath = `/loans/agent-employee/${REFERRED_TYPE}/${user.userId}/customer`;
                 setLoading = setIsLoanLoading;
                 setCustomers = setLoanCustomers;
                 break;
-            case "PIGMY": // ** NEW PIGMY SCHEME URL **
-                currentUrl = `${baseUrl}`;  // ** ASSUMED SAME AS GOLD URL **
+            case "PIGMY": 
+                // 🎯 CORRECTED Pigmy Route: /pigme/agent-employee/:referred_type/:agent_id/customer
+                currentUrl = `${baseUrl}`;  // Assuming pigmy service uses the main baseUrl
+                apiPath = `/pigme/agent-employee/${REFERRED_TYPE}/${user.userId}/customer`;
                 setLoading = setIsPigmyLoading;
                 setCustomers = setPigmyCustomers;
                 break;
@@ -139,24 +148,55 @@ const ViewCustomer = ({ route, navigation }) => {
         try {
             setLoading(true);
             
+            // 🎯 Use the dynamic 'apiPath' constructed above
             const response = await axios.get(
-                `${currentUrl}/user/get-users-by-agent-id/${user.userId}`
+                `${currentUrl}${apiPath}`
             );
 
             if (response.status >= 400) {
                 throw new Error("Failed to fetch Customer Data");
             }
+            
+            let customerData = [];
 
-            setCustomers(response.data);
+            if (tab === "PIGMY" || tab === "LOAN") {
+                // 🎯 Handle the nested structure of Pigmy/Loan response
+                const rawDatas = response.data.pigmeDatas || response.data.loanDatas || [];
+                
+                customerData = rawDatas
+                    // Map the nested customer object and add scheme type for display
+                    .map(item => {
+                        if (item.customer) {
+                            return {
+                                // Spread customer details (full_name, phone_number, etc.)
+                                ...item.customer, 
+                                // Add the scheme type for the card display
+                                scheme_type: tab.toLowerCase(),
+                                // Ensure a unique key using the scheme's ID if customer._id is missing
+                                _id: item.customer._id || item._id, 
+                            };
+                        }
+                        return null; // Ignore entries without a customer
+                    })
+                    .filter(item => item && item.full_name); // Filter out nulls and incomplete entries
+
+            } else {
+                // Handle the simpler array structure of Chit/Gold response
+                customerData = Array.isArray(response.data) 
+                    ? response.data 
+                    : (Array.isArray(response.data?.data) ? response.data.data : []);
+            }
+
+            setCustomers(customerData);
 
         } catch (err) {
             console.error(`Fetch ${tab} customers error:`, err);
-            Alert.alert("Data Error", `Could not fetch ${tab.toLowerCase()} customer data. Please check network connection.`);
+            Alert.alert("Data Error", `Could not fetch ${tab.toLowerCase()} customer data. Please check network connection or URL.`);
             setCustomers([]);
         } finally {
             setLoading(false);
         }
-    }, [user.userId, baseUrl]); // Dependency on user.userId and baseUrl
+    }, [user.userId, baseUrl, REFERRED_TYPE]); // Dependency on user.userId, baseUrl, and REFERRED_TYPE
 
     // Effect for initial load or tab change (remains the same)
     useEffect(() => {
@@ -223,7 +263,7 @@ const ViewCustomer = ({ route, navigation }) => {
 
     // Filter customers based on search input (case-insensitive)
     const filteredCustomers = customers.filter(customer =>
-        customer.full_name.toLowerCase().includes(search.toLowerCase())
+        customer.full_name && customer.full_name.toLowerCase().includes(search.toLowerCase())
     );
 
     return (
@@ -326,7 +366,8 @@ const ViewCustomer = ({ route, navigation }) => {
                         {!isLoading && filteredCustomers.length > 0 && (
                             <FlatList
                                 data={filteredCustomers}
-                                keyExtractor={(item, index) => item.userId || index.toString()} // Use a unique ID if available
+                                // Use item._id as key, falling back to index for stability
+                                keyExtractor={(item, index) => item._id || item.userId || index.toString()} 
                                 renderItem={renderCustomerCard}
                                 contentContainerStyle={{ paddingBottom: 80 }} // Add padding for the Floating Action Button
                             />
@@ -390,11 +431,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         paddingHorizontal: 15,
         marginBottom: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 2,
+     
     },
     searchIcon: {
         marginRight: 10,
@@ -412,11 +449,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         marginBottom: 15,
         padding: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 2,
+       
     },
     tab: {
         flex: 1, // Distributes space equally among the 4 tabs
