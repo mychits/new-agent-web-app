@@ -13,13 +13,13 @@ import {
 import React, { useState, useEffect, useCallback } from "react";
 // Removed: import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
-import COLORS from "../constants/color"; // Assuming this path is correct in your project structure
-import Header from "../components/Header"; // Assuming this path is correct in your project structure
-import baseUrl from "../constants/baseUrl"; // Assuming this path is correct in your project structure
+import COLORS from "../constants/color"; 
+import Header from "../components/Header"; 
+import baseUrl from "../constants/baseUrl"; 
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useFocusEffect } from "@react-navigation/native";
-const noImage = require('../assets/no.png'); // Assuming this path is correct in your project structure
+const noImage = require('../assets/no.png'); 
 
 // Function to send WhatsApp message (remains unchanged)
 const whatsappMessage = "Hello from our app!";
@@ -87,7 +87,7 @@ const ViewCustomer = ({ route, navigation }) => {
     // Destructure user from route.params
     const { user } = route.params;
     
-    // 🎯 Define the referred type (must match what is used in AddCustomer.js and your backend)
+    // Define the referred type (must match what is used in AddCustomer.js and your backend)
     const REFERRED_TYPE = "Employee"; 
 
     // State management for customer data and loading status
@@ -114,28 +114,28 @@ const ViewCustomer = ({ route, navigation }) => {
 
         switch (tab) {
             case "CHIT":
-                // 🎯 Chit Route: /user/get-users-by-agent-id/:agent_id
+                // Chit Route: /user/get-users-by-agent-id/:agent_id
                 currentUrl = `${baseUrl}`; 
                 apiPath = `/user/get-users-by-agent-id/${user.userId}`; 
                 setLoading = setIsChitLoading;
                 setCustomers = setChitCustomers;
                 break;
             case "GOLD":
-                // 🎯 Gold Route: /user/get-users-by-agent-id/:agent_id (assuming different base URL)
+                // Gold Route: /user/get-users-by-agent-id/:agent_id (assuming different base URL)
                 currentUrl = "http://13.60.68.201:3000/api"; // Existing GOLD URL
                 apiPath = `/user/get-users-by-agent-id/${user.userId}`;
                 setLoading = setIsGoldLoading;
                 setCustomers = setGoldCustomers;
                 break;
             case "LOAN": 
-                // 🎯 CORRECTED Loan Route: /loans/agent-employee/:referred_type/:agent_id/customer
+                // CORRECTED Loan Route: /loans/agent-employee/:referred_type/:agent_id/customer
                 currentUrl = `${baseUrl}`;  // Assuming loan service uses the main baseUrl
                 apiPath = `/loans/agent-employee/${REFERRED_TYPE}/${user.userId}/customer`;
                 setLoading = setIsLoanLoading;
                 setCustomers = setLoanCustomers;
                 break;
             case "PIGMY": 
-                // 🎯 CORRECTED Pigmy Route: /pigme/agent-employee/:referred_type/:agent_id/customer
+                // CORRECTED Pigmy Route: /pigme/agent-employee/:referred_type/:agent_id/customer
                 currentUrl = `${baseUrl}`;  // Assuming pigmy service uses the main baseUrl
                 apiPath = `/pigme/agent-employee/${REFERRED_TYPE}/${user.userId}/customer`;
                 setLoading = setIsPigmyLoading;
@@ -148,7 +148,7 @@ const ViewCustomer = ({ route, navigation }) => {
         try {
             setLoading(true);
             
-            // 🎯 Use the dynamic 'apiPath' constructed above
+            // Use the dynamic 'apiPath' constructed above
             const response = await axios.get(
                 `${currentUrl}${apiPath}`
             );
@@ -159,28 +159,55 @@ const ViewCustomer = ({ route, navigation }) => {
             
             let customerData = [];
 
-            if (tab === "PIGMY" || tab === "LOAN") {
-                // 🎯 Handle the nested structure of Pigmy/Loan response
+            if (tab === "LOAN") {
+                // Handle the nested structure of Pigmy/Loan response
                 const rawDatas = response.data.pigmeDatas || response.data.loanDatas || [];
                 
                 customerData = rawDatas
                     // Map the nested customer object and add scheme type for display
                     .map(item => {
-                        if (item.customer) {
+                        // 🎯 CORRECTION APPLIED HERE: Use item.customer, but fall back to 'item' if 'customer' is null/undefined
+                        const customerDetails = item.borrower || item; 
+
+                        if (customerDetails && customerDetails.full_name) {
                             return {
                                 // Spread customer details (full_name, phone_number, etc.)
-                                ...item.customer, 
+                                ...customerDetails, 
                                 // Add the scheme type for the card display
                                 scheme_type: tab.toLowerCase(),
-                                // Ensure a unique key using the scheme's ID if customer._id is missing
-                                _id: item.customer._id || item._id, 
+                                // Ensure a unique key using the customer's ID or scheme's ID
+                                _id: customerDetails._id || item._id, 
                             };
                         }
                         return null; // Ignore entries without a customer
                     })
-                    .filter(item => item && item.full_name); // Filter out nulls and incomplete entries
+                    .filter(item => item); // Filter out nulls
 
-            } else {
+            } else if (tab === "PIGMY") {
+                  const rawDatas = response.data.pigmeDatas || response.data.loanDatas || [];
+                
+                customerData = rawDatas
+                    // Map the nested customer object and add scheme type for display
+                    .map(item => {
+                        // 🎯 CORRECTION APPLIED HERE: Use item.customer, but fall back to 'item' if 'customer' is null/undefined
+                        const customerDetails = item.customer || item; 
+
+                        if (customerDetails && customerDetails.full_name) {
+                            return {
+                                // Spread customer details (full_name, phone_number, etc.)
+                                ...customerDetails, 
+                                // Add the scheme type for the card display
+                                scheme_type: tab.toLowerCase(),
+                                // Ensure a unique key using the customer's ID or scheme's ID
+                                _id: customerDetails._id || item._id, 
+                            };
+                        }
+                        return null; // Ignore entries without a customer
+                    })
+                    .filter(item => item); // Filter out nulls
+              
+            }
+            else {
                 // Handle the simpler array structure of Chit/Gold response
                 customerData = Array.isArray(response.data) 
                     ? response.data 
