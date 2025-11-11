@@ -55,7 +55,7 @@ const Reports = ({ route, navigation }) => {
             key="gold-chits-card"
             name="Gold Report"
             icon="bar-chart"
-            onPress={() => navigation.navigate("GoldPayment", { user: user, areaId: "gold-chits" })}
+            // onPress={() => navigation.navigate("GoldPayment", { user: user, areaId: "gold-chits" })}
           />
           <CustomReportCard
             key="loan-chits-card"

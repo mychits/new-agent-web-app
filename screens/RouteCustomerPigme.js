@@ -37,16 +37,18 @@ const RouteCustomerPigme = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+   
     const fetchPigmeCustomers = async () => {
       try {
         setLoading(true);
         const response = await axios.get(
-          `${baseUrl}/pigme/get-all-pigme-customers`
+          `${baseUrl}/pigme?referrerId=${user?.userId}`
         );
-        if (response.data) {
-          setCustomers(response.data);
+        if (response?.data?.data) {
+        
+          setCustomers(response?.data?.data);
         } else {
-          console.error("Unexpected API response format:", response.data);
+          console.error("Unexpected API response format:", response.data.data);
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
@@ -118,8 +120,8 @@ const RouteCustomerPigme = ({ route, navigation }) => {
                     onPress={() => {
                       navigation.navigate("PigmePayin", {
                         user,
-                        customer: item.customer?._id,
-                        pigme_id: item._id,
+                        customer: item?.customer?._id,
+                        pigme_id: item?._id,
                         custom_pigme_id: item?.pigme_id,
                       });
                     }}

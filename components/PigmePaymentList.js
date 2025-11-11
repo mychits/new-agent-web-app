@@ -88,20 +88,20 @@ const PigmePaymentList = ({
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
               <Feather name="credit-card" size={14} color={COLORS.gray} />
-              <Text style={styles.infoLabel}>Pigme ID</Text>
+              <Text style={styles.infoLabel}>Pigmy ID</Text>
             </View>
             <Text style={styles.infoValue}>{pigmeId}</Text>
           </View>
 
-          {pigmeAmount && (
+          {/* {pigmeAmount && (
             <View style={styles.infoRow}>
               <View style={styles.infoItem}>
                 <Feather name="sun" size={14} color={COLORS.gray} />
-                <Text style={styles.infoLabel}>Pigme Amount</Text>
+                <Text style={styles.infoLabel}>Pigm Amount</Text>
               </View>
               <Text style={styles.infoValue}>₹{pigmeAmount}</Text>
             </View>
-          )}
+          )} */}
         </View>
 
         {/* Footer */}

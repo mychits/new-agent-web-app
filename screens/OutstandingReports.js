@@ -12,10 +12,36 @@ import {
     TouchableOpacity,
     Linking,
 } from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context"; // 👈 REMOVED
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
-import Header from "../components/Header";
+// import Header from "../components/Header"; // 👈 ORIGINAL IMPORT (Commented out)
+
+// =================================================================
+// 🚨 HEADER COMPONENT DEFINITION 🚨
+// This component provides the necessary Header structure.
+// =================================================================
+const Header = () => (
+    <View style={headerStyles.container}>
+        
+    </View>
+);
+
+const headerStyles = StyleSheet.create({
+    container: {
+        // Ensures the header spans the width and centers the title
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        // Note: No vertical padding needed here, as it's managed by pageStyles.headerSpacer
+    },
+    text: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#FFFFFF', // White text to stand out against the blue gradient background
+    },
+});
+// =================================================================
+
 
 // --- ORIGINAL CONSTANTS ---
 const DUE_API = "https://mychits.online/api/enroll/due/routes/agent/";
@@ -26,10 +52,10 @@ const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
 
 // --- MODERN STYLING CONSTANTS (Curated for a professional, clean look) ---
 const MODERN_PRIMARY = "#0d0d0eff"; // Deep, professional blue
-const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
-const WARNING_RED = "#dc2626";    // Strong red for negative/balance
-const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
-const DARK_TEXT = "#101111ff";    // Darkest text color for contrast
+const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
+const WARNING_RED = "#dc2626";    // Strong red for negative/balance
+const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
+const DARK_TEXT = "#101111ff";    // Darkest text color for contrast
 const LIGHT_GREY_BACKGROUND = "#f9fafb"; // Very light background for elements
 const BORDER_COLOR = "#e5e7eb"; // Light border for subtle separation
 
@@ -68,7 +94,7 @@ const handleCall = (phoneNumber) => {
 };
 
 // =================================================================
-// STYLIZED COMPONENT: OutstandingReportCard (Unchanged)
+// STYLIZED COMPONENT: OutstandingReportCard 
 // =================================================================
 
 const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
@@ -254,19 +280,15 @@ const OutstandingReports = ({ route }) => {
     );
 
     return (
-        <View style={{ flex: 1 }}> {/* 👈 Changed from SafeAreaView to View */}
+        <View style={{ flex: 1 }}> 
             
             <LinearGradient colors={BACKGROUND_GRADIENT} style={{ flex: 1 }}>
 
-                {/* The Header component must now manage its own top offset 
-                    or rely on a container that handles the status bar. 
-                    We will modify pageStyles.container to handle this.
-                */}
+                {/* HeaderSpacer wraps the Header, compensating for the status bar and providing padding */}
                 <View style={pageStyles.headerSpacer}>
                     <Header />
                 </View>
 
-                {/* pageStyles.container will now need padding to avoid the status bar */}
                 <View style={pageStyles.container}>
                     <Text style={pageStyles.title}>Outstanding Report</Text>
                     <Text style={pageStyles.subtitle}>
@@ -324,32 +346,24 @@ const OutstandingReports = ({ route }) => {
 export default OutstandingReports;
 
 // =================================================================
-// STYLES (MODIFIED)
+// STYLES 
 // =================================================================
 const pageStyles = StyleSheet.create({
-    // --- MODIFIED: Added paddingTop to container for status bar compensation ---
-container: {
+    container: {
         flex: 1,
         paddingHorizontal: 16,
-        // REMOVED negative paddingTop: -50, as it's unreliable and clashes with headerSpacer
-        // You might need a small paddingTop if the Header doesn't account for the status bar, 
-        // but for now, we'll rely on the default flow.
     },
+    // The headerSpacer ensures the Header has vertical space above the title
     headerSpacer: {
         paddingHorizontal: 16,
-        // ❌ WAS: paddingVertical: 40, (Too much vertical space)
-        paddingVertical: 40, // ✅ CHANGE: Drastically reduced vertical padding
-        // If the Header needs space at the top (for the Status Bar), use a smaller value like 20 or 30
-        // otherwise, 10 or less should suffice for a clean look.
+        paddingVertical: 40, 
     },
     title: {
         fontSize: 28,
-        fontWeight: "900", // Extra bold
+        fontWeight: "900", 
         color: MODERN_PRIMARY,
-        // ❌ WAS: marginBottom: 4, (The margin that separates the title from the subtitle)
         marginBottom: 4, 
-        // ✅ ADDED: marginTop to bring the title closer to the previous element (Header/HeaderSpacer)
-        marginTop: -25, // Add a small margin top here to separate from the HeaderSpacer content
+        marginTop: -25, 
         textAlign: 'center',
     },
     subtitle: {
@@ -363,7 +377,7 @@ container: {
     dropdownWrapper: {
         backgroundColor: "#ffffff",
         padding: 15,
-        borderRadius: 12, // Rounded corners
+        borderRadius: 12, 
         marginBottom: 20,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
@@ -385,17 +399,17 @@ container: {
         backgroundColor: LIGHT_GREY_BACKGROUND,
     },
     picker: {
-        color: MODERN_PRIMARY, // Dark text for Picker
+        color: MODERN_PRIMARY, 
     },
 
     // --- TOTAL SUMMARY ---
     totalWrapper: {
-        backgroundColor: "#fff7ed", // Soft orange/yellow background
+        backgroundColor: "#fff7ed", 
         borderRadius: 12,
         padding: 18,
         marginBottom: 20,
         borderLeftWidth: 6,
-        borderLeftColor: "#f97316", // Vibrant orange
+        borderLeftColor: "#f97316", 
         alignItems: 'center',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -410,7 +424,7 @@ container: {
     },
     totalAmount: {
         color: WARNING_RED,
-        fontWeight: "900", // Extra bold
+        fontWeight: "900", 
         fontSize: 26,
     },
 
@@ -419,7 +433,7 @@ container: {
         flex: 1,
     },
     flatListContentContainer: {
-        paddingBottom: 20, // Add some bottom padding
+        paddingBottom: 20, 
     },
 
     // --- LOADER/EMPTY STATE ---
@@ -447,15 +461,14 @@ container: {
 });
 
 // =================================================================
-// CARD-SPECIFIC STYLES (Unchanged)
+// CARD-SPECIFIC STYLES 
 // =================================================================
 const cardStyles = StyleSheet.create({
     cardContainer: {
         backgroundColor: "#ffffff",
-        borderRadius: 16, // Large rounded corners
+        borderRadius: 16, 
         marginBottom: 15,
-        overflow: 'hidden', // Ensures shadow and content play well
-        // Premium, larger shadow
+        overflow: 'hidden', 
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.15,
@@ -475,17 +488,17 @@ const cardStyles = StyleSheet.create({
     },
     groupName: {
         fontSize: 16,
-        fontWeight: "800", // Bolder
+        fontWeight: "800", 
         color: MODERN_PRIMARY,
         marginRight: 10,
-        flexShrink: 1, // Allows text to shrink
+        flexShrink: 1, 
     },
     paymentTypeTag: {
-        backgroundColor: "#eef2ff", // Light blue background for a tag feel
+        backgroundColor: "#eef2ff", 
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
-        alignSelf: 'flex-start', // Align to start of its line
+        alignSelf: 'flex-start', 
     },
     paymentTypeText: {
         fontSize: 12,
@@ -502,7 +515,7 @@ const cardStyles = StyleSheet.create({
     },
     customerName: {
         fontSize: 20,
-        fontWeight: "900", // Extra bold
+        fontWeight: "900", 
         color: DARK_TEXT,
         flexShrink: 1,
         marginRight: 10,
@@ -523,7 +536,7 @@ const cardStyles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: '700',
         fontSize: 14,
-        marginLeft: 5, // Space for icon if added to text
+        marginLeft: 5, 
     },
 
     balanceRow: {
@@ -532,7 +545,7 @@ const cardStyles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         paddingHorizontal: 15,
-        backgroundColor: "#fef2f2", // Very light red background for attention
+        backgroundColor: "#fef2f2", 
         borderRadius: 10,
         borderWidth: 1,
         borderColor: '#fde0e0',
@@ -544,7 +557,7 @@ const cardStyles = StyleSheet.create({
         fontWeight: '700',
     },
     balanceValue: {
-        fontSize: 20, // Prominent
+        fontSize: 20, 
         fontWeight: "900",
     },
 
@@ -569,7 +582,7 @@ const cardStyles = StyleSheet.create({
         justifyContent: "space-between",
         paddingVertical: 8,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6', // Lighter border
+        borderBottomColor: '#f3f4f6', 
     },
     financialLabel: {
         fontSize: 15,

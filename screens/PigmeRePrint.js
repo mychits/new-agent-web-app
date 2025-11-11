@@ -122,7 +122,6 @@ ${centerText("Kathriguppe Main Road,")}
 ${centerText("Bangalore, 560085 9483900777")}
 --------------------------------
 ${centerText(receiptType)}
-Pigmy Amount: ${pigme_amount || "N/A"}
 Receipt No: ${receipt_no || "N/A"}
 Date: ${formatDate(pay_date)}
 
@@ -221,9 +220,7 @@ Collected by: ${agent_name || "N/A"}
             ${isPigmePayment ? "Pigmy Receipt" : "Receipt"}
           </p>
             <p style="margin: 0;">
-          <span style="font-weight: bold;">Pigmy Amount:</span> ${
-            pigme_amount || "N/A"
-          } <br/>
+         <br/>
           <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
           </p>
           <p style="margin: 0;">
@@ -367,10 +364,10 @@ Collected by: ${agent_name || "N/A"}
             >
               {isPigmePayment ? "Pigme Receipt" : "Receipt"}
             </Text>
-            <Text style={styles.textStyle}>
+            {/* <Text style={styles.textStyle}>
               <Text style={{ fontWeight: "bold" }}>Pigmy Amount:</Text>{" "}
               {pigme_amount || "N/A"}
-            </Text>
+            </Text> */}
             <Text style={styles.textStyle}>
               <Text style={{ fontWeight: "bold" }}>Receipt No:</Text>{" "}
               {receipt_no || "N/A"}
