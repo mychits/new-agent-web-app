@@ -9,7 +9,7 @@ import {
   Image,
   Pressable,
   Animated,
-  ActivityIndicator, // 👈 Import ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import { useState, useRef, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -34,21 +34,58 @@ const backgroundImages = [
   require('../assets/i2.png'),
 ];
 
-// 1. Import the new image
+// Import the new image
 const logoImage = require('../assets/Group400.png');
 
 export default function Login({ navigation }) {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordShown, setIsPasswordShown] = useState(false);
-  const [loading, setLoading] = useState(false); // 👈 New state for loader
+  const [loading, setLoading] = useState(false);
+  // State to manage the auto-login check process
+  const [isCheckingAutoLogin, setIsCheckingAutoLogin] = useState(true);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const inputAnim = useRef(new Animated.Value(0)).current;
 
+  // 1. Auto-Login Check (Runs on component mount)
   useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("user");
+        const agentData = await AsyncStorage.getItem("agentInfo");
+
+        if (userData && agentData) {
+          const user = JSON.parse(userData);
+          const agentInfo = JSON.parse(agentData);
+          // User is logged in, navigate immediately
+          navigation.navigate("BottomNavigation", { user, agentInfo });
+          // NOTE: Do NOT set setIsCheckingAutoLogin(false) here, 
+          // as navigation will unmount the component before that state change matters.
+          // This keeps the screen blank while we navigate.
+        } else {
+           // Only stop checking (and render the form) if NO session is found.
+           setIsCheckingAutoLogin(false);
+        }
+      } catch (error) {
+        console.error("Failed to retrieve login data:", error);
+        // If an error occurs (e.g., storage corruption), proceed to login form.
+        setIsCheckingAutoLogin(false);
+      }
+    };
+
+    checkLoginStatus();
+    // Clean up function to prevent potential memory leaks, though less critical here
+    return () => {};
+  }, [navigation]);
+
+  // 2. Background and Input Animations
+  // Removed dependency on isCheckingAutoLogin from fadeAnim/inputAnim interval
+  // to avoid issues if navigation happens extremely fast.
+  useEffect(() => {
+    // Start background animation regardless of login status check completion
     const interval = setInterval(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -64,15 +101,19 @@ export default function Login({ navigation }) {
       });
     }, 4000);
 
-    Animated.timing(inputAnim, {
-      toValue: 1,
-      duration: 800,
-      delay: 500,
-      useNativeDriver: true,
-    }).start();
+    // Only start input animation when the form is ready to be shown (i.e., check failed)
+    if (!isCheckingAutoLogin) {
+        Animated.timing(inputAnim, {
+          toValue: 1,
+          duration: 800,
+          delay: 500,
+          useNativeDriver: true,
+        }).start();
+    }
 
     return () => clearInterval(interval);
-  }, [fadeAnim, backgroundImages.length, inputAnim]);
+  }, [fadeAnim, backgroundImages.length, inputAnim, isCheckingAutoLogin]); 
+
 
   const onPressInButton = () => {
     Animated.spring(scaleAnim, {
@@ -99,7 +140,7 @@ export default function Login({ navigation }) {
       return;
     }
 
-    setLoading(true); // 👈 Show loader
+    setLoading(true);
 
     try {
       const cleanedPassword = password.replace(/\s/g, "");
@@ -114,8 +155,10 @@ export default function Login({ navigation }) {
         const agentDetail = await axios.get(
           `${baseUrl}/agent/get-agent-by-id/${data.userId}`
         );
+        // Store user and agent info for future auto-login
         await AsyncStorage.setItem("user", JSON.stringify(data));
         await AsyncStorage.setItem("agentInfo", JSON.stringify(agentDetail?.data));
+
         navigation.navigate("BottomNavigation", {
           user: data,
           agentInfo: agentDetail?.data,
@@ -127,10 +170,19 @@ export default function Login({ navigation }) {
       Alert.alert("Error", "An error occurred. Please try again.");
       console.error(error);
     } finally {
-      setLoading(false); // 👈 Hide loader
+      setLoading(false);
     }
   };
 
+  // --- Render Logic (Optimized for no flash) ---
+  if (isCheckingAutoLogin) {
+    // This returns the fastest possible component: a blank, flex: 1 View.
+    // The user will see whatever the navigation screen underneath looks like 
+    // (usually a white splash screen) until navigation pushes BottomNavigation.
+    return <View style={styles.container} />;
+  }
+
+  // Show the full login screen if the auto-login check failed
   return (
     <View style={styles.container}>
       {/* Animated Background Image */}
@@ -150,7 +202,7 @@ export default function Login({ navigation }) {
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.contentWrapper}>
-          {/* 2. Add the Image component (e.g., as a logo above the title) */}
+          {/* Logo */}
           <Animated.View style={[styles.logoContainer, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] }]}>
             <Image source={logoImage} style={styles.logo} resizeMode="contain" />
           </Animated.View>
@@ -202,7 +254,7 @@ export default function Login({ navigation }) {
             </Pressable>
           </Animated.View>
 
-          {/* Become an agent? link - Moved here, between password and login button */}
+          {/* Become an agent? link */}
           <Animated.View style={[styles.becomeAgentLinkWrapper, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
             <Pressable style={styles.becomeAgentLink} onPress={() => navigation.navigate("Becomeanagent")}>
               <Text style={styles.becomeAgentText}>Become an Agent ?</Text>
@@ -216,7 +268,7 @@ export default function Login({ navigation }) {
               onPressIn={onPressInButton}
               onPressOut={onPressOutButton}
               activeOpacity={1}
-              disabled={loading} // 👈 Disable button while loading
+              disabled={loading}
             >
               <LinearGradient
                 colors={[COLOR_PALETTE.primary, COLOR_PALETTE.secondary]}
@@ -224,7 +276,7 @@ export default function Login({ navigation }) {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                {/* 👈 Conditional rendering for loader */}
+                {/* Conditional rendering for loader */}
                 {loading ? (
                   <ActivityIndicator color={COLOR_PALETTE.lightText} size="small" />
                 ) : (
@@ -234,7 +286,7 @@ export default function Login({ navigation }) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* NEW: Don't have an account? Sign Up link */}
+          {/* Don't have an account? Sign Up link */}
           <Animated.View style={[styles.signUpLinkWrapper, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
             <Pressable onPress={() => navigation.navigate("Register")}>
               <Text style={styles.signUpText}>
@@ -253,6 +305,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+    backgroundColor: '#FFFFFF', // Fallback background
   },
   backgroundOverlayImage: {
     ...StyleSheet.absoluteFillObject,
@@ -273,13 +326,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  // 3. Add styles for the new logo image
   logoContainer: {
-    marginBottom: 1, // Space below the logo
+    marginBottom: 1,
   },
   logo: {
-    width: 80, // Adjust size as needed
-    height: 70, // Adjust size as needed
+    width: 80,
+    height: 70,
   },
   welcomeTitle: {
     fontSize: 40,

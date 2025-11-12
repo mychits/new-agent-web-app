@@ -54,7 +54,7 @@ const Routes = ({ route, navigation }) => {
             <CustomRouteCard
               name="Gold Chits Customer"
               icon="diamond"
-              onPress={() => navigation.navigate("RouteCustomerGold", { user, areaId: "gold-chits" })}
+              // onPress={() => navigation.navigate("RouteCustomerGold", { user, areaId: "gold-chits" })}
             />
             <CustomRouteCard
               name="Loan Customer"

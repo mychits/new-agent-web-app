@@ -93,15 +93,7 @@ const PigmePaymentList = ({
             <Text style={styles.infoValue}>{pigmeId}</Text>
           </View>
 
-          {pigmeAmount && (
-            <View style={styles.infoRow}>
-              <View style={styles.infoItem}>
-                <Feather name="sun" size={14} color={COLORS.gray} />
-                <Text style={styles.infoLabel}>Pigme Amount</Text>
-              </View>
-              <Text style={styles.infoValue}>₹{pigmeAmount}</Text>
-            </View>
-          )}
+          
         </View>
 
         {/* Footer */}

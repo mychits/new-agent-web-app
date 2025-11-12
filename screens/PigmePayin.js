@@ -224,7 +224,7 @@ const PigmePayin = ({ route, navigation }) => {
     
     const showPigmePicker = pigmeData.length > 1;
     const pigmeDisplayValue = selectedPigme 
-        ? `ID: ${selectedPigme.pigme_id} | Amount: ${selectedPigme.payable_amount}`
+        ? `ID: ${selectedPigme.pigme_id}`
         : "Loading...";
 
 
@@ -286,7 +286,7 @@ const PigmePayin = ({ route, navigation }) => {
                             
                             {/* Pigme ID & Payable Amount - Conditional Rendering */}
                             <Text style={styles.label}>
-                                Pigmy ID & Payable Amount<Text style={styles.star}>*</Text>
+                                Pigmy ID <Text style={styles.star}>*</Text>
                             </Text>
                             
                             {showPigmePicker ? (
@@ -307,7 +307,7 @@ const PigmePayin = ({ route, navigation }) => {
                                         {pigmeData.map((data) => (
                                             <Picker.Item
                                                 key={data._id}
-                                                label={`ID: ${data.pigme_id} | Amount: ${data.payable_amount}`}
+                                                label={`ID: ${data.pigme_id} `}
                                                 value={data}
                                             />
                                         ))}
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     title: {
-        fontSize: 32,
+        fontSize: 27,
         fontWeight: 'bold',
         color: '#333',
     },
