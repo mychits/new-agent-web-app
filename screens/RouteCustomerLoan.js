@@ -13,7 +13,8 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import COLORS from "../constants/color";
 import Header from "../components/Header";
-import baseUrl from "../constants/baseUrl";
+// Assuming baseUrl is imported from "../constants/baseUrl"
+import baseUrl from "../constants/baseUrl"; 
 
 import axios from "axios";
 const CustomerCard = ({ name, phone, onPress }) => (
@@ -40,12 +41,16 @@ const RouteCustomerLoan = ({ route, navigation }) => {
     const fetchLoanCustomers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${baseUrl}/loans/get-all-borrowers`);
+        // MODIFICATION: Use the dynamic referrerId in the API call
+        const response = await axios.get(
+          `${baseUrl}/loans?referrerId=${user?.userId}`
+        );
 
-        if (response.data) {
-          setCustomers(response.data);
+       
+        if (response?.data?.data) { 
+          setCustomers(response.data.data);
         } else {
-          console.error("Unexpected API response format:", response.data);
+          console.error("Unexpected API response format:", response.data.data);
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
@@ -59,11 +64,11 @@ const RouteCustomerLoan = ({ route, navigation }) => {
 
   return (
     <LinearGradient
-       colors={["#1aa2ccff", "#1aa2ccff"]}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+        colors={["#1aa2ccff", "#1aa2ccff"]}
+         style={styles.gradientOverlay}
+         start={{ x: 0, y: 0 }}
+         end={{ x: 1, y: 1 }}
+       >
         {/* Fixed Content Wrapper */}
         <View style={styles.fixedContentWrapper}>
           <Header />
@@ -88,7 +93,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
           </View>
         </View>
 
-       
+        
         {loading ? (
             <View style={{ marginTop: 30, alignItems: "center" }}>
               <ActivityIndicator size="large" color="#f8c009ff" />
@@ -101,18 +106,20 @@ const RouteCustomerLoan = ({ route, navigation }) => {
             >
               {Array.isArray(customers) &&
                 customers
+                  // The filtering logic assumes the structure { borrower: { full_name, phone_number } }
                   .filter((customer) =>
                     customer.borrower?.full_name
                       ?.toLowerCase()
-                      .includes(search.toLowerCase())
+                      .includes(search.toLowerCase()) || ""
                   )
                   .map((customer, index) => (
                     <CustomerCard
                       key={index}
-                      name={customer.borrower.full_name}
-                      phone={customer.borrower.phone_number}
+                      name={customer.borrower?.full_name || "Unknown Customer"}
+                      phone={customer.borrower?.phone_number || "N/A"}
                       onPress={() =>
                         navigation.navigate("LoanPayin", {
+                          user, // Pass user object
                           customer: customer?.borrower?._id,
                           loan_id: customer._id,
                           custom_loan_id: customer.loan_id,
