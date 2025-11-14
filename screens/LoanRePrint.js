@@ -159,7 +159,7 @@ Collected by: ${agent_name || "N/A"}
   };
 
   const printHtmlReceipt = async (widthMM) => {
-    setIsPrinting(true);
+    
 
     const groupOrLoanHtml = isLoanPayment
       ? `<p style="margin: 0; font-weight: bold;">Loan ID: ${custom_loan_id || "N/A"
@@ -267,8 +267,6 @@ Collected by: ${agent_name || "N/A"}
         "Print Error",
         `Failed to print the document via OS print dialog. (Width: ${widthMM}MM)`
       );
-    } finally {
-      setIsPrinting(false);
     }
   };
 
