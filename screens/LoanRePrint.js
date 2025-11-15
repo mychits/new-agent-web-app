@@ -161,6 +161,9 @@ Collected by: ${agent_name || "N/A"}
   const printHtmlReceipt = async (widthMM) => {
     setIsPrinting(true);
 
+    // FIX: Define the missing 'size' variable using widthMM
+    const size = `${widthMM}mm`;
+
     const groupOrLoanHtml = isLoanPayment
       ? `<p style="margin: 0; font-weight: bold;">Loan ID: ${custom_loan_id || "N/A"
       }</p>`
@@ -489,6 +492,7 @@ const styles = StyleSheet.create({
   printButtonOne: {
     backgroundColor: COLORS.third,
     padding: 20,
+
   },
   printButtonTwo: {
     backgroundColor: COLORS.third,

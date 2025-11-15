@@ -42,50 +42,17 @@ export default function Login({ navigation }) {
   const [password, setPassword] = useState("");
   const [isPasswordShown, setIsPasswordShown] = useState(false);
   const [loading, setLoading] = useState(false);
-  // State to manage the auto-login check process
-  const [isCheckingAutoLogin, setIsCheckingAutoLogin] = useState(true);
+  // Removed: isCheckingAutoLogin state
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  // Initialize inputAnim to 1 since we render the form immediately
   const inputAnim = useRef(new Animated.Value(0)).current;
 
-  // 1. Auto-Login Check (Runs on component mount)
+  // 1. Background and Input Animations (Simplified)
   useEffect(() => {
-    const checkLoginStatus = async () => {
-      try {
-        const userData = await AsyncStorage.getItem("user");
-        const agentData = await AsyncStorage.getItem("agentInfo");
-
-        if (userData && agentData) {
-          const user = JSON.parse(userData);
-          const agentInfo = JSON.parse(agentData);
-          // User is logged in, navigate immediately
-          navigation.navigate("BottomNavigation", { user, agentInfo });
-          // NOTE: Do NOT set setIsCheckingAutoLogin(false) here, 
-          // as navigation will unmount the component before that state change matters.
-          // This keeps the screen blank while we navigate.
-        } else {
-           // Only stop checking (and render the form) if NO session is found.
-           setIsCheckingAutoLogin(false);
-        }
-      } catch (error) {
-        console.error("Failed to retrieve login data:", error);
-        // If an error occurs (e.g., storage corruption), proceed to login form.
-        setIsCheckingAutoLogin(false);
-      }
-    };
-
-    checkLoginStatus();
-    // Clean up function to prevent potential memory leaks, though less critical here
-    return () => {};
-  }, [navigation]);
-
-  // 2. Background and Input Animations
-  // Removed dependency on isCheckingAutoLogin from fadeAnim/inputAnim interval
-  // to avoid issues if navigation happens extremely fast.
-  useEffect(() => {
-    // Start background animation regardless of login status check completion
+    // Start background animation
     const interval = setInterval(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -101,18 +68,16 @@ export default function Login({ navigation }) {
       });
     }, 4000);
 
-    // Only start input animation when the form is ready to be shown (i.e., check failed)
-    if (!isCheckingAutoLogin) {
-        Animated.timing(inputAnim, {
-          toValue: 1,
-          duration: 800,
-          delay: 500,
-          useNativeDriver: true,
-        }).start();
-    }
+    // Start input animation immediately
+    Animated.timing(inputAnim, {
+      toValue: 1,
+      duration: 800,
+      delay: 500,
+      useNativeDriver: true,
+    }).start();
 
     return () => clearInterval(interval);
-  }, [fadeAnim, backgroundImages.length, inputAnim, isCheckingAutoLogin]); 
+  }, [fadeAnim, backgroundImages.length, inputAnim]); // Removed isCheckingAutoLogin from dependencies
 
 
   const onPressInButton = () => {
@@ -155,7 +120,7 @@ export default function Login({ navigation }) {
         const agentDetail = await axios.get(
           `${baseUrl}/agent/get-agent-by-id/${data.userId}`
         );
-        // Store user and agent info for future auto-login
+        // Store user and agent info for future auto-login (Kept this, as the user might want to re-add auto-login later or use this data elsewhere)
         await AsyncStorage.setItem("user", JSON.stringify(data));
         await AsyncStorage.setItem("agentInfo", JSON.stringify(agentDetail?.data));
 
@@ -174,15 +139,7 @@ export default function Login({ navigation }) {
     }
   };
 
-  // --- Render Logic (Optimized for no flash) ---
-  if (isCheckingAutoLogin) {
-    // This returns the fastest possible component: a blank, flex: 1 View.
-    // The user will see whatever the navigation screen underneath looks like 
-    // (usually a white splash screen) until navigation pushes BottomNavigation.
-    return <View style={styles.container} />;
-  }
-
-  // Show the full login screen if the auto-login check failed
+  // --- Render Logic (Simplified - always shows the login form) ---
   return (
     <View style={styles.container}>
       {/* Animated Background Image */}
@@ -358,7 +315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     height: 60,
-    borderWidth:1,
+    borderWidth: 1,
     borderColor: 'orange',
     backgroundColor: '#FFFFFF',
     borderRadius: 30,
