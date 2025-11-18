@@ -158,7 +158,9 @@ Collected by: ${agent_name || "N/A"}
   };
 
   const printHtmlReceipt = async (widthMM) => {
-   
+    // FIX: Define the 'size' variable for the HTML template to use the correct width.
+    const size = `${widthMM}mm`; 
+    
 
     const groupOrLoanHtml = isLoanPayment
       ? `<p style="margin: 0; font-weight: bold;">Loan ID: ${custom_loan_id || "N/A"
