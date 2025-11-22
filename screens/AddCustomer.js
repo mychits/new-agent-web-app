@@ -43,6 +43,8 @@ const AddCustomer = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCustomerType, setSelectedCustomerType] = useState("chit");
   const [focusedInput, setFocusedInput] = useState(null);
+  // ✅ New state to manage password visibility
+  const [showPassword, setShowPassword] = useState(false); 
 
   const [customerInfo, setCustomerInfo] = useState({
     full_name: "",
@@ -100,104 +102,110 @@ const AddCustomer = ({ route, navigation }) => {
       showCustomToast("Failed to pick contact.");
     }
   };
-const handleAddCustomer = async () => {
-  setIsLoading(true);
+  
+  const handleAddCustomer = async () => {
+    setIsLoading(true);
 
-  // 🎯 Determine the base URL and the API route based on the selected customer type
-  let baseUrl;
-  let apiRoute;
-  let successMessage = "Customer Added Successfully!";
+    // 🎯 Determine the base URL and the API route based on the selected customer type
+    let baseUrl;
+    let apiRoute;
+    let successMessage = "Customer Added Successfully!";
 
-  switch (selectedCustomerType) {
-    case "chit":
-      baseUrl = chitBaseUrl;
-      apiRoute = "/user/add-user"; // Existing route
-      break;
-    case "goldChit":
-      baseUrl = goldBaseUrl;
-      apiRoute = "/user/add-user"; // Existing route
-      break;
-    case "pigme":
-      baseUrl = pigmeBaseUrl;
-      apiRoute = "/pigme/user/add"; // New Pigme route
-      successMessage = "Pigme Customer Added Successfully!";
-      break;
-    case "loan":
-      baseUrl = loanBaseUrl;
-      apiRoute = "/loans/user/add"; // New Loan route
-      successMessage = "Loan Customer Added Successfully!";
-      break;
-    default:
-      showCustomToast("Invalid Customer Type selected.");
+    switch (selectedCustomerType) {
+      case "chit":
+        baseUrl = chitBaseUrl;
+        apiRoute = "/user/add-user"; // Existing route
+        break;
+      case "goldChit":
+        baseUrl = goldBaseUrl;
+        apiRoute = "/user/add-user"; // Existing route
+        break;
+      case "pigme":
+        baseUrl = pigmeBaseUrl;
+        apiRoute = "/pigme/user/add"; // New Pigme route
+        successMessage = "Pigme Customer Added Successfully!";
+        break;
+      case "loan":
+        baseUrl = loanBaseUrl;
+        apiRoute = "/loans/user/add"; // New Loan route
+        successMessage = "Loan Customer Added Successfully!";
+        break;
+      default:
+        showCustomToast("Invalid Customer Type selected.");
+        setIsLoading(false);
+        return;
+    }
+
+    if (!customerInfo.full_name || !customerInfo.phone_number || !customerInfo.password) {
+      Alert.alert("Required", "Full Name, Phone Number, and Password are required.");
       setIsLoading(false);
       return;
-  }
-
-  if (!customerInfo.full_name || !customerInfo.phone_number || !customerInfo.password) {
-    Alert.alert("Required", "Full Name, Phone Number, and Password are required.");
-    setIsLoading(false);
-    return;
-  }
-
-  if (customerInfo.phone_number.length !== 10) {
-    showCustomToast("Invalid Phone Number (must be 10 digits)");
-    setIsLoading(false);
-    return;
-  }
-
-  if (
-    !isQuickAdd &&
-    (!customerInfo.email ||
-      !customerInfo.address ||
-      !customerInfo.pincode ||
-      !customerInfo.adhaar_no)
-  ) {
-    Alert.alert("Required", "Please fill all mandatory fields in detailed form.");
-    setIsLoading(false);
-    return;
-  }
-
-  try {
-    let data;
-
-    // 🎯 STEP 2: Include 'referred_type' for Pigme and Loan schemes
-    if (selectedCustomerType === "pigme" || selectedCustomerType === "loan") {
-      data = { 
-        ...customerInfo, 
-        agent_id: user.userId, 
-        referred_type: REFERRED_TYPE // <-- **This is the critical addition**
-      }; 
-    } else {
-      data = { ...customerInfo, agent: user.userId }; // Keep 'agent' for chit & goldChit
     }
 
-    // 🎯 Use the determined baseUrl and apiRoute
-    const response = await axios.post(`${baseUrl}${apiRoute}`, data);
-
-    if (response.status === 201) {
-      showCustomToast(successMessage);
-      setCustomerInfo({
-        full_name: "",
-        phone_number: "",
-        email: "",
-        password: "",
-        address: "",
-        pincode: "",
-        adhaar_no: "",
-        pan_no: "",
-      });
-      setSelectedCustomerType("chit");
-      
-      // Navigate to ViewCustomer (assuming this is the screen name "Customer")
-      navigation.navigate("Customer", { user }); 
+    if (customerInfo.phone_number.length !== 10) {
+      showCustomToast("Invalid Phone Number (must be 10 digits)");
+      setIsLoading(false);
+      return;
     }
-  } catch (error) {
-    console.error("Error adding customer:", error.message);
-    Alert.alert("Error", error?.response?.data?.message || "Something went wrong.");
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    if (
+      !isQuickAdd &&
+      (!customerInfo.email ||
+        !customerInfo.address ||
+        !customerInfo.pincode ||
+        !customerInfo.adhaar_no)
+    ) {
+      Alert.alert("Required", "Please fill all mandatory fields in detailed form.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      let data;
+
+      // 🎯 STEP 2: Include 'referred_type' for Pigme and Loan schemes, and 'agent_id'
+      if (selectedCustomerType === "pigme" || selectedCustomerType === "loan") {
+        data = { 
+          ...customerInfo, 
+          agent_id: user.userId, 
+          referred_type: REFERRED_TYPE // <-- **Critical addition for Pigme/Loan**
+        }; 
+      } else {
+        data = { ...customerInfo, agent: user.userId }; // Keep 'agent' for chit & goldChit
+      }
+
+      // 🎯 Use the determined baseUrl and apiRoute
+      const response = await axios.post(`${baseUrl}${apiRoute}`, data);
+
+      if (response.status === 201) {
+        showCustomToast(successMessage);
+        
+        // Reset form fields
+        setCustomerInfo({
+          full_name: "",
+          phone_number: "",
+          email: "",
+          password: "",
+          address: "",
+          pincode: "",
+          adhaar_no: "",
+          pan_no: "",
+        });
+        setSelectedCustomerType("chit");
+        
+        // ✅ NAVIGATION CHANGE: Navigate to EnrollCustomer screen
+        navigation.navigate("EnrollCustomer", { 
+          user, 
+          newCustomer: response.data.customer || response.data.user // Assuming API returns customer/user data
+        }); 
+      }
+    } catch (error) {
+      console.error("Error adding customer:", error.message);
+      Alert.alert("Error", error?.response?.data?.message || "Something went wrong.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   return (
@@ -239,11 +247,9 @@ const handleAddCustomer = async () => {
                 {isQuickAdd ? "Switch to Detailed Add" : "Switch to Quick Add"}
               </Text>
             </TouchableOpacity>
-                  {/* ✅ Contact Button */}
-            <TouchableOpacity style={styles.contactButton} onPress={handlePickContact}>
-              <Feather name="book" size={16} color="#" style={{ marginRight: 8 }} />
-              <Text style={styles.contactButtonText}>Select From Contact</Text>
-            </TouchableOpacity>
+            
+           
+            
             {/* Full Name */}
             <InputField
               label="Full Name"
@@ -274,7 +280,12 @@ const handleAddCustomer = async () => {
               label="Password"
               icon="lock"
               required
-              secureTextEntry
+              // Pass the showPassword state and its toggle function to the InputField
+              secureTextEntry={!showPassword} 
+              isPassword
+              onTogglePassword={() => setShowPassword(!showPassword)}
+              showPassword={showPassword}
+              // End of new props
               value={customerInfo.password}
               onChangeText={(v) => handleInputChange("password", v)}
               focused={focusedInput === "password"}
@@ -362,7 +373,7 @@ const handleAddCustomer = async () => {
   );
 };
 
-// Reusable input component (Unchanged)
+// Reusable input component (UPDATED to handle password visibility)
 const InputField = ({
   label,
   icon,
@@ -371,6 +382,9 @@ const InputField = ({
   onChangeText,
   keyboardType,
   secureTextEntry,
+  isPassword, // New prop to identify password field
+  onTogglePassword, // New prop for eye icon press
+  showPassword, // New prop for current visibility state
 }) => (
   <View style={{ marginBottom: 15 }}>
     <Text style={styles.label}>
@@ -387,6 +401,18 @@ const InputField = ({
         secureTextEntry={secureTextEntry}
         placeholderTextColor="#999"
       />
+      
+      {/* Eye Icon for Password Field */}
+      {isPassword && (
+        <TouchableOpacity onPress={onTogglePassword} style={styles.passwordToggle}>
+          <Feather 
+            name={showPassword ? "eye-off" : "eye"} 
+            size={18} 
+            color="#888" 
+          />
+        </TouchableOpacity>
+      )}
+      
     </View>
   </View>
 );
@@ -471,6 +497,10 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   picker: { height: 50, color: "#333" },
+  // ✅ New style for the password eye icon
+  passwordToggle: {
+    paddingLeft: 10, // Add some padding for better tap area
+  },
   addButton: {
     backgroundColor: "#1aa2ccff",
     paddingVertical: 14,
