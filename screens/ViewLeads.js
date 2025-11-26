@@ -9,10 +9,12 @@ import {
     Linking,
     Modal,
     TextInput,
-    Platform
+    Platform,
+    Dimensions, // Added
+    KeyboardAvoidingView, // Added
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
-// Removed SafeAreaView import
+import { SafeAreaView } from "react-native-safe-area-context"; // Added SafeAreaView
 import axios from "axios";
 import moment from "moment";
 import COLORS from "../constants/color";
@@ -22,7 +24,28 @@ import goldBaseUrl from "../constants/goldBaseUrl";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons"; // Added Icons
+
 const noImage = require("../assets/no.png");
+
+// Get dimensions for dynamic styling
+const { height } = Dimensions.get('window');
+
+// --- CONSTANTS MATCHING MODERN DESIGN ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent (General/Edit)
+const ACCENT_GREEN = "#059669";   // Vibrant green for FRESH leads
+const WARNING_ORANGE = "#f8c009ff"; // Orange/Yellow for NEW leads
+const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; 
+
+// Keeping original action colors for consistency
+const CALL_BUTTON_COLOR = "#f8c009ff"; 
+const WHATSAPP_BUTTON_COLOR = "#25D366";
+const EDIT_BUTTON_COLOR = ACCENT_BLUE; // Using the main accent color for consistency
+
 
 const ViewLeads = ({ route, navigation }) => {
     const { user } = route.params;
@@ -44,6 +67,11 @@ const ViewLeads = ({ route, navigation }) => {
 
     useEffect(() => {
         setCurrentDate(moment().format("DD-MM-YYYY"));
+    }, []);
+
+    const fetchData = useCallback(async (start, end) => {
+        fetchChitLeads(start, end);
+        fetchGoldLeads(start, end);
     }, []);
 
     const fetchChitLeads = async (startDate, endDate) => {
@@ -94,16 +122,14 @@ const ViewLeads = ({ route, navigation }) => {
 
     // Use an effect to fetch data whenever startDate or endDate changes
     useEffect(() => {
-        fetchChitLeads(startDate, endDate);
-        fetchGoldLeads(startDate, endDate);
-    }, [startDate, endDate]);
+        fetchData(startDate, endDate);
+    }, [startDate, endDate, fetchData]);
 
     // Use focus effect to refresh data when the screen comes into focus
     useFocusEffect(
         useCallback(() => {
-            fetchChitLeads(startDate, endDate);
-            fetchGoldLeads(startDate, endDate);
-        }, [startDate, endDate])
+            fetchData(startDate, endDate);
+        }, [startDate, endDate, fetchData])
     );
 
     const handleCall = (phoneNumber) => {
@@ -188,21 +214,21 @@ const ViewLeads = ({ route, navigation }) => {
     const renderLeadCard = ({ item }) => {
         const isExpanded = expandedLeadId === item._id;
         const freshLead = isFreshLead(item.createdAt);
-        let cardStyle = styles.card;
-        let badgeText = null;
-        let badgeContainerStyle = null;
-        let badgeTextStyle = null;
+        const newLead = isNewLead(item.createdAt);
+        
+        // Determine Status Color and Border
+        let borderColor = ACCENT_BLUE + '20';
+        let statusColor = ACCENT_BLUE;
+        let badgeText = "LEAD";
 
         if (freshLead) {
-            cardStyle = { ...styles.card, ...styles.freshLeadCard };
-            badgeText = "FRESH";
-            badgeContainerStyle = styles.freshLeadBadgeContainer;
-            badgeTextStyle = styles.freshLeadBadgeText;
-        } else if (isNewLead(item.createdAt)) {
-            cardStyle = { ...styles.card, ...styles.newLeadCard };
-            badgeText = "NEW";
-            badgeContainerStyle = styles.newLeadBadgeContainer;
-            badgeTextStyle = styles.newLeadBadgeText;
+            borderColor = ACCENT_GREEN;
+            statusColor = ACCENT_GREEN;
+            badgeText = "FRESH LEAD";
+        } else if (newLead) {
+            borderColor = WARNING_ORANGE;
+            statusColor = WARNING_ORANGE;
+            badgeText = "NEW LEAD";
         }
 
         const createdDate = moment(item.createdAt).format("DD-MM-YYYY");
@@ -210,38 +236,57 @@ const ViewLeads = ({ route, navigation }) => {
 
         const schemeTypeDisplay = item.scheme_type ?
             item.scheme_type.charAt(0).toUpperCase() + item.scheme_type.slice(1) :
-            "";
+            "N/A";
 
-
-        const groupName = item.group_id?.group_name ? item.group_id?.group_name : "No Group";
+        const groupName = item.group_id?.group_name ? item.group_id?.group_name : "N/A";
 
         return (
-            <TouchableOpacity onPress={() => toggleExpand(item._id)} style={cardStyle}>
+            <TouchableOpacity 
+                onPress={() => toggleExpand(item._id)} 
+                style={[
+                    styles.customerCardStyle, 
+                    { borderLeftColor: borderColor }
+                ]}
+                activeOpacity={0.9}
+            >
                 <View style={styles.cardHeader}>
-                    <View style={styles.leftSection}>
-                        <View>
-                            <Text style={styles.name}>{item.lead_name}</Text>
-                            <Text style={styles.groupName}>{groupName}</Text>
-                        </View>
-                    </View>
-                    <View style={styles.rightSection}>
-                        <Text style={styles.schemeType}>
-                            {schemeTypeDisplay}
+                    <Text style={styles.customerName} numberOfLines={1}>
+                        {item.lead_name || 'No Name'}
+                    </Text>
+                    {/* Status Tag */}
+                    <View style={[styles.statusTag, { backgroundColor: statusColor + '20' }]}> 
+                        <Text style={[styles.statusTagText, { color: statusColor }]}>
+                            {badgeText} ({activeTab})
                         </Text>
-                        <Icon
-                            name={isExpanded ? "chevron-up" : "chevron-down"}
-                            size={18}
-                            color="#666"
-                            style={styles.expandIcon}
-                        />
                     </View>
+                </View>
+
+                {/* Card Body - Static Info */}
+                <View style={styles.cardBody}>
+                    <Text style={styles.groupInfoText}>
+                        <Ionicons name="people-outline" size={16} color={ACCENT_BLUE} /> Group: <Text style={styles.groupInfoValue}>{groupName}</Text>
+                    </Text>
+                    <Text style={styles.groupInfoText}>
+                        <MaterialCommunityIcons name="star-outline" size={16} color={ACCENT_BLUE} /> Scheme: <Text style={styles.groupInfoValue}>{schemeTypeDisplay}</Text>
+                    </Text>
+                </View>
+
+                {/* Card Footer - Phone and Expand Icon */}
+                <View style={styles.cardFooter}>
+                    <Text style={styles.groupInfoText}>
+                        <Ionicons name="call-outline" size={16} color={NEUTRAL_GREY} /> Phone: <Text style={styles.groupInfoValue}>{item.lead_phone || 'N/A'}</Text>
+                    </Text>
+                    <Icon
+                        name={isExpanded ? "chevron-up" : "chevron-down"}
+                        size={18}
+                        color={NEUTRAL_GREY}
+                    />
                 </View>
 
                 {isExpanded && (
                     <View style={styles.expandedContent}>
-                        <Text style={styles.phoneNumber}>Phone: {item.lead_phone}</Text>
                         <Text style={styles.createdAt}>
-                            Created: {createdDate} at {createdTime}
+                            <Ionicons name="time-outline" size={14} color={NEUTRAL_GREY} /> Created: {createdDate} at {createdTime}
                         </Text>
 
                         {item.lead_image && (
@@ -251,34 +296,29 @@ const ViewLeads = ({ route, navigation }) => {
                         <View style={styles.contactButtons}>
                             <TouchableOpacity
                                 onPress={() => handleCall(item.lead_phone)}
-                                style={styles.callButton}
+                                style={[styles.contactButton, { backgroundColor: CALL_BUTTON_COLOR }]}
                             >
-                                <Icon name="phone" size={18} color={COLORS.white} />
+                                <Ionicons name="call" size={15} color={CARD_BG} />
                                 <Text style={styles.buttonText}>Call</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => handleWhatsApp(item.lead_phone)}
-                                style={styles.whatsappButton}
+                                style={[styles.contactButton, { backgroundColor: WHATSAPP_BUTTON_COLOR }]}
                             >
-                                <Icon name="whatsapp" size={18} color={COLORS.white} />
+                                <Icon name="whatsapp" size={15} color={CARD_BG} />
                                 <Text style={styles.buttonText}>WhatsApp</Text>
                             </TouchableOpacity>
+                            {/* Edit Button only for Fresh Leads, using ACCENT_BLUE */}
                             {freshLead && (
                                 <TouchableOpacity
                                     onPress={() => handleEditLead(item)}
-                                    style={styles.editButton}
+                                    style={[styles.contactButton, { backgroundColor: EDIT_BUTTON_COLOR }]}
                                 >
-                                    <Icon name="edit" size={18} color={COLORS.white} />
+                                    <Icon name="edit" size={15} color={CARD_BG} />
                                     <Text style={styles.buttonText}>Edit</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
-                    </View>
-                )}
-
-                {badgeText && (
-                    <View style={badgeContainerStyle}>
-                        <Text style={badgeTextStyle}>{badgeText}</Text>
                     </View>
                 )}
             </TouchableOpacity>
@@ -291,10 +331,10 @@ const ViewLeads = ({ route, navigation }) => {
 
     const filteredLeads = searchQuery
         ? allLeads.filter((item) => {
-            const itemData = `${item.lead_name.toUpperCase()} ${item.lead_phone.toUpperCase()} ${item.group_name ? item.group_name.toUpperCase() : ""
+            const itemData = `${item.lead_name.toUpperCase()} ${item.lead_phone.toUpperCase()} ${item.group_id?.group_name ? item.group_id.group_name.toUpperCase() : ""
                 }`;
             const textData = searchQuery.toUpperCase();
-            return itemData.indexOf(textData) > -1;
+            return itemData.includes(textData);
         })
         : allLeads;
 
@@ -302,92 +342,93 @@ const ViewLeads = ({ route, navigation }) => {
         activeTab === "CHIT" ? "No chit leads found" : "No gold leads found";
 
     return (
-        <View style={styles.fullScreenContainer}>
-            <LinearGradient
-                colors={["#1aa2ccff", "#1aa2ccff"]}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                {/* Fixed Header Content Area */}
-                <View style={styles.fixedHeaderArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <LinearGradient colors={TOP_GRADIENT} style={styles.topContainer}>
+                <View style={styles.headerSpacer}>
                     <Header />
+                </View>
 
-                    <View style={styles.titleContainer}>
-                        <View style={styles.titleAndCountRow}>
-                            <Text style={styles.title}>Leads</Text>
-                            <Text style={styles.totalAmountText}>
-                                {chitLeads.length + goldLeads.length || 0}
-                            </Text>
-                        </View>
-                        <View style={styles.searchAndFilterContainer}>
-                            <View style={styles.searchBarContainer}>
-                                <Icon name="search" size={20} color="#888" style={styles.searchIcon} />
-                                <TextInput
-                                    style={styles.searchBar}
-                                    placeholder="Search leads..."
-                                    onChangeText={searchFilterFunction}
-                                    value={searchQuery}
-                                    autoCapitalize="none"
-                                />
-                            </View>
-                            <TouchableOpacity
-                                style={styles.filterBox}
-                                onPress={() => setModalVisible(true)}
-                            >
-                                <Icon name="filter" size={18} color="#000" style={styles.filterIcon} />
-                                <Text style={styles.filterText}>{filterText}</Text>
-                            </TouchableOpacity>
-                        </View>
+                <View style={styles.titleContainer}>
+                    <View style={styles.titleAndCountRow}>
+                        <Text style={styles.title}>Leads</Text>
+                        <Text style={styles.totalAmountText}>
+                            Total: {chitLeads.length + goldLeads.length || 0}
+                        </Text>
                     </View>
-                    <View style={styles.tabContainer}>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
-                            onPress={() => setActiveTab("CHIT")}
-                        >
-                            <Icon
-                                name="users"
-                                size={20}
-                                color={activeTab === "CHIT" ? "#333" : "#666"}
-                                style={styles.tabIcon}
+                    <View style={styles.searchAndFilterContainer}>
+                        <View style={styles.searchBarContainer}>
+                            <Icon name="search" size={20} color={NEUTRAL_GREY} style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchBar}
+                                placeholder="Search leads by name or phone..."
+                                placeholderTextColor={NEUTRAL_GREY}
+                                onChangeText={searchFilterFunction}
+                                value={searchQuery}
+                                autoCapitalize="none"
                             />
-                            <Text
-                                style={[
-                                    styles.tabText,
-                                    activeTab === "CHIT" && styles.activeTabText,
-                                ]}
-                            >
-                                Chit Leads {chitLeads.length || 0}
-                            </Text>
-                        </TouchableOpacity>
-
+                        </View>
                         <TouchableOpacity
-                            style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                            onPress={() => setActiveTab("GOLD")}
+                            style={styles.filterBox}
+                            onPress={() => setModalVisible(true)}
                         >
-                            <Icon
-                                name="money"
-                                size={20}
-                                color={activeTab === "GOLD" ? "#333" : "#666"}
-                                style={styles.tabIcon}
-                            />
-                            <Text
-                                style={[
-                                    styles.tabText,
-                                    activeTab === "GOLD" && styles.activeTabText,
-                                ]}
-                            >
-                                Gold Leads {goldLeads.length || 0}
-                            </Text>
+                            <Feather name="filter" size={18} color={MODERN_PRIMARY} style={styles.filterIcon} />
+                            <Text style={styles.filterText}>{filterText}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
-                {/* Scrollable Content Area */}
-                <View style={styles.scrollableContentArea}>
+                
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
+                        onPress={() => setActiveTab("CHIT")}
+                    >
+                        <Icon
+                            name="users"
+                            size={20}
+                            color={activeTab === "CHIT" ? MODERN_PRIMARY : CARD_BG}
+                        />
+                        <Text
+                            style={[
+                                styles.tabText,
+                                activeTab === "CHIT" && styles.activeTabText,
+                            ]}
+                        >
+                            Chit Leads ({chitLeads.length || 0})
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
+                        onPress={() => setActiveTab("GOLD")}
+                    >
+                        <Icon
+                            name="money"
+                            size={20}
+                            color={activeTab === "GOLD" ? MODERN_PRIMARY : CARD_BG}
+                        />
+                        <Text
+                            style={[
+                                styles.tabText,
+                                activeTab === "GOLD" && styles.activeTabText,
+                            ]}
+                        >
+                            Gold Leads ({goldLeads.length || 0})
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </LinearGradient>
+
+            {/* Scrollable Content Area */}
+            <View style={styles.mainContentArea}>
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+                >
                     {isLoading && (
                         <ActivityIndicator
                             size="large"
-                            color="#000"
+                            color={ACCENT_BLUE}
                             style={{ marginTop: 20 }}
                         />
                     )}
@@ -405,16 +446,14 @@ const ViewLeads = ({ route, navigation }) => {
                             <Text style={styles.noDataText}>{noDataMessage}</Text>
                         </View>
                     )}
-                </View>
-            </LinearGradient>
+                </KeyboardAvoidingView>
+            </View>
 
             <TouchableOpacity
                 onPress={() => navigation.navigate("AddLead", { user: user })}
                 style={styles.floatingActionButton}
             >
-                <Text style={styles.floatingActionButtonText}>
-                    + Add
-                </Text>
+                <Feather name="plus" size={24} color="white" />
             </TouchableOpacity>
 
             <Modal
@@ -427,7 +466,7 @@ const ViewLeads = ({ route, navigation }) => {
             >
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.modalTitle}>Filter</Text>
+                        <Text style={styles.modalTitle}>Filter Leads By Date</Text>
                         {["All",
                             "Today",
                             "Yesterday",
@@ -454,52 +493,64 @@ const ViewLeads = ({ route, navigation }) => {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    fullScreenContainer: {
-        flex: 1,
-        backgroundColor: COLORS.white,
+    // --- LAYOUT STYLES (MODERN) ---
+    safeArea: { 
+        flex: 1, 
+        backgroundColor: TOP_GRADIENT[0] 
     },
-    gradientOverlay: {
-        flex: 1,
+    topContainer: {
         paddingHorizontal: 22,
+        paddingBottom: 20,
     },
-    fixedHeaderArea: {
-        // Pushes the entire fixed area down from the top edge
-        paddingTop: Platform.OS === 'android' ? 40 : 50, 
-        marginBottom: 10,
-    },
-    scrollableContentArea: {
+    mainContentArea: {
         flex: 1,
+        backgroundColor: SUBTLE_BG_GREY, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30,
+        paddingHorizontal: 16,
+        marginTop: -20, 
+        paddingTop: 10,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 5,
     },
+    headerSpacer: { 
+        paddingTop: 20, 
+        paddingBottom: 5 
+    }, 
+
+    // --- TITLE STYLES ---
     titleContainer: {
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "flex-start",
-        alignItems: "center",
-        marginTop: 20,
-        marginBottom: 20,
+        alignItems: 'center',
+        marginBottom: 15,
+        marginTop: 10,
     },
     titleAndCountRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "center",
+        alignItems: "baseline", // Align text baselines
         width: "100%",
         marginBottom: 10,
     },
     title: {
-        fontSize: 26,
-        fontWeight: "bold",
-        color: "#333",
+        fontSize: 28, 
+        fontWeight: "900",
+        color: CARD_BG, 
     },
     totalAmountText: {
-        fontSize: 26,
-        fontWeight: "bold",
-        color: "#333",
+        fontSize: 16,
+        fontWeight: "600",
+        color: 'rgba(255, 255, 255, 0.85)',
     },
+    
+    // --- SEARCH & FILTER ---
     searchAndFilterContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -507,308 +558,309 @@ const styles = StyleSheet.create({
         width: '100%',
         marginBottom: 10,
     },
+    searchBarContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: CARD_BG,
+        borderRadius: 15, // Made less rounded than before
+        paddingHorizontal: 15,
+        flex: 7,
+        height: 45, // Adjusted height
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+        marginRight: 10,
+    },
+    searchIcon: {
+        marginRight: 10,
+        color: NEUTRAL_GREY
+    },
+    searchBar: {
+        flex: 1,
+        height: 45,
+        color: MODERN_PRIMARY,
+        fontSize: 14,
+        paddingVertical: 0,
+    },
+    filterBox: {
+        backgroundColor: CARD_BG, // White background
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 15,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+        flex: 3,
+        height: 45,
+    },
+    filterIcon: {
+        marginRight: 5,
+        fontSize: 16,
+        color: ACCENT_BLUE,
+    },
+    filterText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: MODERN_PRIMARY,
+    },
+    
+    // --- TABS ---
     tabContainer: {
         flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Lighter background for tabs in header
         borderRadius: 15,
         marginBottom: 10,
-        marginTop: -3,
+        padding: 5,
     },
     tab: {
         flex: 1,
         paddingVertical: 10,
         alignItems: "center",
-        borderRadius: 12,
-        flexDirection: "row",
-        justifyContent: "center",
+        flexDirection: 'row',
+        justifyContent: 'center',
+        borderRadius: 10,
     },
     activeTab: {
-        backgroundColor: "#f8c009ff",
+        backgroundColor: CARD_BG, // White/Card BG when active
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+        elevation: 2,
     },
     tabText: {
-        fontSize: 16,
-        color: "#666",
-        fontWeight: "500",
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.9)', // White-ish text when inactive
+        fontWeight: "600",
+        marginLeft: 5,
     },
     activeTabText: {
-        color: "#333",
-        fontWeight: "bold",
+        color: MODERN_PRIMARY, // Dark text when active
+        fontWeight: 'bold',
     },
-    tabIcon: {
-        marginRight: 5,
+
+    // --- LEAD CARD STYLES (MODERN) ---
+    customerCardStyle: {
+        backgroundColor: CARD_BG, 
+        borderRadius: 18, 
+        marginBottom: 15,
+        padding: 20,
+        borderLeftWidth: 6, 
+        // borderLeftColor set dynamically in renderLeadCard
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08, 
+        shadowRadius: 8,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: SUBTLE_BG_GREY, 
     },
-    card: {
-        backgroundColor: "rgba(255, 255, 255, 0.9)",
-        padding: 15,
-        marginVertical: 5,
-        borderRadius: 15,
-        borderLeftWidth: 5,
-        borderColor: "#f8c009ff",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        position: "relative",
-        overflow: "hidden",
-    },
+    
+    // CARD CONTENT
     cardHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        paddingBottom: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: SUBTLE_BG_GREY,
     },
-    freshLeadCard: {
-        borderColor: "green",
+    customerName: {
+        fontSize: 22,
+        fontWeight: "900",
+        color: MODERN_PRIMARY,
+        flexShrink: 1,
+        marginRight: 10,
     },
-    newLeadCard: {
-        borderColor: COLORS.primary,
+    statusTag: { 
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 15,
+        alignSelf: 'flex-start', 
     },
-    leftSection: {
-        flex: 1,
+    statusTagText: {
+        fontSize: 11,
+        fontWeight: "700",
+        textTransform: 'uppercase',
     },
-    rightSection: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingRight: 10,
-        position: 'relative',
+    cardBody: {
+        paddingVertical: 15,
     },
-    name: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: "#000",
-        marginBottom: 5,
-    },
-    groupName: {
-        fontSize: 16,
-        color: "#666",
-    },
-    schemeType: {
-        fontSize: 14,
-        color: "#000",
+    groupInfoText: {
+        fontSize: 15,
+        color: NEUTRAL_GREY,
+        marginTop: 5,
         fontWeight: "500",
-        marginRight: 25,
+        lineHeight: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-    expandIcon: {
-        position: 'absolute',
-        right: 0,
-        top: '50%',
-        transform: [{ translateY: -9 }],
+    groupInfoValue: {
+        color: MODERN_PRIMARY,
+        fontWeight: '700',
     },
-    expandedContent: {
-        marginTop: 10,
+    cardFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingTop: 10,
         borderTopWidth: 1,
-        borderTopColor: "#eee",
+        borderTopColor: SUBTLE_BG_GREY,
     },
-    phoneNumber: {
-        fontSize: 14,
-        color: "#333",
-        marginBottom: 5,
+
+    // EXPANDED CONTENT
+    expandedContent: {
+        marginTop: 15,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: SUBTLE_BG_GREY,
     },
     createdAt: {
-        fontSize: 12,
-        color: "#888",
+        fontSize: 14,
+        color: NEUTRAL_GREY,
         fontStyle: "italic",
         marginBottom: 10,
-    },
-    contactButtons: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-        marginTop: 10,
-    },
-    callButton: {
-        backgroundColor: COLORS.primary,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    whatsappButton: {
-        backgroundColor: "#25D366",
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    editButton: {
-        backgroundColor: COLORS.primary,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    buttonText: {
-        color: COLORS.white,
-        marginLeft: 5,
-        fontWeight: "bold",
-    },
-    freshLeadBadgeContainer: {
-        position: "absolute",
-        top: 0,
-        right: 0,
-        backgroundColor: "green",
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderBottomLeftRadius: 15,
-    },
-    freshLeadBadgeText: {
-        color: COLORS.white,
-        fontSize: 10,
-        fontWeight: "bold",
-    },
-    newLeadBadgeContainer: {
-        position: "absolute",
-        top: 0,
-        right: 0,
-        backgroundColor: "orange",
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderBottomLeftRadius: 15,
-    },
-    newLeadBadgeText: {
-        color: COLORS.white,
-        fontSize: 10,
-        fontWeight: "bold",
-    },
-    noDataContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: 50,
-    },
-    noDataText: {
-        fontSize: 14,
-        color: "#555",
-        textAlign: "center",
-    },
-    noImage: {
-        width: 250,
-        height: 150,
-        resizeMode: "contain",
-        marginBottom: 20,
-    },
-    flatListContent: {
-        paddingBottom: 100,
+        fontWeight: '500',
     },
     leadImage: {
         width: '100%',
         height: 150,
         borderRadius: 10,
         marginTop: 10,
-        marginBottom: 10,
+        marginBottom: 15,
         resizeMode: 'cover',
     },
-    filterBox: {
-        backgroundColor: "rgba(192, 223, 248, 0.7)",
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 15,
-        borderColor: "rgba(192, 223, 248, 0.7)",
+
+    // CONTACT BUTTONS (STANDARD STYLE)
+    contactButtons: {
+        flexDirection: "row",
+        justifyContent: "space-between", 
+        gap: 10,
+        marginTop: 10,
+    },
+    contactButton: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        flex: 3,
-        height: 50,
-    },
-    filterIcon: {
-        marginRight: 5,
-        fontSize: 15,
-    },
-    filterText: {
-        fontSize: 12,
-        fontWeight: "bold",
-    },
-    centeredView: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalView: {
-        backgroundColor: "white",
-        borderRadius: 20,
-        padding: 25,
-        alignItems: "flex-start",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
-        width: '80%',
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        marginBottom: 20,
-        textAlign: "left",
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        width: '100%',
-        marginTop: 30,
-    },
-    modalButtonText: {
-        fontSize: 16,
-        color: 'blue',
-        fontWeight: 'bold',
-        marginLeft: 20,
-    },
-    searchBarContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        borderRadius: 25,
-        paddingHorizontal: 15,
-        flex: 7,
-        height: 50,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-        marginRight: 10,
-    },
-    searchIcon: {
-        marginRight: 10,
-    },
-    searchBar: {
-        flex: 1,
-        height: 50,
-        color: '#333'
-    },
-    dateRangeOption: {
         paddingVertical: 10,
-        width: '100%',
+        paddingHorizontal: 10,
+        borderRadius: 50,
+        elevation: 2,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        gap: 6,
+        flex: 1,
     },
-    dateRangeText: {
+    buttonText: { 
+        color: CARD_BG, 
+        fontWeight: "bold", 
+        fontSize: 14 
+    }, 
+    
+    // --- NO DATA / FAB ---
+    noDataContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 50,
+        backgroundColor: CARD_BG,
+        padding: 20,
+        borderRadius: 15,
+    },
+    noDataText: {
         fontSize: 16,
-        color: '#333',
+        color: NEUTRAL_GREY,
+        textAlign: 'center',
+        fontWeight: '600'
+    },
+    noImage: {
+        width: 150,
+        height: 150,
+        resizeMode: "contain",
+        marginBottom: 20,
+    },
+    flatListContent: {
+        paddingBottom: 120,
     },
     floatingActionButton: {
         position: "absolute",
-        bottom: 20,
+        bottom: 70,
         right: 20,
-        backgroundColor: COLORS.primary,
+        backgroundColor: ACCENT_BLUE,
         borderRadius: 30,
         width: 60,
         height: 60,
         justifyContent: "center",
         alignItems: "center",
         elevation: 5,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
         zIndex: 10,
     },
-    floatingActionButtonText: {
-        color: "white",
-        fontSize: 12,
+    
+    // --- MODAL STYLES (MODERN) ---
+    centeredView: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: 'rgba(0,0,0,0.6)',
+    },
+    modalView: {
+        backgroundColor: CARD_BG,
+        borderRadius: 20,
+        padding: 25,
+        alignItems: "flex-start",
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '85%',
+    },
+    modalTitle: {
+        fontSize: 20,
         fontWeight: "bold",
-    }
+        color: MODERN_PRIMARY,
+        marginBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: SUBTLE_BG_GREY,
+        width: '100%',
+        paddingBottom: 10,
+    },
+    dateRangeOption: {
+        paddingVertical: 12,
+        width: '100%',
+        borderBottomWidth: 1,
+        borderBottomColor: SUBTLE_BG_GREY,
+    },
+    dateRangeText: {
+        fontSize: 16,
+        color: MODERN_PRIMARY,
+        fontWeight: '500',
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        width: '100%',
+        marginTop: 20,
+    },
+    modalButtonText: {
+        fontSize: 16,
+        color: ACCENT_BLUE,
+        fontWeight: 'bold',
+        marginLeft: 20,
+    },
 });
 
 export default ViewLeads;

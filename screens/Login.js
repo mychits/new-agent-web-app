@@ -19,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 const COLOR_PALETTE = {
   primary: '#1C2E4A',
@@ -42,17 +42,16 @@ export default function Login({ navigation }) {
   const [password, setPassword] = useState("");
   const [isPasswordShown, setIsPasswordShown] = useState(false);
   const [loading, setLoading] = useState(false);
-  // Removed: isCheckingAutoLogin state
-
+  
+  // State for background/UI animation
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  // Initialize inputAnim to 1 since we render the form immediately
-  const inputAnim = useRef(new Animated.Value(0)).current;
+  const inputAnim = useRef(new Animated.Value(0)).current; // Animation for the form elements
 
-  // 1. Background and Input Animations (Simplified)
+  // 1. Background and Input Animations (Runs on component mount)
   useEffect(() => {
-    // Start background animation
+    // Background Image Cycling Animation
     const interval = setInterval(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -68,16 +67,16 @@ export default function Login({ navigation }) {
       });
     }, 4000);
 
-    // Start input animation immediately
+    // Form/Input Fade-in and Slide-up Animation (Start immediately)
     Animated.timing(inputAnim, {
       toValue: 1,
       duration: 800,
-      delay: 500,
+      delay: 500, // Short delay to let the screen load
       useNativeDriver: true,
     }).start();
 
     return () => clearInterval(interval);
-  }, [fadeAnim, backgroundImages.length, inputAnim]); // Removed isCheckingAutoLogin from dependencies
+  }, [fadeAnim, backgroundImages.length, inputAnim]); 
 
 
   const onPressInButton = () => {
@@ -120,7 +119,7 @@ export default function Login({ navigation }) {
         const agentDetail = await axios.get(
           `${baseUrl}/agent/get-agent-by-id/${data.userId}`
         );
-        // Store user and agent info for future auto-login (Kept this, as the user might want to re-add auto-login later or use this data elsewhere)
+        // Store user and agent info for future auto-login
         await AsyncStorage.setItem("user", JSON.stringify(data));
         await AsyncStorage.setItem("agentInfo", JSON.stringify(agentDetail?.data));
 
@@ -139,7 +138,7 @@ export default function Login({ navigation }) {
     }
   };
 
-  // --- Render Logic (Simplified - always shows the login form) ---
+  // The full login screen is now rendered immediately
   return (
     <View style={styles.container}>
       {/* Animated Background Image */}
@@ -315,7 +314,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     height: 60,
-    borderWidth: 1,
+    borderWidth:1,
     borderColor: 'orange',
     backgroundColor: '#FFFFFF',
     borderRadius: 30,

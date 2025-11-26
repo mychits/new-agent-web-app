@@ -9,6 +9,7 @@ import {
     ActivityIndicator,
     Animated,
     TextInput,
+    SafeAreaView,
 } from "react-native";
 import React, { useEffect, useState, useRef } from "react";
 // Assuming COLORS is defined in a constants file
@@ -16,6 +17,22 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
+
+// --- DESIGN CONSTANTS COPIED from EnrollCustomer.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; 
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+
+// --- DISTINCT VALUE COLORS ---
+const VALUE_COLOR_GREEN = '#3ed160ff';
+const VALUE_COLOR_ORANGE = '#f1960cff';
+const VALUE_COLOR_MAGENTA = '#f70cb4ff';
+// ---------------------------------------------
+
 
 const MyCommission = ({ route, navigation }) => {
     // Safely destructure commissions or use an empty object fallback
@@ -75,18 +92,21 @@ const MyCommission = ({ route, navigation }) => {
         return (
             <TouchableOpacity style={styles.card}>
                 <View style={styles.leftSection}>
-                    {/* FIXED: Added || "N/A" for null-safety */}
-                    <Text style={styles.name}>{item?.user_name || "N/A"}</Text> 
+                    {/* User Name as Main Title */}
+                    <Text style={styles.name}>
+                        {item?.user_name || "N/A"}
+                    </Text> 
+                    {/* Group Name as Subtitle */}
                     <Text style={styles.groupName}>
                         {item?.group_name ? item.group_name: "No Group Name"}
                     </Text>
                 </View>
                 <View style={styles.rightSection}>
                     <View style={styles.commissionContainer}>
-                        {/* FIXED: Added || '0' for null-safety */}
+                        {/* Display commission value with currency symbol */}
                         <Text style={styles.commissionText}>{item?.actual_commission || '0'}</Text>
                     </View>
-                     <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />
+                    
                 </View>
             </TouchableOpacity>
         );
@@ -99,35 +119,62 @@ const MyCommission = ({ route, navigation }) => {
         return (
             <View style={styles.summaryBoxesContainer}>
                 
-                {/* Box 1: Total Customers - Blue/Primary Color */}
-                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#f8c009ff' }]}>
+                {/* Box 1: Total Customers */}
+                <Animated.View style={[styles.summaryBox, { 
+                    transform: [{ translateX: leftAnim }], 
+                    opacity: opacityAnim, 
+                    // Uniform Border Color: ACCENT_BLUE
+                    borderColor: ACCENT_BLUE 
+                }]}>
+                    {/* Uniform Label Color: MODERN_PRIMARY (via styles.summaryText) */}
                     <Text style={styles.summaryText}>Total Customers</Text>
-                    {/* FIXED: Use || '0' to ensure a string is always passed to <Text> */}
-                    <Text style={[styles.summaryValue, { color: '#04aefdff' }]}>
+                    {/* Distinct Value Color: ACCENT_BLUE */}
+                    <Text style={[styles.summaryValue, { color: ACCENT_BLUE }]}>
                         {summary.total_customers || '0'}
                     </Text>
                 </Animated.View>
                 
-                {/* Box 2: Total Groups - Green Color */}
-                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: leftAnim }], opacity: opacityAnim, borderColor: '#f8c009ff' }]}>
+                {/* Box 2: Total Groups */}
+                <Animated.View style={[styles.summaryBox, { 
+                    transform: [{ translateX: leftAnim }], 
+                    opacity: opacityAnim, 
+                    // Uniform Border Color: ACCENT_BLUE
+                    borderColor: ACCENT_BLUE 
+                }]}>
+                    {/* Uniform Label Color: MODERN_PRIMARY (via styles.summaryText) */}
                     <Text style={styles.summaryText}>Total Groups</Text>
-                    <Text style={[styles.summaryValue, { color: '#3ed160ff' }]}>
+                    {/* Distinct Value Color: Green */}
+                    <Text style={[styles.summaryValue, { color: VALUE_COLOR_GREEN }]}>
                         {summary.total_groups || '0'}
                     </Text>
                 </Animated.View>
                 
-                {/* Box 3: My Business - Red/Accent Color */}
-                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#f8c009ff' }]}>
+                {/* Box 3: My Business */}
+                <Animated.View style={[styles.summaryBox, { 
+                    transform: [{ translateX: rightAnim }], 
+                    opacity: opacityAnim, 
+                    // Uniform Border Color: ACCENT_BLUE
+                    borderColor: ACCENT_BLUE 
+                }]}>
+                    {/* Uniform Label Color: MODERN_PRIMARY (via styles.summaryText) */}
                     <Text style={styles.summaryText}>My Business</Text>
-                    <Text style={[styles.summaryValue, { color: '#f70cb4ff' }]}>
+                    {/* Distinct Value Color: Orange */}
+                    <Text style={[styles.summaryValue, { color: VALUE_COLOR_ORANGE }]}>
                         {summary.actual_business || '0'}
                     </Text>
                 </Animated.View>
                 
-                {/* Box 4: My Commission - Gold/Accent Color */}
-                <Animated.View style={[styles.summaryBox, { transform: [{ translateX: rightAnim }], opacity: opacityAnim, borderColor: '#f8c009ff' }]}>
+                {/* Box 4: My Commission */}
+                <Animated.View style={[styles.summaryBox, { 
+                    transform: [{ translateX: rightAnim }], 
+                    opacity: opacityAnim, 
+                    // Uniform Border Color: ACCENT_BLUE
+                    borderColor: ACCENT_BLUE 
+                }]}>
+                    {/* Uniform Label Color: MODERN_PRIMARY (via styles.summaryText) */}
                     <Text style={styles.summaryText}>My Commission</Text>
-                    <Text style={[styles.summaryValue, { color: '#f1960cff' }]}>
+                    {/* Distinct Value Color: Magenta */}
+                    <Text style={[styles.summaryValue, { color: VALUE_COLOR_MAGENTA }]}>
                         {summary.total_actual || '0'}
                     </Text>
                 </Animated.View>
@@ -137,25 +184,32 @@ const MyCommission = ({ route, navigation }) => {
 
     const renderContent = () => {
         const isLoading = activeTab === "CHIT" ? isChitLoading : isGoldLoading;
-        const dataAvailable = activeTab === "CHIT" ? commissions?.success : goldLeads.length > 0;
+        const dataAvailable = activeTab === "CHIT" ? commissions?.success : goldLeads.length > 0; 
         
         if (isLoading) {
             return (
                 <ActivityIndicator
                     size="large"
-                    color="#000"
-                    style={{ marginTop: 20 }}
+                    color={ACCENT_BLUE}
+                    style={styles.loadingIndicator}
                 />
             );
         }
 
-        // Only show "No matching..." if a search query is present
-        if (!dataAvailable || (activeTab === "CHIT" && filteredCommissions.length === 0 && searchQuery.length > 0)) {
+        if (!dataAvailable || (activeTab === "CHIT" && filteredCommissions.length === 0 && searchQuery.length === 0)) {
              return (
                  <Text style={styles.noLeadsText}>
-                     {searchQuery.length > 0 ? "No matching commissions found." : "No commission data found."}
+                     No commission data found.
                  </Text>
              );
+        }
+        
+        if(searchQuery.length > 0 && filteredCommissions.length === 0) {
+            return (
+                <Text style={styles.noLeadsText}>
+                    No matching commissions found.
+                </Text>
+            );
         }
 
         return (
@@ -163,42 +217,54 @@ const MyCommission = ({ route, navigation }) => {
                 data={filteredCommissions}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={renderCommissionCard}
-                // Only render ListHeader for the CHIT tab
                 ListHeaderComponent={activeTab === "CHIT" ? ListHeader : null}
-                contentContainerStyle={{ paddingBottom: 80 }}
+                contentContainerStyle={styles.listContent}
             />
         );
     };
 
     return (
-        <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient 
-                colors={["#1aa2ccff", "#1aa2ccff"]}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
             >
-                <KeyboardAvoidingView
-                    style={styles.contentWrapper}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+                {/* Top Header Section with Gradient (Blue) */}
+                <LinearGradient
+                    colors={TOP_GRADIENT}
+                    style={styles.topContainer}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
                 >
-                    {/* --- FIXED TOP CONTENT --- */}
-                    <Header />
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>My Commission</Text>
-                        <Text style={styles.subtitle}>My business performance</Text>
+                    <View style={styles.headerSpacer}>
+                        <Header />
                     </View>
+                    {/* Title and Subtitle Centered and Up */}
+                    <View style={styles.titleContainer}>
+                        <View>
+                            <Text style={styles.title}>My Commission</Text>
+                            <Text style={styles.subtitle}>My business performance</Text>
+                        </View>
+                    </View>
+                </LinearGradient>
+
+                {/* Main Content Area (White Background, Overlapping Header) */}
+                <View style={styles.mainContentArea}>
+                    
+                    {/* Search Input and Icon */}
                     <View style={styles.searchContainer}>
-                        <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+                        <Feather name="search" size={20} color={TEXT_GREY} style={styles.searchIcon} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search by name or group"
-                            placeholderTextColor="#888"
+                            placeholderTextColor={TEXT_GREY}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
                     </View>
+                    
+                    {/* Tab Container */}
                     <View style={styles.tabContainer}>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
@@ -207,7 +273,7 @@ const MyCommission = ({ route, navigation }) => {
                             <MaterialIcons
                                 name="groups"
                                 size={20}
-                                color={activeTab === "CHIT" ? "#333" : "#666"}
+                                color={activeTab === "CHIT" ? CARD_BG : TEXT_GREY}
                             />
                             <Text
                                 style={[
@@ -226,7 +292,7 @@ const MyCommission = ({ route, navigation }) => {
                             <MaterialIcons
                                 name="diamond"
                                 size={20}
-                                color={activeTab === "GOLD" ? "#333" : "#666"}
+                                color={activeTab === "GOLD" ? CARD_BG : TEXT_GREY}
                             />
                             <Text
                                 style={[
@@ -239,49 +305,88 @@ const MyCommission = ({ route, navigation }) => {
                         </TouchableOpacity>
                     </View>
                     
-                    {/* --- SCROLLABLE CONTENT AREA --- */}
+                    {/* Commission List Content */}
                     <View style={{ flex: 1 }}>
                         {renderContent()}
                     </View>
 
-                </KeyboardAvoidingView>
-            </LinearGradient>
-        </View>
+                </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    gradientOverlay: {
-        flex: 1,
-    },
-    contentWrapper: { 
+    // --- LAYOUT STYLES (Adjusted to push content lower) ---
+    safeArea: { 
         flex: 1, 
-        marginHorizontal: 22, 
-        paddingTop: 50, // Pushes content down
+        backgroundColor: TOP_GRADIENT[0] 
     },
+    topContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 50, // ADJUSTED: Increased significantly to push white area down
+        zIndex: 1,
+    },
+    headerSpacer: { 
+        paddingTop: 37, // Maintained
+        paddingBottom: 5 // Maintained
+    }, 
+    mainContentArea: {
+        flex: 1,
+        backgroundColor: CARD_BG, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30,
+        marginTop: -50, // ADJUSTED: Increased from -20 to -50 (more negative overlap) to counteract the larger padding
+        zIndex: 2, 
+        paddingHorizontal: 22, 
+        paddingTop: 30, 
+    },
+    listContent: {
+        paddingBottom: 50,
+        gap: 10,
+    },
+
+    // --- TITLE STYLES (From EnrolledGroups.js) ---
     titleContainer: {
-        marginTop: 10,
-        marginBottom: 20,
-        alignItems: 'center',
+        marginTop: 15, 
+        marginBottom: 5, 
+        paddingHorizontal: 6,
+        alignItems: 'center', 
     },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#333',
+        fontSize: 28, 
+        fontWeight: "900",
+        color: CARD_BG, 
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        textAlign: 'center', 
     },
     subtitle: {
-        fontSize: 16,
-        color: '#666',
-        marginTop: 5,
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.9)', 
+        fontWeight: '500',
+        marginTop: 4,
+        textAlign: 'center', 
     },
+    
+    // --- SEARCH STYLES (Modernized) ---
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
-        borderRadius: 15,
+        backgroundColor: CARD_BG,
+        borderRadius: 12,
         paddingHorizontal: 15,
-        marginBottom: 10,
+        marginBottom: 15,
         height: 50,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
     searchIcon: {
         marginRight: 10,
@@ -289,85 +394,91 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 16,
-        color: '#333',
+        color: MODERN_PRIMARY,
     },
+
+    // --- TAB STYLES (Modernized) ---
     tabContainer: {
         flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
-        borderRadius: 15,
-        marginBottom: 10,
+        backgroundColor: SUBTLE_BG_GREY, 
+        borderRadius: 12,
+        marginBottom: 20,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
     },
     tab: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 12,
         alignItems: "center",
         flexDirection: 'row',
         justifyContent: 'center',
-        borderRadius: 15,
+        borderRadius: 12,
     },
     activeTab: {
-        backgroundColor: '#f8c009ff',
+        backgroundColor: ACCENT_BLUE, 
     },
     tabText: {
-        fontSize: 16,
-        color: "#666",
-        fontWeight: "500",
+        fontSize: 15,
+        color: TEXT_GREY,
+        fontWeight: "600",
         marginLeft: 5,
     },
     activeTabText: {
-        color: '#333',
+        color: CARD_BG, 
         fontWeight: 'bold',
     },
+
+    // --- SUMMARY BOX STYLES (Modernized) ---
     summaryBoxesContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         marginTop: 5, 
-        marginBottom: 10,
-        borderColor: "#f8c009ff",
+        marginBottom: 20, 
     },
     summaryBox: {
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        backgroundColor: CARD_BG,
         padding: 15,
-        borderRadius: 15,
-        // BorderColor is set inline for dynamic color
-        borderWidth:2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        
+        borderRadius: 12,
+        borderWidth: 2,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
         width: '48%',
         marginBottom: 15,
         alignItems: 'center',
     },
     summaryText: {
-        fontWeight: 'bold',
-        fontSize: 14,
-        color: '#666',
+        fontWeight: '600',
+        fontSize: 12,
+        color: MODERN_PRIMARY,
     },
     summaryValue: {
-        fontSize: 15,
+        fontSize: 13,
         fontWeight: 'bold',
-        // Color is set inline for dynamic color
         marginTop: 5,
     },
+
+    // --- CARD STYLES (Modernized) ---
     card: {
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        backgroundColor: CARD_BG,
         flexDirection: "row",
         justifyContent: 'space-between',
-        padding: 15,
-        marginVertical: 5,
-        borderRadius: 15,
-        borderLeftWidth: 5,
-        borderColor: '#f8c009ff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        
+        padding: 18,
+        borderRadius: 12,
+        borderLeftWidth: 4, 
+        borderColor: ACCENT_BLUE, 
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
         alignItems: 'center',
+        borderWidth: 1, 
+        borderColor: BORDER_COLOR,
     },
     leftSection: {
         flex: 1,
@@ -375,38 +486,44 @@ const styles = StyleSheet.create({
     rightSection: {
         alignItems: "flex-end",
         flexDirection: 'row',
-        gap: 10,
+        gap: 8,
     },
     name: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#000",
-        marginBottom: 5,
+        fontSize: 16,
+        fontWeight: "700",
+        color: MODERN_PRIMARY, 
+        marginBottom: 3,
     },
     groupName: {
         fontSize: 14,
-        color: "#666",
+        color: TEXT_GREY, 
     },
     commissionContainer: {
-        backgroundColor: '#FFD70020',
-        borderRadius: 10,
+        backgroundColor: ACCENT_BLUE + '10', 
+        borderRadius: 8,
         paddingHorizontal: 10,
-        paddingVertical: 5,
+        paddingVertical: 4,
     },
     commissionText: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#6d56f0ff',
+        color: VALUE_COLOR_MAGENTA, 
     },
     arrowIcon: {
-        fontSize: 22,
-        color: '#f8c009ff',
+        fontSize: 24,
+        color: TEXT_GREY, 
+    },
+
+    // --- MISC STYLES ---
+    loadingIndicator: { 
+        marginTop: 20 
     },
     noLeadsText: {
         textAlign: "center",
         marginTop: 20,
         fontSize: 16,
-        color: "#666",
+        color: TEXT_GREY,
+        paddingHorizontal: 20,
     },
 });
 

@@ -11,58 +11,44 @@ import {
     UIManager,
     TouchableOpacity,
     Linking,
+    Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
-// import Header from "../components/Header"; // 👈 ORIGINAL IMPORT (Commented out)
+import { Ionicons } from "@expo/vector-icons"; 
 
-// =================================================================
-// 🚨 HEADER COMPONENT DEFINITION 🚨
-// This component provides the necessary Header structure.
-// =================================================================
-const Header = () => (
-    <View style={headerStyles.container}>
-        
-    </View>
-);
+// 🚨 IMPORTING THE ACTUAL HEADER COMPONENT 🚨
+import Header from "../components/Header"; 
 
-const headerStyles = StyleSheet.create({
-    container: {
-        // Ensures the header spans the width and centers the title
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        // Note: No vertical padding needed here, as it's managed by pageStyles.headerSpacer
-    },
-    text: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#FFFFFF', // White text to stand out against the blue gradient background
-    },
-});
-// =================================================================
+// --- BASE URL IMPORT ---
+// Assuming baseUrl.js exports 'url' as default from ../constants/baseUrl
+import url from "../constants/baseUrl"; 
+
+const { height } = Dimensions.get('window');
+
+// --- CONSTANTS MATCHING Enrollment.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent
+const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
+const WARNING_RED = "#dc2626";    // Strong red for negative/balance
+const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
 
 
-// --- ORIGINAL CONSTANTS ---
-const DUE_API = "https://mychits.online/api/enroll/due/routes/agent/";
-const GROUP_API = "https://mychits.online/api/group/get-group";
-// 🚨 LINEAR GRADIENT COLOR AS PREVIOUSLY REQUESTED 🚨
-const BACKGROUND_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+// --- ORIGINAL API/IMAGE CONSTANTS (UPDATED TO USE IMPORTED 'url') ---
+const DUE_API = `${url}/enroll/due/routes/agent/`;
+const GROUP_API = `${url}/group/get-group`;
 const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
-
-// --- MODERN STYLING CONSTANTS (Curated for a professional, clean look) ---
-const MODERN_PRIMARY = "#0d0d0eff"; // Deep, professional blue
-const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
-const WARNING_RED = "#dc2626";    // Strong red for negative/balance
-const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
-const DARK_TEXT = "#101111ff";    // Darkest text color for contrast
-const LIGHT_GREY_BACKGROUND = "#f9fafb"; // Very light background for elements
-const BORDER_COLOR = "#e5e7eb"; // Light border for subtle separation
 
 // Enable LayoutAnimation for Android
 if (
     Platform.OS === "android" &&
-    UIManager.setLayoutAnimationEnabledExperimental
+    UIManager && // Added check for UIManager itself
+    UIManager.setLayoutAnimationEnabledExperimental 
 ) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -80,13 +66,13 @@ const formatCurrency = (amount) => {
 // --- FUNCTION TO HANDLE CALLS ---
 const handleCall = (phoneNumber) => {
     if (phoneNumber) {
-        const url = `tel:${phoneNumber}`;
-        Linking.canOpenURL(url)
+        const telUrl = `tel:${phoneNumber}`;
+        Linking.canOpenURL(telUrl)
             .then((supported) => {
                 if (supported) {
-                    return Linking.openURL(url);
+                    return Linking.openURL(telUrl);
                 } else {
-                    console.log(`Don't know how to open URI: ${url}`);
+                    console.log(`Don't know how to open URI: ${telUrl}`);
                 }
             })
             .catch((err) => console.error('An error occurred while opening dialer', err));
@@ -139,7 +125,10 @@ const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
                 {/* Header: Group Name & Payment Type */}
                 <View style={cardStyles.cardHeader}>
                     <Text style={cardStyles.groupName} numberOfLines={1}>{groupName}</Text>
-                    <View style={cardStyles.paymentTypeTag}>
+                    <View style={[
+                        cardStyles.paymentTypeTag,
+                        paymentType === 'Normal' && cardStyles.tagNormal, 
+                    ]}>
                         <Text style={cardStyles.paymentTypeText}>{paymentType}</Text>
                     </View>
                 </View>
@@ -152,12 +141,13 @@ const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
                             onPress={() => handlePhonePress(phone)}
                             style={[
                                 cardStyles.callButton, 
-                                { backgroundColor: isCalling ? MODERN_PRIMARY : ACCENT_GREEN }
+                                { backgroundColor: isCalling ? ACCENT_BLUE : ACCENT_GREEN }
                             ]}
                             disabled={isCalling}
                         >
+                            <Ionicons name="call" size={16} color={CARD_BG} style={{marginRight: 5}}/>
                             <Text style={cardStyles.callButtonText}>
-                                {isCalling ? '📞 Calling...' : '📞 Call'}
+                                {isCalling ? 'Calling...' : 'Call'}
                             </Text>
                         </TouchableOpacity>
                     ) : null}
@@ -174,7 +164,8 @@ const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
                 {/* Toggler for Details */}
                 <TouchableOpacity onPress={toggleDetails} style={cardStyles.detailsToggle}>
                     <Text style={cardStyles.detailsToggleText}>
-                        {isDetailsVisible ? 'Hide Details ▲' : 'Show More Details ▼'}
+                        {isDetailsVisible ? 'Hide Details' : 'Show More Details'} 
+                        <Ionicons name={isDetailsVisible ? 'chevron-up-outline' : 'chevron-down-outline'} size={14} color={ACCENT_BLUE} style={{marginLeft: 5}}/>
                     </Text>
                 </TouchableOpacity>
 
@@ -204,10 +195,10 @@ const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
 };
 
 // =================================================================
-// MAIN COMPONENT: OutstandingReports (Modified)
+// MAIN COMPONENT: OutstandingReports (Styled like Enrollment.js)
 // =================================================================
 const OutstandingReports = ({ route }) => {
-    const { user } = route.params;
+    const { user } = route.params || {}; // Defensive destructuring
     const [groups, setGroups] = useState([]);
     const [dues, setDues] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
@@ -274,72 +265,82 @@ const OutstandingReports = ({ route }) => {
 
     const EmptyList = () => (
         <View style={pageStyles.emptyContainer}>
-            <Image source={NO_REPORTS_IMAGE} style={pageStyles.emptyImage} />
-            <Text style={pageStyles.emptyText}>No pending dues found</Text>
+            <Ionicons name="documents-outline" size={50} color={NEUTRAL_GREY} />
+            <Text style={pageStyles.emptyText}>No outstanding reports found.</Text>
         </View>
     );
 
     return (
-        <View style={{ flex: 1 }}> 
-            
-            <LinearGradient colors={BACKGROUND_GRADIENT} style={{ flex: 1 }}>
-
-                {/* HeaderSpacer wraps the Header, compensating for the status bar and providing padding */}
+        <SafeAreaView style={pageStyles.safeArea} edges={['top']}>
+            {/* Top Header Section with Gradient */}
+            <LinearGradient colors={TOP_GRADIENT} style={pageStyles.topContainer}>
                 <View style={pageStyles.headerSpacer}>
                     <Header />
                 </View>
 
-                <View style={pageStyles.container}>
+                <View style={pageStyles.titleContainer}>
                     <Text style={pageStyles.title}>Outstanding Report</Text>
                     <Text style={pageStyles.subtitle}>
                         Easily manage and track pending payments
                     </Text>
+                </View>
+            </LinearGradient>
 
-                    {/* Group Filter */}
-                    <View style={pageStyles.dropdownWrapper}>
-                        <Text style={pageStyles.dropdownLabel}>Filter by Group</Text>
-                        <View style={pageStyles.pickerWrapper}>
-                            <Picker
-                                selectedValue={selectedGroup}
-                                onValueChange={(itemValue) => setSelectedGroup(itemValue)}
-                                style={[pageStyles.picker, { color: MODERN_PRIMARY }]}
-                                itemStyle={{ color: MODERN_PRIMARY, fontSize: 16 }} // iOS picker item style
-                            >
-                                <Picker.Item label="All Groups" value="all" />
-                                {groups.map((g) => (
-                                    <Picker.Item key={g._id} label={g.group_name} value={g._id} />
-                                ))}
-                            </Picker>
-                        </View>
-                    </View>
+            {/* Main Content Area (Light Background) */}
+            <View style={pageStyles.mainContentArea}>
 
-                    {/* Total Summary (Highlighted Card) */}
-                    <View style={pageStyles.totalWrapper}>
+                {/* Total Summary (Highlighted Card) */}
+                <View style={pageStyles.totalWrapper}>
+                    <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 5}}>
+                        <Ionicons name="wallet-outline" size={20} color={MODERN_PRIMARY} style={{marginRight: 8}}/>
                         <Text style={pageStyles.totalText}>
                             Overall Outstanding Balance:
                         </Text>
-                        <Text style={pageStyles.totalAmount}>
-                            {formatCurrency(totalPending)}
-                        </Text>
                     </View>
-
-                    {loading ? (
-                        <View style={pageStyles.loader}>
-                            <ActivityIndicator size="large" color={MODERN_PRIMARY} />
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={filteredData}
-                            renderItem={renderItem}
-                            keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
-                            ListEmptyComponent={EmptyList}
-                            style={pageStyles.flatListStyle}
-                            contentContainerStyle={pageStyles.flatListContentContainer}
-                        />
-                    )}
+                    <Text style={pageStyles.totalAmount}>
+                        {formatCurrency(totalPending)}
+                    </Text>
                 </View>
-            </LinearGradient>
-        </View>
+
+                {/* Group Filter */}
+                <View style={pageStyles.dropdownWrapper}>
+                    <Text style={pageStyles.dropdownLabel}>Filter by Group</Text>
+                    <View style={pageStyles.pickerWrapper}>
+                        <Picker
+                            selectedValue={selectedGroup}
+                            onValueChange={(itemValue) => setSelectedGroup(itemValue)}
+                            style={pageStyles.picker}
+                        >
+                            <Picker.Item label="All Groups" value="all" color={MODERN_PRIMARY} />
+                            {groups.map((g) => (
+                                <Picker.Item 
+                                    key={g._id} 
+                                    label={g.group_name} 
+                                    value={g._id} 
+                                    color={MODERN_PRIMARY}
+                                />
+                            ))}
+                        </Picker>
+                    </View>
+                </View>
+
+                {loading ? (
+                    <View style={pageStyles.loader}>
+                        <ActivityIndicator size="large" color={ACCENT_BLUE} />
+                        <Text style={pageStyles.loadingTextBlue}>Fetching reports...</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={filteredData}
+                        renderItem={renderItem}
+                        keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
+                        ListEmptyComponent={EmptyList}
+                        style={pageStyles.flatListStyle}
+                        contentContainerStyle={pageStyles.flatListContentContainer}
+                    />
+                )}
+            </View>
+        </SafeAreaView>
     );
 };
 
@@ -349,83 +350,109 @@ export default OutstandingReports;
 // STYLES 
 // =================================================================
 const pageStyles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingHorizontal: 16,
+    // --- LAYOUT STYLES (from Enrollment.js) ---
+    safeArea: { 
+        flex: 1, 
+        backgroundColor: TOP_GRADIENT[0] 
     },
-    // The headerSpacer ensures the Header has vertical space above the title
-    headerSpacer: {
+    topContainer: {
         paddingHorizontal: 16,
-        paddingVertical: 40, 
+        paddingBottom: 20,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    mainContentArea: {
+        flex: 1,
+        backgroundColor: SUBTLE_BG_GREY, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30,
+        paddingHorizontal: 16,
+        marginTop: -20, 
+        paddingTop: 30,
+    },
+    headerSpacer: { 
+        paddingTop: 20, 
+        paddingBottom: 5 
+    }, 
+
+    // --- TITLE STYLES (from Enrollment.js) ---
+    titleContainer: {
+        alignItems: 'center',
+        marginBottom: 15,
     },
     title: {
-        fontSize: 28,
-        fontWeight: "900", 
-        color: MODERN_PRIMARY,
-        marginBottom: 4, 
-        marginTop: -25, 
-        textAlign: 'center',
+        fontSize: 28, 
+        fontWeight: "900",
+        color: CARD_BG, 
+        marginBottom: 4,
     },
     subtitle: {
-        fontSize: 15,
-        color: NEUTRAL_GREY,
-        marginBottom: 20,
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.85)', 
+        fontWeight: '500',
         textAlign: 'center',
     },
 
     // --- DROP DOWN / FILTER ---
     dropdownWrapper: {
-        backgroundColor: "#ffffff",
+        backgroundColor: CARD_BG,
         padding: 15,
-        borderRadius: 12, 
+        borderRadius: 15, 
         marginBottom: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 5,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     dropdownLabel: {
         fontWeight: "700",
         marginBottom: 8,
         color: MODERN_PRIMARY,
-        fontSize: 16,
+        fontSize: 15,
     },
     pickerWrapper: {
         borderWidth: 1,
         borderColor: BORDER_COLOR,
-        borderRadius: 8,
+        borderRadius: 10,
         overflow: "hidden",
-        backgroundColor: LIGHT_GREY_BACKGROUND,
+        backgroundColor: SUBTLE_BG_GREY,
     },
     picker: {
         color: MODERN_PRIMARY, 
+        height: 40,
     },
 
     // --- TOTAL SUMMARY ---
     totalWrapper: {
-        backgroundColor: "#fff7ed", 
-        borderRadius: 12,
-        padding: 18,
-        marginBottom: 20,
+        backgroundColor: "#fef3c7", 
+        borderRadius: 18,
+        padding: 20,
+        marginBottom: 25,
         borderLeftWidth: 6,
-        borderLeftColor: "#f97316", 
+        borderLeftColor: ACCENT_BLUE, 
         alignItems: 'center',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
-        shadowRadius: 4,
+        shadowRadius: 8,
+        elevation: 4,
     },
     totalText: {
-        color: "#c2410c",
+        color: MODERN_PRIMARY,
         fontWeight: "700",
-        fontSize: 17,
-        marginBottom: 4,
+        fontSize: 18,
     },
     totalAmount: {
         color: WARNING_RED,
         fontWeight: "900", 
-        fontSize: 26,
+        fontSize: 28,
+        marginTop: 5,
     },
 
     // --- FLATLIST ---
@@ -433,29 +460,30 @@ const pageStyles = StyleSheet.create({
         flex: 1,
     },
     flatListContentContainer: {
-        paddingBottom: 20, 
+        paddingBottom: 120, 
     },
 
     // --- LOADER/EMPTY STATE ---
     loader: {
         alignItems: "center",
         justifyContent: "center",
-        marginTop: 50,
+        minHeight: height * 0.4,
+    },
+    loadingTextBlue: {
+        marginTop: 10,
+        color: ACCENT_BLUE,
+        fontSize: 16,
+        fontWeight: '600'
     },
     emptyContainer: {
         alignItems: "center",
         marginTop: 80,
         padding: 20,
     },
-    emptyImage: {
-        width: 200,
-        height: 160,
-        opacity: 0.8,
-    },
     emptyText: {
         color: NEUTRAL_GREY,
-        marginTop: 20,
-        fontWeight: "700",
+        marginTop: 15,
+        fontWeight: "600",
         fontSize: 18,
     },
 });
@@ -465,15 +493,17 @@ const pageStyles = StyleSheet.create({
 // =================================================================
 const cardStyles = StyleSheet.create({
     cardContainer: {
-        backgroundColor: "#ffffff",
-        borderRadius: 16, 
-        marginBottom: 15,
+        backgroundColor: CARD_BG,
+        borderRadius: 18, 
+        marginBottom: 18,
         overflow: 'hidden', 
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 15,
-        elevation: 10,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05, 
+        shadowRadius: 8,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
     },
     cardContent: {
         padding: 20,
@@ -487,24 +517,27 @@ const cardStyles = StyleSheet.create({
         borderBottomColor: BORDER_COLOR,
     },
     groupName: {
-        fontSize: 16,
-        fontWeight: "800", 
+        fontSize: 18,
+        fontWeight: "900", 
         color: MODERN_PRIMARY,
         marginRight: 10,
         flexShrink: 1, 
     },
     paymentTypeTag: {
-        backgroundColor: "#eef2ff", 
+        backgroundColor: '#e0f2fe', 
         paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
+        paddingVertical: 5,
+        borderRadius: 15,
         alignSelf: 'flex-start', 
     },
+    tagNormal: {
+        backgroundColor: '#ffedd5', 
+    },
     paymentTypeText: {
-        fontSize: 12,
-        color: MODERN_PRIMARY,
+        fontSize: 11,
+        color: ACCENT_BLUE,
         textTransform: "uppercase",
-        fontWeight: "700",
+        fontWeight: "800",
     },
 
     customerInfoRow: {
@@ -514,64 +547,65 @@ const cardStyles = StyleSheet.create({
         marginBottom: 15,
     },
     customerName: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: "900", 
-        color: DARK_TEXT,
+        color: MODERN_PRIMARY,
         flexShrink: 1,
         marginRight: 10,
     },
     callButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 10,
     },
     callButtonText: {
-        color: '#FFFFFF',
+        color: CARD_BG,
         fontWeight: '700',
         fontSize: 14,
-        marginLeft: 5, 
     },
 
+    // --- ADJUSTED BALANCE ROW STYLES ---
     balanceRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
+        justifyContent: "flex-start", 
         alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 15,
-        backgroundColor: "#fef2f2", 
-        borderRadius: 10,
+        paddingVertical: 15,
+        // Reduced paddingHorizontal to move content left
+        paddingHorizontal: 10, 
+        backgroundColor: "#fff7f7", 
+        borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#fde0e0',
+        borderColor: '#fee2e2',
         marginBottom: 10,
     },
     balanceLabel: {
         fontSize: 13,
-        color: DARK_TEXT,
+        color: MODERN_PRIMARY,
         fontWeight: '700',
+        marginRight: 8,
     },
     balanceValue: {
         fontSize: 20, 
         fontWeight: "900",
     },
+    // ------------------------------------
 
     detailsToggle: {
-        paddingVertical: 10,
+        paddingVertical: 12,
         alignItems: 'center',
         borderTopWidth: 1,
         borderTopColor: BORDER_COLOR,
         marginTop: 10,
+        flexDirection: 'row',
+        justifyContent: 'center',
     },
     detailsToggleText: {
-        color: MODERN_PRIMARY,
+        color: ACCENT_BLUE,
         fontWeight: '700',
         fontSize: 14,
+        marginRight: 5,
     },
 
     detailsSection: {
@@ -580,9 +614,9 @@ const cardStyles = StyleSheet.create({
     financialRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        paddingVertical: 8,
+        paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6', 
+        borderBottomColor: BORDER_COLOR, 
     },
     financialLabel: {
         fontSize: 15,
@@ -591,7 +625,7 @@ const cardStyles = StyleSheet.create({
     },
     financialValue: {
         fontSize: 16,
-        color: DARK_TEXT,
-        fontWeight: "700",
+        color: MODERN_PRIMARY,
+        fontWeight: "800",
     },
 });
