@@ -6,28 +6,48 @@ import {
   TextInput,
   ActivityIndicator,
   TouchableOpacity,
+  Platform, 
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import Icon from "react-native-vector-icons/FontAwesome";
+// Import necessary modern components/icons
+import { Ionicons } from "@expo/vector-icons"; 
+import { SafeAreaView } from "react-native-safe-area-context"; 
 import { LinearGradient } from "expo-linear-gradient";
 
-import COLORS from "../constants/color";
+// Removed: import Icon from "react-native-vector-icons/FontAwesome";
+// Removed: import COLORS from "../constants/color";
+
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 
 import axios from "axios";
+
+// --- DESIGN CONSTANTS COPIED FROM RouteCustomerChit.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent (for icons/left border)
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+// ---------------------------------------------
+
+
 const CustomerCard = ({ name, phone, onPress }) => (
-  <TouchableOpacity onPress={onPress} style={styles.card}>
+  <TouchableOpacity onPress={onPress} style={styles.cardContainer} activeOpacity={0.7}>
     <View style={styles.cardContent}>
-      <Icon name="user-circle" style={styles.cardIcon} />
+      {/* Updated to Ionicons for consistency */}
+      <Ionicons name="person-circle-outline" style={styles.cardIcon} /> 
       <View style={styles.textContainer}>
         <Text style={styles.cardText}>{name}</Text>
         <Text style={styles.cardSubText}>Phone: {phone}</Text>
       </View>
     </View>
-    <Icon name="arrow-right" style={styles.arrowIcon} />
+    {/* Updated to Ionicons for consistency */}
+    <Ionicons name="chevron-forward-outline" style={styles.arrowIcon} /> 
   </TouchableOpacity>
 );
+
 
 const RouteCustomerPigme = ({ route, navigation }) => {
   const { user, areaId } = route.params;
@@ -60,150 +80,197 @@ const RouteCustomerPigme = ({ route, navigation }) => {
     fetchPigmeCustomers();
   }, []);
 
+  // Filtering Logic
+  const filteredCustomers = Array.isArray(customers)
+    ? customers.filter(
+        (item) =>
+          item.customer?.full_name?.toLowerCase().includes(search.toLowerCase()) || ""
+      )
+    : [];
+
   return (
-    <LinearGradient
-      colors={["#1aa2ccff", "#1aa2ccff"]}
-      style={styles.gradientOverlay}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      {/* Fixed Content Wrapper */}
-      <View style={styles.fixedContentWrapper}>
-        <Header />
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* Top Header Section with Gradient */}
+      <LinearGradient
+        colors={TOP_GRADIENT}
+        style={styles.topContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.headerSpacer}>
+            <Header />
+        </View>
+
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Pigmy Customers</Text>
-          <Text style={styles.subtitle}>Manage Pigmy accounts</Text>
+            <Text style={styles.title}>Pigmy Customers</Text>
+            <Text style={styles.subtitle}>Manage Pigmy accounts</Text>
         </View>
+        
+        {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Icon
-            name="search"
-            size={20}
-            color="#888"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            value={search}
-            onChangeText={(text) => setSearch(text)}
-            placeholder="Search Pigmy customers..."
-            placeholderTextColor="#888"
-            style={styles.searchInput}
-          />
+            <Ionicons
+              name="search-outline"
+              size={20}
+              color={TEXT_GREY}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              value={search}
+              onChangeText={(text) => setSearch(text)}
+              placeholder="Search Pigmy customers..."
+              placeholderTextColor={TEXT_GREY}
+              style={styles.searchInput}
+            />
         </View>
-      </View>
 
-      {/* Scrollable Customer List */}
-      {loading ? (
-        <View style={{ marginTop: 30, alignItems: "center" }}>
-          <ActivityIndicator size="large" color="#f8c009ff" />
-        </View>
-      ) : (
+      </LinearGradient>
+
+      {/* Main Content Area (Light Background with Rounded Corners) */}
+      <View style={styles.mainContentArea}>
         <ScrollView
-          style={styles.scrollableListContainer} // New style for ScrollView
-          contentContainerStyle={{ paddingBottom: 80 }}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContainer}
         >
-          <>
-            {Array.isArray(customers) &&
-              customers
-
-                .filter(
-                  (item) =>
-                    item.customer?.full_name
-                      ?.toLowerCase()
-                      .includes(search.toLowerCase()) || ""
-                )
-                .map((item, index) => (
-                  <CustomerCard
-                    key={index}
-                    name={item.customer?.full_name || "Unknown Customer"}
-                    phone={item.customer?.phone_number || "N/A"}
-                    onPress={() => {
-                      navigation.navigate("PigmePayin", {
-                        user,
-                        customer: item?.customer?._id,
-                        pigme_id: item?._id,
-                        custom_pigme_id: item?.pigme_id,
-                      });
-                    }}
-                  />
-                ))}
-          </>
+          <View style={styles.cardListContainer}>
+              {loading ? (
+                  <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color={ACCENT_BLUE} />
+                  </View>
+              ) : (
+                  <>
+                      {filteredCustomers.length > 0 ? (
+                          filteredCustomers.map((item, index) => (
+                              <CustomerCard
+                                  key={index}
+                                  name={item.customer?.full_name || "Unknown Customer"}
+                                  phone={item.customer?.phone_number || "N/A"}
+                                  onPress={() => {
+                                    navigation.navigate("PigmePayin", {
+                                      user,
+                                      customer: item?.customer?._id,
+                                      pigme_id: item?._id,
+                                      custom_pigme_id: item?.pigme_id,
+                                    });
+                                  }}
+                              />
+                          ))
+                      ) : (
+                          <Text style={styles.noCustomersText}>No pigmy customers found.</Text>
+                      )}
+                  </>
+              )}
+          </View>
         </ScrollView>
-      )}
-    </LinearGradient>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  gradientOverlay: {
+  // --- LAYOUT STYLES (Copied from RouteCustomerChit.js) ---
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: TOP_GRADIENT[0] 
+  },
+  topContainer: {
+    paddingHorizontal: 16,
+    // Increased paddingBottom to create space between the search bar and the content area
+    paddingBottom: 35, 
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  mainContentArea: {
     flex: 1,
+    backgroundColor: SUBTLE_BG_GREY, 
+    borderTopLeftRadius: 30, 
+    borderTopRightRadius: 30,
+    paddingHorizontal: 16,
+    marginTop: -20, 
+    paddingTop: 30,
   },
-  // New style for the fixed part's wrapper
-  fixedContentWrapper: {
-    paddingHorizontal: 22,
-    paddingTop: 50, // Adjust to your header placement
+  headerSpacer: { 
+    paddingTop: 20, 
+    paddingBottom: 5 
+  }, 
+  loadingContainer: { 
+    paddingTop: 20 
   },
-  // New style for the scrollable list
-  scrollableListContainer: {
-    flex: 1,
-    marginHorizontal: 22,
-    // Add marginTop if needed to align with fixed content's horizontal margin
-  },
+
+  // --- TITLE STYLES (Copied from RouteCustomerChit.js) ---
   titleContainer: {
-    marginTop: 10,
-    marginBottom: 20,
-    alignItems: "center",
+    alignItems: 'center',
+    marginBottom: 15,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: 28, 
+    fontWeight: "900",
+    color: CARD_BG, // White text
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 5,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.85)', 
+    fontWeight: '500',
+    textAlign: 'center',
   },
+
+  // --- SEARCH BAR STYLES (Copied from RouteCustomerChit.js) ---
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 10,
-    width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
-    marginBottom: 20,
+    backgroundColor: CARD_BG, // White background
+    borderRadius: 12, // Slightly smaller border radius
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    marginTop: 10,
   },
   searchIcon: {
-    marginLeft: 5,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    padding: 5,
+    padding: 0,
     fontSize: 16,
-    color: COLORS.darkGray,
+    color: MODERN_PRIMARY,
   },
-  // Styles for the new CustomerCard component
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
+  
+  // --- CARD LIST STYLES (Copied from RouteCustomerChit.js) ---
+  scrollContainer: { 
+    paddingBottom: 50, 
+    paddingTop: 10,
+  },
+  cardListContainer: {
+    gap: 18, 
+    alignItems: 'stretch', 
+  },
+
+  // --- CARD STYLES (Copied from RouteCustomerChit.js and modified) ---
+  cardContainer: { 
+    backgroundColor: CARD_BG,
+    borderRadius: 18, 
     padding: 20,
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    // Modern shadow
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05, 
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+    // Accent border
     borderLeftWidth: 5,
-    borderColor: "#f8c009ff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
-    marginBottom: 20,
+    borderLeftColor: ACCENT_BLUE, // Used ACCENT_BLUE for consistency
   },
   cardContent: {
     flexDirection: "row",
@@ -211,24 +278,33 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     marginLeft: 15,
+    flexShrink: 1, 
   },
   cardText: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "800", 
+    color: MODERN_PRIMARY, // Dark text
   },
   cardSubText: {
     fontSize: 14,
-    color: "#888",
+    color: TEXT_GREY, // Grey subtext
     marginTop: 2,
+    fontWeight: '500', 
   },
   cardIcon: {
     fontSize: 32,
-    color: "#f8c009ff",
+    color: ACCENT_BLUE, // Blue icon color
   },
   arrowIcon: {
-    fontSize: 22,
-    color: "#f8c009ff",
+    fontSize: 24, 
+    color: TEXT_GREY, // Grey arrow color
+    marginLeft: 10,
+  },
+  noCustomersText: {
+    textAlign: "center",
+    marginTop: 20,
+    fontSize: 16,
+    color: TEXT_GREY,
   },
 });
 

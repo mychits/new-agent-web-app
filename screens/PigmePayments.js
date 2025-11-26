@@ -1,13 +1,25 @@
-import { View, 
-  Text, ScrollView, 
-  StyleSheet, TextInput, Modal, TouchableOpacity, 
-  Alert, ActivityIndicator, Image, Dimensions} from "react-native";
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  StyleSheet, 
+  TextInput, 
+  Modal, 
+  TouchableOpacity, 
+  Alert, 
+  ActivityIndicator, 
+  Image, 
+  Dimensions, 
+  Platform // Added Platform for conditional padding
+} from "react-native";
 import React, { useState, useEffect } from "react";
+// Swapped to Ionicons for consistency, but kept FontAwesome Icon for filter display
 import Icon from "react-native-vector-icons/FontAwesome";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import RNPrint from 'react-native-print';
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons"; // Added Ionicons for modern icons
 
 
 import COLORS from "../constants/color";
@@ -18,6 +30,18 @@ import axios from "axios";
 import PigmePaymentList from "../components/PigmePaymentList";
 
 const noImage = require('../assets/no.png');
+
+// --- DESIGN CONSTANTS COPIED FROM CHITPAYMENTS ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent 
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+const SUCCESS_GREEN = '#3ed160ff';
+// ---------------------------------------------
+
 
 // NOTE: Component name is assumed to be ChitPayments as per the original file structure
 const PigmePayments = ({ route, navigation }) => { 
@@ -65,8 +89,8 @@ const PigmePayments = ({ route, navigation }) => {
     { id: 'date', title: 'Date', value: formatDate(selectedDate), icon: 'calendar' },
     { id: 'customer', title: 'Customer', value: 'All', icon: 'user' },
     { id: 'pigmy', title: 'Pigme ID', value: 'All', icon: 'money' }, 
-    { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'money' },
-    { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'money' },
+    { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'credit-card' }, // Changed icon to better fit payment mode
+    { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'dollar' }, // Changed icon to dollar/money for consistency
   ]);
 
   const paymentModes = ['cash', 'online'];
@@ -218,7 +242,7 @@ const PigmePayments = ({ route, navigation }) => {
               // The "name" will just be the Pigme ID itself
               setSelectedPigmyId(value);
               setSelectedPigmyName(value || ''); 
-              updateFilterValue('pigmy', value);
+              updateFilterValue('pigmy', value ? `ID: ${value}` : 'All'); // Update display value
               setShowPicker(false);
             }}
           >
@@ -261,12 +285,12 @@ const PigmePayments = ({ route, navigation }) => {
             selectedValue={selectedPaymentMode}
             onValueChange={(value) => {
               setSelectedPaymentMode(value);
-              updateFilterValue('paymentMode', value);
+              updateFilterValue('paymentMode', value ? value.charAt(0).toUpperCase() + value.slice(1) : 'All'); // Capitalize for display
               setShowPicker(false);
             }}>
              <Picker.Item label="All Modes" value="" />
             {paymentModes.map((mode) => (
-              <Picker.Item key={mode} label={mode} value={mode} />
+              <Picker.Item key={mode} label={mode.charAt(0).toUpperCase() + mode.slice(1)} value={mode} />
             ))}
           </Picker>
         );
@@ -326,6 +350,7 @@ const PigmePayments = ({ route, navigation }) => {
           h1 {
             text-align: center;
             margin-bottom: 20px;
+            color: ${MODERN_PRIMARY};
           }
           .table {
             width: 100%;
@@ -338,19 +363,29 @@ const PigmePayments = ({ route, navigation }) => {
             text-align: left;
           }
           .table th {
-            background-color: #f2f2f2;
+            background-color: ${SUBTLE_BG_GREY};
+            color: ${MODERN_PRIMARY};
           }
           .footer {
             text-align: center;
             margin-top: 20px;
             font-size: 10px;
-            color: #555;
+            color: ${TEXT_GREY};
+          }
+          .total {
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: right;
+            color: ${SUCCESS_GREEN};
           }
         </style>
       </head>
       <body>
         <div class="container">
-          <h1>Pigmy Payment Collection Print</h1>
+          <h1>Pigmy Payment Collection Report</h1>
+          <p><strong>Agent:</strong> ${agent.name || 'N/A'}</p>
+          <p><strong>Date:</strong> ${selectedDate.toDateString()}</p>
           <table class="table">
             <thead>
               <tr>
@@ -367,8 +402,9 @@ const PigmePayments = ({ route, navigation }) => {
               ${filteredCustomersForPrint}
             </tbody>
           </table>
+          <p class="total">Total Collection: ₹ ${totalAmount.toFixed(2)}</p>
           <div class="footer">
-            <p>${agent.name} | ${selectedDate.toDateString()} </p>
+            <p>Report Generated: ${new Date().toLocaleString()}</p>
             <p>Thank You!</p>
           </div>
         </div>
@@ -405,22 +441,23 @@ const PigmePayments = ({ route, navigation }) => {
           h1 {
             font-size: 24px;
             margin-bottom: 10px;
-            color: #053B90;
+            color: ${ACCENT_BLUE};
           }
           p {
             font-size: 16px;
             margin-bottom: 5px;
+            color: ${MODERN_PRIMARY};
           }
           .amount {
-            font-size: 30px;
-            font-weight: bold;
-            color: #333;
+            font-size: 36px;
+            font-weight: 900;
+            color: ${SUCCESS_GREEN};
             margin: 15px 0;
           }
           .footer {
             margin-top: 20px;
             font-size: 12px;
-            color: #555;
+            color: ${TEXT_GREY};
           }
         </style>
       </head>
@@ -447,35 +484,64 @@ const PigmePayments = ({ route, navigation }) => {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
+    <View style={{ flex: 1, backgroundColor: TOP_GRADIENT[0] }}>
+      <LinearGradient 
+        colors={TOP_GRADIENT}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#f7f7f7ff" />
-            
+            <ActivityIndicator size="large" color={CARD_BG} />
+            <Text style={styles.loadingText}>Loading Payments...</Text>
           </View>
         ) : (
-          <View style={styles.contentContainer}> 
-            <View style={{ marginHorizontal: 22, marginTop: 12 }}>
-              <Header />
-              <View style={styles.titleCollectionContainer}>
-                <View>
-                  <Text style={styles.title}>Pigmy Payments</Text>
-                  <Text style={styles.totalAmountText}>₹ {totalAmount.toFixed(2)}</Text>
+          <View style={styles.screenContainer}> 
+            
+            {/* Fixed Blue Header Content */}
+            <View style={styles.fixedHeaderArea}>
+                <View style={{ marginHorizontal: 22, marginTop: Platform.OS === 'android' ? 0 : 32 }}>
+                    <Header />
+                    <View style={styles.titleCollectionContainer}>
+                        <View style={{alignItems: 'center'}}>
+                            <Text style={styles.title}>Pigmy Payments</Text>
+                            <Text style={styles.totalAmountText}>₹ {totalAmount.toFixed(2)}</Text>
+                        </View>
+                    </View>
+
+                    {/* Search Input */}
+                    <View style={styles.searchContainer}>
+                        <Icon
+                            name="search"
+                            size={20}
+                            color={TEXT_GREY}
+                            style={styles.searchIcon}
+                        />
+                        <TextInput
+                            value={search}
+                            onChangeText={(text) => setSearch(text)}
+                            placeholder="Search customer name..."
+                            placeholderTextColor={TEXT_GREY}
+                            style={styles.searchInput}
+                        />
+                    </View>
                 </View>
-              </View>
+            </View>
+
+            {/* Main Content Area (White Background) */}
+            <View style={styles.mainContentArea}>
 
               <Modal
                 visible={showTotalCollectionDetails}
                 transparent={false}
                 animationType="slide"
-                onRequestClose={() => setShowTotalCollectionDetails(false)}
+                onRequestClose={() => {
+                  setShowTotalCollectionDetails(false);
+                  setSelectedFilter(null);
+                }}
               >
-                <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
+                <LinearGradient colors={TOP_GRADIENT}
                   style={styles.fullScreenModalGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -488,16 +554,18 @@ const PigmePayments = ({ route, navigation }) => {
                         setSelectedFilter(null);
                       }}
                     >
-                      <Icon name="times-circle" size={30} color={COLORS.darkGray} />
+                      <Ionicons name="close-circle" size={30} color={CARD_BG} />
                     </TouchableOpacity>
 
                     <View style={styles.totalDetailsCard}>
-                      <Text style={styles.totalDetailsTitle}>Total Collection</Text>
+                      <Text style={styles.totalDetailsTitle}>Collection Summary</Text>
                       <Text style={styles.totalDetailsAmount}>₹ {totalAmount.toFixed(2)}</Text>
-                      <Text style={styles.totalDetailsAgent}>Agent: {agent.name || 'N/A'}</Text>
-                      <Text style={styles.totalDetailsDate}>Date: {formatDate(selectedDate)}</Text>
+                      <View style={styles.summaryInfo}>
+                          <Text style={styles.totalDetailsAgent}>Agent: {agent.name || 'N/A'}</Text>
+                          <Text style={styles.totalDetailsDate}>Date: {formatDate(selectedDate)}</Text>
+                      </View>
 
-                      <Text style={styles.paymentDetailsHeader}>Individual Payments:</Text>
+                      <Text style={styles.paymentDetailsHeader}>Individual Payments ({filteredCustomers.length}):</Text>
                       <ScrollView style={styles.paymentDetailsScrollView}>
                         {filteredCustomers.length > 0 ? (
                           filteredCustomers.map((customer, index) => (
@@ -509,21 +577,19 @@ const PigmePayments = ({ route, navigation }) => {
                                 <Text style={styles.paymentDetailLabel}>Pigmy ID:</Text> {customer?.pigme?.pigme_id || 'N/A'} 
                               </Text>
                               <Text style={styles.paymentDetailText}>
-                                <Text style={styles.paymentDetailLabel}>Amount:</Text> ₹ {parseFloat(customer.amount || 0).toFixed(2)}
+                                <Text style={styles.paymentDetailLabel}>Amount:</Text> <Text style={{fontWeight: 'bold', color: SUCCESS_GREEN}}>₹ {parseFloat(customer.amount || 0).toFixed(2)}</Text>
                               </Text>
                               <Text style={styles.paymentDetailText}>
                                 <Text style={styles.paymentDetailLabel}>Mode:</Text> {customer.pay_type || 'N/A'}
                               </Text>
-                              <Text style={styles.paymentDetailText}>
-                                <Text style={styles.paymentDetailLabel}>Receipt No:</Text> {customer.receipt_no || 'N/A'}
-                              </Text>
                             </View>
                           ))
                         ) : (
-                          <Text style={styles.noPaymentsText}>No payments for selected date.</Text>
+                          <Text style={styles.noPaymentsText}>No payments matching the current filters.</Text>
                         )}
                       </ScrollView>
                        <TouchableOpacity onPress={printTotalCollectionDetails} style={styles.printDetailsButton}>
+                        <Ionicons name="document-text-outline" size={20} color={MODERN_PRIMARY} style={{ marginRight: 5 }}/>
                         <Text style={styles.printDetailsButtonText}>Print Summary</Text>
                       </TouchableOpacity>
                     </View>
@@ -531,139 +597,106 @@ const PigmePayments = ({ route, navigation }) => {
                 </LinearGradient>
               </Modal>
 
+              {/* Filters and Print Button */}
               {!showTotalCollectionDetails && (
                 <>
-                  <View style={styles.searchContainer}>
-                    <Icon
-                      name="search"
-                      size={20}
-                      color="#ccc"
-                      style={styles.searchIcon}
-                    />
-                    <TextInput
-                      value={search}
-                      onChangeText={(text) => setSearch(text)}
-                      placeholder="Search pigme payments..."
-                      placeholderTextColor={COLORS.darkGray}
-                      style={styles.searchInput}
-                    />
+                  <View style={styles.filterContainer}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.scrollContainer}>
+                      {filters.map((filter) => (
+                        <TouchableOpacity
+                          key={filter.id}
+                          style={[
+                            styles.card,
+                            selectedFilter === filter.id && styles.activeCard,
+                            filter.id === 'totalCollection' && styles.totalCollectionCard
+                          ]}
+                          onPress={() => handleFilterPress(filter.id)}
+                        >
+                          <View style={styles.cardContent}>
+                            <View style={styles.cardIconContainer}>
+                                <Icon name={filter.icon} size={20} color={filter.id === 'totalCollection' ? SUCCESS_GREEN : ACCENT_BLUE} />
+                            </View>
+                            <View style={styles.cardTextContainer}>
+                              <Text style={styles.cardTitle}>
+                                {filter.title}
+                              </Text>
+                              <Text style={[styles.cardValue, filter.id === 'totalCollection' && styles.totalCollectionValue]}>
+                                {filter.value}
+                              </Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    <TouchableOpacity onPress={printPDF} style={styles.printButton}>
+                        <Ionicons name="print-outline" size={20} color={MODERN_PRIMARY} style={{ marginRight: 5 }} />
+                        <Text style={styles.printButtonText}>Print Report</Text>
+                    </TouchableOpacity>
+                    <Modal
+                      visible={showPicker}
+                      transparent={true}
+                      animationType="fade"
+                      onRequestClose={() => setShowPicker(false)}>
+                      <View style={styles.modalContainer}>
+                        <View style={styles.pickerContainer}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setShowPicker(false);
+                              setSelectedFilter(null);
+                            }}
+                            style={styles.pickerCloseButton}
+                          >
+                            <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
+                          </TouchableOpacity>
+                          {renderPicker()}
+                        </View>
+                      </View>
+                    </Modal>
                   </View>
+
+                  <ScrollView
+                    style={styles.listScrollView}
+                    contentContainerStyle={{ paddingBottom: 80 }}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {Array.isArray(customers) && filteredCustomers.length === 0 ? (
+                      <View style={styles.noDataContainer}>
+                        <Image source={noImage} style={styles.noImage} />
+                        <Text style={styles.noDataText}>No Payments are available</Text>
+                      </View>
+                    ) : (
+                      filteredCustomers
+                        .map((customer, index) => (
+                          <PigmePaymentList
+                            key={index}
+                            idx={index}
+                            name={customer?.user_id?.full_name || 'N/A'}
+                            cus_id={customer?.user_id?._id}
+                            phone={customer?.user_id?.phone_number || 'N/A'}
+                            receipt={customer?.receipt_no}
+                            date={customer?.pay_date}
+                            amount={customer.amount}
+                            pigmeId={customer?.pigme?.pigme_id || 'N/A'} 
+                            actual_pigme_id={customer?.pigme?._id || "N/A"}
+                          
+                            pigmeAmount={customer?.pigme?.payable_amount || 'N/A'} 
+                            type={customer?.pay_type}
+                            agent_name={agent.name || "N/A"}
+                            navigation={navigation}
+                            user={user}
+                            onPress={() => handleChitPress(customer._id)}
+                            customer={customer}
+                            isActive={customer._id === activeChitId}
+                          />
+                        ))
+                    )}
+                  </ScrollView>
                 </>
               )}
             </View>
-
-            {!showTotalCollectionDetails && (
-              <>
-                <View style={styles.filterContainer}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContainer}>
-                    {filters.map((filter) => (
-                      <TouchableOpacity
-                        key={filter.id}
-                        style={[
-                          styles.card,
-                          selectedFilter === filter.id && styles.activeCard,
-                          filter.id === 'totalCollection' && styles.totalCollectionCard
-                        ]}
-                        onPress={() => handleFilterPress(filter.id)}
-                      >
-                        <View style={styles.cardContent}>
-                          {filter.id !== 'totalCollection' && (
-                            <View style={[styles.radioCircle, selectedFilter === filter.id && styles.radioCircleActive]} />
-                          )}
-                          <View style={styles.cardTextContainer}>
-                            <View style={styles.cardIconContainer}>
-                              <Icon name={filter.icon} size={20} color={selectedFilter === filter.id ? COLORS.darkGray : '#666'} />
-                              <Text style={[styles.cardTitle, selectedFilter === filter.id && styles.activeCardTitle]}>
-                                {filter.title}
-                              </Text>
-                            </View>
-                            <Text style={styles.cardValue}>{filter.value}</Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                  <TouchableOpacity onPress={printPDF} style={styles.printButton}>
-                    <Text style={styles.printButtonText}>Print PDF</Text>
-                  </TouchableOpacity>
-                  <Modal
-                    visible={showPicker}
-                    transparent={true}
-                    animationType="fade"
-                    onRequestClose={() => setShowPicker(false)}>
-                    <View style={styles.modalContainer}>
-                      <View style={styles.pickerContainer}>
-                        <TouchableOpacity
-                          onPress={() => {
-                            setShowPicker(false);
-                            setSelectedFilter(null);
-                          }}
-                        >
-                          
-                        </TouchableOpacity>
-                        {renderPicker()}
-                      </View>
-                    </View>
-                  </Modal>
-                </View>
-
-                <ScrollView
-                  style={{ flex: 1, marginHorizontal: 22, marginTop: 0 }}
-                  contentContainerStyle={{ paddingBottom: 80 }}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {Array.isArray(customers) && customers.filter((customer) => {
-                    const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
-                    const dateMatch = isSameDate(customer.pay_date, selectedDate);
-                    const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                    const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
-                    const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-                    return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
-                  }).length === 0 ? (
-                    <View style={styles.noDataContainer}>
-                      <Image source={noImage} style={styles.noImage} />
-                      <Text style={styles.noDataText}>No Payments are available</Text>
-                    </View>
-                  ) : (
-                    customers
-                      .filter((customer) => {
-                        const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
-                        const dateMatch = isSameDate(customer.pay_date, selectedDate);
-                        const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-                        const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
-                        const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-                        return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
-                      })
-                      .map((customer, index) => (
-                        <PigmePaymentList
-                          key={index}
-                          idx={index}
-                          name={customer?.user_id?.full_name || 'N/A'}
-                          cus_id={customer?.user_id?._id}
-                          phone={customer?.user_id?.phone_number || 'N/A'}
-                          receipt={customer?.receipt_no}
-                          date={customer?.pay_date}
-                          amount={customer.amount}
-                          pigmeId={customer?.pigme?.pigme_id || 'N/A'} 
-                          actual_pigme_id={customer?.pigme?._id || "N/A"}
-                         
-                          pigmeAmount={customer?.pigme?.payable_amount || 'N/A'} 
-                          type={customer?.pay_type}
-                          agent_name={agent.name || "N/A"}
-                          navigation={navigation}
-                          user={user}
-                          onPress={() => handleChitPress(customer._id)}
-                          customer={customer}
-                          isActive={customer._id === activeChitId}
-                        />
-                      ))
-                  )}
-                </ScrollView>
-              </>
-            )}
           </View>
         )}
       </LinearGradient>
@@ -671,303 +704,330 @@ const PigmePayments = ({ route, navigation }) => {
   );
 };
 const styles = StyleSheet.create({
-  gradientOverlay: {
-    flex: 1,
-  },
-  contentContainer: {
-    flex: 1,
-    paddingTop: 40, 
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  titleCollectionContainer: {
-    display: "flex",
-    flexDirection: "row",
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-    marginTop: -2,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  totalAmountText: {
-    fontSize: 25,
-    fontWeight: 'bold',
-    color: '#555',
-    marginTop: 5,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderColor: "#d0d0d0",
-    borderWidth: 1,
-    borderRadius: 15,
-    marginTop: 10,
-    marginBottom: 20,
-    backgroundColor: COLORS.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    width: '100%',
-  },
-  searchIcon: {
-    marginLeft: 10,
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-    padding: 5,
-    fontSize: 16,
-    color: COLORS.darkGray,
-  },
-  filterContainer: {
-    marginBottom: 15,
-  },
-  scrollContainer: {
-    paddingHorizontal: 22,
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    borderWidth: 1.5,
-    borderColor: "#d0d0d0",
-    marginRight: 10,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+    // --- LAYOUT STYLES (Modernized) ---
+    gradientOverlay: {
+        flex: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  activeCard: {
-    borderColor: '#333',
-    backgroundColor: '#f0f0f0',
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  radioCircle: {
-    height: 16,
-    width: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#999',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  radioCircleActive: {
-    borderColor: '#333',
-    backgroundColor: '#333',
-  },
-  cardTextContainer: {
-    flexDirection: 'column',
-  },
-  cardIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 8,
-  },
-  cardValue: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    fontWeight: '400',
-  },
-  activeCardTitle: {
-    color: COLORS.darkGray,
-  },
-  totalCollectionCard: {
-    backgroundColor: '#E0F7FA',
-    borderColor: '#00BCD4',
-  },
-  printButton: {
-    marginHorizontal: 22,
-    marginTop: 10,
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: '#f8c009ff',
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  printButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  pickerContainer: {
-    backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
-    width: '90%',
-  },
+    screenContainer: {
+        flex: 1,
+    },
+    fixedHeaderArea: {
+        paddingTop: Platform.OS === 'android' ? 35 : 0, 
+        paddingBottom: 20, 
+        zIndex: 10,
+    },
+    mainContentArea: {
+        flex: 1,
+        backgroundColor: SUBTLE_BG_GREY, // Use light grey for content area background
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        marginTop: -20, // Creates the curved overlap effect
+        zIndex: 2, 
+        paddingTop: 20, // Pushes content down from the curve
+    },
+    listScrollView: {
+        flex: 1,
+        marginHorizontal: 22,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: TOP_GRADIENT[0],
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: CARD_BG,
+        fontWeight: '500',
+    },
 
-  fullScreenModalGradient: {
-    flex: 1,
-  },
-  fullScreenModalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    paddingTop: 70, 
-  },
-  modalCloseButton: {
-    position: 'absolute',
-    top: 50, 
-    right: 20,
-    zIndex: 1,
-  },
-  totalDetailsCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 8,
-    width: '110%',
-    maxWidth: 500,
-    height: '100%',
-    maxHeight: '110%',
-  },
-  totalDetailsTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#053B90',
-    marginBottom: 15,
-  },
-  totalDetailsAmount: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  totalDetailsAgent: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 5,
-  },
-  totalDetailsDate: {
-    fontSize: 16,
-    color: '#888',
-    marginBottom: 20,
-  },
-  printDetailsButton: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    backgroundColor: '#f8c009ff',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  printDetailsButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  noDataContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  noDataText: {
-    fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
-  },
-  noImage: {
-    width: 250,
-    height: 150,
-    resizeMode: 'contain',
-    marginBottom: 20,
-  },
-  paymentDetailsHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#053B90',
-    marginBottom: 10,
-    alignSelf: 'flex-start',
-    width: '100%',
-    textAlign: 'center',
-  },
-  paymentDetailsScrollView: {
-    width: '100%',
-    maxHeight: 500,
-    marginBottom: 15,
-  },
-  paymentDetailItem: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  paymentDetailText: {
-    fontSize: 14,
-    color: '#444',
-    marginBottom: 2,
-  },
-  paymentDetailLabel: {
-    fontWeight: 'bold',
-    color: '#222',
-  },
-  noPaymentsText: {
-    fontSize: 14,
-    color: '#777',
-    textAlign: 'center',
-    paddingVertical: 10,
-  },
+    // --- TITLE/HEADER STYLES ---
+    titleCollectionContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        marginTop: 15,
+        marginBottom: 10,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: '900',
+        color: CARD_BG,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+    },
+    totalAmountText: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: CARD_BG,
+        marginTop: 5,
+        opacity: 0.9,
+    },
+
+    // --- SEARCH STYLES ---
+    searchContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 15,
+        marginBottom: 20,
+        backgroundColor: CARD_BG,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+        height: 50,
+        marginHorizontal: 22,
+    },
+    searchIcon: {
+        marginLeft: 15,
+        color: TEXT_GREY,
+    },
+    searchInput: {
+        flex: 1,
+        height: '100%',
+        paddingHorizontal: 10,
+        fontSize: 16,
+        color: MODERN_PRIMARY,
+    },
+
+    // --- FILTER & PRINT STYLES ---
+    filterContainer: {
+        marginBottom: 15,
+    },
+    scrollContainer: {
+        paddingHorizontal: 22,
+    },
+    card: {
+        backgroundColor: CARD_BG,
+        paddingVertical: 12,
+        paddingHorizontal: 18,
+        borderRadius: 15,
+        borderWidth: 1.5,
+        borderColor: BORDER_COLOR,
+        marginRight: 12,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        minWidth: 120,
+    },
+    activeCard: {
+        borderColor: ACCENT_BLUE,
+        backgroundColor: SUBTLE_BG_GREY,
+    },
+    cardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    cardIconContainer: {
+        marginRight: 10,
+    },
+    cardTextContainer: {
+        flexDirection: 'column',
+    },
+    cardTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: TEXT_GREY,
+        marginBottom: 2,
+    },
+    cardValue: {
+        fontSize: 15,
+        color: MODERN_PRIMARY,
+        fontWeight: 'bold',
+    },
+    totalCollectionCard: {
+        borderLeftWidth: 5,
+        borderLeftColor: SUCCESS_GREEN,
+        backgroundColor: '#E6F7E9', // Very light green background
+    },
+    totalCollectionValue: {
+        color: SUCCESS_GREEN,
+        fontSize: 16,
+    },
+    printButton: {
+        marginHorizontal: 22,
+        marginTop: 15,
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 12,
+        backgroundColor: '#f8c009ff', // Use existing yellow color
+        borderRadius: 15,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    printButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: MODERN_PRIMARY,
+    },
+
+    // --- MODAL STYLES ---
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    },
+    pickerContainer: {
+        backgroundColor: CARD_BG,
+        padding: 16,
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 5,
+        width: '90%',
+    },
+    pickerCloseButton: {
+        alignSelf: 'flex-end',
+        marginBottom: 10,
+    },
+
+    // --- TOTAL COLLECTION MODAL STYLES ---
+    fullScreenModalGradient: {
+        flex: 1,
+    },
+    fullScreenModalContainer: {
+        flex: 1,
+        alignItems: 'center',
+        padding: 20,
+        paddingTop: 60, // Match the safe area/status bar compensation
+    },
+    modalCloseButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        zIndex: 1,
+    },
+    totalDetailsCard: {
+        backgroundColor: CARD_BG,
+        borderRadius: 20,
+        padding: 25,
+        alignItems: 'center',
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 8,
+        width: '100%',
+        flex: 1,
+        maxWidth: 500,
+        maxHeight: '100%',
+    },
+    totalDetailsTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: MODERN_PRIMARY,
+        marginBottom: 15,
+    },
+    totalDetailsAmount: {
+        fontSize: 40,
+        fontWeight: '900',
+        color: SUCCESS_GREEN,
+        marginBottom: 10,
+    },
+    summaryInfo: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    totalDetailsAgent: {
+        fontSize: 16,
+        color: TEXT_GREY,
+        marginBottom: 5,
+    },
+    totalDetailsDate: {
+        fontSize: 14,
+        color: TEXT_GREY,
+        opacity: 0.8,
+    },
+    paymentDetailsHeader: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: ACCENT_BLUE,
+        marginBottom: 10,
+        alignSelf: 'flex-start',
+        width: '100%',
+        textAlign: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: BORDER_COLOR,
+        paddingBottom: 5,
+    },
+    paymentDetailsScrollView: {
+        width: '100%',
+        flexGrow: 1,
+    },
+    paymentDetailItem: {
+        backgroundColor: SUBTLE_BG_GREY,
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+    },
+    paymentDetailText: {
+        fontSize: 14,
+        color: TEXT_GREY,
+        marginBottom: 2,
+    },
+    paymentDetailLabel: {
+        fontWeight: 'bold',
+        color: MODERN_PRIMARY,
+    },
+    printDetailsButton: {
+        marginTop: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        backgroundColor: '#f8c009ff',
+        borderRadius: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    printDetailsButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: MODERN_PRIMARY,
+    },
+    noDataContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 50,
+    },
+    noDataText: {
+        fontSize: 16,
+        color: TEXT_GREY,
+        textAlign: 'center',
+        fontWeight: '500',
+    },
+    noImage: {
+        width: 200,
+        height: 120,
+        resizeMode: 'contain',
+        marginBottom: 20,
+        opacity: 0.6,
+    },
 });
 
 export default PigmePayments;

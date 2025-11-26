@@ -16,7 +16,6 @@ import {
   // 💡 REQUIRED IMPORT
   TextInput,
 } from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context"; // ❌ REMOVED
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
@@ -28,12 +27,21 @@ import { useNetInfo } from "@react-native-community/netinfo";
 
 const { width } = Dimensions.get("window");
 
-// Primary color for this stylish version (Deep Teal/Cyan)
-const PRIMARY_COLOR = "#00BCD4";
-const PRIMARY_GRADIENT_START = "#00E5FF";
-const PRIMARY_GRADIENT_END = "#0097A7";
-const SUCCESS_COLOR = "#4CAF50";
-const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/mark-attendance`;
+// --- DESIGN CONSTANTS COPIED from EnrollCustomer.js/AddLead.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563";
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+const SUCCESS_COLOR = "#4CAF50"; // Retaining for success
+
+// 💡 NEW DISTINCT COLOR FOR THE "MY OVERVIEW" CARD
+const HIGHLIGHT_GOLD = '#eed1a4ff'; 
+// -----------------------------------------------------------------
+
+const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`; // Updated URL based on usage in handleSubmitAttendance
 
 const cardImagePaths = {
   attendence: require("../assets/ab.png"),
@@ -101,7 +109,7 @@ const AttendanceModal = ({
           </TouchableOpacity>
 
           <LinearGradient
-            colors={[PRIMARY_GRADIENT_START, PRIMARY_GRADIENT_END]}
+            colors={[ACCENT_BLUE, ACCENT_BLUE]} // Use ACCENT_BLUE for gradient color
             style={modalStyles.iconHeader}
           >
             <Animated.Image
@@ -133,9 +141,8 @@ const AttendanceModal = ({
             <View style={modalStyles.accordionContent}>
               <TextInput
                 style={modalStyles.inputField}
-                // 💡 UPDATED SMALLER PLACEHOLDER
                 placeholder="e.g., Working remotely today..."
-                placeholderTextColor="#a0a0a0"
+                placeholderTextColor={TEXT_GREY}
                 value={note}
                 onChangeText={setNote}
                 multiline
@@ -152,15 +159,15 @@ const AttendanceModal = ({
             <LinearGradient
               colors={
                 !selectedStatus
-                  ? ["#B0B0B0", "#909090"]
-                  : [PRIMARY_GRADIENT_START, PRIMARY_GRADIENT_END]
+                  ? [BORDER_COLOR, BORDER_COLOR] // Disabled color
+                  : [ACCENT_BLUE, ACCENT_BLUE]
               }
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={modalStyles.markAttendanceButton}
             >
               {attendanceLoading ? (
-                <ActivityIndicator size={"small"} color={"#fff"} />
+                <ActivityIndicator size={"small"} color={CARD_BG} />
               ) : (
                 <Text style={modalStyles.markAttendanceButtonText}>
                   PRESENT
@@ -191,43 +198,35 @@ const Home = ({ route, navigation }) => {
 
   // Define cardsData early to use its length for animation array initialization
   const cardsData = [
-    // {
-    //   id: "attendence",
-    //   name: "Attendance",
-    //   imagePath: cardImagePaths.attendence,
-    //   onPress: () => navigation.navigate("Attendance", { user }),
-    //   backgroundColor: "#D9D7F1",
-    // },
-
-
+    // The previous array structure is maintained, but colors are updated to be more harmonious
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "collections",
       name: "Collections",
       imagePath: cardImagePaths.collections,
       onPress: () => navigation.navigate("PaymentNavigator"),
-      backgroundColor: "#FFEBEE",
+      backgroundColor: SUBTLE_BG_GREY, // Light background
     },
     agentInfo?.designation_id?.permission?.collection === "true" && {
       id: "qrCode",
       name: "QR Code",
       imagePath: cardImagePaths.qrCode,
       onPress: () => navigation.navigate("qrCode"),
-      backgroundColor: "#e3f0e4ff",
+      backgroundColor: SUBTLE_BG_GREY, // Light background
     },
-      {
+    {
       id: "commission",
       name: "My Overview",
       imagePath: cardImagePaths.commission,
       onPress: () => navigation.navigate("Commissions", { user }),
-      // 💡 CHANGE: Use a distinct, vibrant color for the big card
-      backgroundColor: "#97bebaff", // Light Cyan
+      // 💡 CHANGE: Use HIGHLIGHT_GOLD for a distinct look
+      backgroundColor: HIGHLIGHT_GOLD, 
     },
     agentInfo?.designation_id?.permission?.daybook === "true" && {
       id: "daybook",
       name: "Daybook",
       imagePath: cardImagePaths.daybook,
       onPress: () => navigation.navigate("PayNavigation", { user }),
-      backgroundColor: "#E8F5E9",
+      backgroundColor: SUBTLE_BG_GREY,
     },
     agentInfo?.designation_id?.permission?.reports === "true" && {
       id: "reports",
@@ -238,18 +237,14 @@ const Home = ({ route, navigation }) => {
           screen: "Reports",
           params: { user },
         }),
-      backgroundColor: "#ebe9a8ff",
+      backgroundColor: SUBTLE_BG_GREY,
     },
-  
-
-
-
     agentInfo?.designation_id?.permission?.targets === "true" && {
       id: "targets",
       name: "Targets",
       imagePath: cardImagePaths.targets,
       onPress: () => navigation.navigate("Target"),
-      backgroundColor: "#FFFDE7",
+      backgroundColor: SUBTLE_BG_GREY,
     },
     agentInfo?.designation_id?.permission?.leads === "true" && {
       id: "myLeads",
@@ -260,7 +255,7 @@ const Home = ({ route, navigation }) => {
           screen: "ViewLeads",
           params: { user },
         }),
-      backgroundColor: "#E3F2FD",
+      backgroundColor: SUBTLE_BG_GREY,
     },
     {
       id: "addCustomers",
@@ -271,7 +266,7 @@ const Home = ({ route, navigation }) => {
           screen: "Customer",
           params: { user },
         }),
-      backgroundColor: "#F3E5F5",
+      backgroundColor: SUBTLE_BG_GREY,
     },
     {
       id: "myCustomers",
@@ -282,14 +277,14 @@ const Home = ({ route, navigation }) => {
           screen: "ViewEnrollments",
           params: { user },
         }),
-      backgroundColor: "#FFECB3",
+      backgroundColor: SUBTLE_BG_GREY,
     },
     {
       id: "customerOnHold",
       name: "Customer On Hold",
       imagePath: cardImagePaths.customerOnHold,
       onPress: () => navigation.navigate("CustomerOnHold"),
-      backgroundColor: "#FFCDD2",
+      backgroundColor: SUBTLE_BG_GREY,
     },
     {
       id: "myTasks",
@@ -300,7 +295,7 @@ const Home = ({ route, navigation }) => {
           employeeId: user.userId,
           agentName: agent.name,
         }),
-      backgroundColor: "#E0F7FA",
+      backgroundColor: SUBTLE_BG_GREY,
     },
 
     {
@@ -312,14 +307,14 @@ const Home = ({ route, navigation }) => {
           screen: "Enrollment",
           params: { user },
         }),
-      backgroundColor: "#D1C4E9",
+      backgroundColor: SUBTLE_BG_GREY,
     },
     {
       id: "monthlyTurnover",
       name: "Monthly Turnover",
       imagePath: cardImagePaths.monthlyTurnover,
       onPress: () => navigation.navigate("MonthlyTurnover"),
-      backgroundColor: "#FFECB3",
+      backgroundColor: SUBTLE_BG_GREY,
     },
 
     {
@@ -331,7 +326,7 @@ const Home = ({ route, navigation }) => {
           screen: "Due",
           params: { user },
         }),
-      backgroundColor: "#e9d0e3ff",
+      backgroundColor: SUBTLE_BG_GREY,
     },
   ].filter(Boolean);
 
@@ -364,7 +359,6 @@ const Home = ({ route, navigation }) => {
 
 
   const handleSubmitAttendance = async () => {
-    const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
     try {
       setAttendanceLoading(true);
 
@@ -428,9 +422,6 @@ const Home = ({ route, navigation }) => {
           setAttendanceMessage(data.message || "Eligible to mark attendance");
           setShowAttendanceModal(true);
         } else if (data?.message) {
-          // If showModal is false but there's a message (like "Attendance Already Marked"),
-          // we treat it as a successful check and suppress the warning/error logging.
-          // console.warn("Attendance API message:", data.message); // Commented out to reduce console noise
           setShowAttendanceModal(false);
         } else {
           setShowAttendanceModal(false);
@@ -439,16 +430,12 @@ const Home = ({ route, navigation }) => {
         const errorMessage =
           error.response?.data?.message || error.message;
 
-        // 💡 MODIFICATION HERE: Check if the "error" is actually the expected "Attendance Already Marked" status.
-        // The API might be using a non-200 status code to return this state.
         if (errorMessage !== "Attendance Already Marked") {
           console.error(
             "❌ Error checking attendance status:",
             errorMessage
           );
         } else {
-          // Success case, but returned as an HTTP error code (e.g., 400).
-          // We log it as an info message instead of an error.
           console.info("✅ Attendance check complete:", errorMessage);
         }
         setShowAttendanceModal(false);
@@ -458,40 +445,7 @@ const Home = ({ route, navigation }) => {
     if (user.userId && netInfo.isConnected) checkAttendance();
   }, [user.userId, netInfo.isConnected]);
 
-  const handleMarkAttendance = async (selectedStatus) => {
-    setShowAttendanceModal(false);
-
-    const submissionBody = {
-      employee_id: user.userId,
-      status: selectedStatus,
-
-    };
-
-    try {
-      const response = await axios.post(ATTENDANCE_SUBMIT_URL, submissionBody);
-
-      if (response.status === 200 || response.status === 201) {
-        console.log("Attendance marked successfully:", response.data.message);
-
-        navigation.navigate("Attendance", {
-          status: selectedStatus,
-          message: response.data.message || "Attendance marked successfully!",
-        });
-      }
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        "Failed to mark attendance. Please try again.";
-      console.error("❌ Error marking attendance:", errorMessage);
-
-      navigation.navigate("Attendance", {
-        status: selectedStatus,
-        message: errorMessage,
-        error: true,
-      });
-    }
-  };
-
+  // handleMarkAttendance is now redundant due to handleSubmitAttendance handling the POST directly
 
   const renderNoInternet = () => (
     <View style={styles.noInternetContainer}>
@@ -508,15 +462,11 @@ const Home = ({ route, navigation }) => {
   );
 
   return (
-    // 💡 FIX APPLIED: LinearGradient now wraps the entire screen for full coverage.
     <LinearGradient
-      colors={["#1aa2ccff", "#1aa2ccff"]}
-      style={{ flex: 1 }} // Apply flex: 1 to the gradient for full viewport height
+      colors={TOP_GRADIENT} // Use the standard gradient
+      style={{ flex: 1 }}
     >
-      {/* ❌ REMOVED SafeAreaView - now the content will start from the top edge */}
-      {/* <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}> */}
       <View style={styles.mainContentArea_noSafeArea}>
-        {/* 💡 MODIFIED STYLE NAME to account for no SafeAreaView */}
         <Header />
         <View style={styles.introSection}>
           <Text style={styles.welcomeText}>
@@ -527,11 +477,10 @@ const Home = ({ route, navigation }) => {
           </Text>
         </View>
 
-        {/* FIX: Only render the main content if user.userId is available */}
         {!user.userId ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-            <Text style={{ marginTop: 10, color: '#666' }}>Loading Agent Data...</Text>
+            <ActivityIndicator size="large" color={ACCENT_BLUE} />
+            <Text style={{ marginTop: 10, color: TEXT_GREY }}>Loading Agent Data...</Text>
           </View>
         ) : netInfo.isConnected === false ? (
           renderNoInternet()
@@ -558,7 +507,7 @@ const Home = ({ route, navigation }) => {
                   opacity: cardAnimations.current[index], // Fade in
                   transform: [{ scale }, { translateY }],
                 };
-                
+
                 // 💡 NEW LOGIC: Determine if the card is the "Overview" card
                 const isOverviewCard = card.id === "commission";
 
@@ -574,10 +523,12 @@ const Home = ({ route, navigation }) => {
                     <TouchableOpacity
                       style={[
                         styles.gridCard,
-                        { backgroundColor: card.backgroundColor },
+                        // Use the card's backgroundColor property directly, which is now HIGHLIGHT_GOLD
+                        { backgroundColor: card.backgroundColor }, 
                         isOverviewCard && styles.bigCardStyle, // 👈 Apply special style to the card itself
                       ]}
                       onPress={card.onPress}
+                      activeOpacity={0.7} // Modern button feel
                     >
                       <Image
                         source={card.imagePath}
@@ -587,7 +538,7 @@ const Home = ({ route, navigation }) => {
                         ]}
                         resizeMode="contain"
                       />
-                      <Text 
+                      <Text
                         style={[
                           styles.gridCardText,
                           isOverviewCard && styles.bigCardText, // 👈 Apply special text style
@@ -603,7 +554,6 @@ const Home = ({ route, navigation }) => {
           </ScrollView>
         )}
       </View>
-      {/* </SafeAreaView> */}
 
       <AttendanceModal
         attendanceLoading={attendanceLoading}
@@ -611,7 +561,6 @@ const Home = ({ route, navigation }) => {
         visible={showAttendanceModal}
         message={attendanceMessage}
         onClose={() => setShowAttendanceModal(false)}
-        onProceed={handleMarkAttendance}
         handleSubmitAttendance={handleSubmitAttendance}
         note={note}
         setNote={setNote}
@@ -622,22 +571,20 @@ const Home = ({ route, navigation }) => {
 
 
 const styles = StyleSheet.create({
-  // 💡 NEW STYLE TO REPLACE SafeAreaView wrapper behavior (padding from the top for header and content)
-  mainContentArea_noSafeArea: { flex: 1, marginHorizontal: 22, marginTop: 40 }, // Increased marginTop to avoid status bar overlap
-
-  // mainContentArea: { flex: 1, marginHorizontal: 22, marginTop: 12 }, // ORIGINAL STYLE
+  // 💡 Updated to use MODERN_PRIMARY
+  mainContentArea_noSafeArea: { flex: 1, marginHorizontal: 22, marginTop: 40 },
 
   introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
   welcomeText: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#333",
+    color: MODERN_PRIMARY, // Dark text
     marginBottom: 5,
   },
   questionText: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#555",
+    color: TEXT_GREY, // Grey text
     marginBottom: 10,
   },
 
@@ -647,26 +594,30 @@ const styles = StyleSheet.create({
     height: (width - 22 * 2 - 20) / 2, // same height as other cards
   },
   bigCardStyle: {
-    // 💡 MODIFIED: Center content (horizontal and vertical)
-    justifyContent: 'center', 
-    alignItems: 'center', 
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 15,
-    borderWidth: 2, 
+    borderWidth: 1, 
+    borderColor: HIGHLIGHT_GOLD, // 💡 HIGHLIGHT_GOLD border
+    // Modern shadow like in Due.js
+    shadowColor: MODERN_PRIMARY, // Keep dark shadow for contrast
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 8,
   },
   bigCardImage: {
-    // 💡 MODIFIED: Increased image size a bit from the previous version
-    width: 180, 
-    height: 100, 
-    marginBottom: 5, // Smaller margin for centered look
+    width: 180,
+    height: 100,
+    marginBottom: 5,
     marginTop: 0,
-    alignSelf: 'center', // Ensure image is centered
+    alignSelf: 'center',
   },
   bigCardText: {
-    // 💡 MODIFIED: Ensure text is centered
-    fontSize: 22, 
+    fontSize: 22,
     fontWeight: "900",
-    color: '#00796B', 
-    textAlign: "center", // Ensure text is centered
+    color: CARD_BG, // White text on HIGHLIGHT_GOLD background
+    textAlign: "center",
   },
   // --- End Big Card Styles ---
 
@@ -678,34 +629,34 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 10,
   },
-  // 💡 NEW WRAPPER STYLE for animation (handles spacing and size)
   gridCardWrapper: {
     width: (width - 22 * 2 - 20) / 2, // Matches the width of gridCard
     height: (width - 22 * 2 - 20) / 2, // Matches the height of gridCard
     marginBottom: 20,
   },
   gridCard: {
-    // Note: Dimensions are removed from here and moved to gridCardWrapper
     flex: 1, // Fill the wrapper
     borderRadius: 15,
-    borderColor: "#e2a65dff",
-    borderWidth: 2,
+    // Modern shadow like in Due.js
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 8,
+    // Unified Border
+    borderWidth: 1,
+    borderColor: BORDER_COLOR, // Lighter border
     justifyContent: "center",
     alignItems: "center",
-    // marginBottom: 20, // Removed from here, moved to gridCardWrapper
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
     padding: 5,
   },
-  cardImage: { width: 155, height: 90 },
+  cardImage: { width: 100, height: 70 }, // Slightly smaller generic card image
   gridCardText: {
-    fontSize: 17,
-    fontWeight: "900",
-    color: COLORS.black,
+    fontSize: 15,
+    fontWeight: "600",
+    color: MODERN_PRIMARY, // Dark text for normal cards
     textAlign: "center",
+    marginTop: 5,
   },
   noInternetContainer: {
     flex: 1,
@@ -717,11 +668,10 @@ const styles = StyleSheet.create({
   noInternetText: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: MODERN_PRIMARY,
     marginTop: 20,
   },
-  noInternetSubText: { fontSize: 16, color: "#777", marginTop: 10 },
-  gradientOverlay: { flex: 1 }, // Retained this style definition although it's no longer used in the component body
+  noInternetSubText: { fontSize: 16, color: TEXT_GREY, marginTop: 10 },
 });
 
 
@@ -730,22 +680,22 @@ const modalStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)", // Slightly lighter overlay
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   modalView: {
-    backgroundColor: "white",
+    backgroundColor: CARD_BG, // White background
     borderRadius: 15,
     padding: 30,
     alignItems: "center",
     width: "90%",
-    shadowColor: "#000",
+    shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.1, // Softer shadow
+    shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 10,
     marginTop: 50,
     borderWidth: 2,
-    borderColor: '#108da3ff', // Very light border
+    borderColor: BORDER_COLOR, // Lighter border
   },
   iconHeader: {
     width: 120,
@@ -755,7 +705,7 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     marginTop: -80,
-    shadowColor: PRIMARY_COLOR,
+    shadowColor: ACCENT_BLUE,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.6,
     shadowRadius: 10,
@@ -768,14 +718,14 @@ const modalStyles = StyleSheet.create({
   modalHeading: {
     fontSize: 26,
     fontWeight: "900",
-    color: "#2c3e50",
+    color: MODERN_PRIMARY, // Dark text
     marginBottom: 5,
   },
   modalText: {
     textAlign: "center",
     fontSize: 16,
     fontWeight: "500",
-    color: "#7f8c8d",
+    color: TEXT_GREY, // Grey text
     lineHeight: 22,
     marginBottom: 25,
   },
@@ -786,7 +736,7 @@ const modalStyles = StyleSheet.create({
     padding: 5,
     zIndex: 10,
   },
-  closeButtonText: { fontSize: 28, fontWeight: "300", color: "#95a5a6" },
+  closeButtonText: { fontSize: 28, fontWeight: "300", color: TEXT_GREY },
 
   // --- STYLISH ACCORDION STYLES (Softened) ---
   accordionHeader: {
@@ -794,27 +744,22 @@ const modalStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 10, // Increased padding
+    paddingHorizontal: 15,
     marginTop: 5,
-    backgroundColor: '#f8f9fa', // Off-white/light background
-    borderRadius: 8, // Softer radius
+    backgroundColor: SUBTLE_BG_GREY, // Very light background
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#dcdcdc', // Lighter border
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, // Very light shadow
-    shadowRadius: 3,
-    elevation: 1,
+    borderColor: BORDER_COLOR, // Lighter border
   },
   noteLabel: {
-    fontSize: 13, // Slightly smaller font for a cleaner look
+    fontSize: 14,
     fontWeight: '600',
-    color: '#34495e',
+    color: MODERN_PRIMARY,
   },
   arrowIcon: {
-    fontSize: 15,
-    color: '#c2c3c4ff',
+    fontSize: 16,
+    color: ACCENT_BLUE, // Blue arrow
     fontWeight: '900',
   },
   accordionContent: {
@@ -825,13 +770,13 @@ const modalStyles = StyleSheet.create({
   inputField: {
     width: "100%",
     minHeight: 90,
-    borderColor: '#dcdcdc',
+    borderColor: BORDER_COLOR,
     borderWidth: 1,
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    color: '#34495e',
-    backgroundColor: '#fff',
+    color: MODERN_PRIMARY,
+    backgroundColor: CARD_BG,
     textAlignVertical: 'top',
   },
 
@@ -841,7 +786,7 @@ const modalStyles = StyleSheet.create({
     marginTop: 30,
     borderRadius: 10,
     overflow: "hidden",
-    shadowColor: PRIMARY_COLOR,
+    shadowColor: ACCENT_BLUE,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.5,
     shadowRadius: 10,
@@ -852,7 +797,7 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
   },
   markAttendanceButtonText: {
-    color: "Green",
+    color: CARD_BG, // White text on blue background
     fontWeight: "bold",
     textAlign: "center",
     fontSize: 19,

@@ -7,26 +7,39 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator, // Import ActivityIndicator for a spinner
+  ActivityIndicator,
+  TouchableOpacity, // Added for potential future use (like date picker)
 } from "react-native";
 
 import React, { useState, useEffect } from "react";
-// Removed SafeAreaView import
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
-import COLORS from "../constants/color";
+import { SafeAreaView } from "react-native-safe-area-context"; // Use SafeAreaView for better layout
+
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
-import url from "../constants/baseUrl";
+// Removed unused 'url' import as baseUrl is defined globally
+
+// --- DESIGN CONSTANTS COPIED FROM Payin.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent (for icons/left border/primary color)
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = "#f9fafb"; // Very light background for content area
+const PRIMARY_BUTTON_COLOR = "#f8c009ff"; // Assuming the yellow color for main action
+// ---------------------------------------------
+
 
 const LoanPayin = ({ route, navigation }) => {
   const { user, customer, loan_id, custom_loan_id } = route.params;
   const [currentDate, setCurrentDate] = useState("");
   const [receipt, setReceipt] = useState({});
-  const [paymentDetails, setPaymentDetails] = useState("");
+  const [paymentDetails, setPaymentDetails] = useState("cash"); // Set default to 'cash'
   const [amount, setAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
@@ -46,6 +59,7 @@ const LoanPayin = ({ route, navigation }) => {
       setIsDataLoading(true); // Start loading
 
       try {
+        // Fetch loan data
         const response = await axios.get(
           `${baseUrl}/loans/get-borrower/${loan_id}`
         );
@@ -67,6 +81,18 @@ const LoanPayin = ({ route, navigation }) => {
           setLoanData([]);
           setSingleLoanMode(false);
         }
+
+        // Fetch customer info separately if loan_id only provides loan data
+        // NOTE: The current structure assumes response.data.borrower has customer info
+        // but adding an extra check for robustness if needed in a real app:
+        // if (customer) {
+        //   const customerResponse = await axios.get(`${baseUrl}/user/get-user-by-id/${customer}`);
+        //   if (customerResponse.data) {
+        //     setCustomerInfo(customerResponse.data);
+        //   }
+        // }
+
+
       } catch (error) {
         console.error("Error fetching customer data:", error);
         Alert.alert("Error", "Could not load customer or loan details.");
@@ -158,7 +184,8 @@ const LoanPayin = ({ route, navigation }) => {
       };
 
       const loanId = selectedLoan?._id;
-      const response = await axios.post(`${url}/payment/loan/${loanId}`, data);
+      // Using 'baseUrl' which is the same as 'url' in the original file
+      const response = await axios.post(`${baseUrl}/payment/loan/${loanId}`, data);
 
       if (response.status === 201) {
         Alert.alert("Success", "Payment added successfully!");
@@ -168,7 +195,7 @@ const LoanPayin = ({ route, navigation }) => {
           `${baseUrl}/user/get-user-by-id/${customer}`
         );
         const { full_name, phone_number } = userResponse.data;
-        const { pay_date, amount, pay_type, transaction_id, receipt_no } =
+        const { pay_date, amount: paid_amount, pay_type, transaction_id, receipt_no } =
           response.data?.response;
         const agentResponse = await axios.get(
           `${baseUrl}/agent/get-agent-by-id/${user.userId}`
@@ -178,14 +205,13 @@ const LoanPayin = ({ route, navigation }) => {
           `${baseUrl}/payment/get-total-amount`,
           { user_id: customer, loan: loanId }
         );
-        console.log(selectedLoan,"this is selected loan")
 
         navigation.navigate("LoanPrint", {
           customer_name: full_name,
           cus_id:customer,
           phone_number,
           agent_name: name,
-          amount,
+          amount: paid_amount,
           pay_type,
           pay_date,
           transaction_id,
@@ -216,6 +242,7 @@ const LoanPayin = ({ route, navigation }) => {
           style={styles.textInput}
           value={`ID: ${selectedLoan.loan_id} | Amount: ${selectedLoan.loan_amount}`}
           editable={false}
+          placeholderTextColor={TEXT_GREY}
         />
       );
     }
@@ -227,13 +254,15 @@ const LoanPayin = ({ route, navigation }) => {
           selectedValue={selectedLoan}
           onValueChange={(itemValue) => setSelectedLoan(itemValue)}
           style={styles.picker}
+          itemStyle={styles.pickerItem}
         >
-          <Picker.Item label="Select Loan" value={null} />
+          <Picker.Item label="Select Loan" value={null} color={TEXT_GREY} />
           {loanData.map((loan, index) => (
             <Picker.Item
               key={index}
               label={`ID: ${loan.loan_id} | Amount: ${loan.loan_amount}`}
               value={loan}
+              color={MODERN_PRIMARY}
             />
           ))}
         </Picker>
@@ -242,14 +271,6 @@ const LoanPayin = ({ route, navigation }) => {
   };
 
   const renderContent = () => {
-    if (isDataLoading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      );
-    }
-
     // If no loans were found and we've finished loading, show an error state or an empty message
     if (!customerInfo.full_name || loanData.length === 0) {
       return (
@@ -259,7 +280,7 @@ const LoanPayin = ({ route, navigation }) => {
             title="Go Back"
             filled
             onPress={() => navigation.goBack()}
-            style={{ marginTop: 20 }}
+            style={styles.goBackButton}
           />
         </View>
       );
@@ -277,6 +298,7 @@ const LoanPayin = ({ route, navigation }) => {
           keyboardType="default"
           value={customerInfo.full_name}
           editable={false}
+          placeholderTextColor={TEXT_GREY}
         />
         <Text style={styles.label}>
           Loan ID & Amount<Text style={styles.star}>*</Text>
@@ -293,6 +315,7 @@ const LoanPayin = ({ route, navigation }) => {
               keyboardType="default"
               value={currentDate}
               editable={false}
+              placeholderTextColor={TEXT_GREY}
             />
           </View>
           <View style={styles.column}>
@@ -303,8 +326,9 @@ const LoanPayin = ({ route, navigation }) => {
               style={styles.textInput}
               placeholder="Select Receipt"
               keyboardType="numeric"
-              value={receipt.receipt_no ? String(receipt.receipt_no) : ""}
+              value={receipt.receipt_no !== undefined && receipt.receipt_no !== null ? String(receipt.receipt_no) : ""}
               editable={false}
+              placeholderTextColor={TEXT_GREY}
             />
           </View>
         </View>
@@ -320,11 +344,11 @@ const LoanPayin = ({ route, navigation }) => {
                   handlePaymentTypeChange(itemValues)
                 }
                 style={styles.picker}
+                itemStyle={styles.pickerItem}
               >
-                <Picker.Item label="Select" value="" />
-                <Picker.Item label="Cash" value="cash" />
-                <Picker.Item label="Online" value="online" />
-                <Picker.Item label="Cheque" value="cheque" />
+                <Picker.Item label="Cash" value="cash" color={MODERN_PRIMARY} />
+                <Picker.Item label="Online" value="online" color={MODERN_PRIMARY} />
+                <Picker.Item label="Cheque" value="cheque" color={MODERN_PRIMARY} />
               </Picker>
             </View>
           </View>
@@ -335,6 +359,7 @@ const LoanPayin = ({ route, navigation }) => {
             <TextInput
               style={styles.textInput}
               placeholder="Enter The Amount"
+              placeholderTextColor={TEXT_GREY}
               keyboardType="numeric"
               value={amount}
               onChangeText={(value) => setAmount(value)}
@@ -350,6 +375,7 @@ const LoanPayin = ({ route, navigation }) => {
             <TextInput
               style={styles.textInput}
               placeholder={`Enter ${additionalInfo}`}
+              placeholderTextColor={TEXT_GREY}
               keyboardType="default"
               value={transactionId}
               onChangeText={(value) => setTransactionId(value)}
@@ -369,75 +395,68 @@ const LoanPayin = ({ route, navigation }) => {
 
 
   return (
-    // Removed SafeAreaView and set flex: 1 on the main View
-    <LinearGradient
-      colors={["#1aa2ccff", "#1aa2ccff"]}
-      style={styles.gradientOverlay}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* =======================================================
+         FIXED TOP SECTION (Gradient, Header, Title)
+         =======================================================
+      */}
+      <LinearGradient
+        colors={TOP_GRADIENT}
+        style={styles.fixedHeaderArea} 
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
-        <View style={styles.fixedHeaderContainer}>
-          {/* Fixed Header Content */}
-          <Header />
+          <View style={styles.headerSpacer}>
+              <Header />
+          </View>
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Add Loan Payment</Text>
+            <Text style={styles.subtitle}>
+              {customerInfo.full_name || 'Customer Details'}
+            </Text>
           </View>
-        </View>
+      </LinearGradient>
 
-        {/* Scrollable Content */}
-        <ScrollView style={styles.scrollableContent}>
-          {renderContent()}
-        </ScrollView>
+
+      {/* =======================================================
+         SCROLLABLE CONTENT AREA (Form/Loading)
+         =======================================================
+      */}
+      <KeyboardAvoidingView
+        style={styles.scrollableContentWrapper} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={styles.mainContentArea}>
+          {isDataLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={ACCENT_BLUE} />
+            </View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.scrollContentContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {renderContent()}
+            </ScrollView>
+          )}
+        </View>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  gradientOverlay: {
+  // --- LAYOUT STYLES (Copied/Modified from Payin.js) ---
+  safeArea: {
     flex: 1,
-  },
-  // New style for the fixed part of the screen
-  fixedHeaderContainer: {
-    // We remove the marginHorizontal from here and apply it to the children
-    paddingHorizontal: 22, 
-    // Add some padding to adjust the header/title positioning a bit lower
-    paddingTop: Platform.OS === 'android' ? 40 : 0, 
-    backgroundColor: 'transparent', // Ensure gradient shows through
-  },
-  scrollableContent: {
-    flex: 1, // Allow the scroll view to take up remaining space
-    paddingHorizontal: 22, // Apply horizontal margin here
-  },
-  titleContainer: {
-    marginTop: 10, // Adjusted margin to be a "bit below" the header
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  container: {
-    flex: 1,
-    // This is now inside the ScrollView, so we don't need flex: 1 here
+    backgroundColor: TOP_GRADIENT[0],
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 200, // Ensure the container has height to display the loader
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#555',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: SUBTLE_BG_GREY,
+    minHeight: 200, 
   },
   errorText: {
     marginTop: 10,
@@ -446,19 +465,75 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
+  goBackButton: {
+    marginTop: 20,
+    backgroundColor: PRIMARY_BUTTON_COLOR,
+  },
+  
+  fixedHeaderArea: { 
+    paddingHorizontal: 16,
+    paddingBottom: 20, 
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  scrollableContentWrapper: { 
+      flex: 1,
+  },
+  mainContentArea: {
+    flex: 1,
+    backgroundColor: SUBTLE_BG_GREY,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 16,
+    marginTop: -20, 
+    paddingTop: 30, 
+  },
+  headerSpacer: {
+    paddingTop: 20,
+    paddingBottom: 5,
+  },
+
+  // --- TITLE STYLES (Copied from Payin.js) ---
+  titleContainer: {
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: CARD_BG, // White text
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.85)",
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  
+  // --- FORM CONTAINER (Copied/Modified from Payin.js) ---
+  scrollContentContainer: {
+    paddingBottom: 50,
+    paddingTop: 10,
+    flexGrow: 1,
+  },
   formBox: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: CARD_BG,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#ddd",
-    marginBottom: 50, // Added extra margin for scrolling past the button
-    shadowColor: "#000",
+    borderColor: BORDER_COLOR,
+    shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 5,
   },
+
+  // --- INPUT/PICKER STYLES (Copied/Modified from Payin.js) ---
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -468,71 +543,64 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 3,
   },
-  textInput: {
-    ...Platform.select({
-      android:
-      {
-        height: 55
-      }, ios: {
-        height: 55
-      }
-
-    }),
-    width: "100%",
-    borderColor: "#d0d0d0",
-    borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    marginVertical: 10,
-    color: "#000",
-    backgroundColor: COLORS.white,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  contentContainer: {
-    marginTop: 20,
-  },
-  pickerContainer: {
-    borderColor: "#d0d0d0",
-    borderWidth: 1,
-    borderRadius: 15,
-    backgroundColor: COLORS.white,
-    marginTop: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    overflow: 'hidden',
-  },
-  picker: {
-
-    width: "100%",
-    ...Platform.select({
-      ios: {
-        height: 55
-      },
-      android: {
-        height: 55
-      }
-    })
-  },
   label: {
-    fontWeight: "bold",
+    fontWeight: "600",
     marginTop: 10,
+    fontSize: 14,
+    color: MODERN_PRIMARY,
   },
   star: {
-    color: "red",
+    color: ACCENT_BLUE, // Use blue accent for *
   },
+  textInput: {
+    height: 50,
+    width: "100%",
+    borderColor: BORDER_COLOR,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginVertical: 8,
+    color: MODERN_PRIMARY,
+    backgroundColor: SUBTLE_BG_GREY, 
+    fontSize: 16,
+  },
+  pickerContainer: {
+    borderColor: BORDER_COLOR,
+    borderWidth: 1,
+    borderRadius: 12,
+    backgroundColor: SUBTLE_BG_GREY,
+    marginVertical: 8,
+    minHeight: 50,
+    justifyContent: 'center',
+    overflow: 'hidden', // Added to contain picker within rounded border
+  },
+  picker: {
+    width: "100%",
+    minHeight: 50,
+    ...Platform.select({
+      ios: {
+        height: 50,
+      },
+      android: {
+        height: 50,
+        color: MODERN_PRIMARY,
+      },
+    }),
+  },
+  pickerItem: {
+    color: MODERN_PRIMARY,
+    fontSize: 16,
+  },
+
+  // --- BUTTON STYLES (Copied/Modified from Payin.js) ---
   button: {
-    marginTop: 18,
-    marginBottom: 0, // Removed bottom margin from button in formBox
-    backgroundColor: "#f8c009ff",
+    flex: 1, // Only one button, so it takes full width
+    margin: 0,
+    marginTop: 20,
+    marginBottom: 0, 
+    backgroundColor: PRIMARY_BUTTON_COLOR,
+    height: 55,
+    borderRadius: 12,
   },
 });
 

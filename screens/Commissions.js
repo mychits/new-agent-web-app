@@ -10,7 +10,7 @@ import {
     Image,
     Animated,
     Dimensions,
-    Easing, // Required for smooth, linear motion
+    Easing,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
@@ -18,20 +18,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context"; 
 
 const { width, height } = Dimensions.get('window');
 
 const noImage = require('../assets/no.png'); // Assuming this path is correct
 
-const COLOR_PALETTE = {
-    primary: '#f8c009ff', // Gold/Orange accent
-    secondary: '#333', // Dark text
-    backgroundLight: '#f0f0f0',
-    cardBackground: '#FFFFFF',
-    successGreen: '#27AE60',
-    softGrey: '#666',
-    celebrationColor: '#FFD700',
-};
+// --- DESIGN CONSTANTS COPIED FROM RouteCustomerPigme.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers (Used instead of secondary)
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent (Used instead of primary)
+const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext (Used instead of softGrey)
+const CARD_BG = "#ffffff";
+// MODIFICATION 1: Setting SUBTLE_BG_GREY to white (CARD_BG)
+const SUBTLE_BG_GREY = CARD_BG; // Very light background for content area (Used instead of backgroundLight)
+// ---------------------------------------------
 
 import COLORS from "../constants/color"; 
 import Header from "../components/Header";
@@ -54,57 +55,8 @@ const CustomCommissionCard = ({ title, icon, value, onPress }) => (
 
 
 // --------------------------------------------------------
-// --- CONFETTI SHOWER COMPONENT (Star Emojis/Symbols) ---
-const ConfettiFall = ({ startY, duration, delay, emoji, initialX, scale, rotation }) => {
-    const translateY = React.useRef(new Animated.Value(startY)).current;
-    const opacity = React.useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        // 1. Initial Fade In (Quick pop into existence)
-        Animated.timing(opacity, {
-            toValue: 1,
-            duration: 100,
-            delay: delay,
-            useNativeDriver: true,
-        }).start();
-
-        // 2. Vertical Fall
-        Animated.timing(translateY, {
-            toValue: height + 50, // Falls off the bottom of the screen
-            duration: duration,
-            delay: delay,
-            easing: Easing.linear, // Smooth, constant falling speed
-            useNativeDriver: true,
-        }).start(() => {
-            // 3. Fade out at the bottom
-            Animated.timing(opacity, {
-                toValue: 0,
-                duration: 500,
-                useNativeDriver: true,
-            }).start();
-        });
-    }, []);
-
-    return (
-        <Animated.Text
-            style={{
-                position: 'absolute',
-                top: 0,
-                left: initialX,
-                fontSize: 18 * scale, // Scale the font size for variety
-                opacity: opacity,
-                zIndex: 100,
-                transform: [
-                    { translateY: translateY },
-                    { rotate: rotation }, // Random rotation for flair
-                    { scale: scale }
-                ],
-            }}
-        >
-            {emoji}
-        </Animated.Text>
-    );
-};
+// --- CONFETTI SHOWER COMPONENT (REMOVED) ---
+// The ConfettiFall component is removed as per request.
 // --------------------------------------------------------
 
 
@@ -117,8 +69,8 @@ const Commissions = ({ route, navigation }) => {
     const [commissions, setCommissions] = useState({}); 
     const [activeTab, setActiveTab] = useState("CHIT");
     
-    // STATE: To hold the array of falling confetti elements
-    const [confettiElements, setConfettiElements] = useState([]);
+    // MODIFICATION 2: Removed state for confetti elements:
+    // const [confettiElements, setConfettiElements] = useState([]);
     
     // Animation values for card list slide-in
     const cardListOpacity = React.useRef(new Animated.Value(0)).current; 
@@ -152,50 +104,16 @@ const Commissions = ({ route, navigation }) => {
 
     const hasData = commissions?.summary && Object.keys(commissions.summary).length > 0;
 
-    const startConfettiAnimation = () => {
-        // Updated Star Symbols: Removed all strictly black symbols (like ★ and ✦) 
-        // Focus on bright, white, or colored emojis.
-        const starSymbols = ['⭐', '🌟', '✨', '💫', '✩', '✰'];
-        const numConfetti = 60; 
-        const newConfettiElements = [];
-        
-        // Utility to get a random star symbol
-        const getRandomStar = () => starSymbols[Math.floor(Math.random() * starSymbols.length)];
-
-        for (let i = 0; i < numConfetti; i++) {
-            const delay = Math.random() * 900; 
-            const duration = 2400 + Math.random() * 1600; 
-            const initialX = Math.random() * width; 
-            const scale = 1.0 + Math.random() * 0.6; 
-            const rotation = `${Math.random() * 360}deg`;
-            
-            newConfettiElements.push(
-                <ConfettiFall
-                    key={`confetti-${Date.now()}-${i}`}
-                    startY={-50} 
-                    duration={duration}
-                    delay={delay}
-                    emoji={getRandomStar()} // Pass a random star symbol
-                    initialX={initialX}
-                    scale={scale}
-                    rotation={rotation}
-                />
-            );
-        }
-        setConfettiElements(newConfettiElements);
-
-        // Clear confetti after animation sequence
-        setTimeout(() => {
-            setConfettiElements([]);
-        }, 5000); 
-    };
+    // MODIFICATION 2: Removed startConfettiAnimation function:
+    // const startConfettiAnimation = () => { ... };
 
     useEffect(() => {
         const fetchCommissions = async () => {
             // Reset animations and clear old data before fetching
             cardListOpacity.setValue(0); 
             dataContainerTranslateY.setValue(-height * 0.1);
-            setConfettiElements([]); 
+            // MODIFICATION 2: Removed setConfettiElements call:
+            // setConfettiElements([]); 
             setCommissions({}); 
 
             if (!currentUser.userId) {
@@ -221,15 +139,15 @@ const Commissions = ({ route, navigation }) => {
                 const summaryExists = response.data?.summary && Object.keys(response.data.summary).length > 0;
 
                 if (summaryExists) {
-                    // 1. Start the Falling Confetti Animation with star symbols
-                    startConfettiAnimation();
+                    // MODIFICATION 2: Removed call to startConfettiAnimation():
+                    // startConfettiAnimation();
 
                     // 2. Run the Card Slide-Down Animation
                     Animated.parallel([
                         Animated.timing(cardListOpacity, { 
                             toValue: 1,
                             duration: 700, 
-                            delay: 500, // Delay slightly more to let the confetti start
+                            delay: 500, 
                             useNativeDriver: true,
                         }),
                         Animated.spring(dataContainerTranslateY, {
@@ -259,7 +177,7 @@ const Commissions = ({ route, navigation }) => {
             return (
                 <ActivityIndicator
                     size="large"
-                    color={COLOR_PALETTE.primary}
+                    color={ACCENT_BLUE}
                     style={{ marginTop: 20 }}
                 />
             );
@@ -288,7 +206,7 @@ const Commissions = ({ route, navigation }) => {
 
         return (
             <View style={styles.noDataContainer}>
-                <Ionicons name="alert-circle-outline" size={50} color={COLOR_PALETTE.primary} />
+                <Ionicons name="alert-circle-outline" size={50} color={ACCENT_BLUE} />
                 <Text style={styles.noLeadsText}>
                     No {activeTabName} Commission Data Found
                 </Text>
@@ -298,27 +216,33 @@ const Commissions = ({ route, navigation }) => {
     };
 
     return (
-        <LinearGradient
-            colors={["#1aa2ccff", "#1aa2ccff"]}
-            style={{ flex: 1 }}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-        >
-            {/* Renders the confetti shower on top of everything else */}
-            {confettiElements}
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            {/* MODIFICATION 2: Removed confetti rendering: */}
+            {/* {confettiElements} */}
 
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
             >
-                {/* Fixed Header Section */}
-                <View style={styles.fixedHeaderContainer}>
-                    <Header />
+                {/* Top Header Section with Gradient */}
+                <LinearGradient
+                    colors={TOP_GRADIENT}
+                    style={styles.topContainer}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                >
+                    {/* Fixed Header Section */}
+                    <View style={styles.headerSpacer}>
+                        <Header />
+                    </View>
+
                     <View style={styles.titleContainer}>
                         <Text style={styles.title}>My Overview </Text>
                         <Text style={styles.subtitle}>Select a scheme type to view your achievements</Text>
                     </View>
+                    
+                    {/* Tab Container */}
                     <View style={styles.tabContainer}>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
@@ -327,7 +251,7 @@ const Commissions = ({ route, navigation }) => {
                             <Icon
                                 name="users"
                                 size={20}
-                                color={activeTab === "CHIT" ? COLOR_PALETTE.secondary : COLOR_PALETTE.softGrey}
+                                color={activeTab === "CHIT" ? CARD_BG : MODERN_PRIMARY}
                             />
                             <Text
                                 style={[
@@ -345,7 +269,7 @@ const Commissions = ({ route, navigation }) => {
                             <Icon
                                 name="money"
                                 size={20}
-                                color={activeTab === "GOLD" ? COLOR_PALETTE.secondary : COLOR_PALETTE.softGrey}
+                                color={activeTab === "GOLD" ? CARD_BG : MODERN_PRIMARY}
                             />
                             <Text
                                 style={[
@@ -357,108 +281,123 @@ const Commissions = ({ route, navigation }) => {
                             </Text>
                         </TouchableOpacity>
                     </View>
+                </LinearGradient>
+
+                {/* Main Content Area (Now solid White Background with Rounded Corners) */}
+                <View style={styles.mainContentArea}>
+                    {/* Scrollable Content Section */}
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.scrollContainer} 
+                    >
+                        <View style={styles.cardListContainer}>
+                            {activeTab === "CHIT"
+                                ? renderCardList(isChitLoading, hasData, "Chit")
+                                : renderCardList(isGoldLoading, hasData, "Gold")
+                            }
+                        </View>
+                    </ScrollView>
                 </View>
 
-                {/* Scrollable Content Section */}
-                <ScrollView
-                    style={styles.scrollContentContainer}
-                    contentContainerStyle={{ paddingBottom: 120 }} 
-                    showsVerticalScrollIndicator={false}
-                >
-                    <View style={styles.cardListContainer}>
-                        {activeTab === "CHIT"
-                            ? renderCardList(isChitLoading, hasData, "Chit")
-                            : renderCardList(isGoldLoading, hasData, "Gold")
-                        }
-                    </View>
-                </ScrollView>
             </KeyboardAvoidingView>
-        </LinearGradient>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    fixedHeaderContainer: {
-        paddingHorizontal: 22,
-        paddingTop: 50, 
-        paddingBottom: 10, 
-        zIndex: 1, 
-    },
-    scrollContentContainer: {
+    // --- NEW LAYOUT STYLES (Copied from RouteCustomerPigme.js) ---
+    safeArea: { 
         flex: 1, 
+        backgroundColor: TOP_GRADIENT[0] 
     },
+    topContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 25, // Adjusted for spacing above content area
+        zIndex: 1,
+    },
+    headerSpacer: { 
+        paddingTop: 20, 
+        paddingBottom: 5 
+    }, 
+    mainContentArea: {
+        flex: 1,
+        // MODIFICATION 1: SUBTLE_BG_GREY is now CARD_BG (White)
+        backgroundColor: SUBTLE_BG_GREY, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30,
+        paddingHorizontal: 16,
+        marginTop: -20, // Overlap the top container for the curved effect
+        paddingTop: 30, // Space inside the curve
+    },
+    scrollContainer: { 
+        paddingBottom: 50, 
+        paddingTop: 10,
+    },
+    cardListContainer: {
+        gap: 18, 
+        alignItems: 'stretch', // Changed to stretch for full width cards
+        width: '100%', 
+    },
+
+    // --- TITLE STYLES (Updated to new color scheme) ---
     titleContainer: {
-        marginBottom: 10,
+        marginBottom: 15,
         alignItems: 'center',
     },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: COLOR_PALETTE.secondary,
-        textShadowColor: 'rgba(255, 255, 255, 0.5)',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 3,
+        fontSize: 28,
+        fontWeight: '900',
+        color: CARD_BG, // White text
+        marginBottom: 4,
     },
     subtitle: {
         fontSize: 16,
-        color: COLOR_PALETTE.softGrey,
+        color: 'rgba(255, 255, 255, 0.85)',
         marginTop: 5,
         fontWeight: '500',
         textAlign: 'center'
     },
-    tabContainer: {
-        flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.8)",
-        borderRadius: 15,
-        overflow: 'hidden',
-        marginTop: 15,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    cardListContainer: {
-        gap: 20, 
-        alignItems: 'center',
-        paddingHorizontal: 22, 
-        width: '100%', 
-        paddingTop: 20, 
-    },
+
+    // --- CARD STYLES (Updated to modern style) ---
     card: {
-        backgroundColor: COLOR_PALETTE.cardBackground,
-        borderRadius: 20,
+        backgroundColor: CARD_BG,
+        borderRadius: 18, // Slightly smaller radius
         padding: 20,
         width: '100%', 
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderLeftWidth: 5,
-        borderRightWidth: 5,
-        borderTopWidth: 5,
-        borderBottomWidth: 5, 
-        borderColor: COLOR_PALETTE.primary,
-        shadowColor: COLOR_PALETTE.primary,
+        // Modern shadow
+        shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.05, 
         shadowRadius: 8,
-        elevation: 8,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        // Accent border on the left only
+        borderLeftWidth: 5,
+        borderLeftColor: ACCENT_BLUE,
+        borderTopWidth: 0,
+        borderRightWidth: 0,
+        borderBottomWidth: 0,
     },
     cardContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        flexShrink: 1,
     },
     iconContainer: {
         width: 45, 
         height: 45,
-        backgroundColor: `${COLOR_PALETTE.primary}30`, 
+        backgroundColor: `${ACCENT_BLUE}30`, // Use ACCENT_BLUE
         borderRadius: 22.5,
         justifyContent: 'center',
         alignItems: 'center',
     },
     cardIcon: {
         fontSize: 24,
-        color: COLOR_PALETTE.primary,
+        color: ACCENT_BLUE, // Use ACCENT_BLUE
     },
     textContainer: {
         marginLeft: 15,
@@ -466,60 +405,77 @@ const styles = StyleSheet.create({
     },
     cardText: {
         fontSize: 18,
-        fontWeight: 'bold',
-        color: COLOR_PALETTE.secondary,
+        fontWeight: '800', // Increased weight
+        color: MODERN_PRIMARY, // Dark text
     },
     cardSubText: {
         fontSize: 16, 
-        color: COLOR_PALETTE.primary,
+        color: ACCENT_BLUE, // Use ACCENT_BLUE for value
         marginTop: 5,
         fontWeight: '700',
     },
- arrowIcon: {
-    fontSize: 34, 
-    color: COLOR_PALETTE.primary,
-    marginLeft: -35, // Adjust this value (e.g., -5, -10) to move the icon left
-},
+    arrowIcon: {
+        fontSize: 24, 
+        color: TEXT_GREY, // Grey arrow color
+        marginLeft: 10, // Adjusted margin
+    },
+    
+    // --- TAB STYLES (Updated to modern style) ---
+    tabContainer: {
+        flexDirection: "row",
+        backgroundColor: "rgba(255, 255, 255, 0.9)", // Slightly opaque white
+        borderRadius: 15,
+        overflow: 'hidden',
+        marginTop: 15,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        padding: 5, // Internal padding for cleaner look
+    },
     tab: {
         flex: 1,
         paddingVertical: 12,
         alignItems: "center",
         flexDirection: 'row',
         justifyContent: 'center',
-        borderRadius: 15,
-        margin: 3, 
+        borderRadius: 12, // Match the card radius
+        margin: 2, 
     },
     activeTab: {
-        backgroundColor: COLOR_PALETTE.primary,
-        shadowColor: COLOR_PALETTE.primary,
+        backgroundColor: ACCENT_BLUE, // Use ACCENT_BLUE
+        shadowColor: ACCENT_BLUE,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.6,
-        shadowRadius: 8,
-        elevation: 8,
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
+        elevation: 6,
     },
     tabText: {
         fontSize: 16,
-        color: COLOR_PALETTE.softGrey,
+        color: MODERN_PRIMARY, // Dark grey for inactive
         fontWeight: "500",
         marginLeft: 5,
     },
     activeTabText: {
-        color: COLORS.white, 
+        color: CARD_BG, // White text for active
         fontWeight: 'bold',
     },
+
+    // --- NO DATA STYLES (Updated colors) ---
     noDataContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 50,
         padding: 20,
-        backgroundColor: COLOR_PALETTE.cardBackground,
+        backgroundColor: CARD_BG,
         borderRadius: 20,
         width: '100%',
     },
     noLeadsText: { 
         fontSize: 18,
-        color: COLOR_PALETTE.secondary,
+        color: MODERN_PRIMARY,
         textAlign: 'center',
         marginTop: 15,
         fontWeight: 'bold',

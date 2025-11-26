@@ -14,19 +14,30 @@ import {
 } from "react-native";
 import React, { useState, useEffect, useContext } from "react";
 import { Buffer } from "buffer";
-// import { SafeAreaView } from "react-native-safe-area-context"; // REMOVED
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
 import { AgentContext } from "../context/AgentContextProvider";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
+
+// --- DESIGN CONSTANTS COPIED FROM RouteCustomerChit.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent (for icons/left border/primary color)
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = "#f9fafb"; // Very light background for content area
+const PRIMARY_BUTTON_COLOR = "#f8c009ff"; // Assuming the yellow color for main action
+// ---------------------------------------------
+
 
 const Payin = ({ route, navigation }) => {
   const { user, customer } = route.params;
@@ -41,7 +52,6 @@ const Payin = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // --- NEW STATE FOR INITIAL LOADING ---
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const [customerInfo, setCustomerInfo] = useState({});
@@ -54,7 +64,6 @@ const Payin = ({ route, navigation }) => {
   const [qrLoading, setQrLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Use a ref or multiple state variables to track completion of individual fetches
   const [customerLoaded, setCustomerLoaded] = useState(false);
   const [enrollmentLoaded, setEnrollmentLoaded] = useState(false);
   const [receiptLoaded, setReceiptLoaded] = useState(false);
@@ -72,7 +81,7 @@ const Payin = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching customer data:", error);
       } finally {
-        setCustomerLoaded(true); // Mark customer data as loaded
+        setCustomerLoaded(true);
       }
     };
     fetchCustomer();
@@ -123,7 +132,7 @@ const Payin = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching customer enrollment data:", error);
       } finally {
-        setEnrollmentLoaded(true); // Mark enrollment data as loaded
+        setEnrollmentLoaded(true);
       }
     };
 
@@ -142,7 +151,7 @@ const Payin = ({ route, navigation }) => {
       } catch (error) {
         console.error("Error fetching latest receipt:", error);
       } finally {
-        setReceiptLoaded(true); // Mark receipt data as loaded
+        setReceiptLoaded(true);
       }
     };
     fetchReceipt();
@@ -163,7 +172,7 @@ const Payin = ({ route, navigation }) => {
 
   const handleGroupChange = (groupId) => {
     setSelectedGroup(groupId);
-    setSelectedTicket(""); // Reset ticket selection
+    setSelectedTicket("");
 
     if (groupId) {
       const groupTickets = allData
@@ -275,11 +284,9 @@ const Payin = ({ route, navigation }) => {
         { responseType: "arraybuffer" }
       );
 
-      // --- QR CODE LOGIC ---
       const base64 = Buffer.from(response.data, "binary").toString("base64");
       const dataUrl = `data:image/png;base64,${base64}`;
       setUrl(dataUrl);
-      // ---------------------
 
       setModalVisible(true);
     } catch (error) {
@@ -293,15 +300,15 @@ const Payin = ({ route, navigation }) => {
   if (isInitialLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={ACCENT_BLUE} />
       </View>
     );
   }
   // ---------------------------------
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      {/* --- QR CODE MODAL --- (Unchanged) */}
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* --- QR CODE MODAL --- */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -315,7 +322,7 @@ const Payin = ({ route, navigation }) => {
             flex: 1,
             justifyContent: "center",
             alignItems: "center",
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: "rgba(0,0,0,0.7)",
             padding: 20,
           }}
         >
@@ -323,10 +330,10 @@ const Payin = ({ route, navigation }) => {
             style={{
               width: 320,
               padding: 24,
-              backgroundColor: "white",
+              backgroundColor: CARD_BG,
               borderRadius: 16,
               alignItems: "center",
-              shadowColor: "#000",
+              shadowColor: MODERN_PRIMARY,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15,
               shadowRadius: 8,
@@ -337,7 +344,7 @@ const Payin = ({ route, navigation }) => {
               style={{
                 fontSize: 20,
                 fontWeight: "bold",
-                color: "#222",
+                color: MODERN_PRIMARY,
                 marginBottom: 6,
               }}
             >
@@ -346,7 +353,7 @@ const Payin = ({ route, navigation }) => {
             <Text
               style={{
                 fontSize: 16,
-                color: "#666",
+                color: TEXT_GREY,
                 marginBottom: 16,
               }}
             >
@@ -356,7 +363,7 @@ const Payin = ({ route, navigation }) => {
             <View
               style={{
                 padding: 12,
-                backgroundColor: "#f8f8f8",
+                backgroundColor: SUBTLE_BG_GREY,
                 borderRadius: 12,
                 marginBottom: 20,
               }}
@@ -373,19 +380,19 @@ const Payin = ({ route, navigation }) => {
               style={{
                 width: "100%",
                 paddingVertical: 12,
-                backgroundColor: "#EA5B6F",
+                backgroundColor: ACCENT_BLUE,
                 borderRadius: 8,
               }}
             >
               <Text
                 style={{
-                  color: "#fff",
+                  color: CARD_BG,
                   fontWeight: "bold",
                   fontSize: 16,
                   textAlign: "center",
                 }}
               >
-                Cancel
+                Close
               </Text>
             </TouchableOpacity>
           </View>
@@ -393,31 +400,40 @@ const Payin = ({ route, navigation }) => {
       </Modal>
       {/* --------------------------- */}
 
+
+      {/* =======================================================
+         FIXED TOP SECTION (Gradient, Header, Title)
+         =======================================================
+      */}
       <LinearGradient
-        colors={["#1aa2ccff", "#1aa2ccff"]}
-        style={styles.gradientOverlay}
+        colors={TOP_GRADIENT}
+        style={styles.fixedHeaderArea} // Use fixedHeaderArea style
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-        >
-          {/* =======================================================
-            NEW FIXED HEADER SECTION (Header and Title)
-            =======================================================
-          */}
-          <View style={styles.fixedHeaderContainer}>
-            <Header />
-            <View style={styles.titleContainer}>
-              <Text style={styles.title}>Add Payment</Text>
-            </View>
+          <View style={styles.headerSpacer}>
+              <Header />
           </View>
-          {/* =======================================================
-            SCROLLABLE CONTENT SECTION (Form)
-            =======================================================
-          */}
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Add Chit Payment</Text>
+            <Text style={styles.subtitle}>
+              {customerInfo.full_name || 'Customer Details'}
+            </Text>
+          </View>
+      </LinearGradient>
+
+
+      {/* =======================================================
+         SCROLLABLE CONTENT AREA (Form)
+         =======================================================
+      */}
+      <KeyboardAvoidingView
+          style={styles.scrollableContentWrapper} // Wrapper for flex 1
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          // keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0} // Removed unnecessary offset
+      >
+        {/* Main Content Area (Light Background with Rounded Corners) */}
+        <View style={styles.mainContentArea}>
           <ScrollView
             contentContainerStyle={styles.scrollContentContainer}
             showsVerticalScrollIndicator={false}
@@ -442,18 +458,18 @@ const Payin = ({ route, navigation }) => {
                     selectedValue={selectedGroup}
                     onValueChange={handleGroupChange}
                     style={styles.picker}
-                    // Disable picker if only one group is available
+                    itemStyle={styles.pickerItem}
                     enabled={groups.length > 1}
                   >
-                    {/* Show 'Select Group' only if more than 1 group */}
                     {groups.length !== 1 && (
-                      <Picker.Item label="Select Group" value="" />
+                      <Picker.Item label="Select Group" value="" color={TEXT_GREY} />
                     )}
                     {groups.map((group, index) => (
                       <Picker.Item
                         key={index}
                         label={group.group_id.group_name}
                         value={group.group_id._id}
+                        color={MODERN_PRIMARY}
                       />
                     ))}
                   </Picker>
@@ -468,18 +484,18 @@ const Payin = ({ route, navigation }) => {
                       setSelectedTicket(itemValue)
                     }
                     style={styles.picker}
-                    // Disable picker if no group is selected or only one ticket is available
+                    itemStyle={styles.pickerItem}
                     enabled={selectedGroup !== "" && tickets.length !== 1}
                   >
-                    {/* Show 'Select Ticket' only if more than 1 ticket */}
                     {tickets.length !== 1 && (
-                      <Picker.Item label="Select Ticket" value="" />
+                      <Picker.Item label="Select Ticket" value="" color={TEXT_GREY} />
                     )}
                     {tickets.map((ticket, index) => (
                       <Picker.Item
                         key={index}
                         label={`${ticket}`}
                         value={ticket.toString()}
+                        color={MODERN_PRIMARY}
                       />
                     ))}
                   </Picker>
@@ -544,9 +560,10 @@ const Payin = ({ route, navigation }) => {
                           handlePaymentTypeChange(itemValues)
                         }
                         style={styles.picker}
+                        itemStyle={styles.pickerItem}
                       >
-                        <Picker.Item label="Cash" value="cash" />
-                        <Picker.Item label="Online" value="online" />
+                        <Picker.Item label="Cash" value="cash" color={MODERN_PRIMARY} />
+                        <Picker.Item label="Online" value="online" color={MODERN_PRIMARY} />
                       </Picker>
                     </View>
                   </View>
@@ -557,6 +574,7 @@ const Payin = ({ route, navigation }) => {
                     <TextInput
                       style={styles.textInput}
                       placeholder="Enter The Amount"
+                      placeholderTextColor={TEXT_GREY}
                       keyboardType="numeric"
                       value={amount}
                       onChangeText={(value) => setAmount(value)}
@@ -572,6 +590,7 @@ const Payin = ({ route, navigation }) => {
                     <TextInput
                       style={styles.textInput}
                       placeholder={`Enter ${additionalInfo}`}
+                      placeholderTextColor={TEXT_GREY}
                       keyboardType="default"
                       value={transactionId}
                       onChangeText={(value) => setTransactionId(value)}
@@ -583,7 +602,6 @@ const Payin = ({ route, navigation }) => {
                 <View
                   style={[
                     styles.buttonContainer,
-                    // Apply centering style if QR button is NOT visible
                     !(amount && paymentDetails === "online") &&
                       styles.buttonContainerCentered,
                   ]}
@@ -595,9 +613,9 @@ const Payin = ({ route, navigation }) => {
                       style={styles.qrButton}
                     >
                       {qrLoading ? (
-                        <ActivityIndicator size="small" color={"green"} />
+                        <ActivityIndicator size="small" color={MODERN_PRIMARY} />
                       ) : (
-                        <MaterialIcons name="qr-code-2" size={40} />
+                        <MaterialIcons name="qr-code-2" size={30} color={MODERN_PRIMARY} />
                       )}
                     </TouchableOpacity>
                   )}
@@ -613,62 +631,96 @@ const Payin = ({ route, navigation }) => {
               </View>
             </View>
           </ScrollView>
-        </KeyboardAvoidingView>
-      </LinearGradient>
-    </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  // --- LAYOUT STYLES (Copied/Modified from RouteCustomerChit.js) ---
+  safeArea: {
+    flex: 1,
+    backgroundColor: TOP_GRADIENT[0],
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: SUBTLE_BG_GREY,
   },
-  gradientOverlay: {
+
+  // NEW: Defines the fixed gradient area for Header and Title
+  fixedHeaderArea: { 
+    paddingHorizontal: 16,
+    paddingBottom: 20, // Final space below the title
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+
+  // NEW: Wrapper for the keyboard avoiding view to take up remaining space
+  scrollableContentWrapper: { 
+      flex: 1,
+  },
+  
+  mainContentArea: {
     flex: 1,
+    backgroundColor: SUBTLE_BG_GREY,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 16,
+    marginTop: -20, // Overlap with gradient for the rounded corner
+    paddingTop: 30, // Space inside the rounded corner
   },
-  // NEW STYLE: Container for the fixed header and title
-  fixedHeaderContainer: {
-    paddingHorizontal: 8,
-    paddingTop: 40, // Match the original top margin
-    backgroundColor: 'transparent', // Ensure gradient shows through, or use a specific color if needed
-    zIndex: 10, // Ensure it's above the scrollable content
+  headerSpacer: {
+    paddingTop: 20,
+    paddingBottom: 5,
   },
+
+  // --- TITLE STYLES (Copied/Modified from RouteCustomerChit.js) ---
   titleContainer: {
-    marginTop: 20,
-    marginBottom: 30,
     alignItems: "center",
+    marginBottom: 15,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: 28,
+    fontWeight: "900",
+    color: CARD_BG, // White text
+    marginBottom: 4,
   },
-  // NEW STYLE: Padding for ScrollView content
+  subtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.85)",
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  
+  // --- FORM CONTAINER (Modified from original Payin.js) ---
   scrollContentContainer: {
-    paddingHorizontal: 8, // Match the original marginHorizontal on the main View
-    paddingBottom: 20, // Add some space at the bottom of the scroll view
+    paddingBottom: 50,
+    paddingTop: 10,
     flexGrow: 1,
   },
   container: {
     flex: 1,
-    // The fixed header takes up the space now, so we can remove the previous margins from the wrapper View
   },
   formBox: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: CARD_BG,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#ddd",
-    marginBottom: 20,
-    shadowColor: "#000",
+    borderColor: BORDER_COLOR,
+    shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 5,
   },
+
+  // --- INPUT/PICKER STYLES (Modified from original Payin.js) ---
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -678,86 +730,85 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 3,
   },
-  textInput: {
-    height: 55,
-    width: "100%",
-    borderColor: "#d0d0d0",
-    borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    marginVertical: 10,
-    color: "#000",
-    backgroundColor: COLORS.white,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-
-  pickerContainer: {
-    borderColor: "#d0d0d0",
-    borderWidth: 1,
-    borderRadius: 15,
-    backgroundColor: COLORS.white,
+  label: {
+    fontWeight: "600",
     marginTop: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    minHeight: 50,
+    fontSize: 14,
+    color: MODERN_PRIMARY,
   },
-
+  star: {
+    color: ACCENT_BLUE, // Use blue accent for *
+  },
+  textInput: {
+    height: 50,
+    width: "100%",
+    borderColor: BORDER_COLOR,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginVertical: 8,
+    color: MODERN_PRIMARY,
+    backgroundColor: SUBTLE_BG_GREY, // Light grey background
+    fontSize: 16,
+  },
+  pickerContainer: {
+    borderColor: BORDER_COLOR,
+    borderWidth: 1,
+    borderRadius: 12,
+    backgroundColor: SUBTLE_BG_GREY,
+    marginVertical: 8,
+    minHeight: 50,
+    justifyContent: 'center',
+  },
   picker: {
     width: "100%",
     minHeight: 50,
     ...Platform.select({
       ios: {
-        height: 55,
+        height: 50,
       },
       android: {
-        height: 55,
-        color: "#000",
+        height: 50,
+        color: MODERN_PRIMARY,
       },
     }),
   },
-  label: {
-    fontWeight: "bold",
-    marginTop: 10,
+  pickerItem: {
+    color: MODERN_PRIMARY,
+    fontSize: 16,
   },
-  star: {
-    color: "red",
-  },
-  qrButton: {
-    flex: 1,
-    marginTop: 0,
-    marginBottom: 50,
-    backgroundColor: "#A7E399",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 8,
-    padding: 2,
-    height: 55,
-  },
-  button: {
-    flex: 6, // Takes up more space when QR button is present
-    margin: 3,
-    marginTop: 0,
-    marginBottom: 50,
-    backgroundColor: "#f8c009ff",
-    height: 55,
-  },
-  // STYLES for button centering
+
+  // --- BUTTON STYLES (Modified from original Payin.js) ---
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center", // Align items vertically in the center
+    alignItems: "center",
     marginTop: 20,
+    marginBottom: 10,
   },
-  // Style to center the content when only one button is present
   buttonContainerCentered: {
     justifyContent: "center",
+  },
+  qrButton: {
+    flex: 1.5,
+    marginTop: 0,
+    marginBottom: 0,
+    backgroundColor: "#D9F3D0", // Light green for QR
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+    padding: 2,
+    height: 55,
+    marginRight: 10,
+  },
+  button: {
+    flex: 5,
+    margin: 0,
+    marginTop: 0,
+    marginBottom: 0,
+    backgroundColor: PRIMARY_BUTTON_COLOR,
+    height: 55,
+    borderRadius: 12,
   },
 });
 

@@ -8,19 +8,40 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
-  Platform, // Import Platform for potential status bar handling
+  Platform,
+  Dimensions,
 } from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context"; // ❌ REMOVED
+import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
 import {
   Ionicons,
   FontAwesome5,
   MaterialCommunityIcons,
-} from "@expo/vector-icons";
+}
+ from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import chitBaseUrl from "../constants/baseUrl";
+
+const { height } = Dimensions.get('window');
+
+// --- CONSTANTS MATCHING ReferredReport.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; 
+const ACCENT_BLUE = "#1796d1ff"; 
+const ACCENT_GREEN = "#059669";   
+const WARNING_RED = "#dc2626";    
+const NEUTRAL_GREY = "#6b7280";   
+const BORDER_COLOR = "#e0e0e0"; 
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; 
+
+// Keeping original action colors for brand recognition, but updating the call button aesthetic
+const CALL_BUTTON_COLOR = "#f8c009ff"; 
+const WHATSAPP_BUTTON_COLOR = "#25D366";
+const EMAIL_BUTTON_COLOR = "#3498db";
+
 
 const CustomerOnHold = () => {
   const [customers, setCustomers] = useState([]);
@@ -28,7 +49,7 @@ const CustomerOnHold = () => {
   const [error, setError] = useState(null);
   const [agent, setAgent] = useState(null);
 
-  // ✅ Fetch agent details from AsyncStorage → then fetch agent info from API
+  // Fetch agent details from AsyncStorage → then fetch agent info from API
   useEffect(() => {
     const fetchAgentById = async () => {
       try {
@@ -40,7 +61,7 @@ const CustomerOnHold = () => {
         }
 
         const parsedAgent = JSON.parse(storedAgentInfo);
-        const agentId = parsedAgent?._id; // ✅ agentId from AsyncStorage
+        const agentId = parsedAgent?._id; 
 
         if (!agentId) {
           setError("Agent ID not found in stored info.");
@@ -63,7 +84,7 @@ const CustomerOnHold = () => {
     fetchAgentById();
   }, []);
 
-  // ✅ Fetch customers on hold when agent is loaded
+  // Fetch customers on hold when agent is loaded
   useEffect(() => {
     if (!agent || !agent._id) return;
 
@@ -73,11 +94,14 @@ const CustomerOnHold = () => {
         const response = await axios.get(apiUrl);
 
         const formattedCustomers = response.data.map((item) => ({
-          id: item.user_id._id,
+          // FIX: Use the unique enrollment ID (item._id) as the key
+          // instead of the user ID (item.user_id._id) to prevent key collisions
+          id: item._id, 
           name: item.user_id.full_name,
           groupName: item.group_id.group_name,
           phoneNumber: item.user_id.phone_number,
-          email: item.user_id.email,
+          // Ensure email is a non-empty string or null/undefined
+          email: item.user_id.email ? item.user_id.email.trim() : null, 
         }));
 
         setCustomers(formattedCustomers);
@@ -96,6 +120,7 @@ const CustomerOnHold = () => {
 
   // -------- helper functions for call, email, whatsapp ----------
   const handleCall = async (phoneNumber) => {
+    if (!phoneNumber) return;
     try {
       const url = `tel:${phoneNumber}`;
       await Linking.openURL(url);
@@ -106,6 +131,11 @@ const CustomerOnHold = () => {
   };
 
   const handleEmail = async (email, customerName) => {
+    // Only proceed if email exists
+    if (!email) {
+      console.warn("Attempted to email customer with no email address.");
+      return;
+    }
     try {
       const subject = "Regarding your pending Chit payment";
       const body = `Dear ${customerName},\n\nWe noticed that your recent chit payment is still pending for the group\n\nTo continue your participation and avoid any interruptions, please complete the payment at your earliest convenience.\n\nThank you for your cooperation.\n\nSincerely,\nMyChits Team`;
@@ -121,6 +151,7 @@ const CustomerOnHold = () => {
   };
 
   const handleWhatsApp = async (phoneNumber) => {
+    if (!phoneNumber) return;
     try {
       const url = `whatsapp://send?phone=${phoneNumber}`;
       const supported = await Linking.canOpenURL(url);
@@ -136,163 +167,322 @@ const CustomerOnHold = () => {
     }
   };
 
-  const renderCustomerCard = (customer) => (
-    <View key={customer.id} style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.customerName}>{customer.name}</Text>
-        <Text style={styles.groupType}>Chit</Text>
-      </View>
-      <View style={styles.cardBody}>
-        <Text style={styles.groupName}>{customer.groupName}</Text>
-        <Text style={styles.phoneNumber}>Phone: {customer.phoneNumber}</Text>
-      </View>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.contactButton, styles.callButton]}
-          onPress={() => handleCall(customer.phoneNumber)}
-        >
-          <Ionicons name="call" size={15} color="#fff" />
-          <Text style={styles.buttonText}>Call</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.contactButton, styles.whatsappButton]}
-          onPress={() => handleWhatsApp(customer.phoneNumber)}
-        >
-          <FontAwesome5 name="whatsapp" size={15} color="#fff" />
-          <Text style={styles.buttonText}>WhatsApp</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.contactButton, styles.emailButton]}
-          onPress={() => handleEmail(customer.email, customer.name)}
-        >
-          <MaterialCommunityIcons name="email" size={15} color="#fff" />
-          <Text style={styles.buttonText}>Email</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const renderCustomerCard = (customer) => {
+    // Check if email is valid (non-null and non-empty string)
+    const hasEmail = !!customer.email;
+
+    return (
+        <View key={customer.id} style={styles.customerCardStyle}> 
+            
+            {/* Header (Customer Name & Status Tag) */}
+            <View style={styles.cardHeader}>
+                <Text style={styles.customerName} numberOfLines={1}>{customer.name}</Text>
+                {/* Fixed "On Hold" status tag */}
+                <View style={[styles.statusTag, { backgroundColor: '#fef3c7' }]}> 
+                    <Text style={[styles.statusTagText, { color: WARNING_RED }]}>
+                        ON HOLD
+                    </Text>
+                </View>
+            </View>
+
+            {/* Customer Info (Group Name & Email) */}
+            <View style={styles.cardBody}>
+                <Text style={styles.groupInfo}><Ionicons name="people" size={14} color={NEUTRAL_GREY} /> Group: {customer.groupName}</Text>
+                
+                {/* Display Email only if customer.email is present */}
+                {hasEmail ? ( 
+                    <Text style={styles.groupInfo}>
+                        <Ionicons name="mail" size={14} color={NEUTRAL_GREY} /> {customer.email}
+                    </Text>
+                ) : null}
+            </View>
+            
+            {/* Phone Number Section (Clickable) */}
+            <View style={styles.phoneSection}>
+                <Text style={styles.phoneLabel}>Phone:</Text>
+                <TouchableOpacity
+                    onPress={() => handleCall(customer.phoneNumber)}
+                    style={styles.callLink}
+                >
+                    <Ionicons name="call" size={18} color={ACCENT_BLUE} />
+                    <Text style={styles.phoneNumberText}>{customer.phoneNumber}</Text>
+                </TouchableOpacity>
+            </View>
+            
+            {/* Contact Action Buttons */}
+            <View style={styles.buttonContainer}>
+                {/* Call Button (Always displayed if phone number is available, which it should be) */}
+                <TouchableOpacity
+                    style={[styles.contactButton, { backgroundColor: CALL_BUTTON_COLOR }]}
+                    onPress={() => handleCall(customer.phoneNumber)}
+                >
+                    <Ionicons name="call" size={15} color="#fff" />
+                    <Text style={styles.buttonText}>Call</Text>
+                </TouchableOpacity>
+                
+                {/* WhatsApp Button (Always displayed if phone number is available) */}
+                <TouchableOpacity
+                    style={[styles.contactButton, { backgroundColor: WHATSAPP_BUTTON_COLOR }]}
+                    onPress={() => handleWhatsApp(customer.phoneNumber)}
+                >
+                    <FontAwesome5 name="whatsapp" size={15} color="#fff" />
+                    <Text style={styles.buttonText}>WhatsApp</Text>
+                </TouchableOpacity>
+                
+                {/* Email Button (Only displayed if customer.email is present) */}
+                {hasEmail ? (
+                    <TouchableOpacity
+                        style={[styles.contactButton, { backgroundColor: EMAIL_BUTTON_COLOR }]}
+                        onPress={() => handleEmail(customer.email, customer.name)}
+                    >
+                        <MaterialCommunityIcons name="email" size={15} color="#fff" />
+                        <Text style={styles.buttonText}>Email</Text>
+                    </TouchableOpacity>
+                ) : null}
+
+            </View>
+        </View>
+    );
+  };
 
   return (
-    <LinearGradient // ⬅️ LinearGradient is now the top-level container
-      colors={["#1aa2ccff", "#1aa2ccff"]}
-      style={styles.gradientOverlay}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <View style={styles.mainContentArea}>
-        <Header />
-        <Text style={styles.screenTitle}>Customers On Hold</Text>
-        <Text style={styles.instructionText}>
-          Follow up with these customers to resolve their hold status.
-        </Text>
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color="#007bff"
-            style={styles.loader}
-          />
-        ) : error ? (
-          <Text style={styles.statusText}>{error}</Text>
-        ) : (
-          <ScrollView contentContainerStyle={styles.cardsScrollViewContent}>
-            {customers.length > 0 ? (
-              customers.map(renderCustomerCard)
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+        {/* Top Header Section with Gradient */}
+        <LinearGradient colors={TOP_GRADIENT} style={styles.topContainer}>
+            <View style={styles.headerSpacer}>
+                <Header />
+            </View>
+
+            <View style={styles.titleContainer}>
+                <Text style={styles.title}>Customers On Hold</Text>
+                <Text style={styles.subtitle}>
+                    Follow up with these customers to resolve their hold status.
+                </Text>
+            </View>
+        </LinearGradient>
+
+        {/* Main Content Area (Light Background) */}
+        <View style={styles.mainContentArea}>
+            {loading ? (
+                <View style={styles.loader}>
+                    <ActivityIndicator size="large" color={ACCENT_BLUE} />
+                    <Text style={styles.loadingTextBlue}>Fetching customers on hold...</Text>
+                </View>
+            ) : error ? (
+                <Text style={styles.statusText}>{error}</Text>
             ) : (
-              <Text style={styles.statusText}>
-                No customers currently on hold.
-              </Text>
+                <ScrollView contentContainerStyle={styles.cardsScrollViewContent} style={styles.scrollViewStyle}>
+                    {customers.length > 0 ? (
+                        // This mapping now uses the unique enrollment ID as the key
+                        customers.map(renderCustomerCard)
+                    ) : (
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="documents-outline" size={50} color={NEUTRAL_GREY} />
+                            <Text style={styles.emptyText}>No customers currently on hold.</Text>
+                            <Text style={{ color: NEUTRAL_GREY, marginTop: 5, fontSize: 14 }}>
+                                Great job! Your follow-up is working.
+                            </Text>
+                        </View>
+                    )}
+                </ScrollView>
             )}
-          </ScrollView>
-        )}
-      </View>
-    </LinearGradient>
+        </View>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  // safeArea: { flex: 1 }, ❌ REMOVED
-  gradientOverlay: { 
-    flex: 1,
-    // Add margin or padding top to avoid status bar overlap, 
-    // especially since SafeAreaView was removed.
-    // This value is a common starting point, adjust as needed.
-    paddingTop: Platform.OS === 'android' ? 0 : 30, 
-  },
-  mainContentArea: {
-    flex: 1,
-    paddingHorizontal: 20,
-    marginTop: 35,
-  },
-  screenTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#2C3E50",
-    marginTop: 20,
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  instructionText: {
-    fontSize: 14,
-    color: "#7F8C8D",
-    marginBottom: 25,
-    textAlign: "center",
-  },
-  loader: { marginTop: 50 },
-  statusText: {
-    fontSize: 16,
-    color: "#555",
-    textAlign: "center",
-    marginTop: 20,
-  },
-  cardsScrollViewContent: { paddingBottom: 20 },
-  card: {
-    backgroundColor: "#e8f4faff",
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 8,
-    borderLeftWidth: 5,
-    borderColor: "#f8c009ff",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  customerName: { fontSize: 20, fontWeight: "bold", color: "#000" },
-  groupType: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  cardBody: { marginBottom: 15 },
-  groupName: { fontSize: 16, color: "#777", fontWeight: "400" },
-  phoneNumber: { fontSize: 16, color: "#000", fontWeight: "500", marginTop: 5 },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    gap: 10,
-    marginTop: 10,
-  },
-  contactButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    borderRadius: 50,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    gap: 8,
-  },
-  callButton: { backgroundColor: "#f8c009ff" },
-  whatsappButton: { backgroundColor: "#25D366" },
-  emailButton: { backgroundColor: "#3498db" },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-});
-
 export default CustomerOnHold;
+
+const styles = StyleSheet.create({
+    // --- LAYOUT STYLES (MATCHING ReferredReport.js) ---
+    safeArea: { 
+        flex: 1, 
+        backgroundColor: TOP_GRADIENT[0] 
+    },
+    topContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 20,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    mainContentArea: {
+        flex: 1,
+        backgroundColor: SUBTLE_BG_GREY, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30,
+        paddingHorizontal: 16,
+        marginTop: -20, 
+        paddingTop: 30,
+    },
+    headerSpacer: { 
+        paddingTop: 20, 
+        paddingBottom: 5 
+    }, 
+
+    // --- TITLE STYLES (MATCHING ReferredReport.js) ---
+    titleContainer: {
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    title: {
+        fontSize: 28, 
+        fontWeight: "900",
+        color: CARD_BG, 
+        marginBottom: 4,
+    },
+    subtitle: {
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.85)', 
+        fontWeight: '500',
+        textAlign: 'center',
+    },
+
+    // --- NEW REDESIGNED CUSTOMER CARD STYLE ---
+    customerCardStyle: {
+        backgroundColor: '#fff7f7', // Light red/pink background for urgency
+        borderRadius: 18, 
+        marginBottom: 18,
+        padding: 20,
+        borderLeftWidth: 6, // Thick left border
+        borderLeftColor: WARNING_RED, // Red for urgency
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08, 
+        shadowRadius: 8,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#fcd3d1', // Lighter red border
+    },
+    
+    // CARD CONTENT
+    cardHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 15, // Increased padding
+    },
+    customerName: {
+        fontSize: 22,
+        fontWeight: "900",
+        color: MODERN_PRIMARY,
+        flexShrink: 1,
+        marginRight: 10,
+    },
+    statusTag: { // Used for "ON HOLD" status
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 15,
+        alignSelf: 'flex-start', 
+    },
+    statusTagText: {
+        fontSize: 12,
+        fontWeight: "700",
+        textTransform: 'uppercase',
+    },
+    cardBody: {
+        marginBottom: 20, // Increased padding
+    },
+    groupInfo: {
+        fontSize: 12, // Slightly increased font size
+        color: NEUTRAL_GREY,
+        marginTop: 5,
+        fontWeight: "500",
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+
+    // PHONE SECTION (CLICKABLE)
+    phoneSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingVertical: 10,
+        marginBottom: 10,
+        borderBottomWidth: 1, // Added a bottom divider to visually separate from buttons
+        borderBottomColor: '#fcd3d1', // Light red divider
+    },
+    phoneLabel: {
+        fontSize: 15,
+        color: NEUTRAL_GREY,
+        fontWeight: "500",
+        marginRight: 15,
+    },
+    callLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 5,
+        paddingHorizontal: 5,
+    },
+    phoneNumberText: {
+        color: ACCENT_BLUE,
+        textDecorationLine: 'underline',
+        fontWeight: '700',
+        fontSize: 18,
+        marginLeft: 5,
+    },
+    
+    // Contact Buttons
+    buttonContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between", // Changed to space-between to spread buttons out
+        gap: 10,
+        marginTop: 10,
+    },
+    contactButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+        borderRadius: 50,
+        elevation: 2,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        gap: 6,
+        flex: 1, // Make buttons take up equal space
+    },
+    buttonText: { color: "#fff", fontWeight: "bold", fontSize: 12 }, // Slightly smaller text for fit
+
+    // --- SCROLLVIEW / LOADER / EMPTY STATE ---
+    scrollViewStyle: {
+        flex: 1,
+    },
+    cardsScrollViewContent: { 
+        paddingBottom: 120,
+    },
+    loader: {
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: height * 0.4,
+    },
+    loadingTextBlue: {
+        marginTop: 10,
+        color: ACCENT_BLUE,
+        fontSize: 16,
+        fontWeight: '600'
+    },
+    statusText: {
+        fontSize: 16,
+        color: NEUTRAL_GREY,
+        textAlign: "center",
+        marginTop: 20,
+    },
+    emptyContainer: {
+        alignItems: "center",
+        marginTop: 80,
+        padding: 20,
+        backgroundColor: CARD_BG,
+        borderRadius: 15,
+    },
+    emptyText: {
+        color: NEUTRAL_GREY,
+        marginTop: 15,
+        fontWeight: "600",
+        fontSize: 18,
+    },
+});

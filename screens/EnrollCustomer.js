@@ -24,6 +24,17 @@ import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
 import Feather from "react-native-vector-icons/Feather";
 
+// --- DESIGN CONSTANTS COPIED from Due.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; 
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+// ---------------------------------------------
+
+
 const EnrollCustomer = ({ route, navigation }) => {
   const { user, customer } = route.params;
   const [receipt, setReceipt] = useState({});
@@ -194,152 +205,158 @@ const EnrollCustomer = ({ route, navigation }) => {
   };
 
   return (
-    <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
-      style={styles.gradientOverlay}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+      >
+        {/* Top Header Section with Gradient (Copied from Due.js) */}
+        <LinearGradient
+            colors={TOP_GRADIENT}
+            style={styles.topContainer}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
         >
-          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={{ marginHorizontal: 22, marginTop: 12, flex: 1 }}>
-              <Header />
-              <View style={styles.headerContainer}>
-                <Text style={styles.headerText}>Add Enrollment</Text>
-                <TouchableOpacity
-                  onPress={handleCancel}
-                  style={styles.myCustomersButton}
-                >
-                  <Text style={styles.myCustomersButtonText}>Skip</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.cardContainer}>
-                <View style={styles.contentContainer}>
-                  <View style={styles.formGroup}>
-                    <Text style={{ fontWeight: "bold", marginTop: 10 }}>
-                      Customer Type
-                    </Text>
-                    <View style={[styles.inputGroup, styles.pickerInput]}>
-                      <Picker
-                        style={styles.picker}
-                        selectedValue={selectedCustomerType}
-                        onValueChange={(value) =>
-                          setSelectedCustomerType(value)
-                        }
-                      >
-                        <Picker.Item label="Chits" value={"chits"} />
-                        <Picker.Item label="Gold Chits" value={"goldChit"} />
-                      </Picker>
-                    </View>
-                  </View>
-                  <View style={styles.formGroup}>
-                    <Text style={{ fontWeight: "bold", marginTop: 10 }}>
-                      Groups
-                    </Text>
-                    <View style={[styles.inputGroup, styles.pickerInput]}>
-                      <Picker
-                        style={styles.picker}
-                        selectedValue={formFields.group_id}
-                        onValueChange={(value) =>
-                          handleInputChange("group_id", value)
-                        }
-                      >
-                        <Picker.Item label="Select Group" value={""} />
-                        {groups.map((group) => (
-                          <Picker.Item
-                            label={`${group?.group_name}`}
-                            value={group._id}
-                            key={group._id}
-                          />
-                        ))}
-                      </Picker>
-                    </View>
-                  </View>
-                  {/* Customer selection with search */}
-                  <View style={styles.formGroup}>
-                    <Text style={{ fontWeight: "bold", marginTop: 10 }}>
-                      Customer
-                    </Text>
-                    <TouchableOpacity
-                      style={[styles.inputGroup, styles.pickerInput]}
-                      onPress={() => setIsSearchModalVisible(true)}
-                    >
-                      <Text style={styles.selectedCustomerText}>
-                        {formFields.user_id
-                          ? agentCustomers.find(
-                              (c) => c._id === formFields.user_id
-                            )?.full_name || "Select Customer"
-                          : "Select Customer"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+            <View style={styles.headerSpacer}>
+                <Header />
+            </View>
 
-                  <View style={styles.formGroup}>
-                    <Text style={{ fontWeight: "bold", marginTop: 10 }}>
-                      Number of Tickets
-                    </Text>
-                    <View
-                      style={[
-                        styles.inputGroup,
-                        focusedInput === "no_of_tickets" &&
-                          styles.inputGroupFocused,
-                      ]}
+            <View style={styles.titleContainer}>
+                <Text style={styles.title}>Add Enrollment</Text>
+                <TouchableOpacity
+                    onPress={handleCancel}
+                    style={styles.skipButton}
+                >
+                    <Text style={styles.skipButtonText}>Skip</Text>
+                </TouchableOpacity>
+            </View>
+        </LinearGradient>
+
+        {/* Main Content Area (White Background with Border Radius) */}
+        <View style={styles.mainContentArea}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContainer}
+          >
+            {/* Form Fields container, replacing the old cardContainer */}
+            <View style={styles.formContentWrapper}> 
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>
+                    Customer Type
+                  </Text>
+                  <View style={[styles.inputGroup, styles.pickerInput]}>
+                    <Picker
+                      style={styles.picker}
+                      selectedValue={selectedCustomerType}
+                      onValueChange={(value) =>
+                        setSelectedCustomerType(value)
+                      }
                     >
-                      <TextInput
-                        placeholder="Enter Number of Tickets"
-                        style={styles.textInput}
-                        value={formFields.no_of_tickets}
-                        keyboardType="number-pad"
-                        onChangeText={(value) =>
-                          handleInputChange("no_of_tickets", value)
-                        }
-                        onFocus={() => setFocusedInput("no_of_tickets")}
-                        onBlur={() => setFocusedInput(null)}
-                      />
-                    </View>
-                    {formFields.group_id && (
-                      <Text
-                        style={{
-                          textAlign: "center",
-                          fontWeight: "bold",
-                          color: availableTickets.length > 0 ? "blue" : "red",
-                          marginTop: 5,
-                        }}
-                      >
-                        {availableTickets.length > 0
-                          ? `Only ${availableTickets.length} tickets left`
-                          : "Group is Full"}
-                      </Text>
-                    )}
+                      <Picker.Item label="Chits" value={"chits"} />
+                      <Picker.Item label="Gold Chits" value={"goldChit"} />
+                    </Picker>
                   </View>
-                  <Button
-                    title={isLoading ? "Please wait..." : "Enroll Customer"}
-                    filled
-                    disabled={isLoading}
-                    style={styles.addButton}
-                    onPress={handleEnrollCustomer}
-                  />
                 </View>
-              </View>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>
+                    Groups
+                  </Text>
+                  <View style={[styles.inputGroup, styles.pickerInput]}>
+                    <Picker
+                      style={styles.picker}
+                      selectedValue={formFields.group_id}
+                      onValueChange={(value) =>
+                        handleInputChange("group_id", value)
+                      }
+                    >
+                      <Picker.Item label="Select Group" value={""} />
+                      {groups.map((group) => (
+                        <Picker.Item
+                          label={`${group?.group_name}`}
+                          value={group._id}
+                          key={group._id}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                </View>
+                {/* Customer selection with search */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>
+                    Customer
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.inputGroup]}
+                    onPress={() => setIsSearchModalVisible(true)}
+                  >
+                    <Text style={styles.selectedCustomerText}>
+                      {formFields.user_id
+                        ? agentCustomers.find(
+                            (c) => c._id === formFields.user_id
+                          )?.full_name || "Select Customer"
+                        : "Select Customer"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>
+                    Number of Tickets
+                  </Text>
+                  <View
+                    style={[
+                      styles.inputGroup,
+                      focusedInput === "no_of_tickets" &&
+                        styles.inputGroupFocused,
+                    ]}
+                  >
+                    <TextInput
+                      placeholder="Enter Number of Tickets"
+                      placeholderTextColor={TEXT_GREY}
+                      style={styles.textInput}
+                      value={formFields.no_of_tickets}
+                      keyboardType="number-pad"
+                      onChangeText={(value) =>
+                        handleInputChange("no_of_tickets", value)
+                      }
+                      onFocus={() => setFocusedInput("no_of_tickets")}
+                      onBlur={() => setFocusedInput(null)}
+                    />
+                  </View>
+                  {formFields.group_id && (
+                    <Text
+                      style={styles.ticketInfoText}
+                    >
+                      {availableTickets.length > 0
+                        ? `Only ${availableTickets.length} tickets left`
+                        : "Group is Full"}
+                    </Text>
+                  )}
+                </View>
+                <Button
+                  title={isLoading ? "Please wait..." : "Enroll Customer"}
+                  filled
+                  disabled={isLoading}
+                  style={styles.addButton}
+                  onPress={handleEnrollCustomer}
+                />
             </View>
           </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+        </View>
 
-      {/* Search Modal */}
+      </KeyboardAvoidingView>
+      
+      {/* Search Modal - MOVED INSIDE SafeAreaView */}
       <Modal
         visible={isSearchModalVisible}
         animationType="slide"
         onRequestClose={() => setIsSearchModalVisible(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: CARD_BG }}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setIsSearchModalVisible(false)}>
-              <Feather name="arrow-left" size={24} color={COLORS.black} />
+              <Feather name="arrow-left" size={24} color={MODERN_PRIMARY} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Select Customer</Text>
           </View>
@@ -347,7 +364,7 @@ const EnrollCustomer = ({ route, navigation }) => {
             <Feather
               name="search"
               size={20}
-              color={COLORS.gray}
+              color={TEXT_GREY}
               style={styles.searchIcon}
             />
             <TextInput
@@ -374,94 +391,117 @@ const EnrollCustomer = ({ route, navigation }) => {
           />
         </SafeAreaView>
       </Modal>
-    </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  gradientOverlay: {
-    flex: 1,
+  // --- LAYOUT STYLES (from Due.js/Commissions.js) ---
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: TOP_GRADIENT[0] 
   },
-  headerContainer: {
-    marginTop: 30,
+  topContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 25, // Adjusted for spacing above content area
+    zIndex: 1,
+  },
+  headerSpacer: { 
+      paddingTop: 20, 
+      paddingBottom: 5 
+  }, 
+  mainContentArea: {
+    flex: 1,
+    backgroundColor: CARD_BG, // Solid white background
+    borderTopLeftRadius: 30, 
+    borderTopRightRadius: 30,
+    marginTop: -20, // Overlap the top container for the curved effect
+    zIndex: 2, // Ensure it's above the gradient edge
+  },
+  scrollContainer: { 
+    paddingBottom: 50, 
+    paddingTop: 30, // Space inside the curve
+    paddingHorizontal: 22, // Apply horizontal padding here
+  },
+  formContentWrapper: {
+    gap: 15,
+  },
+
+  // --- TITLE STYLES (Combined header and button) ---
+  titleContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginTop: 30, // Pushes it down a bit from Header
+    paddingHorizontal: 6, // Small adjustment for alignment
   },
-  headerText: {
-    fontWeight: "bold",
-    fontSize: 28,
-    color: COLORS.primary,
-    shadowColor: "#000",
+  title: {
+    fontSize: 28, 
+    fontWeight: "900",
+    color: CARD_BG, // White text
+    shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 3,
-    elevation: 3,
   },
-  myCustomersButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    backgroundColor: COLORS.third,
-    borderRadius: 25,
-    shadowColor: "#000",
+  skipButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: CARD_BG, // White background
+    borderRadius: 20,
+    shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 5,
-    elevation: 5,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
   },
-  myCustomersButtonText: {
-    color: COLORS.white,
+  skipButtonText: {
+    color: ACCENT_BLUE, // Blue text color
     fontSize: 14,
     fontWeight: "700",
   },
-  cardContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 25,
-    marginTop: 25,
-    marginBottom: 50,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  contentContainer: {
-    marginTop: 20,
+
+  // --- FORM FIELD STYLES (Updated to modern look) ---
+  label: { 
+    fontWeight: "bold", 
+    marginTop: 10,
+    fontSize: 16,
+    color: MODERN_PRIMARY, // Dark text
   },
   formGroup: {
-    marginBottom: 15,
+    marginBottom: 10,
   },
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
-    height: 45,
-    backgroundColor: COLORS.white,
-    borderRadius: 25,
+    height: 50, // Slightly taller
+    backgroundColor: CARD_BG,
+    borderRadius: 12, // Rounded corners for inputs
     paddingHorizontal: 15,
     marginTop: 5,
-    shadowColor: "#000",
+    borderWidth: 1,
+    borderColor: BORDER_COLOR, // Light border
+    // Remove heavy shadow, use a subtle elevation
+    shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inputGroupFocused: {
-    borderColor: COLORS.primary,
+    borderColor: ACCENT_BLUE, // Blue border when focused
     borderWidth: 2,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  icon: {
-    marginRight: 10,
+    elevation: 3,
+    shadowOpacity: 0.2,
   },
   textInput: {
     flex: 1,
-    ...Platform.select({ android: { height: 55 }, ios: { height: 55 } }),
-    color: "#000",
+    height: "100%",
+    color: MODERN_PRIMARY, // Dark text color
     paddingRight: 10,
+    fontSize: 16,
   },
   pickerInput: {
     paddingHorizontal: 0,
@@ -469,77 +509,78 @@ const styles = StyleSheet.create({
   picker: {
     flex: 1,
     height: "100%",
-    ...Platform.select({
-      android: {
-        height: 55,
-      },
-      ios: {
-        height: 55,
-      },
-    }),
   },
   selectedCustomerText: {
-    color: COLORS.black,
-    paddingLeft: 15,
+    color: MODERN_PRIMARY,
+    paddingLeft: 0, // No extra padding needed if inputGroup has it
+    fontSize: 16,
+  },
+  ticketInfoText: {
+    textAlign: "center",
+    fontWeight: "600",
+    color: ACCENT_BLUE,
+    marginTop: 5,
+    fontSize: 14,
   },
   addButton: {
     marginTop: 25,
     marginBottom: 10,
-    borderRadius: 25,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
+    backgroundColor: ACCENT_BLUE, // Use ACCENT_BLUE for the primary button
+    borderRadius: 12,
+    // Modern shadow
+    shadowColor: ACCENT_BLUE,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
+
+  // --- MODAL STYLES (Updated Colors) ---
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER_COLOR,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
     marginLeft: 20,
-    color: COLORS.primary,
+    color: MODERN_PRIMARY, // Dark text
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
-    borderRadius: 25,
+    backgroundColor: CARD_BG,
+    borderRadius: 12, // Match form input style
     marginHorizontal: 20,
-    marginVertical: 10,
+    marginVertical: 15,
     paddingHorizontal: 15,
     height: 50,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
   },
   searchIcon: {
     marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    color: COLORS.black,
+    color: MODERN_PRIMARY,
   },
   customerItem: {
     paddingVertical: 15,
     paddingHorizontal: 25,
-    // borderBottomWidth: 1, // This line was removed in a previous request
-    // borderBottomColor: COLORS.lightGray, // This line was removed in a previous request
   },
   customerItemText: {
     fontSize: 16,
-    color: COLORS.black,
+    color: MODERN_PRIMARY,
   },
   emptyListText: {
     textAlign: "center",
     marginTop: 50,
     fontSize: 16,
-    color: COLORS.gray,
+    color: TEXT_GREY,
   },
 });
 

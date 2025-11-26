@@ -8,36 +8,52 @@ import {
     Platform,
     ScrollView,
     ActivityIndicator,
+    TouchableOpacity, // Added for consistency
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context"; // Added SafeAreaView
 
 // Assuming these are defined elsewhere and available
-import COLORS from "../constants/color";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
+import COLORS from "../constants/color"; // Kept for consistency if needed elsewhere
+
+// --- DESIGN CONSTANTS COPIED FROM LoanPayin.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent (for icons/left border/primary color)
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = "#f9fafb"; // Very light background for content area
+const PRIMARY_BUTTON_COLOR = "#f8c009ff"; // Assuming the yellow color for main action
+// ---------------------------------------------
+
 
 const PigmePayin = ({ route, navigation }) => {
     const { user, customer, pigme_id, custom_pigme_id } = route.params;
 
     const [currentDate, setCurrentDate] = useState("");
     const [receipt, setReceipt] = useState({});
-    const [paymentDetails, setPaymentDetails] = useState("");
+    const [paymentDetails, setPaymentDetails] = useState("cash"); // Set default to 'cash'
     const [amount, setAmount] = useState("");
     const [transactionId, setTransactionId] = useState("");
     const [additionalInfo, setAdditionalInfo] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingData, setIsFetchingData] = useState(true);
-    const [pigmeAmt,setPigmeAmt] = useState("")
+    const [pigmeAmt, setPigmeAmt] = useState("");
 
     const [customerInfo, setCustomerInfo] = useState("");
     const [pigmeData, setPigmeData] = useState([]);
     const [selectedPigme, setSelectedPigme] = useState(null);
     const [agent, setAgent] = useState(null);
+    const [singlePigmeMode, setSinglePigmeMode] = useState(false);
+
 
     // --- Data Fetching Effects ---
 
@@ -50,7 +66,7 @@ const PigmePayin = ({ route, navigation }) => {
                 const response = await axios.get(
                     `${baseUrl}/pigme/get-pigme/${pigme_id}`
                 );
-                
+
                 if (response.data) {
                     const fetchedPigme = response.data;
                     const customerName = fetchedPigme.customer?.full_name || "N/A";
@@ -58,20 +74,25 @@ const PigmePayin = ({ route, navigation }) => {
 
                     setCustomerInfo(customerName);
                     // Wrap the single fetched item in an array for consistency
-                    const dataArray = [fetchedPigme]; 
+                    const dataArray = [fetchedPigme];
                     setPigmeData(dataArray);
 
                     // Auto-select and auto-set amount
                     if (dataArray.length === 1) {
                         setSelectedPigme(dataArray[0]);
                         setAmount(String(dataArray[0].payable_amount || ""));
+                        setSinglePigmeMode(true);
+                    } else {
+                         setSinglePigmeMode(false);
                     }
                 } else {
                     console.error("Unexpected API response format for pigme:", response.data);
+                    setSinglePigmeMode(false);
                 }
             } catch (error) {
                 console.error("Error fetching customer pigme data:", error);
-                    setPigmeAmt( "0")
+                setPigmeAmt("0")
+                setSinglePigmeMode(false);
 
             } finally {
                 setIsFetchingData(false);
@@ -153,14 +174,14 @@ const PigmePayin = ({ route, navigation }) => {
             }
 
             if (isNaN(Number(amount)) || Number(amount) <= 0) {
-                 Alert.alert("Validation Error", "Please enter a valid amount.");
+                Alert.alert("Validation Error", "Please enter a valid amount.");
                 setIsLoading(false);
                 return;
             }
 
             const PigmeId = selectedPigme?._id;
             const data = {
-                user_id: customer, 
+                user_id: customer,
                 pay_date: new Date().toISOString().split("T")[0],
                 pay_type: paymentDetails,
                 amount: amount,
@@ -174,7 +195,7 @@ const PigmePayin = ({ route, navigation }) => {
                 `${baseUrl}/payment/pigme/${PigmeId}`,
                 data
             );
-            
+
             if (response.status === 201) {
                 Alert.alert("Success", "Payment added successfully!");
 
@@ -182,11 +203,11 @@ const PigmePayin = ({ route, navigation }) => {
                     `${baseUrl}/user/get-user-by-id/${customer}`
                 );
                 const { full_name, phone_number } = userResponse.data;
-                
+
                 const { pay_date, amount: paidAmount, pay_type, transaction_id: tId, receipt_no } =
                     response.data?.response;
-                
-                const agentName = agent?.name || "N/A"; 
+
+                const agentName = agent?.name || "N/A";
 
                 const totalAmountResponse = await axios.post(
                     `${baseUrl}/payment/get-total-amount`,
@@ -195,7 +216,7 @@ const PigmePayin = ({ route, navigation }) => {
 
                 navigation.navigate("PigmePrint", {
                     customer_name: full_name,
-                    cus_id:customer,
+                    cus_id: customer,
                     phone_number: phone_number,
                     agent_name: agentName,
                     amount: paidAmount,
@@ -207,7 +228,7 @@ const PigmePayin = ({ route, navigation }) => {
                     custom_pigme_id: custom_pigme_id,
                     isPigmePayment: true,
                     actual_pigme_id: pigme_id,
-                    pigme_amount:pigmeAmt,
+                    pigme_amount: pigmeAmt,
                 });
             } else {
                 Alert.alert("Error", response.data.message || "Something went wrong.");
@@ -219,27 +240,191 @@ const PigmePayin = ({ route, navigation }) => {
             setIsLoading(false);
         }
     };
-    
+
     // --- Render Logic ---
-    
-    const showPigmePicker = pigmeData.length > 1;
-    const pigmeDisplayValue = selectedPigme 
-        ? `ID: ${selectedPigme.pigme_id}`
-        : "Loading...";
+
+    const renderPigmeSelection = () => {
+        // Case 1: Only one Pigme plan - Display read-only
+        if (singlePigmeMode && selectedPigme) {
+            return (
+                <TextInput
+                    style={styles.textInput}
+                    value={`ID: ${selectedPigme.pigme_id}`}
+                    editable={false}
+                    placeholderTextColor={TEXT_GREY}
+                />
+            );
+        }
+
+        // Case 2: More than one Pigme plan or loading - Use Picker
+        return (
+            <View style={styles.pickerContainer}>
+                <Picker
+                    selectedValue={selectedPigme}
+                    onValueChange={(itemValue) => {
+                        setSelectedPigme(itemValue);
+                        // Update amount when a new Pigme is selected
+                        if (itemValue) {
+                            setAmount(String(itemValue.payable_amount || ""));
+                        }
+                    }}
+                    style={styles.picker}
+                    itemStyle={styles.pickerItem}
+                >
+                    <Picker.Item label="Select Pigme ID & Amount" value={null} color={TEXT_GREY} />
+                    {pigmeData.map((data) => (
+                        <Picker.Item
+                            key={data._id}
+                            label={`ID: ${data.pigme_id} | Amt: ${data.payable_amount || 0}`}
+                            value={data}
+                            color={MODERN_PRIMARY}
+                        />
+                    ))}
+                </Picker>
+            </View>
+        );
+    };
+
+    const renderContent = () => {
+        // If no data was found and we've finished loading, show an error state
+        if (!customerInfo || pigmeData.length === 0) {
+            return (
+                <View style={styles.loadingContainer}>
+                    <Text style={styles.errorText}>No open Pigmy plans found for this customer.</Text>
+                    <Button
+                        title="Go Back"
+                        filled
+                        onPress={() => navigation.goBack()}
+                        style={styles.goBackButton}
+                    />
+                </View>
+            );
+        }
+        
+        // Main Form Content
+        return (
+            <View style={styles.formBox}>
+                {/* Customer Name */}
+                <Text style={styles.label}>
+                    Name<Text style={styles.star}>*</Text>
+                </Text>
+                <TextInput
+                    style={styles.textInput}
+                    placeholder="Enter The Name"
+                    keyboardType="default"
+                    value={customerInfo || "N/A"}
+                    editable={false}
+                    placeholderTextColor={TEXT_GREY}
+                />
+
+                {/* Pigme ID & Payable Amount Selection */}
+                <Text style={styles.label}>
+                    Pigmy ID <Text style={styles.star}>*</Text>
+                </Text>
+                {renderPigmeSelection()}
+
+
+                <View style={styles.row}>
+                    <View style={styles.column}>
+                        <Text style={styles.label}>
+                            Date<Text style={styles.star}>*</Text>
+                        </Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Select Date"
+                            value={currentDate}
+                            editable={false}
+                            placeholderTextColor={TEXT_GREY}
+                        />
+                    </View>
+                    <View style={styles.column}>
+                        <Text style={styles.label}>
+                            Receipt<Text style={styles.star}>*</Text>
+                        </Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Select Receipt"
+                            keyboardType="numeric"
+                            value={receipt.receipt_no !== undefined && receipt.receipt_no !== null ? String(receipt.receipt_no) : "N/A"}
+                            editable={false}
+                            placeholderTextColor={TEXT_GREY}
+                        />
+                    </View>
+                </View>
+
+                <View style={styles.row}>
+                    <View style={styles.column}>
+                        <Text style={styles.label}>
+                            Payment Type<Text style={styles.star}>*</Text>
+                        </Text>
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={paymentDetails}
+                                onValueChange={handlePaymentTypeChange}
+                                style={styles.picker}
+                                itemStyle={styles.pickerItem}
+                            >
+                                <Picker.Item label="Cash" value="cash" color={MODERN_PRIMARY} />
+                                <Picker.Item label="Online" value="online" color={MODERN_PRIMARY} />
+                                <Picker.Item label="Cheque" value="cheque" color={MODERN_PRIMARY} />
+                            </Picker>
+                        </View>
+                    </View>
+                    <View style={styles.column}>
+                        <Text style={styles.label}>
+                            Amount<Text style={styles.star}>*</Text>
+                        </Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Enter The Amount"
+                            keyboardType="numeric"
+                            value={amount}
+                            onChangeText={setAmount}
+                            placeholderTextColor={TEXT_GREY}
+                        />
+                    </View>
+                </View>
+
+                {additionalInfo !== "" && (
+                    <>
+                        <Text style={styles.label}>
+                            {additionalInfo}
+                            <Text style={styles.star}>*</Text>
+                        </Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder={`Enter ${additionalInfo}`}
+                            keyboardType="default"
+                            value={transactionId}
+                            onChangeText={setTransactionId}
+                            placeholderTextColor={TEXT_GREY}
+                        />
+                    </>
+                )}
+
+                <Button
+                    title={isLoading ? "Please wait..." : "Add Payment"}
+                    filled
+                    disabled={isLoading || !selectedPigme || isFetchingData}
+                    style={styles.button}
+                    onPress={handleAddPayment}
+                />
+            </View>
+        );
+    };
 
 
     // Initial Data Fetching Loading Screen
     if (isFetchingData) {
         return (
-            // Replaced SafeAreaView with LinearGradient
-            <LinearGradient 
-                colors={["#1aa2ccff", "#1aa2ccff"]}
-                style={styles.gradientOverlay}
+            <LinearGradient
+                colors={TOP_GRADIENT}
+                style={styles.safeArea}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={CARD_BG} />
                 </View>
             </LinearGradient>
         );
@@ -248,213 +433,140 @@ const PigmePayin = ({ route, navigation }) => {
 
     // Main Component View
     return (
-        <LinearGradient 
-            colors={["#1aa2ccff", "#1aa2ccff"]}
-            style={styles.gradientOverlay} // Takes up full screen
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-        >
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                // Reduced vertical offset as SafeAreaView is removed
-                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0} 
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            {/* =======================================================
+               FIXED TOP SECTION (Gradient, Header, Title)
+               =======================================================
+            */}
+            <LinearGradient
+                colors={TOP_GRADIENT}
+                style={styles.fixedHeaderArea}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
             >
-                {/* 1. FIXED HEADER AND TITLE AREA - Fixed at the top */}
-                <View style={styles.fixedHeader}>
+                <View style={styles.headerSpacer}>
                     <Header />
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>Add Pigmy Payment</Text>
-                    </View>
                 </View>
+                <View style={styles.titleContainer}>
+                    <Text style={styles.title}>Add Pigmy Payment</Text>
+                    <Text style={styles.subtitle}>
+                        {customerInfo || 'Customer Details'}
+                    </Text>
+                </View>
+            </LinearGradient>
 
-                {/* 2. SCROLLABLE FORM CONTENT AREA - Takes up the remaining space */}
-                <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-                    <View style={styles.scrollInnerContainer}>
-                        <View style={styles.formBox}>
-                            {/* Customer Name */}
-                            <Text style={styles.label}>
-                                Name<Text style={styles.star}>*</Text>
-                            </Text>
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder="Enter The Name"
-                                keyboardType="default"
-                                value={customerInfo || "N/A"}
-                                editable={false}
-                            />
-                            
-                            {/* Pigme ID & Payable Amount - Conditional Rendering */}
-                            <Text style={styles.label}>
-                                Pigmy ID <Text style={styles.star}>*</Text>
-                            </Text>
-                            
-                            {showPigmePicker ? (
-                                // Case 2: More than one Pigme plan - Use Picker
-                                <View style={styles.pickerContainer}>
-                                    <Picker
-                                        selectedValue={selectedPigme}
-                                        onValueChange={(itemValue) => {
-                                            setSelectedPigme(itemValue);
-                                            // Update amount when a new Pigme is selected
-                                            if (itemValue) {
-                                                setAmount(String(itemValue.payable_amount || ""));
-                                            }
-                                        }}
-                                        style={styles.picker}
-                                    >
-                                        <Picker.Item label="Select Pigme ID & Amount" value={null} />
-                                        {pigmeData.map((data) => (
-                                            <Picker.Item
-                                                key={data._id}
-                                                label={`ID: ${data.pigme_id} `}
-                                                value={data}
-                                            />
-                                        ))}
-                                    </Picker>
-                                </View>
-                            ) : (
-                                <TextInput
-                                    style={styles.textInput}
-                                    value={pigmeDisplayValue}
-                                    editable={false}
-                                />
-                            )}
 
-                            <View style={styles.row}>
-                                <View style={styles.column}>
-                                    <Text style={styles.label}>
-                                        Date<Text style={styles.star}>*</Text>
-                                    </Text>
-                                    <TextInput
-                                        style={styles.textInput}
-                                        placeholder="Select Date"
-                                        value={currentDate}
-                                        editable={false}
-                                    />
-                                </View>
-                                <View style={styles.column}>
-                                    <Text style={styles.label}>
-                                        Receipt<Text style={styles.star}>*</Text>
-                                    </Text>
-                                    <TextInput
-                                        style={styles.textInput}
-                                        placeholder="Select Receipt"
-                                        keyboardType="numeric"
-                                        value={receipt.receipt_no ? String(receipt.receipt_no) : "N/A"}
-                                        editable={false}
-                                    />
-                                </View>
-                            </View>
-                            
-                            <View style={styles.row}>
-                                <View style={styles.column}>
-                                    <Text style={styles.label}>
-                                        Payment Type<Text style={styles.star}>*</Text>
-                                    </Text>
-                                    <View style={styles.pickerContainer}>
-                                        <Picker
-                                            selectedValue={paymentDetails}
-                                            onValueChange={handlePaymentTypeChange}
-                                            style={styles.picker}
-                                        >
-                                            <Picker.Item label="Select" value="" />
-                                            <Picker.Item label="Cash" value="cash" />
-                                            <Picker.Item label="Online" value="online" />
-                                            <Picker.Item label="Cheque" value="cheque" /> 
-                                        </Picker>
-                                    </View>
-                                </View>
-                                <View style={styles.column}>
-                                    <Text style={styles.label}>
-                                        Amount<Text style={styles.star}>*</Text>
-                                    </Text>
-                                    <TextInput
-                                        style={styles.textInput}
-                                        placeholder="Enter The Amount"
-                                        keyboardType="numeric"
-                                        value={amount}
-                                        onChangeText={setAmount}
-                                    />
-                                </View>
-                            </View>
-                            
-                            {additionalInfo !== "" && (
-                                <>
-                                    <Text style={styles.label}>
-                                        {additionalInfo}
-                                        <Text style={styles.star}>*</Text>
-                                    </Text>
-                                    <TextInput
-                                        style={styles.textInput}
-                                        placeholder={`Enter ${additionalInfo}`}
-                                        keyboardType="default"
-                                        value={transactionId}
-                                        onChangeText={setTransactionId}
-                                    />
-                                </>
-                            )}
-                            
-                            <Button
-                                title={isLoading ? "Please wait..." : "Add Payment"}
-                                filled
-                                disabled={isLoading || !selectedPigme || isFetchingData}
-                                style={styles.button}
-                                onPress={handleAddPayment}
-                            />
-                        </View>
-                    </View>
-                </ScrollView>
+            {/* =======================================================
+               SCROLLABLE CONTENT AREA (Form)
+               =======================================================
+            */}
+            <KeyboardAvoidingView
+                style={styles.scrollableContentWrapper}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+                <View style={styles.mainContentArea}>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContentContainer}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {renderContent()}
+                    </ScrollView>
+                </View>
             </KeyboardAvoidingView>
-        </LinearGradient>
+        </SafeAreaView>
     );
 };
 
+// --- STYLES COPIED/MODIFIED FROM LoanPayin.js ---
 const styles = StyleSheet.create({
-    gradientOverlay: {
+    // --- LAYOUT STYLES ---
+    safeArea: {
+        flex: 1,
+        backgroundColor: TOP_GRADIENT[0],
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: TOP_GRADIENT[0], // Use top gradient background
+        minHeight: 200,
+    },
+    errorText: {
+        marginTop: 10,
+        fontSize: 18,
+        color: CARD_BG, // White text on blue background
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    goBackButton: {
+        marginTop: 20,
+        backgroundColor: PRIMARY_BUTTON_COLOR,
+    },
+
+    fixedHeaderArea: {
+        paddingHorizontal: 16,
+        paddingBottom: 20,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    scrollableContentWrapper: {
         flex: 1,
     },
-   
-    fixedHeader: {
-        
-        paddingTop: Platform.OS === 'android' ? 40 : 40,
-        paddingHorizontal: 22,
-      
-        backgroundColor: 'transparent', 
-        zIndex: 10, 
+    mainContentArea: {
+        flex: 1,
+        backgroundColor: SUBTLE_BG_GREY,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        paddingHorizontal: 16,
+        marginTop: -20,
+        paddingTop: 30,
     },
+    headerSpacer: {
+        paddingTop: 20,
+        paddingBottom: 5,
+    },
+
+    // --- TITLE STYLES ---
     titleContainer: {
-        marginTop: 10, 
-        marginBottom: 10,
-        alignItems: 'center',
+        alignItems: "center",
+        marginBottom: 15,
     },
     title: {
-        fontSize: 27,
-        fontWeight: 'bold',
-        color: '#333',
+        fontSize: 28,
+        fontWeight: "900",
+        color: CARD_BG, // White text
+        marginBottom: 4,
     },
-   
-    scrollInnerContainer: {
-        paddingHorizontal: 22,
+    subtitle: {
+        fontSize: 14,
+        color: "rgba(255, 255, 255, 0.85)",
+        fontWeight: "500",
+        textAlign: "center",
     },
-   
+
+    // --- FORM CONTAINER ---
     scrollContentContainer: {
+        paddingBottom: 50,
+        paddingTop: 10,
         flexGrow: 1,
-        paddingBottom: 50, 
     },
     formBox: {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backgroundColor: CARD_BG,
         borderRadius: 20,
         padding: 20,
         borderWidth: 1,
-        borderColor: '#ddd',
-        marginBottom: 20,
-        shadowColor: '#000',
+        borderColor: BORDER_COLOR,
+        shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.08,
         shadowRadius: 10,
         elevation: 5,
     },
+
+    // --- INPUT/PICKER STYLES ---
     row: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -464,66 +576,65 @@ const styles = StyleSheet.create({
         flex: 1,
         marginHorizontal: 3,
     },
-    textInput: {
-        width: "100%",
-        borderColor: "#d0d0d0",
-        borderWidth: 1,
-        borderRadius: 15,
-        paddingHorizontal: 10,
-        marginVertical: 10,
-        color: "#000",
-        backgroundColor: COLORS.white,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-        ...Platform.select({
-            ios:{
-                height:55
-            },
-            android:{
-                height:55
-            }
-        })
-    },
-    pickerContainer: {
-        borderColor: "#d0d0d0",
-        borderWidth: 1,
-        borderRadius: 15,
-        backgroundColor: COLORS.white,
-        marginTop: 10,
-        justifyContent: "center",
-        alignItems: "center",
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-    },
-    picker: {
-        ...Platform.select({
-            android:{
-                height:55
-            },
-            ios:{
-                height:55
-            }
-        }),
-        width: "100%",
-    },
     label: {
-        fontWeight: "bold",
+        fontWeight: "600",
         marginTop: 10,
+        fontSize: 14,
+        color: MODERN_PRIMARY,
     },
     star: {
-        color: "red",
+        color: ACCENT_BLUE, // Use blue accent for *
     },
+    textInput: {
+        height: 50,
+        width: "100%",
+        borderColor: BORDER_COLOR,
+        borderWidth: 1,
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        marginVertical: 8,
+        color: MODERN_PRIMARY,
+        backgroundColor: SUBTLE_BG_GREY,
+        fontSize: 16,
+    },
+    pickerContainer: {
+        borderColor: BORDER_COLOR,
+        borderWidth: 1,
+        borderRadius: 12,
+        backgroundColor: SUBTLE_BG_GREY,
+        marginVertical: 8,
+        minHeight: 50,
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    picker: {
+        width: "100%",
+        minHeight: 50,
+        ...Platform.select({
+            ios: {
+                height: 50,
+            },
+            android: {
+                height: 50,
+                color: MODERN_PRIMARY,
+            },
+        }),
+    },
+    pickerItem: {
+        color: MODERN_PRIMARY,
+        fontSize: 16,
+    },
+
+    // --- BUTTON STYLES ---
     button: {
-        marginTop: 18,
-        marginBottom: 50,
-        backgroundColor: '#f8c009ff',
-    }
+        flex: 1,
+        margin: 0,
+        marginTop: 20,
+        marginBottom: 0,
+        backgroundColor: PRIMARY_BUTTON_COLOR,
+        height: 55,
+        borderRadius: 12,
+    },
 });
 
 export default PigmePayin;

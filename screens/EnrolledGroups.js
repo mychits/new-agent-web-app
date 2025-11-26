@@ -15,13 +15,23 @@ import {
 } from "react-native";
 
 import { useState, useEffect } from "react";
-// Removed: import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
+
+// --- DESIGN CONSTANTS COPIED from EnrollCustomer.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; 
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+// ---------------------------------------------
 
 
 const EnrolledGroups = ({ route, navigation }) => {
@@ -36,6 +46,7 @@ const EnrolledGroups = ({ route, navigation }) => {
     
     const sendWhatsappMessage = async (item) => {
         if (item.user_id?.phone_number) {
+            // Note: The original code used a hardcoded "Hello there!" message.
             let url = `whatsapp://send?phone=${
                 item.user_id?.phone_number
             }&text=${encodeURIComponent("Hello there!")}`;
@@ -72,8 +83,10 @@ const EnrolledGroups = ({ route, navigation }) => {
 
     useEffect(() => {
         const fetchEnrolledCustomers = async () => {
-            const currentUrl =
-                activeTab === "CHIT" ? `${baseUrl}` : "http://13.60.68.201:3000/api";
+            // Assuming goldBaseUrl for gold is 'http://13.60.68.201:3000/api' based on original code.
+            const goldBaseUrl = "http://13.60.68.201:3000/api";
+            const currentUrl = activeTab === "CHIT" ? `${baseUrl}` : goldBaseUrl; 
+            
             try {
                 activeTab === "CHIT" ? setIsChitLoading(true) : setIsGoldLoading(true);
                 const response = await axios.get(
@@ -111,11 +124,13 @@ const EnrolledGroups = ({ route, navigation }) => {
             style={styles.card}
         >
             <View style={styles.leftSection}>
-                <Text style={styles.name}>
-                    {item?.group_id?.group_name || "No Group Name"}
-                </Text>
+                {/* User Name as Main Title */}
                 <Text style={styles.groupName}>
                     {item?.user_id?.full_name || "No User Name"}
+                </Text>
+                {/* Group Name as Subtitle */}
+                <Text style={styles.name}>
+                    {item?.group_id?.group_name || "No Group Name"}
                 </Text>
             </View>
             <View style={styles.rightSection}>
@@ -124,46 +139,59 @@ const EnrolledGroups = ({ route, navigation }) => {
                         {`TNo : ${item?.tickets} `}
                     </Text>
                 </View>
-                <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />
+                {/* Updated icon to Feather for consistency */}
+                <Feather name="chevron-right" style={styles.arrowIcon} /> 
             </View>
         </Pressable>
     );
 
 
     return (
-        <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
             >
-                <KeyboardAvoidingView
-                    style={{ flex: 1 }}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+                {/* Top Header Section with Gradient (Copied from EnrollCustomer.js) */}
+                <LinearGradient
+                    colors={TOP_GRADIENT}
+                    style={styles.topContainer}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
                 >
-                    <ScrollView
-                        style={{ flex: 1, marginHorizontal: 22, marginTop: 38 }}
-                        contentContainerStyle={{ paddingBottom: 80 }}
-                        showsVerticalScrollIndicator={false}
-                    >
+                    <View style={styles.headerSpacer}>
                         <Header />
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.title}>Groups</Text>
-                            <Text style={styles.subtitle}>Enrolled groups by you</Text>
+                    </View>
+
+                    <View style={styles.titleContainer}>
+                        <View>
+                            <Text style={styles.title}>Enrolled Groups</Text>
+                            <Text style={styles.subtitle}>Groups enrolled by you</Text>
                         </View>
-                        {/* Search Input and Icon */}
+                    </View>
+                </LinearGradient>
+
+                {/* Main Content Area (White Background with Border Radius) */}
+                <View style={styles.mainContentArea}>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.scrollContainer}
+                    >
+                        {/* Search Input and Icon - Styled like inputs in EnrollCustomer.js */}
                         <View style={styles.searchContainer}>
-                            <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+                            <Feather name="search" size={20} color={TEXT_GREY} style={styles.searchIcon} />
                             <TextInput
                                 style={styles.searchInput}
                                 placeholder="Search by name or group"
-                                placeholderTextColor="#888"
+                                placeholderTextColor={TEXT_GREY}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />
                         </View>
                         {/* End Search Input */}
+                        
+                        {/* Tab Container - Styled to match the modern look */}
                         <View style={styles.tabContainer}>
                             <TouchableOpacity
                                 style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
@@ -172,7 +200,7 @@ const EnrolledGroups = ({ route, navigation }) => {
                                 <MaterialIcons
                                     name="groups"
                                     size={20}
-                                    color={activeTab === "CHIT" ? "#333" : "#666"}
+                                    color={activeTab === "CHIT" ? MODERN_PRIMARY : TEXT_GREY}
                                 />
                                 <Text
                                     style={[
@@ -180,7 +208,7 @@ const EnrolledGroups = ({ route, navigation }) => {
                                         activeTab === "CHIT" && styles.activeTabText,
                                     ]}
                                 >
-                                    Chits {chitCustomerLength || 0}
+                                    Chits ({chitCustomerLength || 0})
                                 </Text>
                             </TouchableOpacity>
 
@@ -191,7 +219,7 @@ const EnrolledGroups = ({ route, navigation }) => {
                                 <MaterialIcons
                                     name="diamond"
                                     size={20}
-                                    color={activeTab === "GOLD" ? "#333" : "#666"}
+                                    color={activeTab === "GOLD" ? MODERN_PRIMARY : TEXT_GREY}
                                 />
                                 <Text
                                     style={[
@@ -199,85 +227,134 @@ const EnrolledGroups = ({ route, navigation }) => {
                                         activeTab === "GOLD" && styles.activeTabText,
                                     ]}
                                 >
-                                    Gold Chits {goldCustomerLength || 0}
+                                    Gold Chits ({goldCustomerLength || 0})
                                 </Text>
                             </TouchableOpacity>
                         </View>
+
+                        {/* FlatList/Content Area */}
                         {activeTab === "CHIT" ? (
                             isChitLoading ? (
                                 <ActivityIndicator
                                     size="large"
-                                    color="#000"
-                                    style={{ marginTop: 20 }}
+                                    color={ACCENT_BLUE}
+                                    style={styles.loadingIndicator}
                                 />
-                            ) : chitCustomerLength === 0 ? (
+                            ) : chitCustomerLength === 0 && filteredCustomers.length === 0 ? (
                                 <Text style={styles.noLeadsText}>
                                     No CHIT enrolled customers found.
                                 </Text>
                             ) : (
                                 <FlatList
                                     data={filteredCustomers}
-                                    keyExtractor={(item, index) => index.toString()}
+                                    keyExtractor={(item, index) => item._id || index.toString()}
                                     renderItem={renderEnrolledCustomerCard}
                                     ListEmptyComponent={() => (
                                         <Text style={styles.noLeadsText}>No matching groups found.</Text>
                                     )}
+                                    scrollEnabled={false} // Use parent ScrollView
+                                    contentContainerStyle={styles.listContent}
                                 />
                             )
                         ) : isGoldLoading ? (
                             <ActivityIndicator
                                 size="large"
-                                color="#000"
-                                style={{ marginTop: 20 }}
+                                color={ACCENT_BLUE}
+                                style={styles.loadingIndicator}
                             />
-                        ) : goldCustomerLength === 0 ? (
+                        ) : goldCustomerLength === 0 && filteredCustomers.length === 0 ? (
                             <Text style={styles.noLeadsText}>
                                 No GOLD CHIT enrolled customers found.
                             </Text>
                         ) : (
                             <FlatList
                                 data={filteredCustomers}
-                                keyExtractor={(item, index) => index.toString()}
+                                keyExtractor={(item, index) => item._id || index.toString()}
                                 renderItem={renderEnrolledCustomerCard}
                                 ListEmptyComponent={() => (
                                     <Text style={styles.noLeadsText}>No matching groups found.</Text>
                                 )}
+                                scrollEnabled={false} // Use parent ScrollView
+                                contentContainerStyle={styles.listContent}
                             />
                         )}
                     </ScrollView>
-                </KeyboardAvoidingView>
-            </LinearGradient>
-        </View>
+                </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    gradientOverlay: {
-        flex: 1,
+    // --- LAYOUT STYLES (Copied from EnrollCustomer.js) ---
+    safeArea: { 
+        flex: 1, 
+        backgroundColor: TOP_GRADIENT[0] 
     },
+    topContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 25, 
+        zIndex: 1,
+    },
+    headerSpacer: { 
+        paddingTop: 20, 
+        paddingBottom: 5 
+    }, 
+    mainContentArea: {
+        flex: 1,
+        backgroundColor: CARD_BG, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30,
+        marginTop: -20, 
+        zIndex: 2, 
+    },
+    scrollContainer: { 
+        paddingBottom: 50, 
+        paddingTop: 30, 
+        paddingHorizontal: 22,
+    },
+
+    // --- TITLE STYLES (UPDATED for position and center alignment) ---
     titleContainer: {
-        marginTop: 20,
-        marginBottom: 20,
-        alignItems: 'center',
+        marginTop: 15, // Adjusted from 30 to move it up
+        marginBottom: 5, 
+        paddingHorizontal: 6,
+        alignItems: 'center', // Centers the content horizontally
     },
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#333',
+        fontSize: 28, 
+        fontWeight: "900",
+        color: CARD_BG, 
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        textAlign: 'center', // Centers the text lines
     },
     subtitle: {
-        fontSize: 16,
-        color: '#666',
-        marginTop: 5,
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.9)', 
+        fontWeight: '500',
+        marginTop: 4,
+        textAlign: 'center', // Centers the text lines
     },
+    
+    // --- SEARCH STYLES (Styled like inputGroup in EnrollCustomer.js) ---
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
-        borderRadius: 15,
+        backgroundColor: CARD_BG,
+        borderRadius: 12,
         paddingHorizontal: 15,
-        marginBottom: 10,
+        marginBottom: 15,
         height: 50,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
     searchIcon: {
         marginRight: 10,
@@ -285,51 +362,62 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 16,
-        color: '#333',
+        color: MODERN_PRIMARY,
     },
+
+    // --- TAB STYLES (Updated to modern look) ---
     tabContainer: {
         flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
-        borderRadius: 15,
-        marginBottom: 10,
+        backgroundColor: SUBTLE_BG_GREY, // Use very light grey for background
+        borderRadius: 12,
+        marginBottom: 20,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
     },
     tab: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 12,
         alignItems: "center",
         flexDirection: 'row',
         justifyContent: 'center',
-        borderRadius: 15,
+        borderRadius: 12, // Apply border radius here for inner tab
     },
     activeTab: {
-        backgroundColor: '#f8c009ff',
+        backgroundColor: ACCENT_BLUE, // Use ACCENT_BLUE for active tab background
     },
     tabText: {
-        fontSize: 16,
-        color: "#666",
-        fontWeight: "500",
+        fontSize: 15,
+        color: TEXT_GREY,
+        fontWeight: "600",
         marginLeft: 5,
     },
     activeTabText: {
-        color: '#333',
+        color: CARD_BG, // White text for active tab
         fontWeight: 'bold',
     },
+
+    // --- CARD STYLES (Updated to modern look) ---
+    listContent: {
+        gap: 10, // Consistent spacing between cards
+    },
     card: {
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        backgroundColor: CARD_BG,
         flexDirection: "row",
         justifyContent: 'space-between',
-        padding: 15,
-        marginVertical: 5,
-        borderRadius: 15,
-        borderLeftWidth: 5,
-        borderColor: '#f8c009ff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        
+        padding: 18,
+        borderRadius: 12,
+        borderLeftWidth: 4, // Left border for highlight
+        borderColor: ACCENT_BLUE, // Use ACCENT_BLUE for highlight
+        // Modern subtle shadow
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
         alignItems: 'center',
+        borderWidth: 1, // Add subtle border
+        borderColor: BORDER_COLOR,
     },
     leftSection: {
         flex: 1,
@@ -337,38 +425,44 @@ const styles = StyleSheet.create({
     rightSection: {
         alignItems: "flex-end",
         flexDirection: 'row',
-        gap: 5,
-    },
-    name: {
-        fontSize: 14,
-        fontWeight: "900",
-        color: "#000",
-        marginBottom: 5,  // gap between name and groupName
+        gap: 8,
     },
     groupName: {
         fontSize: 16,
-        color: "#666",
+        fontWeight: "700",
+        color: MODERN_PRIMARY, // Dark text for main name
+        marginBottom: 3,
+    },
+    name: {
+        fontSize: 14,
+        color: TEXT_GREY, // Grey text for group name (subtitle)
     },
     ticketContainer: {
-        backgroundColor: '#FFD70020',
-        borderRadius: 10,
+        backgroundColor: ACCENT_BLUE + '10', // Very light blue background
+        borderRadius: 8,
         paddingHorizontal: 10,
-        paddingVertical: 5,
+        paddingVertical: 4,
     },
     ticketsText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
-        color: '#666',
+        color: ACCENT_BLUE, // Blue text for ticket number
     },
     arrowIcon: {
-        fontSize: 22,
-        color: '#f8c009ff',
+        fontSize: 24,
+        color: TEXT_GREY, // Subtle grey arrow
+    },
+
+    // --- MISC STYLES ---
+    loadingIndicator: { 
+        marginTop: 20 
     },
     noLeadsText: {
         textAlign: "center",
         marginTop: 20,
         fontSize: 16,
-        color: "#666",
+        color: TEXT_GREY,
+        paddingHorizontal: 20,
     },
 });
 

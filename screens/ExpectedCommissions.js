@@ -19,8 +19,22 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
-import { whatsappMessage } from "../components/data/messages";
+import { whatsappMessage } from "../components/data/messages"; // Assuming this path is correct
 import { LinearGradient } from "expo-linear-gradient";
+
+// --- DESIGN CONSTANTS ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; 
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+
+// --- DISTINCT VALUE COLORS ---
+const VALUE_COLOR_GREEN = '#3ed160ff';
+const VALUE_COLOR_MAGENTA = '#f70cb4ff';
+// ---------------------------------------------
 
 
 const ExpectedCommissions = ({ route, navigation }) => {
@@ -74,6 +88,7 @@ const ExpectedCommissions = ({ route, navigation }) => {
 
     useEffect(() => {
         const fetchExpectedCommissions = async () => {
+            // NOTE: The GOLD base URL is hardcoded here, ensure it's correct for your environment.
             const currentBaseUrl =
                 activeTab === "CHIT" ? baseUrl : "http://13.60.68.201:3000/api";
             
@@ -90,7 +105,8 @@ const ExpectedCommissions = ({ route, navigation }) => {
                     throw new Error("Failed to fetch Enrolled customer Data");
 
                 const data = response.data.dataWithCommission || [];
-                const totalCommission = response?.data?.total_commission || "0";
+                // Ensure commission is a string before setting
+                const totalCommission = (response?.data?.total_commission || "0").toString();
                 const customerCount = data.length || 0;
 
                 setCustomer(data);
@@ -129,6 +145,15 @@ const ExpectedCommissions = ({ route, navigation }) => {
         return groupName.toLowerCase().includes(query) || userName.toLowerCase().includes(query);
     });
 
+    const formatCommission = (value) => {
+        // Strip non-numeric characters and format as currency
+        const numericValue = String(value || '0').replace(/[^\d.]/g, '');
+        return Number(numericValue).toLocaleString('en-IN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        });
+    };
+
     const renderEnrolledCustomerCard = ({ item }) => (
         <TapGestureHandler
             numberOfTaps={2}
@@ -142,7 +167,6 @@ const ExpectedCommissions = ({ route, navigation }) => {
             >
                 <View style={styles.leftSection}>
                     <Text style={styles.groupName}>
-                       
                         <Text style={styles.groupNameValue}>
                              {item?.group_id?.group_name || "N/A"}
                         </Text>
@@ -154,7 +178,7 @@ const ExpectedCommissions = ({ route, navigation }) => {
                 <View style={styles.rightSection}>
                     <View style={styles.commissionContainer}>
                         <Text style={styles.commissionText}>
-                            {`Rs ${item?.calculated_commission || "0"}`}
+                            {`₹${formatCommission(item?.calculated_commission)}`}
                         </Text>
                     </View>
                 </View>
@@ -171,14 +195,14 @@ const ExpectedCommissions = ({ route, navigation }) => {
 
 
     return (
-        <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-            <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
+        <View style={{ flex: 1, backgroundColor: TOP_GRADIENT[0] }}>
+            <LinearGradient colors={TOP_GRADIENT}
                 style={styles.gradientOverlay}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
                 <KeyboardAvoidingView
-                    style={{ flex: 1, paddingHorizontal: 22 }}
+                    style={{ flex: 1 }}
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
                 >
@@ -189,14 +213,18 @@ const ExpectedCommissions = ({ route, navigation }) => {
                             <Text style={styles.title}>Expected Commissions</Text>
                             <Text style={styles.subtitle}>View your estimated earnings</Text>
                         </View>
+                    </View>
+                    
+                    {/* Main Content Area (White Background, Overlapping Header) */}
+                    <View style={styles.mainContentArea}>
                         
                         {/* Search Input and Icon */}
                         <View style={styles.searchContainer}>
-                            <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+                            <Feather name="search" size={20} color={TEXT_GREY} style={styles.searchIcon} />
                             <TextInput
                                 style={styles.searchInput}
                                 placeholder="Search by customer name or group"
-                                placeholderTextColor="#888"
+                                placeholderTextColor={TEXT_GREY}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />
@@ -211,7 +239,7 @@ const ExpectedCommissions = ({ route, navigation }) => {
                                 <MaterialIcons
                                     name="groups"
                                     size={20}
-                                    color={activeTab === "CHIT" ? "#333" : "#666"}
+                                    color={activeTab === "CHIT" ? CARD_BG : TEXT_GREY}
                                 />
                                 <Text
                                     style={[
@@ -229,7 +257,7 @@ const ExpectedCommissions = ({ route, navigation }) => {
                                 <MaterialIcons
                                     name="diamond"
                                     size={20}
-                                    color={activeTab === "GOLD" ? "#333" : "#666"}
+                                    color={activeTab === "GOLD" ? CARD_BG : TEXT_GREY}
                                 />
                                 <Text
                                     style={[
@@ -248,41 +276,41 @@ const ExpectedCommissions = ({ route, navigation }) => {
                                 <View style={styles.totalCardContent}>
                                     <View>
                                         <Text style={styles.totalCardText}>Total Expected Commission</Text>
-                                        <Text style={styles.totalCardValue}>
-                                            {`Rs ${totalCommission || 0}`}
+                                        <Text style={[styles.totalCardValue, { color: VALUE_COLOR_GREEN }]}>
+                                            {`₹${formatCommission(totalCommission)}`}
                                         </Text>
                                     </View>
-                                    <MaterialIcons name="trending-up" size={24} style={styles.cardIcon} />
+                                    <MaterialIcons name="trending-up" size={32} style={styles.cardIcon} />
                                 </View>
                             </View>
                         </View>
-                    </View>
-                    
-                    {/* Scrolling Content Section (FlatList) */}
-                    <View style={styles.listContainer}>
-                        {isLoading ? (
-                            <ActivityIndicator
-                                size="large"
-                                color="#000"
-                                style={{ marginTop: 20 }}
-                            />
-                        ) : customerCount === 0 && searchQuery === "" ? (
-                            <Text style={styles.noLeadsText}>
-                                {noCommissionText}
-                            </Text>
-                        ) : filteredCustomers.length === 0 && searchQuery !== "" ? (
-                             <Text style={styles.noLeadsText}>
-                                No customers match your search criteria.
-                             </Text>
-                        ) : (
-                            <FlatList
-                                data={filteredCustomers}
-                                keyExtractor={(item, index) => `${activeTab}-${index}`}
-                                renderItem={renderEnrolledCustomerCard}
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ paddingBottom: 20 }}
-                            />
-                        )}
+
+                        {/* Scrolling Content Section (FlatList) */}
+                        <View style={styles.listContainer}>
+                            {isLoading ? (
+                                <ActivityIndicator
+                                    size="large"
+                                    color={ACCENT_BLUE}
+                                    style={{ marginTop: 20 }}
+                                />
+                            ) : customerCount === 0 && searchQuery === "" ? (
+                                <Text style={styles.noLeadsText}>
+                                    {noCommissionText}
+                                </Text>
+                            ) : filteredCustomers.length === 0 && searchQuery !== "" ? (
+                                 <Text style={styles.noLeadsText}>
+                                     No customers match your search criteria.
+                                 </Text>
+                            ) : (
+                                <FlatList
+                                    data={filteredCustomers}
+                                    keyExtractor={(item, index) => `${activeTab}-${index}`}
+                                    renderItem={renderEnrolledCustomerCard}
+                                    showsVerticalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingBottom: 20 }}
+                                />
+                            )}
+                        </View>
                     </View>
                 </KeyboardAvoidingView>
             </LinearGradient>
@@ -291,97 +319,134 @@ const ExpectedCommissions = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+    // --- LAYOUT STYLES (Modernized) ---
     gradientOverlay: {
         flex: 1,
+        paddingHorizontal: 0, 
+        paddingTop: 0, 
     },
-    // UPDATED STYLE: Increased marginTop to push the header content down
     fixedHeaderArea: {
-        marginTop: Platform.OS === 'android' ? 50 : 32, 
-        marginBottom: 10,
+        paddingHorizontal: 22, 
+        paddingTop: Platform.OS === 'android' ? 50 : 32, 
+        paddingBottom: 20, 
+        zIndex: 10,
     },
-    // --- Rest of the styles are unchanged ---
+    mainContentArea: {
+        flex: 1,
+        backgroundColor: CARD_BG, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30,
+        // Adjusted from -30 to -10 to increase the space between the subtitle and the white container
+        marginTop: -10, 
+        zIndex: 2, 
+        paddingHorizontal: 22, 
+        paddingTop: 30,
+    },
     listContainer: {
         flex: 1,
     },
+
+    // --- TITLE STYLES ---
     titleContainer: {
-        marginTop: 30,
-        marginBottom: 20,
+        marginTop: 15,
+        marginBottom: 5,
         alignItems: 'center',
     },
     title: {
         fontSize: 28,
-        fontWeight: 'bold',
-        color: '#333',
-        alignItems: 'center',
+        fontWeight: "900",
+        color: CARD_BG, 
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
-        color: '#666',
-        marginTop: 5,
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.9)', 
+        fontWeight: '500',
+        marginTop: 4,
+        textAlign: 'center',
     },
+
+    // --- SEARCH STYLES ---
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: "rgba(255, 255, 255, 0.7)", 
-        borderRadius: 15,
+        backgroundColor: CARD_BG,
+        borderRadius: 12,
         paddingHorizontal: 15,
-        marginBottom: 10,
+        marginBottom: 15,
         height: 50,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
     searchIcon: {
         marginRight: 10,
+        color: TEXT_GREY,
     },
     searchInput: {
         flex: 1,
         fontSize: 16,
-        color: '#333',
+        color: MODERN_PRIMARY,
     },
+
+    // --- TAB STYLES ---
     tabContainer: {
         flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.7)", 
-        borderRadius: 15,
-        marginBottom: 10,
+        backgroundColor: SUBTLE_BG_GREY, 
+        borderRadius: 12,
+        marginBottom: 20,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
     },
     tab: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 12,
         alignItems: "center",
         flexDirection: 'row',
         justifyContent: 'center',
-        borderRadius: 15,
+        borderRadius: 12,
     },
     activeTab: {
-        backgroundColor: '#f8c009ff',
+        backgroundColor: ACCENT_BLUE, 
     },
     tabText: {
-        fontSize: 16,
-        color: "#666",
-        fontWeight: "500",
+        fontSize: 15,
+        color: TEXT_GREY,
+        fontWeight: "600",
         marginLeft: 5,
     },
     activeTabText: {
-        color: '#333',
+        color: CARD_BG, 
         fontWeight: 'bold',
     },
+    
+    // --- TOTAL CARD STYLES ---
     totalCardContainer: {
-        marginTop: 15,
+        marginBottom: 20,
         alignItems: 'center',
-        marginBottom: 10,
     },
     totalCard: {
-        backgroundColor: "rgba(255, 255, 255, 0.7)", 
+        backgroundColor: CARD_BG, 
         flexDirection: "row",
         justifyContent: 'space-between',
-        padding: 15,
-        marginVertical: 5,
+        padding: 20,
         borderRadius: 15,
         borderWidth: 2,
-        borderColor: '#f8c009ff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
+        borderColor: ACCENT_BLUE, 
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
         alignItems: 'center',
         width: '100%',
     },
@@ -392,60 +457,65 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     totalCardText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
+        fontSize: 16,
+        fontWeight: '600',
+        color: MODERN_PRIMARY,
     },
     totalCardValue: {
         fontSize: 24,
-        color: '#666',
         fontWeight: 'bold',
         marginTop: 5,
     },
+    cardIcon: {
+        color: ACCENT_BLUE, 
+    },
+
+    // --- LIST CARD STYLES ---
     card: {
-        backgroundColor: "rgba(255, 255, 255, 0.7)", 
+        backgroundColor: CARD_BG,
         flexDirection: "row",
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 15,
-        marginVertical: 5,
-        borderRadius: 15,
-        borderLeftWidth: 5,
-        borderColor: '#f8c009ff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
+        padding: 18,
+        marginVertical: 6,
+        borderRadius: 12,
+        borderLeftWidth: 4,
+        borderColor: ACCENT_BLUE, 
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+        borderWidth: 1, 
+        borderColor: BORDER_COLOR,
     },
     leftSection: {
         flex: 1,
     },
     rightSection: {
-        alignItems: "center",
+        alignItems: "flex-end",
         flexDirection: 'column',
         justifyContent: 'center',
         gap: 5,
     },
     groupNameValue: { 
-        fontSize: 14,
-        color: "#333",
-        fontWeight: '600',
+        fontSize: 16,
+        color: MODERN_PRIMARY,
+        fontWeight: '700',
     },
     name: {
-        fontSize: 16, 
-        fontWeight: "600",
-        color: "#000",
-        marginBottom: 5,
+        fontSize: 14, 
+        fontWeight: "500",
+        color: TEXT_GREY,
+        marginTop: 3,
         textAlign: 'left',
     },
     groupName: {
-        fontSize: 14,
-        color: "#666",
         textAlign: 'left',
     },
     commissionContainer: {
-        backgroundColor: '#FFD70020', 
-        borderRadius: 10,
+        backgroundColor: VALUE_COLOR_MAGENTA + '10', 
+        borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 5,
         alignSelf: 'center',
@@ -453,17 +523,14 @@ const styles = StyleSheet.create({
     commissionText: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#666',
+        color: VALUE_COLOR_MAGENTA, 
         textAlign: 'center',
-    },
-    cardIcon: {
-        color: '#f8c009ff',
     },
     noLeadsText: {
         textAlign: "center",
         marginTop: 40,
         fontSize: 16,
-        color: "#666",
+        color: TEXT_GREY,
         fontWeight: '500',
     },
 });

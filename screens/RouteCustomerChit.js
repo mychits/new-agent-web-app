@@ -9,28 +9,42 @@ import {
   Platform,
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import Icon from "react-native-vector-icons/FontAwesome";
+// Changed to Ionicons for consistency
+import { Ionicons } from "@expo/vector-icons"; 
+import { SafeAreaView } from "react-native-safe-area-context"; // Added SafeAreaView
 import { LinearGradient } from "expo-linear-gradient";
-import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import axios from "axios";
 
+// --- DESIGN CONSTANTS COPIED FROM Routes.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent (for icons/left border)
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+// ---------------------------------------------
+
+
 const CustomerCard = ({ name, phone, customerId, onPress }) => (
-  <TouchableOpacity onPress={onPress} style={styles.card}>
+  <TouchableOpacity onPress={onPress} style={styles.cardContainer} activeOpacity={0.7}>
     <View style={styles.cardContent}>
-      <Icon name="user-circle" style={styles.cardIcon} />
+      {/* Updated to Ionicons for consistency */}
+      <Ionicons name="person-circle-outline" style={styles.cardIcon} /> 
       <View style={styles.textContainer}>
         <Text style={styles.cardText}>{name}</Text>
         <Text style={styles.cardSubText}>Phone: {phone}</Text>
         <Text style={styles.cardSubText}>Customer ID: {customerId}</Text>
       </View>
     </View>
-    <Icon name="arrow-right" style={styles.arrowIcon} />
+    {/* Updated to Ionicons for consistency */}
+    <Ionicons name="chevron-forward-outline" style={styles.arrowIcon} /> 
   </TouchableOpacity>
 );
 
-// --- RouteCustomer Component (FIXED) ---
+// --- RouteCustomer Component ---
 const RouteCustomer = ({ route, navigation }) => {
   const { user } = route.params;
 
@@ -39,7 +53,7 @@ const RouteCustomer = ({ route, navigation }) => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ... (useEffect for fetchEmployee - No Change) ...
+  // Fetch Employee (Agent) ID
   useEffect(() => {
     const fetchEmployee = async () => {
       try {
@@ -52,6 +66,7 @@ const RouteCustomer = ({ route, navigation }) => {
     fetchEmployee();
   }, []);
 
+  // Fetch Customers for the Agent
   useEffect(() => {
     const fetchCustomers = async () => {
       if (!agent || agent.length === 0) return;
@@ -84,153 +99,193 @@ const RouteCustomer = ({ route, navigation }) => {
     fetchCustomers();
   }, [agent]);
 
+  // Filtering Logic
   const filteredCustomers = Array.isArray(customers)
     ? customers.filter((customer) =>
         customer.full_name?.toLowerCase().includes(search.toLowerCase())
       )
     : [];
 
-  // Apply a base horizontal margin to the main content area
-  const contentHorizontalMargin = 22;
-
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.white }}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* Top Header Section with Gradient */}
       <LinearGradient
-        colors={["#1aa2ccff", "#1aa2ccff"]}
-        style={styles.gradientOverlay}
+        colors={TOP_GRADIENT}
+        style={styles.topContainer}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {/* Fixed Top Content (Header, Title, Search) */}
-        <View
-          style={{
-            // Use a slightly different padding approach for fixed header
-            paddingTop: Platform.OS === "android" ? 40 : 60,
-            paddingHorizontal: contentHorizontalMargin,
-            paddingBottom: 20, // Add space below search bar before scroll
-          }}
-        >
-          <Header />
-          <View style={styles.titleContainer}>
+        <View style={styles.headerSpacer}>
+            <Header />
+        </View>
+
+        <View style={styles.titleContainer}>
             <Text style={styles.title}>Chit Customers</Text>
             <Text style={styles.subtitle}>Manage customer accounts</Text>
-          </View>
-          <View style={styles.searchContainerFixed}>
-            <Icon
-              name="search"
+        </View>
+        
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+            {/* Updated to Ionicons for consistency */}
+            <Ionicons
+              name="search-outline"
               size={20}
-              color="#888"
+              color={TEXT_GREY}
               style={styles.searchIcon}
             />
             <TextInput
               value={search}
               onChangeText={(text) => setSearch(text)}
               placeholder="Search chit customers..."
-              placeholderTextColor="#888"
+              placeholderTextColor={TEXT_GREY}
               style={styles.searchInput}
             />
-          </View>
         </View>
 
-        {/* Scrollable Customer List */}
-        <ScrollView
-          style={{ flex: 1 }} // Take remaining vertical space
-          contentContainerStyle={{
-            paddingBottom: 80,
-            paddingHorizontal: contentHorizontalMargin, // Apply horizontal padding here
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          {loading ? (
-            <View style={{ marginTop: 10, alignItems: "center" }}>
-              <ActivityIndicator size="large" color="#f8c009ff" />
-            </View>
-          ) : (
-            <>
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.map((customer, index) => (
-                  <CustomerCard
-                    key={index}
-                    name={customer.full_name}
-                    phone={customer.phone_number}
-                    customerId={customer.customer_id}
-                    onPress={() =>
-                      navigation.navigate("Payin", { customer: customer._id })
-                    }
-                  />
-                ))
-              ) : (
-                <Text style={styles.noCustomersText}>No customers found.</Text>
-              )}
-            </>
-          )}
-        </ScrollView>
       </LinearGradient>
-    </View>
+
+      {/* Main Content Area (Light Background with Rounded Corners) */}
+      <View style={styles.mainContentArea}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContainer}
+        >
+          <View style={styles.cardListContainer}>
+              {loading ? (
+                  <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color={ACCENT_BLUE} />
+                  </View>
+              ) : (
+                  <>
+                      {filteredCustomers.length > 0 ? (
+                          filteredCustomers.map((customer, index) => (
+                              <CustomerCard
+                                  key={index}
+                                  name={customer.full_name}
+                                  phone={customer.phone_number}
+                                  customerId={customer.customer_id}
+                                  onPress={() =>
+                                      navigation.navigate("Payin", { customer: customer._id })
+                                  }
+                              />
+                          ))
+                      ) : (
+                          <Text style={styles.noCustomersText}>No customers found.</Text>
+                      )}
+                  </>
+              )}
+          </View>
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  gradientOverlay: {
-    flex: 1,
+  // --- LAYOUT STYLES (Copied from Routes.js) ---
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: TOP_GRADIENT[0] 
   },
-  // The main container for the fixed top content will handle the padding
+  topContainer: {
+    paddingHorizontal: 16,
+    // Increased paddingBottom to create space between the search bar and the content area
+    paddingBottom: 35, 
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  mainContentArea: {
+    flex: 1,
+    backgroundColor: SUBTLE_BG_GREY, 
+    borderTopLeftRadius: 30, 
+    borderTopRightRadius: 30,
+    paddingHorizontal: 16,
+    marginTop: -20, 
+    paddingTop: 30,
+  },
+  headerSpacer: { 
+    paddingTop: 20, 
+    paddingBottom: 5 
+  }, 
+  loadingContainer: { 
+    paddingTop: 20 
+  },
+
+  // --- TITLE STYLES (Copied from Routes.js) ---
   titleContainer: {
-    marginTop: 10, // Reduced margin since main padding is applied to the wrapper
-    marginBottom: 10,
-    alignItems: "center",
+    alignItems: 'center',
+    marginBottom: 15,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: 28, 
+    fontWeight: "900",
+    color: CARD_BG, // White text
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 5,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.85)', 
+    fontWeight: '500',
+    textAlign: 'center',
   },
-  // NEW style for the search container when it's fixed
-  searchContainerFixed: {
+
+  // --- SEARCH BAR STYLES (Redesigned) ---
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 10,
-    width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
-    // Removed marginBottom: 20 to adjust spacing in the fixed container
+    backgroundColor: CARD_BG, // White background
+    borderRadius: 12, // Slightly smaller border radius
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    marginTop: 10,
   },
   searchIcon: {
-    marginLeft: 5,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    padding: 5,
+    padding: 0,
     fontSize: 16,
-    color: COLORS.darkGray,
+    color: MODERN_PRIMARY,
   },
-  // ... (Rest of the styles: card, cardContent, textContainer, etc. - No Change) ...
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
+  
+  // --- CARD LIST STYLES (Copied from Routes.js) ---
+  scrollContainer: { 
+    paddingBottom: 50, 
+    paddingTop: 10,
+  },
+  cardListContainer: {
+    gap: 18, 
+    alignItems: 'stretch', 
+  },
+
+  // --- CARD STYLES (Copied from Routes.js and modified) ---
+  cardContainer: { 
+    backgroundColor: CARD_BG,
+    borderRadius: 18, 
     padding: 20,
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    // Modern shadow
+    shadowColor: MODERN_PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05, 
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+    // Accent border
     borderLeftWidth: 5,
-    borderColor: "#f8c009ff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
-    marginBottom: 20,
+    borderLeftColor: ACCENT_BLUE, // Used ACCENT_BLUE for consistency
   },
   cardContent: {
     flexDirection: "row",
@@ -238,30 +293,33 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     marginLeft: 15,
+    flexShrink: 1, 
   },
   cardText: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "800", 
+    color: MODERN_PRIMARY, // Dark text
   },
   cardSubText: {
     fontSize: 14,
-    color: "#888",
+    color: TEXT_GREY, // Grey subtext
     marginTop: 2,
+    fontWeight: '500', 
   },
   cardIcon: {
     fontSize: 32,
-    color: "#f8c009ff",
+    color: ACCENT_BLUE, // Blue icon color
   },
   arrowIcon: {
-    fontSize: 22,
-    color: "#f8c009ff",
+    fontSize: 24, 
+    color: TEXT_GREY, // Grey arrow color
+    marginLeft: 10,
   },
   noCustomersText: {
     textAlign: "center",
     marginTop: 20,
     fontSize: 16,
-    color: "#888",
+    color: TEXT_GREY,
   },
 });
 

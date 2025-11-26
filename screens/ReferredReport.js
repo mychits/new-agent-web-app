@@ -6,44 +6,48 @@ import {
     FlatList,
     ActivityIndicator,
     Image,
-    StatusBar,
     Platform,
     LayoutAnimation,
     UIManager,
+    Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
-// Assuming COLORS is imported but not used directly in the final version
-// import COLORS from "../constants/color"; 
+import { Ionicons } from "@expo/vector-icons"; 
 import Header from "../components/Header";
+import url from "../constants/baseUrl"; 
 
-// --- ORIGINAL CONSTANTS ---
-const DUE_API = "https://mychits.online/api/enroll/due/referral-agent/";
-const GROUP_API = "https://mychits.online/api/group/get-group";
-// Using the linear gradient from the original file
-const BACKGROUND_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
-const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
+const { height } = Dimensions.get('window');
 
-// --- CUSTOM STYLING CONSTANTS (Updated for Professional Look) ---
-const MODERN_PRIMARY = "#1e3a8a"; // Deep, professional blue
-const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
-const WARNING_RED = "#dc2626";    // Strong red for negative/balance
-const NEUTRAL_GREY = "#6b7280"; 
+// --- CONSTANTS MATCHING OutstandingReports.js ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; // From OutstandingReports
+const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
+const ACCENT_BLUE = "#1796d1ff"; // Blue accent
+const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
+const WARNING_RED = "#dc2626";    // Strong red for negative/balance
+const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
+const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = '#f9fafb'; 
 
-// Enable LayoutAnimation for Android
+// --- UPDATED API CONSTANTS ---
+const DUE_API = `${url}/enroll/due/referral-agent/`;
+const GROUP_API = `${url}/group/get-group`;
+
 if (
     Platform.OS === "android" &&
+    UIManager && // Added check for UIManager itself
     UIManager.setLayoutAnimationEnabledExperimental
 ) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 /**
- * Formats a number into Indian Rupee currency string.
- * @param {number|string} amount 
- * @returns {string} Formatted currency string
- */
+ * Formats a number into Indian Rupee currency string.
+ * @param {number|string} amount 
+ * @returns {string} Formatted currency string
+ */
 const formatCurrency = (amount) => {
     if (amount === undefined || amount === null) return "₹0.00";
     const num = typeof amount === "number" ? amount : parseFloat(amount);
@@ -84,9 +88,10 @@ const ReferredReport = ({ route }) => {
                 const allGroups = Array.isArray(groupJson?.data)
                     ? groupJson.data
                     : Array.isArray(groupJson)
-                    ? groupJson
-                    : [];
+                        ? groupJson
+                        : [];
 
+                // Assuming `dueJson.enrollments` holds the referral report data
                 const allDues = dueJson?.enrollments || [];
 
                 setGroups(allGroups);
@@ -96,7 +101,7 @@ const ReferredReport = ({ route }) => {
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setFilteredData(allDues);
             } catch (err) {
-                console.error("Error fetching:", err);
+                console.error("Error fetching referred reports:", err);
             } finally {
                 setLoading(false);
             }
@@ -116,69 +121,71 @@ const ReferredReport = ({ route }) => {
     }, [selectedGroup, dues]);
 
     const renderItem = ({ item }) => {
-        const name = item?.user?.full_name || "Unknown";
+        // Data structure cleanup: Assuming referred data structure looks like:
+        // { user: { full_name, email, phone_number }, group: { group_name }, ...financial data }
+        
+        // Use user_id and group_id nested objects if the structure matches OutstandingReports
+        // Otherwise, use the simpler structure:
+        const name = item?.user?.full_name || item?.user_id?.full_name || "Unknown";
         const email = item?.user?.email;
         const phone = item?.user?.phone_number;
-        const groupName = item?.group?.group_name || "N/A";
-        // const paymentType = item?.payment_type || "N/A"; // Not used in display now
-
+        const groupName = item?.group?.group_name || item?.group_id?.group_name || "N/A";
+        
         // Safely extract financial values which might be nested in an array
         const getFinancialValue = (value) =>
             Array.isArray(value) && value.length > 0 ? value[0] : value || 0;
 
         const totalPayable = getFinancialValue(item.total_payable_amount);
-        const totalProfit = getFinancialValue(item.total_profit);
         const totalToBePaid = item?.total_to_be_paid || 0;
         const balance = item?.balance || item?.Balance || 0;
         
-        // =========================================================================
-        // <<< ADDED DEBUGGING LOG >>>
-        // Check your console when running the app. If the keys are different, 
-        // they will show as undefined here, but you will see the correct key in the 
-        // full object log below.
-        console.log(`--- Item Debug ---
-Payable key value: ${item.total_payable_amount}
-Profit key value: ${item.total_profit}
-Raw Item Data (Check for correct key names):`, item);
-        // =========================================================================
-
         // Status bar color: Red for positive balance (outstanding), Green otherwise
         const statusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
 
         return (
             <View style={styles.cardContainer}>
-                {/* Status Indicator Bar */}
-                <View style={[styles.cardStatusIndicator, { backgroundColor: statusColor }]} />
-
+                {/* Main Card Content */}
                 <View style={styles.card}>
-                    {/* Header (Group and Type) */}
+                    {/* Header (Group) */}
                     <View style={styles.cardHeader}>
                         <Text style={styles.groupName} numberOfLines={1}>{groupName}</Text>
-                        {/* Removed Payment Type tag as it wasn't clear what it represented */}
+                        <View style={[styles.statusTag, { backgroundColor: balance > 0 ? '#fee2e2' : '#d1fae5' }]}>
+                            <Text style={[styles.statusTagText, { color: statusColor }]}>
+                                {balance > 0 ? 'Outstanding' : 'Paid'}
+                            </Text>
+                        </View>
                     </View>
 
                     {/* Customer Info */}
                     <View style={styles.cardBody}>
                         <Text style={styles.customerName}>{name}</Text>
-                        {email ? <Text style={styles.customerInfo}>📧 {email}</Text> : null}
-                        {phone ? <Text style={styles.customerInfo}>📞 {phone}</Text> : null}
+                        {phone ? <Text style={styles.customerInfo}><Ionicons name="call" size={14} color={NEUTRAL_GREY} /> {phone}</Text> : null}
+                        {email ? <Text style={styles.customerInfo}><Ionicons name="mail" size={14} color={NEUTRAL_GREY} /> {email}</Text> : null}
                     </View>
 
                     {/* Financial Info */}
                     <View style={styles.cardFinancial}>
                         
-                       
-                        <View style={styles.financialRow}>
-                            <Text style={styles.financialLabel}>Total Paid</Text>
+                        {/* ⚠️ MODIFIED: Total Paid Row (Compact) */}
+                        <View style={styles.financialRowCompact}>
+                            <Text style={styles.financialLabelCompact}>Total Paid :</Text>
                             <Text style={styles.financialValue}>
                                 {formatCurrency(totalToBePaid)}
                             </Text>
                         </View>
+                        
+                        {/* ⚠️ MODIFIED: Total Payable Row (Compact) */}
+                        <View style={styles.financialRowCompact}>
+                            <Text style={styles.financialLabelCompact}>Total Payable :</Text>
+                            <Text style={[styles.financialValue, {color: ACCENT_GREEN}]}>
+                                {formatCurrency(totalPayable)}
+                            </Text>
+                        </View>
 
-                        {/* Balance (Stands out) */}
-                        <View style={[styles.balanceRow, { backgroundColor: balance > 0 ? '#fee2e2' : '#d1fae5', borderColor: balance > 0 ? WARNING_RED : ACCENT_GREEN }]}>
-                            <Text style={[styles.balanceLabel, { color: balance > 0 ? WARNING_RED : ACCENT_GREEN }]}>
-                                {balance > 0 ? 'Outstanding Balance' : 'Current Status'}
+                        {/* Balance (Stands out - Compact) */}
+                        <View style={[styles.balanceRowCompact, { backgroundColor: balance > 0 ? '#fff7f7' : '#f0fff5', borderColor: balance > 0 ? WARNING_RED : ACCENT_GREEN }]}>
+                            <Text style={[styles.balanceLabel, { color: balance > 0 ? WARNING_RED : ACCENT_GREEN, marginRight: 5 }]}>
+                                {balance > 0 ? 'Outstanding Balance :' : 'Current Balance :'}
                             </Text>
                             <Text style={[styles.balanceValue, { color: balance > 0 ? WARNING_RED : ACCENT_GREEN }]}>
                                 {formatCurrency(balance)}
@@ -197,13 +204,8 @@ Raw Item Data (Check for correct key names):`, item);
 
     const EmptyList = () => (
         <View style={styles.emptyContainer}>
-            {/* The image requires a placeholder since I cannot load local files */}
-            <Image 
-                source={{ uri: 'https://placehold.co/200x160/d4d4d4/333333?text=No+Data' }} 
-                style={styles.emptyImage}
-                onError={(e) => console.log('Image load error:', e.nativeEvent.error)} // Debugging image load
-            />
-            <Text style={styles.emptyText}>No pending dues found</Text>
+            <Ionicons name="documents-outline" size={50} color={NEUTRAL_GREY} />
+            <Text style={styles.emptyText}>No pending dues found.</Text>
             <Text style={{ color: NEUTRAL_GREY, marginTop: 5, fontSize: 14 }}>
                 Try selecting "All Groups" or check back later.
             </Text>
@@ -211,69 +213,76 @@ Raw Item Data (Check for correct key names):`, item);
     );
 
     return (
-        // Set SafeAreaView background to match gradient start to remove white space above the gradient
-        <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND_GRADIENT[0] }}>
-            <StatusBar barStyle="dark-content" />
-            
-            <LinearGradient colors={BACKGROUND_GRADIENT} style={{ flex: 1 }}>
-                
-                {/* Header */}
-                <View style={styles.headerWrapper}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            {/* Top Header Section with Gradient */}
+            <LinearGradient colors={TOP_GRADIENT} style={styles.topContainer}>
+                <View style={styles.headerSpacer}>
                     <Header />
                 </View>
 
-                <View style={styles.mainContentContainer}>
+                <View style={styles.titleContainer}>
                     <Text style={styles.title}>Referred Report</Text>
                     <Text style={styles.subtitle}>
                         Select a group to view pending details
                     </Text>
-
-                    {/* Group Filter */}
-                    <View style={styles.dropdownWrapper}>
-                        <Text style={styles.dropdownLabel}>Filter by Group</Text>
-                        <View style={styles.pickerWrapper}>
-                            <Picker
-                                selectedValue={selectedGroup}
-                                onValueChange={(itemValue) => setSelectedGroup(itemValue)}
-                                style={[styles.picker, { color: MODERN_PRIMARY }]} 
-                                itemStyle={{ color: MODERN_PRIMARY, fontSize: 16 }} 
-                            >
-                                <Picker.Item label="All Groups" value="all" />
-                                {groups.map((g) => (
-                                    <Picker.Item key={g._id} label={g.group_name} value={g._id} />
-                                ))}
-                            </Picker>
-                        </View>
-                    </View>
-
-                    {/* Total Summary (Highlighted Card) */}
-                    <View style={styles.totalWrapper}>
-                        <Text style={styles.totalText}>
-                            Total Outstanding Balance:
-                        </Text>
-                        <Text style={styles.totalAmount}>
-                            {formatCurrency(totalPending)}
-                        </Text>
-                    </View>
-
-                    {/* Content List / Loader */}
-                    {loading ? (
-                        <View style={styles.loader}>
-                            <ActivityIndicator size="large" color={MODERN_PRIMARY} />
-                            <Text style={{ marginTop: 10, color: NEUTRAL_GREY }}>Loading data...</Text>
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={filteredData}
-                            renderItem={renderItem}
-                            keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
-                            ListEmptyComponent={EmptyList}
-                            // Added extra padding top to separate from the total summary
-                            contentContainerStyle={{ paddingBottom: 50, paddingTop: 10 }}
-                        />
-                    )}
                 </View>
             </LinearGradient>
+            
+            {/* Main Content Area (Light Background) */}
+            <View style={styles.mainContentArea}>
+
+                {/* Total Summary (Highlighted Card) */}
+                <View style={styles.totalWrapper}>
+                    <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 5}}>
+                        <Ionicons name="wallet-outline" size={20} color={MODERN_PRIMARY} style={{marginRight: 8}}/>
+                        <Text style={styles.totalText}>
+                            Overall Outstanding Balance:
+                        </Text>
+                    </View>
+                    <Text style={styles.totalAmount}>
+                        {formatCurrency(totalPending)}
+                    </Text>
+                </View>
+
+                {/* Group Filter */}
+                <View style={styles.dropdownWrapper}>
+                    <Text style={styles.dropdownLabel}>Filter by Group</Text>
+                    <View style={styles.pickerWrapper}>
+                        <Picker
+                            selectedValue={selectedGroup}
+                            onValueChange={(itemValue) => setSelectedGroup(itemValue)}
+                            style={styles.picker} 
+                        >
+                            <Picker.Item label="All Groups" value="all" color={MODERN_PRIMARY} />
+                            {groups.map((g) => (
+                                <Picker.Item 
+                                    key={g._id} 
+                                    label={g.group_name} 
+                                    value={g._id} 
+                                    color={MODERN_PRIMARY}
+                                />
+                            ))}
+                        </Picker>
+                    </View>
+                </View>
+
+                {/* Content List / Loader */}
+                {loading ? (
+                    <View style={styles.loader}>
+                        <ActivityIndicator size="large" color={ACCENT_BLUE} />
+                        <Text style={styles.loadingTextBlue}>Fetching reports...</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={filteredData}
+                        renderItem={renderItem}
+                        keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
+                        ListEmptyComponent={EmptyList}
+                        style={styles.flatListStyle}
+                        contentContainerStyle={styles.flatListContentContainer}
+                    />
+                )}
+            </View>
         </SafeAreaView>
     );
 };
@@ -281,115 +290,128 @@ Raw Item Data (Check for correct key names):`, item);
 export default ReferredReport;
 
 const styles = StyleSheet.create({
-    // FIX: Renamed from 'container' and added flex: 1
-    mainContentContainer: {
+    // --- LAYOUT STYLES (from OutstandingReports.js) ---
+    safeArea: { 
+        flex: 1, 
+        backgroundColor: TOP_GRADIENT[0] 
+    },
+    topContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 20,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    mainContentArea: {
         flex: 1,
+        backgroundColor: SUBTLE_BG_GREY, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30,
         paddingHorizontal: 16,
+        marginTop: -20, 
+        paddingTop: 30,
     },
-    // NEW STYLE FOR HEADER WRAPPER 
-    headerWrapper: {
-        paddingHorizontal: 16,
-        paddingTop: 10, // Small top padding for spacing
+    headerSpacer: { 
+        paddingTop: 20, 
+        paddingBottom: 5 
+    }, 
+
+    // --- TITLE STYLES (from OutstandingReports.js) ---
+    titleContainer: {
+        alignItems: 'center',
+        marginBottom: 15,
     },
-    // --- TITLES ---
     title: {
-        fontSize: 28,
-        fontWeight: "800",
-        color: MODERN_PRIMARY, // Changed color to modern primary
+        fontSize: 28, 
+        fontWeight: "900",
+        color: CARD_BG, 
         marginBottom: 4,
-        textAlign: 'center',
     },
     subtitle: {
-        fontSize: 15,
-        color: NEUTRAL_GREY, // Changed color to neutral grey
-        marginBottom: 20,
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.85)', 
+        fontWeight: '500',
         textAlign: 'center',
     },
 
-    // --- DROP DOWN / FILTER ---
+    // --- DROP DOWN / FILTER (from OutstandingReports.js) ---
     dropdownWrapper: {
-        backgroundColor: "#ffffff",
+        backgroundColor: CARD_BG,
         padding: 15,
-        borderRadius: 12,
+        borderRadius: 15, 
         marginBottom: 20,
-        // Stronger, cleaner shadow for better elevation
-        shadowColor: MODERN_PRIMARY, // Shadow based on primary color
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 5,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     dropdownLabel: {
         fontWeight: "700",
         marginBottom: 8,
         color: MODERN_PRIMARY,
-        fontSize: 16,
+        fontSize: 15,
     },
     pickerWrapper: {
         borderWidth: 1,
-        borderColor: "#e5e7eb",
-        borderRadius: 8,
+        borderColor: BORDER_COLOR,
+        borderRadius: 10,
         overflow: "hidden",
-        backgroundColor: "#f9fafb",
+        backgroundColor: SUBTLE_BG_GREY,
     },
     picker: {
-        height: 50,
+        color: MODERN_PRIMARY, 
+        height: 40,
     },
 
-    // --- TOTAL SUMMARY CARD ---
+    // --- TOTAL SUMMARY CARD (from OutstandingReports.js) ---
     totalWrapper: {
-        backgroundColor: "#fff7ed", // Soft orange/yellow background
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 20,
-        borderLeftWidth: 5,
-        borderLeftColor: "#f97316", // Vibrant orange
+        backgroundColor: "#fef3c7", 
+        borderRadius: 18,
+        padding: 20,
+        marginBottom: 25,
+        borderLeftWidth: 6,
+        borderLeftColor: ACCENT_BLUE, 
         alignItems: 'center',
-        shadowColor: "#f97316",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 4,
     },
     totalText: {
-        color: "#c2410c",
-        fontWeight: "600",
-        fontSize: 16,
-        marginBottom: 2,
+        color: MODERN_PRIMARY,
+        fontWeight: "700",
+        fontSize: 18,
     },
     totalAmount: {
         color: WARNING_RED,
-        fontWeight: "900",
-        fontSize: 24,
+        fontWeight: "900", 
+        fontSize: 28,
+        marginTop: 5,
     },
 
-    // --- REPORT CARD ---
+    // --- REPORT CARD (Matching OutstandingReports.js) ---
     cardContainer: {
-        flexDirection: 'row',
-        marginBottom: 15,
-    },
-    // UNIQUE IDEA: STATUS BAR
-    cardStatusIndicator: {
-        width: 6, // Width of the indicator
-        backgroundColor: 'red', // Default, will be overridden
-        borderTopLeftRadius: 16,
-        borderBottomLeftRadius: 16,
-        height: 'auto',
+        backgroundColor: CARD_BG,
+        borderRadius: 18, 
+        marginBottom: 18,
+        overflow: 'hidden', 
+        shadowColor: MODERN_PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05, 
+        shadowRadius: 8,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR,
     },
     card: {
         flex: 1, 
-        backgroundColor: "#ffffff",
-        borderTopRightRadius: 16, 
-        borderBottomRightRadius: 16, 
         padding: 20,
-        // Premium, larger shadow
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 }, // Reduced shadow height for a cleaner look
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-        elevation: 7, // Reduced elevation
-        marginLeft: -6, // Overlap the indicator bar to make it look cohesive
-        zIndex: 1,
     },
 
     // CARD CONTENT
@@ -400,103 +422,141 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         paddingBottom: 10,
         borderBottomWidth: 1,
-        borderBottomColor: "#f3f4f6",
+        borderBottomColor: BORDER_COLOR,
     },
     groupName: {
-        flex: 1,
-        fontSize: 17,
-        fontWeight: "800",
+        fontSize: 18,
+        fontWeight: "900", 
         color: MODERN_PRIMARY,
         marginRight: 10,
+        flexShrink: 1, 
     },
-    paymentType: {
-        fontSize: 13,
-        color: MODERN_PRIMARY,
-        textTransform: "capitalize",
-        fontWeight: "600",
-        backgroundColor: "#eef2ff", // Light blue background for a tag feel
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 5,
+    statusTag: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 15,
+        alignSelf: 'flex-start', 
+    },
+    statusTagText: {
+        fontSize: 12,
+        fontWeight: "700",
+        textTransform: 'uppercase',
     },
     cardBody: {
         marginBottom: 15,
     },
     customerName: {
-        fontSize: 19,
-        fontWeight: "800",
-        color: "#1f2937",
+        fontSize: 22,
+        fontWeight: "900",
+        color: MODERN_PRIMARY,
         marginBottom: 5,
     },
     customerInfo: {
         fontSize: 14,
         color: NEUTRAL_GREY,
-        marginTop: 3,
+        marginTop: 5,
         fontWeight: "500",
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     cardFinancial: {
         paddingTop: 10,
     },
+    
+    // ⚠️ MODIFIED: Compact row for label and value
+    financialRowCompact: {
+        flexDirection: "row",
+        justifyContent: "flex-start", // Changed from "space-between"
+        alignItems: 'baseline',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: BORDER_COLOR,
+    },
+    financialLabelCompact: {
+        fontSize: 15,
+        color: NEUTRAL_GREY,
+        fontWeight: "500",
+        marginRight: 8, // Added small margin for separation
+    },
+    // The original financialRow and financialLabel are kept, but unused in renderItem
+
     financialRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        paddingVertical: 8,
+        paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: "#f3f4f6",
+        borderBottomColor: BORDER_COLOR,
     },
     financialLabel: {
         fontSize: 15,
-        color: "#374151",
-        fontWeight: "600",
+        color: NEUTRAL_GREY,
+        fontWeight: "500",
     },
+    
     financialValue: {
-        fontSize: 15,
-        color: "#1f2937",
-        fontWeight: "700",
+        fontSize: 16,
+        color: MODERN_PRIMARY,
+        fontWeight: "800",
     },
-    // Balance Row (Stands out)
-    balanceRow: {
+    
+    // Balance Row (Stands out - Compact)
+    balanceRowCompact: { // Renamed for clarity, using the same style logic as balanceRow, but removing space-between
+        flexDirection: "row",
+        justifyContent: "flex-start", // Changed from "space-between"
+        paddingVertical: 15,
+        marginTop: 10,
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        borderWidth: 1,
+        alignItems: 'baseline',
+    },
+    balanceRow: { // Original style, kept but unused in renderItem
         flexDirection: "row",
         justifyContent: "space-between",
-        paddingVertical: 10,
+        paddingVertical: 15,
         marginTop: 10,
-        // Background color is set dynamically in renderItem
-        borderRadius: 8,
-        paddingHorizontal: 12,
+        borderRadius: 12,
+        paddingHorizontal: 15,
         borderWidth: 1,
-        borderColor: '#fef3c7'
     },
     balanceLabel: {
-        fontSize: 16,
-        // Color is set dynamically in renderItem
+        fontSize: 13,
         fontWeight: "700",
     },
     balanceValue: {
         fontSize: 17,
-        // Color is set dynamically in renderItem
         fontWeight: "900",
     },
     
+    // --- FLATLIST ---
+    flatListStyle: {
+        flex: 1,
+    },
+    flatListContentContainer: {
+        paddingBottom: 120, 
+    },
+
     // --- LOADER/EMPTY STATE ---
     loader: {
         alignItems: "center",
         justifyContent: "center",
-        marginTop: 50,
+        minHeight: height * 0.4,
+    },
+    loadingTextBlue: {
+        marginTop: 10,
+        color: ACCENT_BLUE,
+        fontSize: 16,
+        fontWeight: '600'
     },
     emptyContainer: {
         alignItems: "center",
         marginTop: 80,
         padding: 20,
     },
-    emptyImage: {
-        width: 200,
-        height: 160,
-        opacity: 0.8,
-    },
     emptyText: {
         color: NEUTRAL_GREY,
-        marginTop: 20,
-        fontWeight: "700",
+        marginTop: 15,
+        fontWeight: "600",
         fontSize: 18,
     },
 });
