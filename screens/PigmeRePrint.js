@@ -151,6 +151,9 @@ Collected by: ${agent_name || "N/A"}
   };
 
   const generatePosReceiptHtml = (size) => {
+    // Determine if it's the 58mm print to show the duplicate copy text
+    const isDuplicate = size === "58mm";
+
     // NOTE: Hardcoded "Loan" and "loab" for non-Pigme group is preserved from original code
     const groupOrPigmeHtml = isPigmePayment
       ? `<p style="margin: 0; font-weight: bold;">Pigmy ID: ${
@@ -219,6 +222,7 @@ Collected by: ${agent_name || "N/A"}
           <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
             ${isPigmePayment ? "Pigmy Receipt" : "Receipt"}
           </p>
+          
             <p style="margin: 0;">
          <br/>
           <span style="font-weight: bold;">Date:</span> ${formatDate(pay_date)}
@@ -257,7 +261,14 @@ Collected by: ${agent_name || "N/A"}
           <span style="font-weight: bold;">Collected By:</span> ${
             agent_name || "N/A"
           }</p>
-          <p style="text-align: center; font-size: 12px; margin-top: 10px;">*** Thank You ***</p>
+          <p style="text-align: center; font-size: 10px; margin-top: 10px;">*** Thank You ***</p>
+          
+          ${
+            isDuplicate // Corrected to use lowercase. Font-size is already 11px.
+              ? `<p style="margin-top: 5px; text-align: center; font-weight:bold; font-size: 11px;">duplicate copy</p>`
+              : ""
+          }
+
           <p style="height: 100px;">&nbsp;</p> </div>
       </body>
       </html>
