@@ -38,7 +38,7 @@ const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
 const SUCCESS_COLOR = "#4CAF50"; // Retaining for success
 
 // 💡 NEW DISTINCT COLOR FOR THE "MY OVERVIEW" CARD
-const HIGHLIGHT_GOLD = '#eed1a4ff'; 
+const HIGHLIGHT_GOLD = '#f5be6dff'; 
 // -----------------------------------------------------------------
 
 const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`; // Updated URL based on usage in handleSubmitAttendance
@@ -57,7 +57,7 @@ const cardImagePaths = {
   commission: require("../assets/commissions1.png"),
   groups: require("../assets/groups1.png"),
   customerOnHold: require("../assets/Holdon2.png"),
-  monthlyTurnover: require("../assets/MITB.png"), // Monthly Turnover image path
+  monthlyTurnover: require("../assets/MITB.png"), 
   DueReportImage: require("../assets/dues.png"),
 };
 

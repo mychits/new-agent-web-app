@@ -162,6 +162,8 @@ Collected by: ${agent_name || "N/A"}
     // FIX: Define the 'size' variable for the HTML template to use the correct width.
     const size = `${widthMM}mm`; 
     
+    // Determine if it's the 58mm print to show the duplicate copy text
+    const isDuplicate = widthMM === 58;
 
     const groupOrLoanHtml = isLoanPayment
       ? `<p style="margin: 0; font-weight: bold;">Loan ID: ${custom_loan_id || "N/A"
@@ -215,6 +217,7 @@ Collected by: ${agent_name || "N/A"}
           <p style="text-align: center; font-weight:bold; margin-top: 0; margin-bottom: 10px;">
             ${isLoanPayment ? "LOAN RECEIPT" : "RECEIPT"}
           </p>
+          
           <p>
            <span style="font-weight: bold;">Loan Amount:</span> ${loanAmount || "N/A"
       } <br/>
@@ -255,7 +258,14 @@ Collected by: ${agent_name || "N/A"}
           <div class="line"></div>
           <p><span style="font-weight: bold;">Collected By:</span> ${agent_name || "N/A"
       }</p>
-          <p style="margin-top: 10px; text-align: center; font-size: 0.9em;">*** Thank You ***</p>
+          
+          <p style="margin-top: 10px; text-align: center; font-size: 10px;">*** Thank You ***</p> 
+          
+          ${
+            isDuplicate 
+              ? `<p style="margin-top: 5px; text-align: center; font-weight:bold; font-size: 8px;">duplicate copy</p>`
+              : ""
+          }
         </div>
       </body>
       </html>

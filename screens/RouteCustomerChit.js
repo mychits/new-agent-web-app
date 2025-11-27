@@ -57,7 +57,7 @@ const RouteCustomer = ({ route, navigation }) => {
   useEffect(() => {
     const fetchEmployee = async () => {
       try {
-        const response = await axios.get(`${baseUrl}/agent/get-employee`);
+        const response = await axios.get(`${baseUrl}/employee`);
         setAgent(response?.data?.employee);
       } catch (error) {
         console.error("unable to get agent id");
