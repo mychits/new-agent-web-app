@@ -21,7 +21,18 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.gagansk.agentapp"
+      "package": "com.gagansk.agentapp",
+      
+      "queries": [
+        {
+          "schemes": [
+            "whatsapp", 
+            "mailto",
+            "tel"
+          ]
+        }
+      ]
+     
     },
     "web": {
       "favicon": "./assets/favicon.png"
