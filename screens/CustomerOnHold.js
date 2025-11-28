@@ -153,12 +153,15 @@ const CustomerOnHold = () => {
   const handleWhatsApp = async (phoneNumber) => {
     if (!phoneNumber) return;
     try {
+      // The URL format is correct: `whatsapp://send?phone=` 
       const url = `whatsapp://send?phone=${phoneNumber}`;
       const supported = await Linking.canOpenURL(url);
 
       if (supported) {
         await Linking.openURL(url);
       } else {
+        // This is the alert you were seeing, which means the OS couldn't verify WhatsApp 
+        // (due to missing 'queries' in app.json on Android 11+).
         Alert.alert("Error", "WhatsApp is not installed on this device.");
       }
     } catch (error) {
