@@ -248,7 +248,8 @@ const AddCustomer = ({ route, navigation }) => {
               </Text>
             </TouchableOpacity>
             
-           
+            
+            
             
             {/* Full Name */}
             <InputField
@@ -300,6 +301,7 @@ const AddCustomer = ({ route, navigation }) => {
                 selectedValue={selectedCustomerType}
                 onValueChange={(val) => setSelectedCustomerType(val)}
                 style={styles.picker}
+                itemStyle={styles.pickerItem} 
               >
                 <Picker.Item label="Chit" value="chit" />
                 <Picker.Item label="Gold Chit" value="goldChit" />
@@ -495,8 +497,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginTop: 5,
     marginBottom: 15,
+    // *** MODIFIED *** Increased height on Android to prevent clipping
+    height: Platform.OS === "android" ? 55 : undefined, 
   },
-  picker: { height: 50, color: "#333" },
+  picker: { 
+    // *** MODIFIED *** Increased height to match container on Android
+    height: Platform.OS === "android" ? 55 : 100, 
+    color: "#333", 
+  },
+  pickerItem: {
+    // Set item height to match the picker
+    fontSize: 14, 
+    height: 55, 
+  },
   // ✅ New style for the password eye icon
   passwordToggle: {
     paddingLeft: 10, // Add some padding for better tap area

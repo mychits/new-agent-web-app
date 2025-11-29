@@ -14,9 +14,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
-import { Ionicons } from "@expo/vector-icons"; 
+import { Ionicons } from "@expo/vector-icons";
 import Header from "../components/Header";
-import url from "../constants/baseUrl"; 
+import url from "../constants/baseUrl";
 
 const { height } = Dimensions.get('window');
 
@@ -29,7 +29,7 @@ const WARNING_RED = "#dc2626";    // Strong red for negative/balance
 const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
 const BORDER_COLOR = "#e0e0e0"; // Lighter border
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; 
+const SUBTLE_BG_GREY = '#f9fafb';
 
 // --- UPDATED API CONSTANTS ---
 const DUE_API = `${url}/enroll/due/referral-agent/`;
@@ -44,10 +44,10 @@ if (
 }
 
 /**
- * Formats a number into Indian Rupee currency string.
- * @param {number|string} amount 
- * @returns {string} Formatted currency string
- */
+ * Formats a number into Indian Rupee currency string.
+ * @param {number|string} amount
+ * @returns {string} Formatted currency string
+ */
 const formatCurrency = (amount) => {
     if (amount === undefined || amount === null) return "₹0.00";
     const num = typeof amount === "number" ? amount : parseFloat(amount);
@@ -61,7 +61,7 @@ const formatCurrency = (amount) => {
 const ReferredReport = ({ route }) => {
     // Ensure user data is available
     const { user } = route.params || {};
-    
+
     const [groups, setGroups] = useState([]);
     const [dues, setDues] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
@@ -96,7 +96,7 @@ const ReferredReport = ({ route }) => {
 
                 setGroups(allGroups);
                 setDues(allDues);
-                
+
                 // *** ANIMATION TRIGGER ***
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setFilteredData(allDues);
@@ -112,7 +112,7 @@ const ReferredReport = ({ route }) => {
     // Filter dues by group
     useEffect(() => {
         // *** ANIMATION TRIGGER ***
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); 
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         if (selectedGroup === "all") setFilteredData(dues);
         else
             setFilteredData(
@@ -123,14 +123,14 @@ const ReferredReport = ({ route }) => {
     const renderItem = ({ item }) => {
         // Data structure cleanup: Assuming referred data structure looks like:
         // { user: { full_name, email, phone_number }, group: { group_name }, ...financial data }
-        
+
         // Use user_id and group_id nested objects if the structure matches OutstandingReports
         // Otherwise, use the simpler structure:
         const name = item?.user?.full_name || item?.user_id?.full_name || "Unknown";
         const email = item?.user?.email;
         const phone = item?.user?.phone_number;
         const groupName = item?.group?.group_name || item?.group_id?.group_name || "N/A";
-        
+
         // Safely extract financial values which might be nested in an array
         const getFinancialValue = (value) =>
             Array.isArray(value) && value.length > 0 ? value[0] : value || 0;
@@ -138,7 +138,7 @@ const ReferredReport = ({ route }) => {
         const totalPayable = getFinancialValue(item.total_payable_amount);
         const totalToBePaid = item?.total_to_be_paid || 0;
         const balance = item?.balance || item?.Balance || 0;
-        
+
         // Status bar color: Red for positive balance (outstanding), Green otherwise
         const statusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
 
@@ -165,7 +165,7 @@ const ReferredReport = ({ route }) => {
 
                     {/* Financial Info */}
                     <View style={styles.cardFinancial}>
-                        
+
                         {/* ⚠️ MODIFIED: Total Paid Row (Compact) */}
                         <View style={styles.financialRowCompact}>
                             <Text style={styles.financialLabelCompact}>Total Paid :</Text>
@@ -173,11 +173,11 @@ const ReferredReport = ({ route }) => {
                                 {formatCurrency(totalToBePaid)}
                             </Text>
                         </View>
-                        
+
                         {/* ⚠️ MODIFIED: Total Payable Row (Compact) */}
                         <View style={styles.financialRowCompact}>
                             <Text style={styles.financialLabelCompact}>Total Payable :</Text>
-                            <Text style={[styles.financialValue, {color: ACCENT_GREEN}]}>
+                            <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
                                 {formatCurrency(totalPayable)}
                             </Text>
                         </View>
@@ -227,14 +227,14 @@ const ReferredReport = ({ route }) => {
                     </Text>
                 </View>
             </LinearGradient>
-            
+
             {/* Main Content Area (Light Background) */}
             <View style={styles.mainContentArea}>
 
                 {/* Total Summary (Highlighted Card) */}
                 <View style={styles.totalWrapper}>
-                    <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 5}}>
-                        <Ionicons name="wallet-outline" size={20} color={MODERN_PRIMARY} style={{marginRight: 8}}/>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                        <Ionicons name="wallet-outline" size={20} color={MODERN_PRIMARY} style={{ marginRight: 8 }} />
                         <Text style={styles.totalText}>
                             Overall Outstanding Balance:
                         </Text>
@@ -251,14 +251,14 @@ const ReferredReport = ({ route }) => {
                         <Picker
                             selectedValue={selectedGroup}
                             onValueChange={(itemValue) => setSelectedGroup(itemValue)}
-                            style={styles.picker} 
+                            style={styles.picker}
                         >
                             <Picker.Item label="All Groups" value="all" color={MODERN_PRIMARY} />
                             {groups.map((g) => (
-                                <Picker.Item 
-                                    key={g._id} 
-                                    label={g.group_name} 
-                                    value={g._id} 
+                                <Picker.Item
+                                    key={g._id}
+                                    label={g.group_name}
+                                    value={g._id}
                                     color={MODERN_PRIMARY}
                                 />
                             ))}
@@ -291,9 +291,9 @@ export default ReferredReport;
 
 const styles = StyleSheet.create({
     // --- LAYOUT STYLES (from OutstandingReports.js) ---
-    safeArea: { 
-        flex: 1, 
-        backgroundColor: TOP_GRADIENT[0] 
+    safeArea: {
+        flex: 1,
+        backgroundColor: TOP_GRADIENT[0]
     },
     topContainer: {
         paddingHorizontal: 16,
@@ -306,17 +306,17 @@ const styles = StyleSheet.create({
     },
     mainContentArea: {
         flex: 1,
-        backgroundColor: SUBTLE_BG_GREY, 
-        borderTopLeftRadius: 30, 
+        backgroundColor: SUBTLE_BG_GREY,
+        borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         paddingHorizontal: 16,
-        marginTop: -20, 
+        marginTop: -20,
         paddingTop: 30,
     },
-    headerSpacer: { 
-        paddingTop: 20, 
-        paddingBottom: 5 
-    }, 
+    headerSpacer: {
+        paddingTop: 20,
+        paddingBottom: 5
+    },
 
     // --- TITLE STYLES (from OutstandingReports.js) ---
     titleContainer: {
@@ -324,14 +324,14 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     title: {
-        fontSize: 28, 
+        fontSize: 28,
         fontWeight: "900",
-        color: CARD_BG, 
+        color: CARD_BG,
         marginBottom: 4,
     },
     subtitle: {
         fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.85)', 
+        color: 'rgba(255, 255, 255, 0.85)',
         fontWeight: '500',
         textAlign: 'center',
     },
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     dropdownWrapper: {
         backgroundColor: CARD_BG,
         padding: 15,
-        borderRadius: 15, 
+        borderRadius: 15,
         marginBottom: 20,
         borderWidth: 1,
         borderColor: BORDER_COLOR,
@@ -362,20 +362,26 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         overflow: "hidden",
         backgroundColor: SUBTLE_BG_GREY,
+        // ** FIX 1: Increased height for Android container **
+        height: Platform.OS === 'android' ? 55 : 40,
+        justifyContent: 'center',
     },
     picker: {
-        color: MODERN_PRIMARY, 
-        height: 40,
+        color: MODERN_PRIMARY,
+        // ** FIX 2: Increased height for Android Picker **
+        height: Platform.OS === 'android' ? 55 : 40,
+        // ** FIX 3: CRITICAL for Android text alignment **
+        ...(Platform.OS === 'android' && { textAlignVertical: 'center' }),
     },
 
     // --- TOTAL SUMMARY CARD (from OutstandingReports.js) ---
     totalWrapper: {
-        backgroundColor: "#fef3c7", 
+        backgroundColor: "#fef3c7",
         borderRadius: 18,
         padding: 20,
         marginBottom: 25,
         borderLeftWidth: 6,
-        borderLeftColor: ACCENT_BLUE, 
+        borderLeftColor: ACCENT_BLUE,
         alignItems: 'center',
         shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 4 },
@@ -390,7 +396,7 @@ const styles = StyleSheet.create({
     },
     totalAmount: {
         color: WARNING_RED,
-        fontWeight: "900", 
+        fontWeight: "900",
         fontSize: 28,
         marginTop: 5,
     },
@@ -398,19 +404,19 @@ const styles = StyleSheet.create({
     // --- REPORT CARD (Matching OutstandingReports.js) ---
     cardContainer: {
         backgroundColor: CARD_BG,
-        borderRadius: 18, 
+        borderRadius: 18,
         marginBottom: 18,
-        overflow: 'hidden', 
+        overflow: 'hidden',
         shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05, 
+        shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 4,
         borderWidth: 1,
         borderColor: BORDER_COLOR,
     },
     card: {
-        flex: 1, 
+        flex: 1,
         padding: 20,
     },
 
@@ -426,16 +432,16 @@ const styles = StyleSheet.create({
     },
     groupName: {
         fontSize: 18,
-        fontWeight: "900", 
+        fontWeight: "900",
         color: MODERN_PRIMARY,
         marginRight: 10,
-        flexShrink: 1, 
+        flexShrink: 1,
     },
     statusTag: {
         paddingHorizontal: 10,
         paddingVertical: 5,
         borderRadius: 15,
-        alignSelf: 'flex-start', 
+        alignSelf: 'flex-start',
     },
     statusTagText: {
         fontSize: 12,
@@ -462,7 +468,7 @@ const styles = StyleSheet.create({
     cardFinancial: {
         paddingTop: 10,
     },
-    
+
     // ⚠️ MODIFIED: Compact row for label and value
     financialRowCompact: {
         flexDirection: "row",
@@ -492,13 +498,13 @@ const styles = StyleSheet.create({
         color: NEUTRAL_GREY,
         fontWeight: "500",
     },
-    
+
     financialValue: {
         fontSize: 16,
         color: MODERN_PRIMARY,
         fontWeight: "800",
     },
-    
+
     // Balance Row (Stands out - Compact)
     balanceRowCompact: { // Renamed for clarity, using the same style logic as balanceRow, but removing space-between
         flexDirection: "row",
@@ -527,13 +533,13 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: "900",
     },
-    
+
     // --- FLATLIST ---
     flatListStyle: {
         flex: 1,
     },
     flatListContentContainer: {
-        paddingBottom: 120, 
+        paddingBottom: 120,
     },
 
     // --- LOADER/EMPTY STATE ---

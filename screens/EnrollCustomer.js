@@ -54,6 +54,7 @@ const EnrollCustomer = ({ route, navigation }) => {
     no_of_tickets: "",
     tickets: "",
   });
+
   useEffect(() => {
     const fetchGroups = async () => {
       try {
@@ -65,7 +66,8 @@ const EnrollCustomer = ({ route, navigation }) => {
       }
     };
     fetchGroups();
-  }, [selectedCustomerType]);
+  }, [selectedCustomerType, baseUrl]);
+  
   useEffect(() => {
     const fetchAgentUsers = async () => {
       try {
@@ -77,7 +79,8 @@ const EnrollCustomer = ({ route, navigation }) => {
       }
     };
     fetchAgentUsers();
-  }, [selectedCustomerType]);
+  }, [selectedCustomerType, baseUrl]);
+  
   useEffect(() => {
     const fetchReceipt = async () => {
       try {
@@ -90,7 +93,7 @@ const EnrollCustomer = ({ route, navigation }) => {
       }
     };
     fetchReceipt();
-  }, []);
+  }, [user.userId]);
 
   const filteredCustomers = agentCustomers.filter((customer) =>
     customer.full_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -115,9 +118,10 @@ const EnrollCustomer = ({ route, navigation }) => {
       },
     ]);
   };
+  
   const handleInputChange = async (field, value) => {
     setFormFields({ ...formFields, [field]: value });
-    if (field === "group_id") {
+    if (field === "group_id" && value) {
       try {
         const response = await axios.post(
           `${baseUrl}/enroll/get-next-tickets/${value}`
@@ -127,40 +131,41 @@ const EnrollCustomer = ({ route, navigation }) => {
         setAvailableTickets(response.data.availableTickets);
       } catch (err) {
         console.error("Error fetching next tickets");
+        setAvailableTickets([]); // Clear tickets on error
       }
+    } else if (field === "group_id" && !value) {
+        setAvailableTickets([]); // Clear tickets if no group is selected
     }
   };
 
   const handleEnrollCustomer = async () => {
-    if (!formFields.no_of_tickets || isNaN(formFields.no_of_tickets)) {
+    if (!formFields.group_id || !formFields.user_id) {
+      Alert.alert("Required", "Please select a Customer and a Group.");
+      return;
+    }
+    
+    if (!formFields.no_of_tickets || isNaN(formFields.no_of_tickets) || Number(formFields.no_of_tickets) <= 0) {
       ToastAndroid.showWithGravity(
-        "Number of tickets cannot be empty or zero.",
+        "Number of tickets must be a valid number greater than zero.",
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER
+      );
+      return;
+    }
+    
+    const ticketsCount = parseInt(formFields.no_of_tickets, 10);
+    
+    if (ticketsCount > availableTickets.length) {
+      ToastAndroid.showWithGravity(
+        `Number of Tickets is more than available tickets. Only ${availableTickets.length} available.`,
         ToastAndroid.SHORT,
         ToastAndroid.CENTER
       );
       return;
     }
 
-    if (Number(formFields.no_of_tickets) > availableTickets.length) {
-      ToastAndroid.showWithGravity(
-        "Number of Tickets is more than available tickets.",
-        ToastAndroid.SHORT,
-        ToastAndroid.CENTER
-      );
-      return;
-    }
-
-    if (
-      !formFields.user_id ||
-      !formFields.group_id ||
-      !formFields.no_of_tickets
-    ) {
-      Alert.alert("Required", "Please fill out all fields!");
-      return;
-    }
-
-    const { no_of_tickets, group_id, user_id } = formFields;
-    const ticketsCount = parseInt(no_of_tickets, 10);
+    const { group_id, user_id } = formFields;
+    
 
     setIsLoading(true);
 
@@ -176,14 +181,15 @@ const EnrollCustomer = ({ route, navigation }) => {
         created_by: user.userId,
 
         // 🔑 Add required defaults
-        payment_type: "cash", // or "online" (choose what fits your app)
-        referred_type: "self", // or "agent" / "customer"
+        payment_type: "cash", 
+        referred_type: "self", 
         referred_customer: null,
         referred_lead: null,
         chit_asking_month: "0",
       }));
 
     try {
+      // Loop through and post each ticket entry
       for (const ticketEntry of ticketEntries) {
         await axios.post(`${baseUrl}/enroll/add-enroll`, ticketEntry);
       }
@@ -195,10 +201,11 @@ const EnrollCustomer = ({ route, navigation }) => {
         no_of_tickets: "",
       });
 
+      // Navigate back to the main screen after successful enrollment
       navigation.replace("BottomNavigation", { user: { ...user } });
     } catch (error) {
-      console.error("Error adding :", error?.response?.data || error.message);
-      Alert.alert("Error", "Error Enrolling Customer. Please try again.");
+      console.error("Error enrolling customer:", error?.response?.data || error.message);
+      Alert.alert("Error", error?.response?.data?.message || "Error Enrolling Customer. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -211,7 +218,7 @@ const EnrollCustomer = ({ route, navigation }) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
-        {/* Top Header Section with Gradient (Copied from Due.js) */}
+        {/* Top Header Section with Gradient */}
         <LinearGradient
             colors={TOP_GRADIENT}
             style={styles.topContainer}
@@ -476,7 +483,7 @@ const styles = StyleSheet.create({
   inputGroup: {
     flexDirection: "row",
     alignItems: "center",
-    height: 50, // Slightly taller
+    height: 50, // Standard height for TextInputs
     backgroundColor: CARD_BG,
     borderRadius: 12, // Rounded corners for inputs
     paddingHorizontal: 15,
@@ -503,13 +510,19 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     fontSize: 16,
   },
+  // *** PICKER STYLES MODIFIED FOR ANDROID VISIBILITY ***
   pickerInput: {
     paddingHorizontal: 0,
+    height: Platform.OS === 'android' ? 55 : 50, // Increased height for Android
+    justifyContent: 'center', // Vertical alignment helper
   },
   picker: {
     flex: 1,
-    height: "100%",
+    height: Platform.OS === 'android' ? 55 : 50, // Picker component height matches container
+    // CRITICAL FIX FOR ANDROID TEXT ALIGNMENT
+    ...(Platform.OS === 'android' && { textAlignVertical: 'center' }), 
   },
+  // *** END OF PICKER MODIFICATIONS ***
   selectedCustomerText: {
     color: MODERN_PRIMARY,
     paddingLeft: 0, // No extra padding needed if inputGroup has it
