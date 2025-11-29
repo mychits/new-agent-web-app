@@ -49,28 +49,15 @@ const RouteCustomer = ({ route, navigation }) => {
   const { user } = route.params;
 
   const [search, setSearch] = useState("");
-  const [agent, setAgent] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch Employee (Agent) ID
-  useEffect(() => {
-    const fetchEmployee = async () => {
-      try {
-          const response = await axios.get(`${baseUrl}/employee`);
-        setAgent(response?.data?.employee);
-      } catch (error) {
-        console.error("unable to get agent id");
-      }
-    };
-    fetchEmployee();
-  }, []);
+
 
   // Fetch Customers for the Agent
   useEffect(() => {
     const fetchCustomers = async () => {
-      if (!agent || agent.length === 0) return;
-
       try {
         setLoading(true);
 
@@ -97,7 +84,7 @@ const RouteCustomer = ({ route, navigation }) => {
     };
 
     fetchCustomers();
-  }, [agent]);
+  }, []);
 
   // Filtering Logic
   const filteredCustomers = Array.isArray(customers)
