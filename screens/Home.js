@@ -46,7 +46,7 @@ const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`; // Updated
 const cardImagePaths = {
   attendence: require("../assets/ab.png"),
   collections: require("../assets/Collection2.png"),
-  qrCode: require("../assets/qrcode.png"),
+  qrCode: require("../assets/upi_qr (1).png"),
   daybook: require("../assets/Daybook2.png"),
   targets: require("../assets/Target2.png"),
   myLeads: require("../assets/Lead1.png"),

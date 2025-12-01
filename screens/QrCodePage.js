@@ -23,14 +23,10 @@ const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
 
 const QrCodePage = () => {
     // Assuming this asset path is correct for the user's project structure
-    const qrCodeImage = require("../assets/kotak_bank_qr.jpeg"); 
+    const qrCodeImage = require("../assets/upi_qr (1).png"); 
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
-            {/* =======================================================
-               FIXED TOP SECTION (Gradient, Header, Title)
-               =======================================================
-            */}
             <LinearGradient
                 colors={TOP_GRADIENT}
                 style={styles.fixedHeaderArea}
