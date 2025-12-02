@@ -10,36 +10,33 @@ import {
     Image,
     Animated,
     Dimensions,
-    Easing,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons } from "@expo/vector-icons";
-import Icon from "react-native-vector-icons/FontAwesome";
-import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context"; 
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get('window');
 
-const noImage = require('../assets/no.png'); // Assuming this path is correct
+// Assuming this path is correct
+const noImage = require('../assets/no.png'); 
 
-// --- DESIGN CONSTANTS COPIED FROM RouteCustomerPigme.js ---
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers (Used instead of secondary)
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent (Used instead of primary)
-const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext (Used instead of softGrey)
+// --- DESIGN CONSTANTS ---
+const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
+const MODERN_PRIMARY = "#0d0d0eff"; 
+const ACCENT_BLUE = "#1796d1ff"; 
+const TEXT_GREY = "#4b5563"; 
 const CARD_BG = "#ffffff";
-// MODIFICATION 1: Setting SUBTLE_BG_GREY to white (CARD_BG)
-const SUBTLE_BG_GREY = CARD_BG; // Very light background for content area (Used instead of backgroundLight)
-// ---------------------------------------------
+const SUBTLE_BG_GREY = CARD_BG; 
+// ------------------------
 
-import COLORS from "../constants/color"; 
 import Header from "../components/Header";
-import baseUrl from "../constants/baseUrl";
+import baseUrl from "../constants/baseUrl"; // Ensure this path and content is correct
 
-const CustomCommissionCard = ({ title, icon, value, onPress }) => (
-    <TouchableOpacity onPress={onPress} style={styles.card}>
+// UPDATED: CustomCommissionCard now accepts 'showArrow' prop
+const CustomCommissionCard = ({ title, icon, value, onPress, showArrow = true }) => (
+    <TouchableOpacity onPress={onPress} style={styles.card} disabled={!showArrow}>
         <View style={styles.cardContent}>
             <View style={styles.iconContainer}>
                 <MaterialIcons name={icon} size={24} style={styles.cardIcon} />
@@ -49,15 +46,10 @@ const CustomCommissionCard = ({ title, icon, value, onPress }) => (
                 <Text style={styles.cardSubText}>{value}</Text>
             </View>
         </View>
-        <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />
+        {/* CONDITIONAL RENDER: Only show arrow if showArrow is true */}
+        {showArrow && <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />}
     </TouchableOpacity>
 );
-
-
-// --------------------------------------------------------
-// --- CONFETTI SHOWER COMPONENT (REMOVED) ---
-// The ConfettiFall component is removed as per request.
-// --------------------------------------------------------
 
 
 const Commissions = ({ route, navigation }) => {
@@ -66,17 +58,16 @@ const Commissions = ({ route, navigation }) => {
 
     const [isChitLoading, setIsChitLoading] = useState(false);
     const [isGoldLoading, setIsGoldLoading] = useState(false);
-    const [commissions, setCommissions] = useState({}); 
+    const [isLoanLoading, setIsLoanLoading] = useState(false);
+    const [isPigmyLoading, setIsPigmyLoading] = useState(false);
+
+    const [commissions, setCommissions] = useState({});
     const [activeTab, setActiveTab] = useState("CHIT");
-    
-    // MODIFICATION 2: Removed state for confetti elements:
-    // const [confettiElements, setConfettiElements] = useState([]);
-    
+
     // Animation values for card list slide-in
-    const cardListOpacity = React.useRef(new Animated.Value(0)).current; 
-    const dataContainerTranslateY = React.useRef(new Animated.Value(-height * 0.1)).current; 
-    
-    // ... (utility functions remain the same) ...
+    const cardListOpacity = React.useRef(new Animated.Value(0)).current;
+    const dataContainerTranslateY = React.useRef(new Animated.Value(-height * 0.1)).current;
+
     const handleEstimatedCommission = () => {
         navigation.navigate("ExpectedCommissions", { user: currentUser });
     };
@@ -85,92 +76,168 @@ const Commissions = ({ route, navigation }) => {
         navigation.navigate("MyCommission", { commissions: commissions });
     };
 
-    const handleMyCustomers = () => {
-        navigation.navigate("ViewEnrollments", { user: currentUser });
+    /**
+     * UPDATED FUNCTION: Navigates to a different customer screen
+     * based on the currently active tab.
+     */
+    const handleMyCustomers = (tab) => {
+        if (tab === "PIGMY") {
+            navigation.navigate("RouteCustomerPigme", { user: currentUser });
+        } else if (tab === "LOAN") {
+            navigation.navigate("RouteCustomerLoan", { user: currentUser });
+        } else {
+            // Default navigation for CHIT/GOLD
+            navigation.navigate("ViewEnrollments", { user: currentUser });
+        }
     };
 
     const handleGroups = () => {
         navigation.navigate("EnrolledGroups", { user: currentUser });
     };
 
+    // Card data now includes a 'schemeType' array for filtering
     const scrollData = [
-        { title: "Customers", icon: "person", value: "total_customers", key: "#1", handlePress: handleMyCustomers },
-        { title: "Groups", icon: "group", value: "total_groups", key: "#2", handlePress: handleGroups },
-        { title: "My Business", icon: "query-stats", value: "actual_business", key: "#6", handlePress: handleMyCommission },
-        { title: "Estimated Business", icon: "trending-up", value: "expected_business", key: "#5", handlePress: handleEstimatedCommission },
-        { title: "My Commission", icon: "payments", value: "total_actual", key: "#4", handlePress: handleMyCommission },
-        { title: "Estimated Commission", icon: "currency-rupee", value: "total_estimated", key: "#3", handlePress: handleEstimatedCommission },
+        // handlePress: null as it's dynamically set in renderCardList
+        { title: "Customers", icon: "person", value: "total_customers", key: "#1", handlePress: null, schemeType: ["CHIT", "GOLD", "LOAN", "PIGMY"] },
+        { title: "Groups", icon: "group", value: "total_groups", key: "#2", handlePress: handleGroups, schemeType: ["CHIT", "GOLD"] }, 
+        { title: "My Business", icon: "query-stats", value: "actual_business", key: "#6", handlePress: handleMyCommission, schemeType: ["CHIT", "GOLD", "LOAN", "PIGMY"] },
+        { title: "Estimated Business", icon: "trending-up", value: "expected_business", key: "#5", handlePress: handleEstimatedCommission, schemeType: ["CHIT", "GOLD"] },
+        { title: "My Commission", icon: "payments", value: "total_actual", key: "#4", handlePress: handleMyCommission, schemeType: ["CHIT", "GOLD"] },
+        { title: "Estimated Commission", icon: "currency-rupee", value: "total_estimated", key: "#3", handlePress: handleEstimatedCommission, schemeType: ["CHIT", "GOLD"] },
     ];
 
     const hasData = commissions?.summary && Object.keys(commissions.summary).length > 0;
 
-    // MODIFICATION 2: Removed startConfettiAnimation function:
-    // const startConfettiAnimation = () => { ... };
+    // Helper function to map data fields based on the active tab (unchanged)
+    const getCommissionValue = (key) => {
+        const summary = commissions?.summary;
+        if (!summary) return 0;
 
+        // Custom mapping for LOAN and PIGMY data fields
+        if (activeTab === "LOAN" || activeTab === "PIGMY") {
+            switch (key) {
+                case "total_customers":
+                    return summary["number_of_customers"] || 0;
+                case "actual_business":
+                    return summary["total_paid_collection"] || 0;
+                default:
+                    return summary[key] || 0;
+            }
+        }
+        // Use the original key for CHIT and GOLD
+        return summary[key] || 0;
+    };
+
+    // Helper to get current loading state (unchanged)
+    const getCurrentLoadingState = () => {
+        switch (activeTab) {
+            case "CHIT":
+                return isChitLoading;
+            case "GOLD":
+                return isGoldLoading;
+            case "LOAN":
+                return isLoanLoading;
+            case "PIGMY":
+                return isPigmyLoading;
+            default:
+                return false;
+        }
+    };
+
+    // Helper to set current loading state (unchanged)
+    const setCurrentLoadingState = (isLoading) => {
+        switch (activeTab) {
+            case "CHIT":
+                setIsChitLoading(isLoading);
+                break;
+            case "GOLD":
+                setIsGoldLoading(isLoading);
+                break;
+            case "LOAN":
+                setIsLoanLoading(isLoading);
+                break;
+            case "PIGMY":
+                setIsPigmyLoading(isLoading);
+                break;
+            default:
+                break;
+        }
+    };
+
+    // useEffect for data fetching (unchanged)
     useEffect(() => {
         const fetchCommissions = async () => {
             // Reset animations and clear old data before fetching
-            cardListOpacity.setValue(0); 
+            cardListOpacity.setValue(0);
             dataContainerTranslateY.setValue(-height * 0.1);
-            // MODIFICATION 2: Removed setConfettiElements call:
-            // setConfettiElements([]); 
-            setCommissions({}); 
+            setCommissions({});
+
+            setCurrentLoadingState(true);
 
             if (!currentUser.userId) {
                 console.warn("User ID is not available for fetching commissions.");
-                setIsChitLoading(false);
-                setIsGoldLoading(false);
+                setCurrentLoadingState(false);
                 return;
             }
 
-            const currentUrl =
-                activeTab === "CHIT" ? `${baseUrl}` : "http://13.60.68.201:3000/api";
+            let currentUrl = `${baseUrl}`;
+            let pathSegment = ""; 
+            const userId = currentUser.userId;
+
+            switch (activeTab) {
+                case "CHIT":
+                    pathSegment = `/enroll/get-detailed-commission/${userId}`;
+                    break;
+                case "GOLD":
+                    pathSegment = `/enroll/get-detailed-commission/${userId}`;
+                    break;
+                case "LOAN":
+                    pathSegment = `/payment/agent/${userId}/loan-overview`;
+                    break;
+                case "PIGMY":
+                    pathSegment = `/payment/agent/${userId}/pigme-overview`;
+                    break;
+                default:
+                    break;
+            }
+            
+            const apiPath = `${currentUrl}${pathSegment}`; 
+            
             try {
-                activeTab === "CHIT" ? setIsChitLoading(true) : setIsGoldLoading(true);
-                const response = await axios.get(
-                    `${currentUrl}/enroll/get-detailed-commission/${currentUser.userId}`
-                );
+                console.log(`--- Fetching ${activeTab} Commissions ---`);
+                const response = await axios.get(apiPath);
                 
-                if (response.status >= 400)
-                    throw new Error("Failed to fetch Customer Data");
-                
-                setCommissions(response.data);
-                
-                const summaryExists = response.data?.summary && Object.keys(response.data.summary).length > 0;
+                if (response.data?.success === true && response.data?.summary) {
+                    setCommissions(response.data);
 
-                if (summaryExists) {
-                    // MODIFICATION 2: Removed call to startConfettiAnimation():
-                    // startConfettiAnimation();
-
-                    // 2. Run the Card Slide-Down Animation
                     Animated.parallel([
-                        Animated.timing(cardListOpacity, { 
+                        Animated.timing(cardListOpacity, {
                             toValue: 1,
-                            duration: 700, 
-                            delay: 500, 
+                            duration: 700,
+                            delay: 500,
                             useNativeDriver: true,
                         }),
                         Animated.spring(dataContainerTranslateY, {
                             toValue: 0,
-                            speed: 4, 
-                            bounciness: 6, 
-                            delay: 500, 
+                            speed: 4,
+                            bounciness: 6,
+                            delay: 500,
                             useNativeDriver: true,
                         })
                     ]).start();
+                } else {
+                     setCommissions({});
                 }
 
             } catch (err) {
-                console.error("Error fetching commissions:", err.message);
-                setCommissions({}); 
+                console.error(`🚨 ERROR fetching ${activeTab} commissions:`, err.message, err.response?.data);
+                setCommissions({});
             } finally {
-                activeTab === "CHIT"
-                    ? setIsChitLoading(false)
-                    : setIsGoldLoading(false);
+                setCurrentLoadingState(false);
             }
         };
         fetchCommissions();
-    }, [activeTab, currentUser]); 
+    }, [activeTab, currentUser]);
 
     const renderCardList = (isLoading, dataAvailable, activeTabName) => {
         if (isLoading) {
@@ -188,18 +255,42 @@ const Commissions = ({ route, navigation }) => {
                 opacity: cardListOpacity,
                 transform: [{ translateY: dataContainerTranslateY }],
             };
-            
+
+            const filteredData = scrollData.filter(card => 
+                card.schemeType.includes(activeTab)
+            );
+
             return (
-                <Animated.View style={[{ gap: 20, width: '100%' }, animatedStyle]}> 
-                    {scrollData.map(({ title, icon, value, key, handlePress }) => (
-                        <CustomCommissionCard
-                            key={key}
-                            title={title}
-                            icon={icon}
-                            value={commissions?.summary?.[value] || 0} 
-                            onPress={handlePress}
-                        />
-                    ))}
+                <Animated.View style={[{ gap: 20, width: '100%' }, animatedStyle]}>
+                    {filteredData.map(({ title, icon, value, key, handlePress }) => {
+                        
+                        let finalHandler = handlePress;
+                        let showArrow = true;
+                        let finalTitle = title; // Initialize finalTitle
+
+                        if (title === "Customers") {
+                            // Assign specific navigation for Customers
+                            finalHandler = () => handleMyCustomers(activeTab);
+                            
+                        } else if (title === "My Business" && (activeTab === "LOAN" || activeTab === "PIGMY")) {
+                            // 🌟 NEW LOGIC: Change title, remove arrow, and disable press for "My Business" in LOAN/PIGMY
+                            finalTitle = "Total Collection"; 
+                            showArrow = false;
+                            finalHandler = null; // Disables the card press action
+                        }
+
+
+                        return (
+                            <CustomCommissionCard
+                                key={key}
+                                title={finalTitle} // Use finalTitle
+                                icon={icon}
+                                value={getCommissionValue(value)} 
+                                onPress={finalHandler} 
+                                showArrow={showArrow} // Pass the new prop
+                            />
+                        );
+                    })}
                 </Animated.View>
             );
         }
@@ -217,9 +308,6 @@ const Commissions = ({ route, navigation }) => {
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
-            {/* MODIFICATION 2: Removed confetti rendering: */}
-            {/* {confettiElements} */}
-
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -241,18 +329,13 @@ const Commissions = ({ route, navigation }) => {
                         <Text style={styles.title}>My Overview </Text>
                         <Text style={styles.subtitle}>Select a scheme type to view your achievements</Text>
                     </View>
-                    
-                    {/* Tab Container */}
+
+                    {/* Tab Container for 4 Tabs */}
                     <View style={styles.tabContainer}>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
                             onPress={() => setActiveTab("CHIT")}
                         >
-                            <Icon
-                                name="users"
-                                size={20}
-                                color={activeTab === "CHIT" ? CARD_BG : MODERN_PRIMARY}
-                            />
                             <Text
                                 style={[
                                     styles.tabText,
@@ -262,39 +345,60 @@ const Commissions = ({ route, navigation }) => {
                                 Chits
                             </Text>
                         </TouchableOpacity>
+
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
                             onPress={() => setActiveTab("GOLD")}
                         >
-                            <Icon
-                                name="money"
-                                size={20}
-                                color={activeTab === "GOLD" ? CARD_BG : MODERN_PRIMARY}
-                            />
                             <Text
                                 style={[
                                     styles.tabText,
                                     activeTab === "GOLD" && styles.activeTabText,
                                 ]}
                             >
-                                Gold Schemes
+                                Gold
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "LOAN" && styles.activeTab]}
+                            onPress={() => setActiveTab("LOAN")}
+                        >
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "LOAN" && styles.activeTabText,
+                                ]}
+                            >
+                                Loan
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "PIGMY" && styles.activeTab]}
+                            onPress={() => setActiveTab("PIGMY")}
+                        >
+                            <Text
+                                style={[
+                                    styles.tabText,
+                                    activeTab === "PIGMY" && styles.activeTabText,
+                                ]}
+                            >
+                                Pigmy
                             </Text>
                         </TouchableOpacity>
                     </View>
                 </LinearGradient>
-
-                {/* Main Content Area (Now solid White Background with Rounded Corners) */}
                 <View style={styles.mainContentArea}>
-                    {/* Scrollable Content Section */}
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContainer} 
+                        contentContainerStyle={styles.scrollContainer}
                     >
                         <View style={styles.cardListContainer}>
-                            {activeTab === "CHIT"
-                                ? renderCardList(isChitLoading, hasData, "Chit")
-                                : renderCardList(isGoldLoading, hasData, "Gold")
-                            }
+                            {activeTab === "CHIT" && renderCardList(isChitLoading, hasData, "Chit")}
+                            {activeTab === "GOLD" && renderCardList(isGoldLoading, hasData, "Gold ")}
+                            {activeTab === "LOAN" && renderCardList(isLoanLoading, hasData, "Loan")}
+                            {activeTab === "PIGMY" && renderCardList(isPigmyLoading, hasData, "Pigmy")}
                         </View>
                     </ScrollView>
                 </View>
@@ -305,41 +409,39 @@ const Commissions = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    // --- NEW LAYOUT STYLES (Copied from RouteCustomerPigme.js) ---
-    safeArea: { 
-        flex: 1, 
-        backgroundColor: TOP_GRADIENT[0] 
+    safeArea: {
+        flex: 1,
+        backgroundColor: TOP_GRADIENT[0]
     },
     topContainer: {
         paddingHorizontal: 16,
-        paddingBottom: 25, // Adjusted for spacing above content area
+        paddingBottom: 25,
         zIndex: 1,
     },
-    headerSpacer: { 
-        paddingTop: 20, 
-        paddingBottom: 5 
-    }, 
+    headerSpacer: {
+        paddingTop: 20,
+        paddingBottom: 5
+    },
     mainContentArea: {
         flex: 1,
-        // MODIFICATION 1: SUBTLE_BG_GREY is now CARD_BG (White)
-        backgroundColor: SUBTLE_BG_GREY, 
-        borderTopLeftRadius: 30, 
+        backgroundColor: SUBTLE_BG_GREY,
+        borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         paddingHorizontal: 16,
         marginTop: -20, // Overlap the top container for the curved effect
         paddingTop: 30, // Space inside the curve
     },
-    scrollContainer: { 
-        paddingBottom: 50, 
+    scrollContainer: {
+        paddingBottom: 50,
         paddingTop: 10,
     },
     cardListContainer: {
-        gap: 18, 
-        alignItems: 'stretch', // Changed to stretch for full width cards
-        width: '100%', 
+        gap: 18,
+        alignItems: 'stretch', 
+        width: '100%',
     },
 
-    // --- TITLE STYLES (Updated to new color scheme) ---
+    // --- TITLE STYLES ---
     titleContainer: {
         marginBottom: 15,
         alignItems: 'center',
@@ -347,7 +449,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: '900',
-        color: CARD_BG, // White text
+        color: CARD_BG, 
         marginBottom: 4,
     },
     subtitle: {
@@ -358,19 +460,19 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
 
-    // --- CARD STYLES (Updated to modern style) ---
+    // --- CARD STYLES ---
     card: {
         backgroundColor: CARD_BG,
-        borderRadius: 18, // Slightly smaller radius
+        borderRadius: 18, 
         padding: 20,
-        width: '100%', 
+        width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         // Modern shadow
         shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05, 
+        shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 4,
         borderWidth: 1,
@@ -388,16 +490,16 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     iconContainer: {
-        width: 45, 
+        width: 45,
         height: 45,
-        backgroundColor: `${ACCENT_BLUE}30`, // Use ACCENT_BLUE
+        backgroundColor: `${ACCENT_BLUE}30`, 
         borderRadius: 22.5,
         justifyContent: 'center',
         alignItems: 'center',
     },
     cardIcon: {
         fontSize: 24,
-        color: ACCENT_BLUE, // Use ACCENT_BLUE
+        color: ACCENT_BLUE, 
     },
     textContainer: {
         marginLeft: 15,
@@ -405,25 +507,25 @@ const styles = StyleSheet.create({
     },
     cardText: {
         fontSize: 18,
-        fontWeight: '800', // Increased weight
-        color: MODERN_PRIMARY, // Dark text
+        fontWeight: '800', 
+        color: MODERN_PRIMARY, 
     },
     cardSubText: {
-        fontSize: 16, 
-        color: ACCENT_BLUE, // Use ACCENT_BLUE for value
+        fontSize: 16,
+        color: ACCENT_BLUE, 
         marginTop: 5,
         fontWeight: '700',
     },
     arrowIcon: {
-        fontSize: 24, 
-        color: TEXT_GREY, // Grey arrow color
-        marginLeft: 10, // Adjusted margin
+        fontSize: 24,
+        color: TEXT_GREY, 
+        marginLeft: 10, 
     },
-    
-    // --- TAB STYLES (Updated to modern style) ---
+
+    // --- TAB STYLES ---
     tabContainer: {
         flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.9)", // Slightly opaque white
+        backgroundColor: "rgba(255, 255, 255, 0.9)", 
         borderRadius: 15,
         overflow: 'hidden',
         marginTop: 15,
@@ -432,19 +534,19 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3,
-        padding: 5, // Internal padding for cleaner look
+        padding: 5, 
     },
     tab: {
-        flex: 1,
+        flex: 1, 
         paddingVertical: 12,
         alignItems: "center",
         flexDirection: 'row',
         justifyContent: 'center',
-        borderRadius: 12, // Match the card radius
-        margin: 2, 
+        borderRadius: 12, 
+        margin: 2,
     },
     activeTab: {
-        backgroundColor: ACCENT_BLUE, // Use ACCENT_BLUE
+        backgroundColor: ACCENT_BLUE, 
         shadowColor: ACCENT_BLUE,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4,
@@ -452,17 +554,17 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     tabText: {
-        fontSize: 16,
-        color: MODERN_PRIMARY, // Dark grey for inactive
+        fontSize: 14, 
+        color: MODERN_PRIMARY, 
         fontWeight: "500",
         marginLeft: 5,
     },
     activeTabText: {
-        color: CARD_BG, // White text for active
+        color: CARD_BG, 
         fontWeight: 'bold',
     },
 
-    // --- NO DATA STYLES (Updated colors) ---
+    // --- NO DATA STYLES ---
     noDataContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -473,7 +575,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         width: '100%',
     },
-    noLeadsText: { 
+    noLeadsText: {
         fontSize: 18,
         color: MODERN_PRIMARY,
         textAlign: 'center',
