@@ -14,8 +14,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context"; 
 import { LinearGradient } from "expo-linear-gradient";
 
-// Removed: import Icon from "react-native-vector-icons/FontAwesome";
-// Removed: import COLORS from "../constants/color";
 
 import Header from "../components/Header";
 // Assuming baseUrl is imported from "../constants/baseUrl"
@@ -34,14 +32,22 @@ const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
 // ---------------------------------------------
 
 
-const CustomerCard = ({ name, phone, onPress }) => (
+// 🌟 UPDATED: CustomerCard component to display loan details on separate lines
+const CustomerCard = ({ name, phone, loanAmount, loanId, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.cardContainer} activeOpacity={0.7}>
     <View style={styles.cardContent}>
       {/* Updated to Ionicons for consistency */}
       <Ionicons name="person-circle-outline" style={styles.cardIcon} /> 
       <View style={styles.textContainer}>
         <Text style={styles.cardText}>{name}</Text>
+        {/* Display Phone Number */}
         <Text style={styles.cardSubText}>Phone: {phone}</Text>
+        
+        {/* ⭐ FIX: Loan ID on its own line */}
+        <Text style={styles.cardSubText}>Loan ID: {loanId}</Text>
+        
+        {/* ⭐ FIX: Loan Amount on its own line */}
+        <Text style={styles.cardLoanId}>Amount: ₹{loanAmount}</Text>
       </View>
     </View>
     {/* Updated to Ionicons for consistency */}
@@ -65,7 +71,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
           `${baseUrl}/loans?referrerId=${user?.userId}`
         );
 
-       
+        
         if (response?.data?.data) { 
           setCustomers(response.data.data);
         } else {
@@ -145,13 +151,16 @@ const RouteCustomerLoan = ({ route, navigation }) => {
                                   key={index}
                                   name={customer.borrower?.full_name || "Unknown Customer"}
                                   phone={customer.borrower?.phone_number || "N/A"}
+                                  // 🌟 Pass Loan Amount and Loan ID
+                                  loanAmount={customer.loan_amount || "N/A"}
+                                  loanId={customer.loan_id || "N/A"}
                                   onPress={() =>
-                                    navigation.navigate("LoanPayin", {
-                                      user,
-                                      customer: customer?.borrower?._id,
-                                      loan_id: customer._id,
-                                      custom_loan_id: customer.loan_id,
-                                    })
+                                      navigation.navigate("LoanPayin", {
+                                          user,
+                                          customer: customer?.borrower?._id,
+                                          loan_id: customer._id, // Database ID
+                                          custom_loan_id: customer.loan_id, // Custom visible ID (LNxx)
+                                      })
                                   }
                               />
                           ))
@@ -216,6 +225,12 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.85)', 
     fontWeight: '500',
     textAlign: 'center',
+  },
+    cardLoanId: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: ACCENT_BLUE, // Highlight the ID
+    marginTop: 2,
   },
 
   // --- SEARCH BAR STYLES (Copied from RouteCustomerChit.js) ---

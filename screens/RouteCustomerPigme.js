@@ -9,20 +9,16 @@ import {
   Platform, 
 } from "react-native";
 import React, { useState, useEffect } from "react";
-// Import necessary modern components/icons
 import { Ionicons } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context"; 
 import { LinearGradient } from "expo-linear-gradient";
 
-// Removed: import Icon from "react-native-vector-icons/FontAwesome";
-// Removed: import COLORS from "../constants/color";
-
-import Header from "../components/Header";
-import baseUrl from "../constants/baseUrl";
-
+// Assume these imports are correctly set up in your project
+import Header from "../components/Header"; 
+import baseUrl from "../constants/baseUrl"; 
 import axios from "axios";
 
-// --- DESIGN CONSTANTS COPIED FROM RouteCustomerChit.js ---
+// --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
 const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
 const ACCENT_BLUE = "#1796d1ff"; // Blue accent (for icons/left border)
@@ -33,42 +29,49 @@ const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
 // ---------------------------------------------
 
 
-const CustomerCard = ({ name, phone, onPress }) => (
+// MODIFIED: Reordered the display of pigmeId to be after the phone number
+const CustomerCard = ({ name, pigmeId, phone, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.cardContainer} activeOpacity={0.7}>
     <View style={styles.cardContent}>
-      {/* Updated to Ionicons for consistency */}
       <Ionicons name="person-circle-outline" style={styles.cardIcon} /> 
       <View style={styles.textContainer}>
+        
+        {/* Customer Name remains on top */}
         <Text style={styles.cardText}>{name}</Text>
+        
+        {/* Phone Number is next */}
         <Text style={styles.cardSubText}>Phone: {phone}</Text>
+        
+        {/* Pigmy ID is now placed after the phone number */}
+        <Text style={styles.cardPigmyId}>Pigmy ID: {pigmeId || 'N/A'}</Text>
       </View>
     </View>
-    {/* Updated to Ionicons for consistency */}
     <Ionicons name="chevron-forward-outline" style={styles.arrowIcon} /> 
   </TouchableOpacity>
 );
 
 
 const RouteCustomerPigme = ({ route, navigation }) => {
-  const { user, areaId } = route.params;
+  const { user, areaId } = route.params; 
 
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-   
+    
     const fetchPigmeCustomers = async () => {
       try {
         setLoading(true);
+        // API call to fetch Pigme customers for the specific referrerId
         const response = await axios.get(
           `${baseUrl}/pigme?referrerId=${user?.userId}`
         );
         if (response?.data?.data) {
-        
           setCustomers(response?.data?.data);
         } else {
           console.error("Unexpected API response format:", response?.data?.data);
+          setCustomers([]);
         }
       } catch (error) {
         console.error("Error fetching customer data:", error);
@@ -78,13 +81,15 @@ const RouteCustomerPigme = ({ route, navigation }) => {
     };
 
     fetchPigmeCustomers();
-  }, []);
+  }, [user?.userId]);
 
   // Filtering Logic
   const filteredCustomers = Array.isArray(customers)
     ? customers.filter(
         (item) =>
-          item.customer?.full_name?.toLowerCase().includes(search.toLowerCase()) || ""
+          item.customer?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+          item.pigme_id?.toLowerCase().includes(search.toLowerCase()) || 
+          ""
       )
     : [];
 
@@ -98,7 +103,7 @@ const RouteCustomerPigme = ({ route, navigation }) => {
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.headerSpacer}>
-            <Header />
+            <Header /> 
         </View>
 
         <View style={styles.titleContainer}>
@@ -117,15 +122,15 @@ const RouteCustomerPigme = ({ route, navigation }) => {
             <TextInput
               value={search}
               onChangeText={(text) => setSearch(text)}
-              placeholder="Search Pigmy customers..."
+              placeholder="Search by Name or Pigmy ID..."
               placeholderTextColor={TEXT_GREY}
               style={styles.searchInput}
             />
         </View>
 
       </LinearGradient>
-
-      {/* Main Content Area (Light Background with Rounded Corners) */}
+      
+      {/* Main Content Area */}
       <View style={styles.mainContentArea}>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -141,16 +146,19 @@ const RouteCustomerPigme = ({ route, navigation }) => {
                       {filteredCustomers.length > 0 ? (
                           filteredCustomers.map((item, index) => (
                               <CustomerCard
-                                  key={index}
+                                  key={item._id || index}
+                                  pigmeId={item.pigme_id || 'N/A'}
                                   name={item.customer?.full_name || "Unknown Customer"}
                                   phone={item.customer?.phone_number || "N/A"}
                                   onPress={() => {
-                                    navigation.navigate("PigmePayin", {
-                                      user,
-                                      customer: item?.customer?._id,
-                                      pigme_id: item?._id,
-                                      custom_pigme_id: item?.pigme_id,
-                                    });
+                                     const customId = item?.pigme_id;
+                                     // Navigate to the payment screen with necessary IDs
+                                     navigation.navigate("PigmePayin", {
+                                         user,
+                                         customer: item?.customer?._id, // Customer MongoDB ID
+                                         pigme_id: item?._id, // Pigme Document MongoDB ID
+                                         custom_pigme_id: customId || 'ID Not Available', // Human-readable PGxx ID
+                                     });
                                   }}
                               />
                           ))
@@ -166,15 +174,12 @@ const RouteCustomerPigme = ({ route, navigation }) => {
   );
 };
 
+// --- STYLE SHEET ---
 const styles = StyleSheet.create({
-  // --- LAYOUT STYLES (Copied from RouteCustomerChit.js) ---
-  safeArea: { 
-    flex: 1, 
-    backgroundColor: TOP_GRADIENT[0] 
-  },
+  // --- LAYOUT STYLES ---
+  safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
   topContainer: {
     paddingHorizontal: 16,
-    // Increased paddingBottom to create space between the search bar and the content area
     paddingBottom: 35, 
     shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
@@ -191,38 +196,16 @@ const styles = StyleSheet.create({
     marginTop: -20, 
     paddingTop: 30,
   },
-  headerSpacer: { 
-    paddingTop: 20, 
-    paddingBottom: 5 
-  }, 
-  loadingContainer: { 
-    paddingTop: 20 
-  },
-
-  // --- TITLE STYLES (Copied from RouteCustomerChit.js) ---
-  titleContainer: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  title: {
-    fontSize: 28, 
-    fontWeight: "900",
-    color: CARD_BG, // White text
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.85)', 
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-
-  // --- SEARCH BAR STYLES (Copied from RouteCustomerChit.js) ---
+  headerSpacer: { paddingTop: 20, paddingBottom: 5 }, 
+  loadingContainer: { paddingTop: 40, alignItems: 'center',},
+  titleContainer: { alignItems: 'center', marginBottom: 15 },
+  title: { fontSize: 28, fontWeight: "900", color: CARD_BG, marginBottom: 4 },
+  subtitle: { fontSize: 14, color: 'rgba(255, 255, 255, 0.85)', fontWeight: '500', textAlign: 'center' },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: CARD_BG, // White background
-    borderRadius: 12, // Slightly smaller border radius
+    backgroundColor: CARD_BG,
+    borderRadius: 12, 
     paddingHorizontal: 15,
     paddingVertical: 10,
     shadowColor: MODERN_PRIMARY,
@@ -232,27 +215,12 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginTop: 10,
   },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    padding: 0,
-    fontSize: 16,
-    color: MODERN_PRIMARY,
-  },
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, padding: 0, fontSize: 16, color: MODERN_PRIMARY },
+  scrollContainer: { paddingBottom: 50, paddingTop: 10 },
+  cardListContainer: { gap: 18, alignItems: 'stretch' },
   
-  // --- CARD LIST STYLES (Copied from RouteCustomerChit.js) ---
-  scrollContainer: { 
-    paddingBottom: 50, 
-    paddingTop: 10,
-  },
-  cardListContainer: {
-    gap: 18, 
-    alignItems: 'stretch', 
-  },
-
-  // --- CARD STYLES (Copied from RouteCustomerChit.js and modified) ---
+  // --- CARD STYLES ---
   cardContainer: { 
     backgroundColor: CARD_BG,
     borderRadius: 18, 
@@ -260,7 +228,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // Modern shadow
     shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05, 
@@ -268,9 +235,8 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: BORDER_COLOR,
-    // Accent border
     borderLeftWidth: 5,
-    borderLeftColor: ACCENT_BLUE, // Used ACCENT_BLUE for consistency
+    borderLeftColor: ACCENT_BLUE, 
   },
   cardContent: {
     flexDirection: "row",
@@ -283,21 +249,29 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 18,
     fontWeight: "800", 
-    color: MODERN_PRIMARY, // Dark text
+    color: MODERN_PRIMARY, 
+    marginBottom: 4,
   },
   cardSubText: {
     fontSize: 14,
-    color: TEXT_GREY, // Grey subtext
-    marginTop: 2,
+    color: TEXT_GREY, 
     fontWeight: '500', 
+    marginBottom: 2,
+  },
+  // NEW STYLE: For the Pigmy ID 
+  cardPigmyId: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: ACCENT_BLUE, // Highlight the ID
+    marginTop: 2,
   },
   cardIcon: {
     fontSize: 32,
-    color: ACCENT_BLUE, // Blue icon color
+    color: ACCENT_BLUE, 
   },
   arrowIcon: {
     fontSize: 24, 
-    color: TEXT_GREY, // Grey arrow color
+    color: TEXT_GREY, 
     marginLeft: 10,
   },
   noCustomersText: {
