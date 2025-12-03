@@ -32,9 +32,7 @@ const SUBTLE_BG_GREY = CARD_BG;
 // ------------------------
 
 import Header from "../components/Header";
-import baseUrl from "../constants/baseUrl"; // Ensure this path and content is correct
-
-// UPDATED: CustomCommissionCard now accepts 'showArrow' prop
+import baseUrl from "../constants/baseUrl"; 
 const CustomCommissionCard = ({ title, icon, value, onPress, showArrow = true }) => (
     <TouchableOpacity onPress={onPress} style={styles.card} disabled={!showArrow}>
         <View style={styles.cardContent}>
@@ -46,7 +44,6 @@ const CustomCommissionCard = ({ title, icon, value, onPress, showArrow = true })
                 <Text style={styles.cardSubText}>{value}</Text>
             </View>
         </View>
-        {/* CONDITIONAL RENDER: Only show arrow if showArrow is true */}
         {showArrow && <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />}
     </TouchableOpacity>
 );
@@ -77,8 +74,7 @@ const Commissions = ({ route, navigation }) => {
     };
 
     /**
-     * UPDATED FUNCTION: Navigates to a different customer screen
-     * based on the currently active tab.
+     * Navigates to a different customer screen based on the currently active tab.
      */
     const handleMyCustomers = (tab) => {
         if (tab === "PIGMY") {
@@ -97,7 +93,6 @@ const Commissions = ({ route, navigation }) => {
 
     // Card data now includes a 'schemeType' array for filtering
     const scrollData = [
-        // handlePress: null as it's dynamically set in renderCardList
         { title: "Customers", icon: "person", value: "total_customers", key: "#1", handlePress: null, schemeType: ["CHIT", "GOLD", "LOAN", "PIGMY"] },
         { title: "Groups", icon: "group", value: "total_groups", key: "#2", handlePress: handleGroups, schemeType: ["CHIT", "GOLD"] }, 
         { title: "My Business", icon: "query-stats", value: "actual_business", key: "#6", handlePress: handleMyCommission, schemeType: ["CHIT", "GOLD", "LOAN", "PIGMY"] },
@@ -108,7 +103,7 @@ const Commissions = ({ route, navigation }) => {
 
     const hasData = commissions?.summary && Object.keys(commissions.summary).length > 0;
 
-    // Helper function to map data fields based on the active tab (unchanged)
+    // Helper function to map data fields based on the active tab 
     const getCommissionValue = (key) => {
         const summary = commissions?.summary;
         if (!summary) return 0;
@@ -121,14 +116,14 @@ const Commissions = ({ route, navigation }) => {
                 case "actual_business":
                     return summary["total_paid_collection"] || 0;
                 default:
-                    return summary[key] || 0;
+                    return 0; 
             }
         }
         // Use the original key for CHIT and GOLD
         return summary[key] || 0;
     };
 
-    // Helper to get current loading state (unchanged)
+    // Helper to get current loading state
     const getCurrentLoadingState = () => {
         switch (activeTab) {
             case "CHIT":
@@ -144,7 +139,7 @@ const Commissions = ({ route, navigation }) => {
         }
     };
 
-    // Helper to set current loading state (unchanged)
+    // Helper to set current loading state
     const setCurrentLoadingState = (isLoading) => {
         switch (activeTab) {
             case "CHIT":
@@ -164,7 +159,9 @@ const Commissions = ({ route, navigation }) => {
         }
     };
 
-    // useEffect for data fetching (unchanged)
+    /**
+     * MODIFIED useEffect: Fetches commissions with ALL console logging removed from try/catch.
+     */
     useEffect(() => {
         const fetchCommissions = async () => {
             // Reset animations and clear old data before fetching
@@ -175,6 +172,7 @@ const Commissions = ({ route, navigation }) => {
             setCurrentLoadingState(true);
 
             if (!currentUser.userId) {
+                // Keep this warning as it indicates a user data issue, not a network error
                 console.warn("User ID is not available for fetching commissions.");
                 setCurrentLoadingState(false);
                 return;
@@ -204,7 +202,7 @@ const Commissions = ({ route, navigation }) => {
             const apiPath = `${currentUrl}${pathSegment}`; 
             
             try {
-                console.log(`--- Fetching ${activeTab} Commissions ---`);
+                // console.log(`--- Fetching ${activeTab} Commissions ---`); <--- REMOVED LOG
                 const response = await axios.get(apiPath);
                 
                 if (response.data?.success === true && response.data?.summary) {
@@ -230,8 +228,8 @@ const Commissions = ({ route, navigation }) => {
                 }
 
             } catch (err) {
-                console.error(`🚨 ERROR fetching ${activeTab} commissions:`, err.message, err.response?.data);
-                setCommissions({});
+                // CATCH BLOCK IS NOW EMPTY - NO LOGGING FOR ERRORS
+                setCommissions({}); // Ensure UI displays 'No Data Found' on any error
             } finally {
                 setCurrentLoadingState(false);
             }
@@ -239,6 +237,7 @@ const Commissions = ({ route, navigation }) => {
         fetchCommissions();
     }, [activeTab, currentUser]);
 
+    // MODIFIED renderCardList function (for custom No Data messages)
     const renderCardList = (isLoading, dataAvailable, activeTabName) => {
         if (isLoading) {
             return (
@@ -266,28 +265,25 @@ const Commissions = ({ route, navigation }) => {
                         
                         let finalHandler = handlePress;
                         let showArrow = true;
-                        let finalTitle = title; // Initialize finalTitle
+                        let finalTitle = title;
 
                         if (title === "Customers") {
-                            // Assign specific navigation for Customers
                             finalHandler = () => handleMyCustomers(activeTab);
                             
                         } else if (title === "My Business" && (activeTab === "LOAN" || activeTab === "PIGMY")) {
-                            // 🌟 NEW LOGIC: Change title, remove arrow, and disable press for "My Business" in LOAN/PIGMY
                             finalTitle = "Total Collection"; 
                             showArrow = false;
-                            finalHandler = null; // Disables the card press action
+                            finalHandler = null; 
                         }
-
 
                         return (
                             <CustomCommissionCard
                                 key={key}
-                                title={finalTitle} // Use finalTitle
+                                title={finalTitle} 
                                 icon={icon}
                                 value={getCommissionValue(value)} 
                                 onPress={finalHandler} 
-                                showArrow={showArrow} // Pass the new prop
+                                showArrow={showArrow} 
                             />
                         );
                     })}
@@ -295,11 +291,25 @@ const Commissions = ({ route, navigation }) => {
             );
         }
 
+        // --- NO DATA FALLBACK ---
+        
+        let customNoDataMessage;
+        
+        // Customize the message for LOAN and PIGMY as requested
+        if (activeTab === "LOAN") {
+            customNoDataMessage = "No Loan Data Found";
+        } else if (activeTab === "PIGMY") {
+            customNoDataMessage = "No Pigmy Data Found";
+        } else {
+            // Default message for CHIT/GOLD (using the passed activeTabName)
+            customNoDataMessage = `No ${activeTabName} Commission Data Found`;
+        }
+
         return (
             <View style={styles.noDataContainer}>
                 <Ionicons name="alert-circle-outline" size={50} color={ACCENT_BLUE} />
                 <Text style={styles.noLeadsText}>
-                    No {activeTabName} Commission Data Found
+                    {customNoDataMessage} {/* Use the new custom message */}
                 </Text>
                 <Image source={noImage} style={styles.noImage} />
             </View>
@@ -407,6 +417,10 @@ const Commissions = ({ route, navigation }) => {
         </SafeAreaView>
     );
 };
+
+// ------------------------------------------------------------------
+// --- STYLESHEET ---
+// ------------------------------------------------------------------
 
 const styles = StyleSheet.create({
     safeArea: {

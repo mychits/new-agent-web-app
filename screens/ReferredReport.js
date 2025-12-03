@@ -206,7 +206,7 @@ const ReferredReport = ({ route }) => {
         <View style={styles.emptyContainer}>
             <Ionicons name="documents-outline" size={50} color={NEUTRAL_GREY} />
             <Text style={styles.emptyText}>No pending dues found.</Text>
-            <Text style={{ color: NEUTRAL_GREY, marginTop: 5, fontSize: 14 }}>
+            <Text style={{ color: NEUTRAL_GREY, marginTop: 5, fontSize: 14 , textAlign:'center' }}>
                 Try selecting "All Groups" or check back later.
             </Text>
         </View>
