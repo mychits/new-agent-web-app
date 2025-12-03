@@ -298,7 +298,7 @@ const Target = ({ route, navigation }) => {
                             {/* --- Performance Period Card (Sleeker) --- */}
                             <SleekMetricCard
                                 title="Performance Period"
-                                value={`${moment(targetData.startDate).format("YYYY-MM-DD")} to ${moment(targetData.endDate).format("YYYY-MM-DD")}`}
+                                value={moment(targetData.startDate).format("MMMM YYYY")}
                                 icon={<Ionicons name="calendar-outline" />}
                                 valueColor={COLOR_PALETTE.primary}
                                 iconColor={COLOR_PALETTE.primary}
@@ -363,7 +363,7 @@ const Target = ({ route, navigation }) => {
     );
 };
 
-// --- STYLES (UPDATED FOR SLEEK DESIGN) ---
+// --- STYLES (UPDATED FOR SLEEK DESIGN AND BEAUTIFUL TYPOGRAPHY) ---
 const styles = StyleSheet.create({
     container: { flex: 1, position: 'relative' },
     backgroundImage: { ...StyleSheet.absoluteFillObject, width: width, height: height, opacity: 0.15, zIndex: -2 },
@@ -383,19 +383,43 @@ const styles = StyleSheet.create({
         marginTop: Platform.OS === 'android' ? 110 : 105,
     },
     titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 20 },
-    title: { fontWeight: "800", fontSize: 30, color: COLOR_PALETTE.lightText, letterSpacing: 0.2, textShadowColor: 'rgba(0, 0, 0, 0.3)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2, textAlign: 'center' },
+    // --- STYLISTIC CHANGE: MAIN TITLE ---
+    title: { 
+        fontWeight: "900", // Bolder
+        fontSize: 32, // Larger
+        color: COLOR_PALETTE.lightText, 
+        letterSpacing: 0.5, 
+        textShadowColor: 'rgba(0, 0, 0, 0.4)', // Stronger Shadow
+        textShadowOffset: { width: 1, height: 2 }, 
+        textShadowRadius: 3, 
+        textAlign: 'center' 
+    },
     loadingIndicator: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: height * 0.15 },
     errorCard: {
         backgroundColor: COLOR_PALETTE.cardBackground, borderRadius: 25, padding: 35, marginTop: height * 0.1, alignItems: 'center', shadowColor: COLOR_PALETTE.errorRed, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 10, borderLeftWidth: 8, borderLeftColor: COLOR_PALETTE.errorRed,
     },
-    errorText: { fontSize: 20, color: COLOR_PALETTE.errorRed, marginTop: 20, textAlign: "center", fontWeight: "700", lineHeight: 28 },
+    errorText: { 
+        fontSize: 21, // Slightly larger
+        color: COLOR_PALETTE.errorRed, 
+        marginTop: 20, 
+        textAlign: "center", 
+        fontWeight: "800", // Bolder
+        lineHeight: 30 
+    },
     errorRefreshButton: { marginTop: 30, backgroundColor: COLOR_PALETTE.primary, paddingVertical: 14, paddingHorizontal: 30, borderRadius: 12, shadowColor: COLOR_PALETTE.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 5 },
     errorRefreshButtonText: { color: COLOR_PALETTE.lightText, fontSize: 17, fontWeight: 'bold' },
     noDataCard: {
         backgroundColor: COLOR_PALETTE.cardBackground, borderRadius: 25, padding: 35, marginTop: height * 0.1, alignItems: 'center', justifyContent: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 10, elevation: 8, borderLeftWidth: 8, borderLeftColor: COLOR_PALETTE.softBorder,
     },
     noDataIcon: { marginBottom: 25 },
-    noDataText: { fontSize: 19, color: COLOR_PALETTE.greyText, textAlign: "center", fontWeight: "600", lineHeight: 28, marginBottom: 12 },
+    noDataText: { 
+        fontSize: 20, // Slightly larger
+        color: COLOR_PALETTE.greyText, 
+        textAlign: "center", 
+        fontWeight: "700", // Bolder
+        lineHeight: 30, 
+        marginBottom: 12 
+    },
     noDataSubText: { fontSize: 15, color: COLOR_PALETTE.secondary, textAlign: "center", paddingHorizontal: 15 },
     scrollView: { flex: 1 },
     scrollViewContent: { paddingBottom: 40 },
@@ -406,14 +430,14 @@ const styles = StyleSheet.create({
         borderRadius: 20, 
         padding: 20, 
         marginBottom: 15, 
-        flexDirection: 'row', // Horizontal layout
+        flexDirection: 'row', 
         alignItems: 'center',
         shadowColor: COLOR_PALETTE.shadowDark,
         shadowOffset: { width: 0, height: 4 }, 
         shadowOpacity: 0.1, 
         shadowRadius: 10,
         elevation: 8,
-        borderWidth: 1, // Subtle border
+        borderWidth: 1, 
         borderColor: '#F0F0F0',
     },
     iconCircle: {
@@ -429,25 +453,27 @@ const styles = StyleSheet.create({
     cardContent: {
         flex: 1,
     },
+    // --- STYLISTIC CHANGE: CARD LABEL ---
     cardLabel: {
-        fontSize: 14, 
-        fontWeight: "600",
+        fontSize: 13, // Slightly smaller
+        fontWeight: "500", // Lighter weight
         color: COLOR_PALETTE.secondary,
         marginBottom: 3,
-        textTransform: 'uppercase', // Give a modern feel
-        letterSpacing: 0.5,
+        textTransform: 'uppercase', 
+        letterSpacing: 1.5, // Wider spacing for elegance
     },
+    // --- STYLISTIC CHANGE: CARD VALUE ---
     cardValue: {
-        fontSize: 22, 
-        fontWeight: "800",
+        fontSize: 26, // Significantly larger
+        fontWeight: "900", // Black weight
         color: COLOR_PALETTE.primary,
         marginBottom: 5,
-        textShadowColor: 'rgba(0, 0, 0, 0.05)', 
-        textShadowOffset: { width: 1, height: 1 }, 
+        textShadowColor: 'rgba(0, 0, 0, 0.08)', // Subtle shadow
+        textShadowOffset: { width: 0.5, height: 0.5 }, 
         textShadowRadius: 1,
     },
     achievedCard: {
-        borderWidth: 2, // Thicker border for high-impact card
+        borderWidth: 2, 
         borderColor: COLOR_PALETTE.accentOrange + '50',
     },
     remainingCard: {
@@ -461,13 +487,22 @@ const styles = StyleSheet.create({
         borderRadius: 20, paddingVertical: 15, 
         marginBottom: 20, shadowColor: COLOR_PALETTE.accentGreen, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 15, elevation: 15,
     },
-    achievementText: { color: COLOR_PALETTE.lightText, fontSize: 17, fontWeight: 'bold', marginLeft: 10, textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
+    // --- STYLISTIC CHANGE: ACHIEVEMENT TEXT ---
+    achievementText: { 
+        color: COLOR_PALETTE.lightText, 
+        fontSize: 18, // Slightly larger
+        fontWeight: '800', // Bolder
+        marginLeft: 10, 
+        textShadowColor: 'rgba(0, 0, 0, 0.2)', 
+        textShadowOffset: { width: 1, height: 1 }, 
+        textShadowRadius: 2 
+    },
     
     // Progress Bar
     progressBarBackground: {
-        height: 10, // Increased height for better visibility
+        height: 12, // Slightly increased height
         backgroundColor: '#EAEAEA', 
-        borderRadius: 5, 
+        borderRadius: 6, // Adjusted border radius
         marginTop: 5, 
         overflow: 'hidden', 
         position: 'relative', 
@@ -475,12 +510,21 @@ const styles = StyleSheet.create({
         width: '100%',
         shadowColor: COLOR_PALETTE.shadowLight, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.5, shadowRadius: 2,
     },
-    progressBarFill: { height: '100%', borderRadius: 5, position: 'absolute', left: 0 },
-    progressText: { position: 'absolute', right: 8, fontSize: 10, fontWeight: '900', color: COLOR_PALETTE.greyText },
+    progressBarFill: { height: '100%', borderRadius: 6, position: 'absolute', left: 0 },
+    // --- STYLISTIC CHANGE: PROGRESS TEXT ---
+    progressText: { 
+        position: 'absolute', 
+        right: 8, 
+        fontSize: 11, // Slightly larger
+        fontWeight: '900', 
+        color: COLOR_PALETTE.lightText, // Changed to white for better contrast
+        zIndex: 1, // Ensure text is above the background
+        paddingRight: 3 // Small padding adjustment
+    },
     
     // Motivation Text
-    encouragementText: { fontSize: 13, color: COLOR_PALETTE.secondary, textAlign: 'left', marginTop: 10, fontStyle: 'italic', fontWeight: '500' },
-    motivationText: { fontSize: 14, color: COLOR_PALETTE.primary, textAlign: 'left', marginTop: 12, fontWeight: '700', fontStyle: 'normal', lineHeight: 22 }
+    encouragementText: { fontSize: 14, color: COLOR_PALETTE.secondary, textAlign: 'left', marginTop: 10, fontStyle: 'italic', fontWeight: '500' },
+    motivationText: { fontSize: 15, color: COLOR_PALETTE.primary, textAlign: 'left', marginTop: 12, fontWeight: '700', fontStyle: 'normal', lineHeight: 22 }
 });
 
-export default Target; 
+export default Target;
