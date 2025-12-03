@@ -20,7 +20,6 @@ import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
@@ -37,7 +36,6 @@ const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f9fafb"; // Very light background for content area
 const PRIMARY_BUTTON_COLOR = "#f8c009ff"; // Assuming the yellow color for main action
 // ---------------------------------------------
-
 
 const Payin = ({ route, navigation }) => {
   const { user, customer } = route.params;
@@ -94,7 +92,6 @@ const Payin = ({ route, navigation }) => {
         const response = await axios.post(
           `${baseUrl}/enroll/get-user-tickets/${customer}`
         );
-
         setAllData(response.data);
 
         // Extract unique groups
@@ -135,7 +132,6 @@ const Payin = ({ route, navigation }) => {
         setEnrollmentLoaded(true);
       }
     };
-
     fetchEnrollDetails();
   }, [customer]);
 
@@ -146,7 +142,6 @@ const Payin = ({ route, navigation }) => {
         const response = await axios.get(
           `${baseUrl}/payment/get-latest-receipt`
         );
-
         setReceipt(response.data);
       } catch (error) {
         console.error("Error fetching latest receipt:", error);
@@ -402,12 +397,12 @@ const Payin = ({ route, navigation }) => {
 
 
       {/* =======================================================
-         FIXED TOP SECTION (Gradient, Header, Title)
-         =======================================================
+          FIXED TOP SECTION (Gradient, Header, Title)
+          =======================================================
       */}
       <LinearGradient
         colors={TOP_GRADIENT}
-        style={styles.fixedHeaderArea} // Use fixedHeaderArea style
+        style={styles.fixedHeaderArea}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
@@ -424,13 +419,12 @@ const Payin = ({ route, navigation }) => {
 
 
       {/* =======================================================
-         SCROLLABLE CONTENT AREA (Form)
-         =======================================================
+          SCROLLABLE CONTENT AREA (Form)
+          =======================================================
       */}
       <KeyboardAvoidingView
-          style={styles.scrollableContentWrapper} // Wrapper for flex 1
+          style={styles.scrollableContentWrapper}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          // keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0} // Removed unnecessary offset
       >
         {/* Main Content Area (Light Background with Rounded Corners) */}
         <View style={styles.mainContentArea}>
@@ -450,56 +444,66 @@ const Payin = ({ route, navigation }) => {
                   value={customerInfo.full_name}
                   editable={false}
                 />
-                <Text style={styles.label}>
-                  Group<Text style={styles.star}>*</Text>
-                </Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={selectedGroup}
-                    onValueChange={handleGroupChange}
-                    style={styles.picker}
-                    itemStyle={styles.pickerItem}
-                    enabled={groups.length > 1}
-                  >
-                    {groups.length !== 1 && (
-                      <Picker.Item label="Select Group" value="" color={TEXT_GREY} />
-                    )}
-                    {groups.map((group, index) => (
-                      <Picker.Item
-                        key={index}
-                        label={group.group_id.group_name}
-                        value={group.group_id._id}
-                        color={MODERN_PRIMARY}
-                      />
-                    ))}
-                  </Picker>
+                
+                {/* Group field on its own line (full width) */}
+                <View>
+                  <Text style={styles.label}>
+                    Group<Text style={styles.star}>*</Text>
+                  </Text>
+                  <View style={styles.pickerContainerFull}>
+                    <Picker
+                      selectedValue={selectedGroup}
+                      onValueChange={handleGroupChange}
+                      style={styles.picker}
+                      itemStyle={styles.pickerItem}
+                      enabled={groups.length > 1}
+                    >
+                      {groups.length !== 1 && (
+                        <Picker.Item label="Select Group" value="" color={TEXT_GREY} />
+                      )}
+                      {groups.map((group, index) => (
+                        <Picker.Item
+                          key={index}
+                          label={group.group_id.group_name}
+                          value={group.group_id._id}
+                          color={MODERN_PRIMARY}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
                 </View>
-                <Text style={styles.label}>
-                  Ticket<Text style={styles.star}>*</Text>
-                </Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={selectedTicket}
-                    onValueChange={(itemValue) =>
-                      setSelectedTicket(itemValue)
-                    }
-                    style={styles.picker}
-                    itemStyle={styles.pickerItem}
-                    enabled={selectedGroup !== "" && tickets.length !== 1}
-                  >
-                    {tickets.length !== 1 && (
-                      <Picker.Item label="Select Ticket" value="" color={TEXT_GREY} />
-                    )}
-                    {tickets.map((ticket, index) => (
-                      <Picker.Item
-                        key={index}
-                        label={`${ticket}`}
-                        value={ticket.toString()}
-                        color={MODERN_PRIMARY}
-                      />
-                    ))}
-                  </Picker>
+
+                {/* Ticket field on its own line (full width) */}
+                <View>
+                  <Text style={styles.label}>
+                    Ticket<Text style={styles.star}>*</Text>
+                  </Text>
+                  <View style={styles.pickerContainerFull}>
+                    <Picker
+                      selectedValue={selectedTicket}
+                      onValueChange={(itemValue) =>
+                        setSelectedTicket(itemValue)
+                      }
+                      style={styles.picker}
+                      itemStyle={styles.pickerItem}
+                      enabled={selectedGroup !== "" && tickets.length !== 1}
+                    >
+                      {tickets.length !== 1 && (
+                        <Picker.Item label="Select Ticket" value="" color={TEXT_GREY} />
+                      )}
+                      {tickets.map((ticket, index) => (
+                        <Picker.Item
+                          key={index}
+                          label={`${ticket}`}
+                          value={ticket.toString()}
+                          color={MODERN_PRIMARY}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
                 </View>
+                
+                {/* Date and Receipt Row (Maintained 50%/50% split) */}
                 <View style={styles.row}>
                   <View style={styles.column}>
                     <Text style={styles.label}>
@@ -548,6 +552,8 @@ const Payin = ({ route, navigation }) => {
                     />
                   </View>
                 </View>
+                
+                {/* Payment Type and Amount Row (Maintained 50%/50% split) */}
                 <View style={styles.row}>
                   <View style={styles.column}>
                     <Text style={styles.label}>
@@ -581,6 +587,7 @@ const Payin = ({ route, navigation }) => {
                     />
                   </View>
                 </View>
+
                 {additionalInfo !== "" && (
                   <>
                     <Text style={styles.label}>
@@ -638,7 +645,7 @@ const Payin = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  // --- LAYOUT STYLES (Copied/Modified from RouteCustomerChit.js) ---
+  // --- LAYOUT STYLES ---
   safeArea: {
     flex: 1,
     backgroundColor: TOP_GRADIENT[0],
@@ -649,38 +656,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: SUBTLE_BG_GREY,
   },
-
-  // NEW: Defines the fixed gradient area for Header and Title
   fixedHeaderArea: { 
     paddingHorizontal: 16,
-    paddingBottom: 20, // Final space below the title
+    paddingBottom: 20,
     shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3,
     elevation: 3,
   },
-
-  // NEW: Wrapper for the keyboard avoiding view to take up remaining space
   scrollableContentWrapper: { 
       flex: 1,
   },
-  
   mainContentArea: {
     flex: 1,
     backgroundColor: SUBTLE_BG_GREY,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 16,
-    marginTop: -20, // Overlap with gradient for the rounded corner
-    paddingTop: 30, // Space inside the rounded corner
+    marginTop: -20, 
+    paddingTop: 30, 
   },
   headerSpacer: {
     paddingTop: 20,
     paddingBottom: 5,
   },
 
-  // --- TITLE STYLES (Copied/Modified from RouteCustomerChit.js) ---
+  // --- TITLE STYLES ---
   titleContainer: {
     alignItems: "center",
     marginBottom: 15,
@@ -688,7 +690,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "900",
-    color: CARD_BG, // White text
+    color: CARD_BG,
     marginBottom: 4,
   },
   subtitle: {
@@ -698,7 +700,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   
-  // --- FORM CONTAINER (Modified from original Payin.js) ---
+  // --- FORM CONTAINER ---
   scrollContentContainer: {
     paddingBottom: 50,
     paddingTop: 10,
@@ -720,16 +722,18 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
-  // --- INPUT/PICKER STYLES (Modified from original Payin.js) ---
+  // --- INPUT/PICKER STYLES ---
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
   },
+  
   column: {
-    flex: 1,
+    flex: 1, 
     marginHorizontal: 3,
   },
+  
   label: {
     fontWeight: "600",
     marginTop: 10,
@@ -737,10 +741,10 @@ const styles = StyleSheet.create({
     color: MODERN_PRIMARY,
   },
   star: {
-    color: ACCENT_BLUE, // Use blue accent for *
+    color: ACCENT_BLUE,
   },
   textInput: {
-    height: 50,
+    height: 56, 
     width: "100%",
     borderColor: BORDER_COLOR,
     borderWidth: 1,
@@ -748,27 +752,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginVertical: 8,
     color: MODERN_PRIMARY,
-    backgroundColor: SUBTLE_BG_GREY, // Light grey background
+    backgroundColor: SUBTLE_BG_GREY, 
     fontSize: 16,
   },
+  // Used for 50%/50% picker columns (Date/Receipt row)
   pickerContainer: {
     borderColor: BORDER_COLOR,
     borderWidth: 1,
     borderRadius: 12,
     backgroundColor: SUBTLE_BG_GREY,
     marginVertical: 8,
-    minHeight: 50,
+    minHeight: 56, 
     justifyContent: 'center',
+  },
+  // Used for full-width picker lines (Group and Ticket)
+  pickerContainerFull: {
+    borderColor: BORDER_COLOR,
+    borderWidth: 1,
+    borderRadius: 12,
+    backgroundColor: SUBTLE_BG_GREY,
+    marginVertical: 8,
+    minHeight: 56, 
+    justifyContent: 'center',
+    marginHorizontal: 0,
   },
   picker: {
     width: "100%",
-    minHeight: 50,
     ...Platform.select({
       ios: {
-        height: 50,
+        height: 56, 
       },
       android: {
-        height: 50,
+        height: 56, 
         color: MODERN_PRIMARY,
       },
     }),
@@ -778,7 +793,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // --- BUTTON STYLES (Modified from original Payin.js) ---
+  // --- BUTTON STYLES ---
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -793,7 +808,7 @@ const styles = StyleSheet.create({
     flex: 1.5,
     marginTop: 0,
     marginBottom: 0,
-    backgroundColor: "#D9F3D0", // Light green for QR
+    backgroundColor: "#D9F3D0", 
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 12,
