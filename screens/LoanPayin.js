@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   star: {
-    color: "red",
+    color: "#ff0000",
   },
   button: {
     marginTop: 18,

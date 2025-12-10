@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
         color: MODERN_PRIMARY,
     },
     star: {
-        color: ACCENT_BLUE, // Use blue accent for *
+        color: '#ff0000', // Use blue accent for *
     },
     textInput: {
         height: 50,
