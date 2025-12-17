@@ -262,11 +262,19 @@ const Payin = ({ route, navigation }) => {
             <Text style={styles.subtitle}>{customerInfo.full_name || 'Customer Details'}</Text>
             
             <View style={styles.headerBalanceContainer}>
-                <Text style={styles.headerBalanceLabel}> Outstanding Amount: </Text>
                 {isBalanceLoading ? (
                     <ActivityIndicator size="small" color={MODERN_PRIMARY} />
                 ) : (
-                    <Text style={styles.headerBalanceAmount}>₹ {balance !== null ? balance : '0'}</Text>
+                    <>
+                      {balance !== null && balance < 0 ? (
+                        <Text style={styles.headerBalanceAmount}>Great! Your payments are up to date.</Text>
+                      ) : (
+                        <>
+                          <Text style={styles.headerBalanceLabel}>Outstanding Amount: </Text>
+                          <Text style={styles.headerBalanceAmount}>₹ {balance !== null ? balance : '0'}</Text>
+                        </>
+                      )}
+                    </>
                 )}
             </View>
           </View>

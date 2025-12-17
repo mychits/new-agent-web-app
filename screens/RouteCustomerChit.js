@@ -8,7 +8,7 @@ import {
   Platform,
   FlatList,
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context"; 
 import { LinearGradient } from "expo-linear-gradient";
@@ -64,7 +64,6 @@ const CustomerCard = React.memo(({ name, phone, customerId, address, onPress }) 
 
 // --- MAIN COMPONENT ---
 const RouteCustomer = ({ route, navigation }) => {
-  // Ensure user exists to prevent crash on route.params access
   const user = route?.params?.user;
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState([]);
@@ -83,8 +82,6 @@ const RouteCustomer = ({ route, navigation }) => {
         const response = await axios.get(
           `${baseUrl}/user/collection-area/agent/${agentId}`
         );
-
-        // Ensure state is always an array
         setCustomers(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Error fetching customer data:", error);
@@ -97,29 +94,35 @@ const RouteCustomer = ({ route, navigation }) => {
     fetchCustomers();
   }, [user?.userId]);
 
-  // Optimized Search Logic
-  const filteredCustomers = (customers || []).filter((customer) => {
-    if (!search) return true;
+  // UseMemo prevents the filter from recalculating unless search or customers change
+  const filteredCustomers = useMemo(() => {
+    if (!search) return customers;
     const searchTerm = search.toLowerCase();
-    const nameMatch = customer.full_name?.toLowerCase().includes(searchTerm);
-    const phoneMatch = customer.phone_number?.toString().includes(searchTerm);
-    const idMatch = customer.customer_id?.toString().toLowerCase().includes(searchTerm);
-    return nameMatch || phoneMatch || idMatch;
-  });
+    return customers.filter((customer) => {
+      const nameMatch = customer.full_name?.toLowerCase().includes(searchTerm);
+      const phoneMatch = customer.phone_number?.toString().includes(searchTerm);
+      const idMatch = customer.customer_id?.toString().toLowerCase().includes(searchTerm);
+      return nameMatch || phoneMatch || idMatch;
+    });
+  }, [search, customers]);
+
+  // UseCallback prevents FlatList from re-rendering items unnecessarily
+  const renderItem = useCallback(({ item }) => (
+    <CustomerCard
+      name={item.full_name}
+      phone={item.phone_number}
+      customerId={item.customer_id}
+      address={item.address}
+      onPress={() => navigation.navigate("Payin", { customer: item._id })}
+    />
+  ), [navigation]);
 
   const clearSearch = () => setSearch("");
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <LinearGradient
-        colors={TOP_GRADIENT}
-        style={styles.topContainer}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.headerSpacer}>
-            <Header />
-        </View>
+      <LinearGradient colors={TOP_GRADIENT} style={styles.topContainer}>
+        <View style={styles.headerSpacer}><Header /></View>
 
         <View style={styles.titleContainer}>
             <Text style={styles.title}>Chit Customers</Text>
@@ -130,19 +133,16 @@ const RouteCustomer = ({ route, navigation }) => {
             <Ionicons name="search-outline" size={20} color={TEXT_GREY} style={styles.searchIcon} />
             <TextInput
               value={search}
-              onChangeText={setSearch}
+              onChangeText={(text) => setSearch(text)}
               placeholder="Search customers..."
               placeholderTextColor={TEXT_GREY}
               style={styles.searchInput}
               autoCorrect={false}
-              spellCheck={false}
+              autoCapitalize="none"
               underlineColorAndroid="transparent"
             />
             {search.length > 0 && (
-              <TouchableOpacity 
-                onPress={clearSearch}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
+              <TouchableOpacity onPress={clearSearch}>
                 <Ionicons name="close-circle" size={22} color={TEXT_GREY} />
               </TouchableOpacity>
             )}
@@ -157,16 +157,9 @@ const RouteCustomer = ({ route, navigation }) => {
         ) : (
             <FlatList
               data={filteredCustomers}
-              keyExtractor={(item) => (item._id || item.customer_id || Math.random()).toString()}
-              renderItem={({ item }) => (
-                <CustomerCard
-                  name={item.full_name}
-                  phone={item.phone_number}
-                  customerId={item.customer_id}
-                  address={item.address}
-                  onPress={() => navigation.navigate("Payin", { customer: item._id })}
-                />
-              )}
+              renderItem={renderItem}
+              // Fixed KeyExtractor: DO NOT use Math.random() as it causes crashes
+              keyExtractor={(item, index) => (item._id || item.customer_id || index).toString()}
               ListEmptyComponent={
                 <Text style={styles.noCustomersText}>No matching customers found.</Text>
               }
@@ -174,6 +167,11 @@ const RouteCustomer = ({ route, navigation }) => {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               ItemSeparatorComponent={() => <View style={{ height: 18 }} />}
+              // Performance optimizations for large lists
+              initialNumToRender={10}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              removeClippedSubviews={Platform.OS === 'android'}
             />
         )}
       </View>
@@ -181,6 +179,7 @@ const RouteCustomer = ({ route, navigation }) => {
   );
 };
 
+// ... Styles remain the same as your original code
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
   topContainer: { paddingHorizontal: 20, paddingBottom: 40 },
