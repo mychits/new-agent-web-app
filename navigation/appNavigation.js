@@ -29,6 +29,7 @@ import EnrollCustomer from "../screens/EnrollCustomer";
 import HelpAndSupport from "../screens/HelpAndSupport";
 import Commissions from "../screens/Commissions";
 import Target from "../screens/Target";
+import LogOut from "../screens/LogOut";
 import Dashboard from "../screens/Dashboard";
 import CustomerOnHold from "../screens/CustomerOnHold";
 import MonthlyTurnover from "../screens/MonthlyTurnover";
@@ -145,6 +146,7 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={Due}
           />
+          <Stack.Screen name="LogOut" component={LogOut} options={{headerShown: false}} />
           <Stack.Screen name="ExpectedCommissions" component={ExpectedCommissions} options={{headerShown: false}} />
             <Stack.Screen name="PigmePayin" component={PigmePayin} options={{headerShown: false}} />
         <Stack.Screen
