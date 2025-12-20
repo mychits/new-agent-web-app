@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   profileRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   avatar: { width: 65, height: 65, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   nameCol: { marginLeft: 15 },
-  nameText: { fontSize: 22, fontWeight: '900', color: COLORS.DARK },
+  nameText: { fontSize: 18, fontWeight: '900', color: COLORS.DARK },
   roleText: { fontSize: 13, color: COLORS.PRIMARY, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   infoGrid: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 15, gap: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
