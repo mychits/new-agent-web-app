@@ -49,7 +49,7 @@ const LogOut = ({ navigation }) => {
       const user = JSON.parse(userJson);
       const employeeId = user?.userId || user?._id;
 
-      const response = await axios.get(`${baseUrl}/employee-attendance/attendance/${employeeId}`);
+      const response = await axios.get(`${baseUrl}/employee-attendance/${employeeId}`);
       if (response.data.success) {
         setAttendanceData(response.data.data);
         setRefreshKey(prev => prev + 1); 
@@ -96,7 +96,22 @@ const LogOut = ({ navigation }) => {
     fetchAttendance();
   }, []);
 
-  // Helper to format the date display
+  const formatWorkingHours = (decimalHours) => {
+    if (!decimalHours || decimalHours === "N/A") return "Calculating...";
+    
+    const totalSeconds = Math.floor(parseFloat(decimalHours) * 3600);
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    let result = "";
+    if (hrs > 0) result += `${hrs} hr${hrs > 1 ? 's' : ''} `;
+    if (mins > 0) result += `${mins} min${mins > 1 ? 's' : ''} `;
+    if (secs > 0 || result === "") result += `${secs} sec${secs !== 1 ? 's' : ''}`;
+    
+    return result.trim();
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -122,7 +137,7 @@ const LogOut = ({ navigation }) => {
                         </LinearGradient>
                     </View>
                     <Text style={styles.modalTitle}>Shift Ended!</Text>
-                    <Text style={styles.modalSub}>Great job today. Your logout time has been recorded successfully.</Text>
+                    <Text style={styles.modalSub}>Great job today. Your logout time has been recorded.</Text>
                     
                     <TouchableOpacity 
                         style={styles.doneBtn} 
@@ -146,7 +161,7 @@ const LogOut = ({ navigation }) => {
                         <MaterialCommunityIcons name="clock-end" size={40} color="#ff416c" />
                     </View>
                     <Text style={styles.modalTitle}>End Shift?</Text>
-                    <Text style={styles.modalSub}>Are you sure you want to punch out and finish your work for today?</Text>
+                    <Text style={styles.modalSub}>Are you sure you want to punch out for today?</Text>
                     
                     <View style={styles.modalActions}>
                         <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowConfirmModal(false)}>
@@ -167,7 +182,7 @@ const LogOut = ({ navigation }) => {
           <Header />
           <View style={styles.headerTitleContainer}>
               <Text style={styles.headerTitle}>Attendance Overview</Text>
-              <Text style={styles.headerSubTitle}>View your daily logs and manage your time</Text>
+              <Text style={styles.headerSubTitle}>View your daily logs and manage shifts</Text>
           </View>
       </LinearGradient>
 
@@ -205,7 +220,6 @@ const LogOut = ({ navigation }) => {
                           <Text style={styles.infoValue}>{attendanceData.employee_id?.phone_number || 'N/A'}</Text>
                       </View>
                       
-                      {/* NEW DATE ROW ADDED HERE */}
                       <View style={styles.infoRow}>
                           <View style={styles.miniIcon}><Ionicons name="calendar" size={14} color={COLORS.PRIMARY} /></View>
                           <Text style={styles.infoValue}>{formatDate(attendanceData.date || attendanceData.createdAt)}</Text>
@@ -218,24 +232,37 @@ const LogOut = ({ navigation }) => {
                   </View>
                 </View>
 
-                {/* TIME SECTION WITH GREEN/RED LOGIC */}
-                <View style={styles.timeSection}>
-                    <View style={[styles.timeCircle, styles.successCircle]}>
-                        <Text style={styles.timeLabel}>PUNCH IN</Text>
-                        <Text style={styles.timeMain}>{attendanceData.time}</Text>
+                {/* BOXES SECTION */}
+                <View style={styles.timeSectionContainer}>
+                    <View style={styles.timeBoxesRow}>
+                        <View style={[styles.timeCircle, styles.successCircle]}>
+                            <Text style={styles.timeLabel}>PUNCH IN</Text>
+                            <Text style={styles.timeMain}>{attendanceData.time}</Text>
+                        </View>
+                        
+                        <View style={[
+                            styles.timeCircle, 
+                            attendanceData.logout_time && styles.dangerCircle
+                        ]}>
+                            <Text style={styles.timeLabel}>PUNCH OUT</Text>
+                            <Text style={[styles.timeMain, !attendanceData.logout_time && {color: '#cbd5e1'}]}>
+                              {attendanceData.logout_time || '--:--'}
+                            </Text>
+                        </View>
                     </View>
-                    
-                    <View style={styles.timeConnector} />
-                    
-                    <View style={[
-                        styles.timeCircle, 
-                        attendanceData.logout_time && styles.dangerCircle
-                    ]}>
-                        <Text style={styles.timeLabel}>PUNCH OUT</Text>
-                        <Text style={[styles.timeMain, !attendanceData.logout_time && {color: '#cbd5e1'}]}>
-                          {attendanceData.logout_time || '--:--'}
-                        </Text>
-                    </View>
+
+                    {/* DURATION DISPLAYED ON SEPARATE LINES */}
+                    {attendanceData.logout_time && (
+                      <View style={styles.workedDurationContainer}>
+                         <View style={styles.workedDurationHeader}>
+                            <MaterialCommunityIcons name="timer-sand" size={20} color={COLORS.PRIMARY} />
+                            <Text style={styles.workedDurationLabel}>Worked hrs is:</Text>
+                         </View>
+                         <Text style={styles.workedDurationValue}>
+                            {formatWorkingHours(attendanceData.working_hours)}
+                         </Text>
+                      </View>
+                    )}
                 </View>
 
                 {!attendanceData.logout_time && (
@@ -285,13 +312,66 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   miniIcon: { backgroundColor: '#f0f9ff', padding: 5, borderRadius: 8 },
   infoValue: { fontSize: 14, color: COLORS.SLATE, fontWeight: '600' },
-  timeSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 35 },
-  timeCircle: { width: (width / 2) - 35, height: 115, backgroundColor: '#fff', borderRadius: 25, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#f1f5f9' },
+  
+  timeSectionContainer: {
+    marginTop: 35,
+    alignItems: 'center',
+  },
+  timeBoxesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  timeCircle: { 
+    width: (width / 2) - 40, 
+    height: 110, 
+    backgroundColor: '#fff', 
+    borderRadius: 25, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderWidth: 2, 
+    borderColor: '#f1f5f9',
+    elevation: 3,
+  },
   successCircle: { borderColor: COLORS.SUCCESS, backgroundColor: '#f0fdf4' },
   dangerCircle: { borderColor: "#ff416c", backgroundColor: '#fff1f2' },
-  timeConnector: { width: 10, height: 2, backgroundColor: '#e2e8f0' },
   timeLabel: { fontSize: 11, fontWeight: '900', color: COLORS.SLATE, marginBottom: 8, letterSpacing: 1 },
-  timeMain: { fontSize: 22, fontWeight: '900', color: COLORS.DARK },
+  timeMain: { fontSize: 20, fontWeight: '900', color: COLORS.DARK },
+  
+  // SEPARATE LINES STYLING
+  workedDurationContainer: {
+    marginTop: 25,
+    backgroundColor: '#fff',
+    paddingVertical: 18,
+    paddingHorizontal: 25,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    alignItems: 'center', // Center everything inside
+    width: '100%',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
+  workedDurationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8, // Space between lines
+  },
+  workedDurationLabel: {
+    fontSize: 14,
+    color: COLORS.SLATE,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  workedDurationValue: {
+    fontSize: 18,
+    color: COLORS.PRIMARY,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
   buttonWrapper: { marginTop: 45, alignItems: 'center' },
   fabButton: { width: '100%', height: 75, borderRadius: 25, overflow: 'hidden', elevation: 12 },
   fabGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15 },

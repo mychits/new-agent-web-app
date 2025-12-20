@@ -37,7 +37,7 @@ const SUBTLE_BG_GREY = '#f9fafb';
 const HIGHLIGHT_GOLD = '#f5be6dff';
 
 // NEW STYLISH BLUE THEME
-const QR_CARD_GRADIENT = ["#77a5b3ff", "#548d9eff"]; 
+const QR_CARD_GRADIENT = ["#77a5b3ff", "#1aa2ccff"]; 
 
 const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
 
@@ -386,7 +386,6 @@ const Home = ({ route, navigation }) => {
                     style={styles.upiCopyRow}
                   >
                     <Text style={styles.qrUpiText}>mychits@kotak</Text>
-                    <Text style={styles.copyIconText}>📋</Text> 
                   </TouchableOpacity>
                 </View>
 
