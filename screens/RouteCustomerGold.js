@@ -125,12 +125,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleContainer: {
-    marginTop: 20,
+    marginTop: 10,
     marginBottom: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#333',
   },

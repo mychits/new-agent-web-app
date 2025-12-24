@@ -22,11 +22,14 @@ import EnrolledGroups from '../screens/EnrolledGroups';
 import Becomeanagent from '../screens/Becomeanagent';
 import Register from "../screens/Register";
 import AboutMyChits from "../screens/AboutMyChits";
+import LoanPayin from "../screens/LoanPayin";
+import PigmePayin from "../screens/PigmePayin";
 
 import EnrollCustomer from "../screens/EnrollCustomer";
 import HelpAndSupport from "../screens/HelpAndSupport";
 import Commissions from "../screens/Commissions";
 import Target from "../screens/Target";
+import LogOut from "../screens/LogOut";
 import Dashboard from "../screens/Dashboard";
 import CustomerOnHold from "../screens/CustomerOnHold";
 import MonthlyTurnover from "../screens/MonthlyTurnover";
@@ -118,6 +121,7 @@ export default function AppNavigation() {
           />
           <Stack.Screen name="EnrollCustomer" options={{headerShown: false}} component={EnrollCustomer} />
           <Stack.Screen name="EnrolledGroups" options={{headerShown: false}} component={EnrolledGroups} />
+            <Stack.Screen name="LoanPayin" options={{headerShown: false}} component={LoanPayin} />
           <Stack.Screen
           name="RelationshipManagerReport"
           options={{ headerShown: false }}
@@ -142,7 +146,9 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={Due}
           />
+          <Stack.Screen name="LogOut" component={LogOut} options={{headerShown: false}} />
           <Stack.Screen name="ExpectedCommissions" component={ExpectedCommissions} options={{headerShown: false}} />
+            <Stack.Screen name="PigmePayin" component={PigmePayin} options={{headerShown: false}} />
         <Stack.Screen
           name="CustomerOnHold"
           options={{ headerShown: false }}

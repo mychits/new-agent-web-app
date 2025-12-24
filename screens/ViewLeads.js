@@ -10,11 +10,11 @@ import {
     Modal,
     TextInput,
     Platform,
-    Dimensions, // Added
-    KeyboardAvoidingView, // Added
+    Dimensions,
+    KeyboardAvoidingView,
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
-import { SafeAreaView } from "react-native-safe-area-context"; // Added SafeAreaView
+import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import moment from "moment";
 import COLORS from "../constants/color";
@@ -24,7 +24,7 @@ import goldBaseUrl from "../constants/goldBaseUrl";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons"; // Added Icons
+import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 
 const noImage = require("../assets/no.png");
 
@@ -355,7 +355,11 @@ const ViewLeads = ({ route, navigation }) => {
                             Total: {chitLeads.length + goldLeads.length || 0}
                         </Text>
                     </View>
-                    <View style={styles.searchAndFilterContainer}>
+                    
+                    {/* COMBINED SEARCH AND FILTER ROW */}
+                    <View style={styles.searchAndFilterCombinedRow}>
+                        
+                        {/* Search Bar Container */}
                         <View style={styles.searchBarContainer}>
                             <Icon name="search" size={20} color={NEUTRAL_GREY} style={styles.searchIcon} />
                             <TextInput
@@ -367,11 +371,13 @@ const ViewLeads = ({ route, navigation }) => {
                                 autoCapitalize="none"
                             />
                         </View>
+
+                        {/* Filter Box */}
                         <TouchableOpacity
                             style={styles.filterBox}
                             onPress={() => setModalVisible(true)}
                         >
-                            <Feather name="filter" size={18} color={MODERN_PRIMARY} style={styles.filterIcon} />
+                            <Feather name="filter" size={18} color={ACCENT_BLUE} style={styles.filterIcon} />
                             <Text style={styles.filterText}>{filterText}</Text>
                         </TouchableOpacity>
                     </View>
@@ -535,7 +541,7 @@ const styles = StyleSheet.create({
     titleAndCountRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "baseline", // Align text baselines
+        alignItems: "baseline",
         width: "100%",
         marginBottom: 10,
     },
@@ -550,28 +556,27 @@ const styles = StyleSheet.create({
         color: 'rgba(255, 255, 255, 0.85)',
     },
     
-    // --- SEARCH & FILTER ---
-    searchAndFilterContainer: {
+    // --- SEARCH & FILTER (MODIFIED TO BE IN ONE LINE) ---
+    searchAndFilterCombinedRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         width: '100%',
-        marginBottom: 10,
+        alignItems: 'center', 
+        marginBottom: 10, 
+        gap: 10, // Space between search and filter
     },
     searchBarContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: CARD_BG,
-        borderRadius: 15, // Made less rounded than before
+        borderRadius: 15,
         paddingHorizontal: 15,
-        flex: 7,
-        height: 45, // Adjusted height
+        flex: 1, // Takes full available width
+        height: 45,
         shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 3,
-        marginRight: 10,
     },
     searchIcon: {
         marginRight: 10,
@@ -585,9 +590,9 @@ const styles = StyleSheet.create({
         paddingVertical: 0,
     },
     filterBox: {
-        backgroundColor: CARD_BG, // White background
+        backgroundColor: CARD_BG,
         paddingVertical: 10,
-        paddingHorizontal: 12,
+        paddingHorizontal: 15,
         borderRadius: 15,
         flexDirection: "row",
         alignItems: "center",
@@ -597,7 +602,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 3,
-        flex: 3,
         height: 45,
     },
     filterIcon: {
@@ -614,7 +618,7 @@ const styles = StyleSheet.create({
     // --- TABS ---
     tabContainer: {
         flexDirection: "row",
-        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Lighter background for tabs in header
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderRadius: 15,
         marginBottom: 10,
         padding: 5,
@@ -628,7 +632,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     activeTab: {
-        backgroundColor: CARD_BG, // White/Card BG when active
+        backgroundColor: CARD_BG,
         shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.15,
@@ -637,12 +641,12 @@ const styles = StyleSheet.create({
     },
     tabText: {
         fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.9)', // White-ish text when inactive
+        color: 'rgba(255, 255, 255, 0.9)',
         fontWeight: "600",
         marginLeft: 5,
     },
     activeTabText: {
-        color: MODERN_PRIMARY, // Dark text when active
+        color: MODERN_PRIMARY,
         fontWeight: 'bold',
     },
 
@@ -653,7 +657,6 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         padding: 20,
         borderLeftWidth: 6, 
-        // borderLeftColor set dynamically in renderLeadCard
         shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08, 

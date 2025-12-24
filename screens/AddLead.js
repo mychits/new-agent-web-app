@@ -11,62 +11,50 @@ import {
   ActivityIndicator,
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import { SafeAreaView } from "react-native-safe-area-context"; // ✅ Added SafeAreaView
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
-import * as Contacts from "expo-contacts";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons"; // 🔄 Switched to Ionicons
+import Feather from "react-native-vector-icons/Feather";
 
 import COLORS from "../constants/color";
-import Button from "../components/Button";
 import chitBaseUrl from "../constants/baseUrl";
 import goldBaseUrl from "../constants/goldBaseUrl";
-
-// --- DESIGN CONSTANTS COPIED from PaymentList.js ---
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent (for primary buttons/highlights)
-const BORDER_COLOR = "#e0e0e0"; // Lighter border
-const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
-const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
-// ---------------------------------------------
 
 const AddLead = ({ route, navigation }) => {
   const { user } = route.params;
 
-  const [receipt, setReceipt] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [leadMode, setLeadMode] = useState("quick"); // quick | detailed
+  const [focusedInput, setFocusedInput] = useState(null);
+  const [receipt, setReceipt] = useState({});
   const [groups, setGroups] = useState([]);
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [selectedTicket, setSelectedTicket] = useState("chit");
-
+  
   const [customerInfo, setCustomerInfo] = useState({
     full_name: "",
     phone_number: "",
     profession: "",
   });
 
-  // 隼 Fetch Groups
+  const [selectedTicket, setSelectedTicket] = useState("chit");
+  const [selectedGroup, setSelectedGroup] = useState("");
+
   useEffect(() => {
     const fetchGroups = async () => {
-      const currentUrl =
-        selectedTicket === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
+      const currentUrl = selectedTicket === "chit" ? chitBaseUrl : goldBaseUrl;
       try {
         const response = await axios.get(`${currentUrl}/group/get-group`);
         if (response.data) {
           setGroups(response.data || []);
+          setSelectedGroup("");
         }
       } catch (error) {
         console.error("Error fetching groups:", error.message);
+        setGroups([]);
       }
     };
     fetchGroups();
   }, [selectedTicket]);
 
-  // 隼 Fetch Agent Info
   useEffect(() => {
     const fetchAgentData = async () => {
       try {
@@ -81,56 +69,16 @@ const AddLead = ({ route, navigation }) => {
     fetchAgentData();
   }, [user.userId]);
 
-  // 隼 Input Change
   const handleInputChange = (field, value) => {
     setCustomerInfo({ ...customerInfo, [field]: value });
   };
 
-  // 隼 Pick Contact from Phone
-  const handlePickContact = async () => {
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Denied", "Cannot access contacts.");
-      return;
-    }
-
-    try {
-      const contact = await Contacts.presentContactPickerAsync();
-      if (!contact) return;
-
-      const name = contact.name ?? "";
-      const phoneNumbers = contact.phoneNumbers;
-      let phone = "";
-      if (phoneNumbers && phoneNumbers.length > 0) {
-        phone = phoneNumbers[0].number.replace(/\D/g, ""); // remove non-digits
-      }
-
-      setCustomerInfo({
-        ...customerInfo,
-        full_name: name || customerInfo.full_name,
-        phone_number: phone || customerInfo.phone_number,
-      });
-
-      Alert.alert("Contact Selected", "Contact details filled successfully!");
-    } catch (err) {
-      console.error("Error picking contact:", err);
-      Alert.alert("Error", "Failed to pick contact.");
-    }
-  };
-
-  // 隼 Add Lead
   const handleAddLead = async () => {
     setIsLoading(true);
-    const baseUrl =
-      selectedTicket === "chit" ? `${chitBaseUrl}` : `${goldBaseUrl}`;
+    const baseUrl = selectedTicket === "chit" ? chitBaseUrl : goldBaseUrl;
 
-    if (
-      !customerInfo.full_name ||
-      !customerInfo.phone_number ||
-      (leadMode === "detailed" &&
-        (!customerInfo.profession || !selectedGroup))
-    ) {
-      Alert.alert("Required", "Please fill all required fields!");
+    if (!customerInfo.full_name || !customerInfo.phone_number || !customerInfo.profession || !selectedGroup) {
+      Alert.alert("Required", "Please fill out all fields!");
       setIsLoading(false);
       return;
     }
@@ -139,392 +87,246 @@ const AddLead = ({ route, navigation }) => {
       const data = {
         lead_name: customerInfo.full_name,
         lead_phone: customerInfo.phone_number,
-        lead_profession:
-          leadMode === "quick" ? "N/A" : customerInfo.profession,
-        group_id: leadMode === "quick" ? null : selectedGroup,
+        lead_profession: customerInfo.profession,
+        group_id: selectedGroup,
         lead_type: "agent",
         scheme_type: selectedTicket,
-        lead_agent: user.userId,
+        lead_agent: selectedTicket === "chit" ? user.userId : receipt.name,
         agent_number: receipt.phone_number,
       };
 
       const response = await axios.post(`${baseUrl}/lead/add-lead`, data);
 
       if (response.status === 201) {
-        Alert.alert("✅ Success", "Lead added successfully!");
-        setCustomerInfo({
-          full_name: "",
-          phone_number: "",
-          profession: "",
-        });
+        Alert.alert("Success", "Lead added successfully!");
+        setCustomerInfo({ full_name: "", phone_number: "", profession: "" });
         setSelectedGroup("");
-        setSelectedTicket("chit");
-        navigation.navigate("ViewLeads", { user: user });
-      } else {
-        Alert.alert("Error", response.data?.message || "Error adding lead.");
+        navigation.navigate("ViewLeads", { user });
       }
     } catch (error) {
-      console.error("Error adding lead:", error);
-      Alert.alert("Already Exists", "Phone number already exists.");
+      Alert.alert("Error", "Error adding lead. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* === Blue Curved Header === */}
-      <LinearGradient
-        colors={TOP_GRADIENT}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.topContainer}
-      >
-        <TouchableOpacity
-          style={styles.backCircle}
-          onPress={() => navigation.goBack()}
-        >
-          {/* 🔄 Updated Icon */}
-          <Ionicons name="arrow-back-outline" size={24} color={CARD_BG} /> 
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]} style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
-        
-        <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Add Lead</Text>
-            <Text style={styles.subtitle}>Fill in details to add a new lead</Text>
-        </View>
+
+        <Text style={styles.headerTitle}>Add Lead</Text>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate("ViewLeads", { user })}
+          style={styles.myCustomersButton}
+        >
+          <Text style={styles.myCustomersButtonText}>My Leads</Text>
+        </TouchableOpacity>
       </LinearGradient>
 
-      {/* === White/Grey Form Area (Curved Overlap) === */}
-      <View style={styles.mainContentArea}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <ScrollView 
-            contentContainerStyle={styles.scrollContainer} 
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Mode Switch */}
-            <View style={styles.modeTabContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.modeTab,
-                  leadMode === "quick" && styles.activeModeTab,
-                ]}
-                onPress={() => setLeadMode("quick")}
-              >
-                <Text
-                  style={[
-                    styles.modeTabText,
-                    leadMode === "quick" && styles.activeModeTabText,
-                  ]}
-                >
-                  Quick Lead
-                </Text>
-              </TouchableOpacity>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <View style={styles.formCard}>
+            
+            {/* Added sentence after headline */}
+            <Text style={styles.subHeaderText}>
+              Please provide the lead details to initiate a new connection.
+            </Text>
+            
+            <InputField
+              label="Name"
+              icon="user"
+              required
+              value={customerInfo.full_name}
+              onChangeText={(v) => handleInputChange("full_name", v)}
+              onFocus={() => setFocusedInput("full_name")}
+              onBlur={() => setFocusedInput(null)}
+              focused={focusedInput === "full_name"}
+            />
 
-              <TouchableOpacity
-                style={[
-                  styles.modeTab,
-                  leadMode === "detailed" && styles.activeModeTab,
-                ]}
-                onPress={() => setLeadMode("detailed")}
+            <InputField
+              label="Phone Number"
+              icon="phone"
+              required
+              keyboardType="phone-pad"
+              value={customerInfo.phone_number}
+              onChangeText={(v) => handleInputChange("phone_number", v)}
+              onFocus={() => setFocusedInput("phone_number")}
+              onBlur={() => setFocusedInput(null)}
+              focused={focusedInput === "phone_number"}
+            />
+
+            <Text style={styles.label}>Profession *</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={customerInfo.profession}
+                onValueChange={(val) => handleInputChange("profession", val)}
+                style={styles.picker}
+                dropdownIconColor="#1aa2ccff"
               >
-                <Text
-                  style={[
-                    styles.modeTabText,
-                    leadMode === "detailed" && styles.activeModeTabText,
-                  ]}
-                >
-                  Detailed Lead
-                </Text>
+                <Picker.Item label="Select Profession" value="" />
+                <Picker.Item label="Employed" value="Employed" />
+                <Picker.Item label="Self-Employed" value="Self-Employed" />
+              </Picker>
+            </View>
+
+            <Text style={styles.label}>Scheme Type *</Text>
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tab, selectedTicket === "chit" && styles.activeTab]}
+                onPress={() => setSelectedTicket("chit")}
+              >
+                <Text style={[styles.tabText, selectedTicket === "chit" && styles.activeTabText]}>Chit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, selectedTicket === "gold" && styles.activeTab]}
+                onPress={() => setSelectedTicket("gold")}
+              >
+                <Text style={[styles.tabText, selectedTicket === "gold" && styles.activeTabText]}>Gold</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Select Contact Button */}
+            <Text style={styles.label}>Group *</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedGroup}
+                onValueChange={(val) => setSelectedGroup(val)}
+                style={styles.picker}
+                dropdownIconColor="#1aa2ccff"
+              >
+                <Picker.Item label="Select Group" value="" />
+                {groups.map((g) => (
+                  <Picker.Item key={g._id} label={g.group_name} value={g._id} />
+                ))}
+              </Picker>
+            </View>
+
             <TouchableOpacity
-              style={styles.contactButton}
-              onPress={handlePickContact}
+              style={[styles.addButton, isLoading && { opacity: 0.7 }]}
+              onPress={handleAddLead}
+              disabled={isLoading}
             >
-              
-            </TouchableOpacity>
-
-            <View style={styles.formCard}>
-              <Text style={styles.label}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter full name"
-                placeholderTextColor={TEXT_GREY}
-                value={customerInfo.full_name}
-                onChangeText={(v) => handleInputChange("full_name", v)}
-              />
-
-              <Text style={styles.label}>Phone Number</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter phone number"
-                placeholderTextColor={TEXT_GREY}
-                keyboardType="phone-pad"
-                value={customerInfo.phone_number}
-                onChangeText={(v) => handleInputChange("phone_number", v)}
-              />
-
-              <Text style={styles.label}>Scheme Type</Text>
-              <View style={styles.schemeTabs}>
-                <TouchableOpacity
-                  style={[
-                    styles.schemeTab,
-                    selectedTicket === "chit" && styles.activeSchemeTab,
-                  ]}
-                  onPress={() => setSelectedTicket("chit")}
-                >
-                  <Text
-                    style={[
-                      styles.schemeText,
-                      selectedTicket === "chit" && styles.activeSchemeText,
-                    ]}
-                  >
-                    Chit
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.schemeTab,
-                    selectedTicket === "gold" && styles.activeSchemeTab,
-                  ]}
-                  onPress={() => setSelectedTicket("gold")}
-                >
-                  <Text
-                    style={[
-                      styles.schemeText,
-                      selectedTicket === "gold" && styles.activeSchemeText,
-                    ]}
-                  >
-                    Gold
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {leadMode === "detailed" && (
-                <>
-                  <Text style={styles.label}>Profession</Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={customerInfo.profession}
-                      onValueChange={(v) => handleInputChange("profession", v)}
-                      style={styles.picker}
-                      itemStyle={styles.pickerItem}
-                    >
-                      <Picker.Item label="Select Profession" value="" />
-                      <Picker.Item label="Employed" value="Employed" />
-                      <Picker.Item label="Self-Employed" value="Self-Employed" />
-                    </Picker>
-                  </View>
-
-                  <Text style={styles.label}>Group</Text>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={selectedGroup}
-                      onValueChange={(v) => setSelectedGroup(v)}
-                      style={styles.picker}
-                      itemStyle={styles.pickerItem}
-                    >
-                      <Picker.Item label="Select Group" value="" />
-                      {groups.map((g) => (
-                        <Picker.Item
-                          key={g._id}
-                          label={g.group_name}
-                          value={g._id}
-                        />
-                      ))}
-                    </Picker>
-                  </View>
-                </>
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.addButtonText}>Add Lead</Text>
               )}
-
-              <Button
-                title={isLoading ? "Please wait..." : "Add Lead"}
-                filled
-                style={[
-                  styles.submitButton, // Using new style object
-                  { 
-                    backgroundColor: isLoading ? TEXT_GREY : ACCENT_BLUE,
-                  }
-                ]}
-                onPress={handleAddLead}
-                disabled={isLoading}
-              />
-            </View>
-          </ScrollView>
+            </TouchableOpacity>
+          </View>
         </KeyboardAvoidingView>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
+const InputField = ({ label, icon, required, value, onChangeText, keyboardType, onFocus, onBlur, focused }) => (
+  <View style={{ marginBottom: 15 }}>
+    <Text style={styles.label}>
+      {label} {required && <Text style={{ color: "red" }}>*</Text>}
+    </Text>
+    <View style={[styles.inputGroup, focused && { borderColor: "#1aa2ccff" }]}>
+      <Feather name={icon} size={18} color={focused ? "#1aa2ccff" : "#888"} style={styles.icon} />
+      <TextInput
+        style={styles.textInput}
+        placeholder={`Enter ${label}`}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholderTextColor="#999"
+      />
+    </View>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  // --- LAYOUT STYLES (New) ---
-  safeArea: { 
-    flex: 1, 
-    backgroundColor: TOP_GRADIENT[0] 
-  },
-  topContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    position: 'relative',
-  },
-  titleContainer: {
-    alignItems: 'center',
-    marginTop: 35,
-    marginBottom: 15,
-  },
-  headerTitle: {
-    color: CARD_BG,
-    fontSize: 28, 
-    fontWeight: "900",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.85)', 
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  mainContentArea: {
-    flex: 1,
-    backgroundColor: SUBTLE_BG_GREY,
-    borderTopLeftRadius: 30, 
-    borderTopRightRadius: 30,
+  safeArea: { flex: 1, backgroundColor: "#f3f2f8" },
+  headerContainer: {
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    paddingVertical: 35,
     paddingHorizontal: 20,
-    marginTop: -20, // Curved overlap
-    paddingTop: 30, 
-    shadowColor: MODERN_PRIMARY,
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    elevation: 6,
   },
-  scrollContainer: { 
-    paddingBottom: 40,
-  },
-  
-  // --- HEADER BACK BUTTON (Updated) ---
-  backCircle: {
-    position: "absolute",
-    top: 20, // Adjusted position for SafeAreaView
-    left: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  backButton: {
     backgroundColor: "rgba(255,255,255,0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
+    padding: 10,
+    borderRadius: 50,
   },
-
-  // --- MODE TABS (Updated colors) ---
-  modeTabContainer: {
-    flexDirection: "row",
-    backgroundColor: CARD_BG, // White background
+  headerTitle: { color: "#fff", fontSize: 20, fontWeight: "bold" },
+  myCustomersButton: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: 25,
-    padding: 5,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: BORDER_COLOR,
-    shadowColor: MODERN_PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, 
-    shadowRadius: 4,
-    elevation: 2,
   },
-  modeTab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  activeModeTab: { backgroundColor: ACCENT_BLUE }, // Blue highlight
-  modeTabText: { color: ACCENT_BLUE, fontWeight: "600" }, // Blue text
-  activeModeTabText: { color: CARD_BG, fontWeight: "bold" }, // White text
-
-  // --- FORM CARD (Updated shadow/radius) ---
+  myCustomersButtonText: { color: "#1aa2ccff", fontSize: 12, fontWeight: "bold" },
   formCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 20,
-    padding: 20,
-    elevation: 8,
-    shadowColor: MODERN_PRIMARY,
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-  },
-  
-  // --- INPUTS & LABELS (Updated colors/styles) ---
-  label: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: MODERN_PRIMARY, // Dark primary text
-    marginTop: 15,
-    marginBottom: 5,
-  },
-  input: {
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: SUBTLE_BG_GREY, // Light grey input background
-    marginVertical: 4,
-    paddingHorizontal: 15,
-    color: MODERN_PRIMARY,
-    borderWidth: 1,
-    borderColor: BORDER_COLOR,
-    fontSize: 16,
-  },
-  
- 
-  
-  // --- SCHEME TABS (Updated colors) ---
-  schemeTabs: {
-    flexDirection: "row",
-    borderRadius: 12,
-    backgroundColor: SUBTLE_BG_GREY, // Light grey background
-    padding: 4,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: BORDER_COLOR,
-  },
-  schemeTab: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  activeSchemeTab: { backgroundColor: ACCENT_BLUE }, // Blue highlight
-  schemeText: { color: ACCENT_BLUE, fontWeight: "500" }, // Blue text
-  activeSchemeText: { color: CARD_BG, fontWeight: "bold" }, // White text
-  
-  // --- PICKER (Updated colors/styles) ---
-  pickerContainer: {
-    backgroundColor: SUBTLE_BG_GREY,
-    borderRadius: 12,
-    marginVertical: 4,
-    borderWidth: 1,
-    borderColor: BORDER_COLOR,
-  },
-  picker: { 
-    color: MODERN_PRIMARY, 
-    height: 50,
-  },
-  pickerItem: { 
-    color: MODERN_PRIMARY, 
-  },
-
-  // --- SUBMIT BUTTON (Updated colors/styles) ---
-  submitButton: {
+    backgroundColor: "#fff",
+    borderRadius: 25,
+    marginHorizontal: 20,
     marginTop: 25,
-    marginBottom: 0,
-    borderRadius: 30, // Make it more rounded
+    padding: 20,
+    elevation: 3,
+  },
+  subHeaderText: {
+    color: "#666",
+    fontSize: 13,
+    marginBottom: 20,
+    textAlign: "center",
+    fontStyle: "italic"
+  },
+  label: { fontWeight: "bold", color: "#333", marginBottom: 5, marginTop: 5 },
+  inputGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f7f7f7",
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  icon: { marginRight: 8 },
+  textInput: { flex: 1, color: "#000", fontSize: 14 },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 20,
+    backgroundColor: "#f7f7f7",
+    overflow: "hidden",
+    marginBottom: 15,
     height: 55,
-    justifyContent: 'center',
-  }
+  },
+  picker: { height: 55, color: "#333" },
+  tabContainer: {
+    flexDirection: "row",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 20,
+    padding: 4,
+    marginBottom: 15,
+    marginTop: 5,
+  },
+  tab: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 18 },
+  activeTab: { backgroundColor: "#1aa2ccff" },
+  tabText: { fontWeight: "bold", color: "#666" },
+  activeTabText: { color: "#fff" },
+  addButton: {
+    backgroundColor: "#1aa2ccff",
+    paddingVertical: 14,
+    borderRadius: 30,
+    marginTop: 10,
+    alignItems: "center",
+    elevation: 5,
+  },
+  addButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
 
 export default AddLead;

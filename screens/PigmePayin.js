@@ -8,40 +8,35 @@ import {
     Platform,
     ScrollView,
     ActivityIndicator,
-    TouchableOpacity, // Added for consistency
+    TouchableOpacity,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native-safe-area-context"; // Added SafeAreaView
+import { SafeAreaView } from "react-native-safe-area-context";
 
-// Assuming these are defined elsewhere and available
 import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
-import COLORS from "../constants/color"; // Kept for consistency if needed elsewhere
 
-// --- DESIGN CONSTANTS COPIED FROM LoanPayin.js ---
+// --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent (for icons/left border/primary color)
-const BORDER_COLOR = "#e0e0e0"; // Lighter border
-const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const MODERN_PRIMARY = "#0d0d0eff"; 
+const BORDER_COLOR = "#e0e0e0"; 
+const TEXT_GREY = "#4b5563"; 
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = "#f9fafb"; // Very light background for content area
-const PRIMARY_BUTTON_COLOR = "#f8c009ff"; // Assuming the yellow color for main action
-// ---------------------------------------------
-
+const SUBTLE_BG_GREY = "#f9fafb"; 
+const PRIMARY_BUTTON_COLOR = "#f8c009ff"; 
 
 const PigmePayin = ({ route, navigation }) => {
     const { user, customer, pigme_id, custom_pigme_id } = route.params;
 
     const [currentDate, setCurrentDate] = useState("");
     const [receipt, setReceipt] = useState({});
-    const [paymentDetails, setPaymentDetails] = useState("cash"); // Set default to 'cash'
-    const [amount, setAmount] = useState("");
+    const [paymentDetails, setPaymentDetails] = useState("cash"); 
+    const [amount, setAmount] = useState(""); // Initially empty string
     const [transactionId, setTransactionId] = useState("");
     const [additionalInfo, setAdditionalInfo] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -54,67 +49,48 @@ const PigmePayin = ({ route, navigation }) => {
     const [agent, setAgent] = useState(null);
     const [singlePigmeMode, setSinglePigmeMode] = useState(false);
 
-
-    // --- Data Fetching Effects ---
-
-    // 1. Fetch Customer Pigme Data (Handles single pigme fetch)
     useEffect(() => {
         const fetchCustomerPigme = async () => {
             setIsFetchingData(true);
             try {
-                // Fetch the single Pigme using pigme_id
-                const response = await axios.get(
-                    `${baseUrl}/pigme/get-pigme/${pigme_id}`
-                );
+                const response = await axios.get(`${baseUrl}/pigme/get-pigme/${pigme_id}`);
 
                 if (response.data) {
                     const fetchedPigme = response.data;
                     const customerName = fetchedPigme.customer?.full_name || "N/A";
-                    setPigmeAmt(fetchedPigme?.payable_amount || "0")
-
+                    setPigmeAmt(fetchedPigme?.payable_amount || "0");
                     setCustomerInfo(customerName);
-                    // Wrap the single fetched item in an array for consistency
                     const dataArray = [fetchedPigme];
                     setPigmeData(dataArray);
 
-                    // Auto-select and auto-set amount
                     if (dataArray.length === 1) {
                         setSelectedPigme(dataArray[0]);
-                        setAmount(String(dataArray[0].payable_amount || ""));
+                        // REMOVED: setAmount here to keep input empty initially
                         setSinglePigmeMode(true);
                     } else {
                          setSinglePigmeMode(false);
                     }
-                } else {
-                    console.error("Unexpected API response format for pigme:", response.data);
-                    setSinglePigmeMode(false);
                 }
             } catch (error) {
                 console.error("Error fetching customer pigme data:", error);
-                setPigmeAmt("0")
+                setPigmeAmt("0");
                 setSinglePigmeMode(false);
-
             } finally {
                 setIsFetchingData(false);
             }
         };
-
         fetchCustomerPigme();
     }, [pigme_id]);
 
-    // 2. Set Current Date
     useEffect(() => {
         const today = moment().format("DD-MM-YYYY");
         setCurrentDate(today);
     }, []);
 
-    // 3. Fetch Latest Receipt
     useEffect(() => {
         const fetchReceipt = async () => {
             try {
-                const response = await axios.get(
-                    `${baseUrl}/payment/get-latest-receipt`
-                );
+                const response = await axios.get(`${baseUrl}/payment/get-latest-receipt`);
                 setReceipt(response.data);
             } catch (error) {
                 console.error("Error fetching latest receipt:", error);
@@ -123,58 +99,31 @@ const PigmePayin = ({ route, navigation }) => {
         fetchReceipt();
     }, []);
 
-    // 4. Fetch Agent Info
     useEffect(() => {
         const fetchAgent = async () => {
             try {
-                const response = await axios.get(
-                    `${baseUrl}/agent/get-agent-by-id/${user.userId}`
-                );
-                if (response.data) {
-                    setAgent(response.data);
-                } else {
-                    console.error("Unexpected API response format for agent:", response.data);
-                }
+                const response = await axios.get(`${baseUrl}/agent/get-agent-by-id/${user.userId}`);
+                if (response.data) setAgent(response.data);
             } catch (error) {
                 console.error("Error fetching agent data:", error);
             }
         };
-
-        if (user?.userId) {
-            fetchAgent();
-        }
+        if (user?.userId) fetchAgent();
     }, [user.userId]);
-
-    // --- Handlers ---
 
     const handlePaymentTypeChange = (type) => {
         setPaymentDetails(type);
         setTransactionId("");
-        if (type === "online") {
-            setAdditionalInfo("Transaction ID");
-        } else if (type === "cheque") {
-            setAdditionalInfo("Cheque Number");
-        } else {
-            setAdditionalInfo("");
-        }
+        if (type === "online") setAdditionalInfo("Transaction ID");
+        else if (type === "cheque") setAdditionalInfo("Cheque Number");
+        else setAdditionalInfo("");
     };
 
     const handleAddPayment = async () => {
         setIsLoading(true);
         try {
-            if (
-                !selectedPigme ||
-                !paymentDetails ||
-                !amount ||
-                (paymentDetails !== "cash" && !transactionId)
-            ) {
+            if (!selectedPigme || !paymentDetails || !amount || (paymentDetails !== "cash" && !transactionId)) {
                 Alert.alert("Validation Error", "Please fill all mandatory fields.");
-                setIsLoading(false);
-                return;
-            }
-
-            if (isNaN(Number(amount)) || Number(amount) <= 0) {
-                Alert.alert("Validation Error", "Please enter a valid amount.");
                 setIsLoading(false);
                 return;
             }
@@ -191,34 +140,21 @@ const PigmePayin = ({ route, navigation }) => {
                 pigme_id: PigmeId,
             };
 
-            const response = await axios.post(
-                `${baseUrl}/payment/pigme/${PigmeId}`,
-                data
-            );
+            const response = await axios.post(`${baseUrl}/payment/pigme/${PigmeId}`, data);
 
             if (response.status === 201) {
                 Alert.alert("Success", "Payment added successfully!");
-
-                const userResponse = await axios.get(
-                    `${baseUrl}/user/get-user-by-id/${customer}`
-                );
+                const userResponse = await axios.get(`${baseUrl}/user/get-user-by-id/${customer}`);
                 const { full_name, phone_number } = userResponse.data;
+                const { pay_date, amount: paidAmount, pay_type, transaction_id: tId, receipt_no } = response.data?.response;
 
-                const { pay_date, amount: paidAmount, pay_type, transaction_id: tId, receipt_no } =
-                    response.data?.response;
-
-                const agentName = agent?.name || "N/A";
-
-                const totalAmountResponse = await axios.post(
-                    `${baseUrl}/payment/get-total-amount`,
-                    { user_id: customer, pigme: pigme_id }
-                );
+                const totalAmountResponse = await axios.post(`${baseUrl}/payment/get-total-amount`, { user_id: customer, pigme: pigme_id });
 
                 navigation.navigate("PigmePrint", {
                     customer_name: full_name,
                     cus_id: customer,
                     phone_number: phone_number,
-                    agent_name: agentName,
+                    agent_name: agent?.name || "N/A",
                     amount: paidAmount,
                     pay_type: pay_type,
                     pay_date: pay_date,
@@ -230,21 +166,15 @@ const PigmePayin = ({ route, navigation }) => {
                     actual_pigme_id: pigme_id,
                     pigme_amount: pigmeAmt,
                 });
-            } else {
-                Alert.alert("Error", response.data.message || "Something went wrong.");
             }
         } catch (error) {
-            console.error("Error adding payment:", error);
-            Alert.alert("Error", error.response?.data?.message || "Error adding payment. Please check your network or try again.");
+            Alert.alert("Error", error.response?.data?.message || "Error adding payment.");
         } finally {
             setIsLoading(false);
         }
     };
 
-    // --- Render Logic ---
-
     const renderPigmeSelection = () => {
-        // Case 1: Only one Pigme plan - Display read-only
         if (singlePigmeMode && selectedPigme) {
             return (
                 <TextInput
@@ -256,28 +186,22 @@ const PigmePayin = ({ route, navigation }) => {
             );
         }
 
-        // Case 2: More than one Pigme plan or loading - Use Picker
         return (
             <View style={styles.pickerContainer}>
                 <Picker
                     selectedValue={selectedPigme}
                     onValueChange={(itemValue) => {
                         setSelectedPigme(itemValue);
-                        // Update amount when a new Pigme is selected
-                        if (itemValue) {
-                            setAmount(String(itemValue.payable_amount || ""));
-                        }
+                        // REMOVED: setAmount here to keep input empty when switching IDs
                     }}
                     style={styles.picker}
-                    itemStyle={styles.pickerItem}
                 >
-                    <Picker.Item label="Select Pigme ID & Amount" value={null} color={TEXT_GREY} />
+                    <Picker.Item label="Select Pigme ID" value={null} color={TEXT_GREY} />
                     {pigmeData.map((data) => (
                         <Picker.Item
                             key={data._id}
-                            label={`ID: ${data.pigme_id} | Amt: ${data.payable_amount || 0}`}
+                            label={`ID: ${data.pigme_id}`}
                             value={data}
-                            color={MODERN_PRIMARY}
                         />
                     ))}
                 </Picker>
@@ -286,118 +210,67 @@ const PigmePayin = ({ route, navigation }) => {
     };
 
     const renderContent = () => {
-        // If no data was found and we've finished loading, show an error state
         if (!customerInfo || pigmeData.length === 0) {
             return (
                 <View style={styles.loadingContainer}>
-                    <Text style={styles.errorText}>No open Pigmy plans found for this customer.</Text>
-                    <Button
-                        title="Go Back"
-                        filled
-                        onPress={() => navigation.goBack()}
-                        style={styles.goBackButton}
-                    />
+                    <Text style={styles.errorText}>No open Pigmy plans found.</Text>
+                    <Button title="Go Back" filled onPress={() => navigation.goBack()} style={styles.goBackButton} />
                 </View>
             );
         }
         
-        // Main Form Content
         return (
             <View style={styles.formBox}>
-                {/* Customer Name */}
-                <Text style={styles.label}>
-                    Name<Text style={styles.star}>*</Text>
-                </Text>
+                <Text style={styles.label}>Name<Text style={styles.star}>*</Text></Text>
+                <TextInput style={styles.textInput} value={customerInfo || "N/A"} editable={false} />
+
+                <Text style={styles.label}>Pigmy ID <Text style={styles.star}>*</Text></Text>
+                {renderPigmeSelection()}
+
+                <View style={styles.row}>
+                    <View style={styles.column}>
+                        <Text style={styles.label}>Date<Text style={styles.star}>*</Text></Text>
+                        <TextInput style={styles.textInput} value={currentDate} editable={false} />
+                    </View>
+                    <View style={styles.column}>
+                        <Text style={styles.label}>Receipt<Text style={styles.star}>*</Text></Text>
+                        <TextInput style={styles.textInput} value={receipt.receipt_no !== undefined ? String(receipt.receipt_no) : "N/A"} editable={false} />
+                    </View>
+                </View>
+
+                {/* Separate Line: Payment Type */}
+                <Text style={styles.label}>Payment Type<Text style={styles.star}>*</Text></Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={paymentDetails}
+                        onValueChange={handlePaymentTypeChange}
+                        style={styles.picker}
+                    >
+                        <Picker.Item label="Cash" value="cash" />
+                        <Picker.Item label="Online" value="online" />
+                        <Picker.Item label="Cheque" value="cheque" />
+                    </Picker>
+                </View>
+
+                {/* Separate Line: Amount (Now displays placeholder initially) */}
+                <Text style={styles.label}>Amount<Text style={styles.star}>*</Text></Text>
                 <TextInput
                     style={styles.textInput}
-                    placeholder="Enter The Name"
-                    keyboardType="default"
-                    value={customerInfo || "N/A"}
-                    editable={false}
+                    placeholder="Enter The Amount"
+                    keyboardType="numeric"
+                    value={amount}
+                    onChangeText={setAmount}
                     placeholderTextColor={TEXT_GREY}
                 />
 
-                {/* Pigme ID & Payable Amount Selection */}
-                <Text style={styles.label}>
-                    Pigmy ID <Text style={styles.star}>*</Text>
-                </Text>
-                {renderPigmeSelection()}
-
-
-                <View style={styles.row}>
-                    <View style={styles.column}>
-                        <Text style={styles.label}>
-                            Date<Text style={styles.star}>*</Text>
-                        </Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Select Date"
-                            value={currentDate}
-                            editable={false}
-                            placeholderTextColor={TEXT_GREY}
-                        />
-                    </View>
-                    <View style={styles.column}>
-                        <Text style={styles.label}>
-                            Receipt<Text style={styles.star}>*</Text>
-                        </Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Select Receipt"
-                            keyboardType="numeric"
-                            value={receipt.receipt_no !== undefined && receipt.receipt_no !== null ? String(receipt.receipt_no) : "N/A"}
-                            editable={false}
-                            placeholderTextColor={TEXT_GREY}
-                        />
-                    </View>
-                </View>
-
-                <View style={styles.row}>
-                    <View style={styles.column}>
-                        <Text style={styles.label}>
-                            Payment Type<Text style={styles.star}>*</Text>
-                        </Text>
-                        <View style={styles.pickerContainer}>
-                            <Picker
-                                selectedValue={paymentDetails}
-                                onValueChange={handlePaymentTypeChange}
-                                style={styles.picker}
-                                itemStyle={styles.pickerItem}
-                            >
-                                <Picker.Item label="Cash" value="cash" color={MODERN_PRIMARY} />
-                                <Picker.Item label="Online" value="online" color={MODERN_PRIMARY} />
-                                <Picker.Item label="Cheque" value="cheque" color={MODERN_PRIMARY} />
-                            </Picker>
-                        </View>
-                    </View>
-                    <View style={styles.column}>
-                        <Text style={styles.label}>
-                            Amount<Text style={styles.star}>*</Text>
-                        </Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Enter The Amount"
-                            keyboardType="numeric"
-                            value={amount}
-                            onChangeText={setAmount}
-                            placeholderTextColor={TEXT_GREY}
-                        />
-                    </View>
-                </View>
-
                 {additionalInfo !== "" && (
                     <>
-                        <Text style={styles.label}>
-                            {additionalInfo}
-                            <Text style={styles.star}>*</Text>
-                        </Text>
+                        <Text style={styles.label}>{additionalInfo}<Text style={styles.star}>*</Text></Text>
                         <TextInput
                             style={styles.textInput}
                             placeholder={`Enter ${additionalInfo}`}
-                            keyboardType="default"
                             value={transactionId}
                             onChangeText={setTransactionId}
-                            placeholderTextColor={TEXT_GREY}
                         />
                     </>
                 )}
@@ -413,62 +286,27 @@ const PigmePayin = ({ route, navigation }) => {
         );
     };
 
-
-    // Initial Data Fetching Loading Screen
     if (isFetchingData) {
         return (
-            <LinearGradient
-                colors={TOP_GRADIENT}
-                style={styles.safeArea}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={CARD_BG} />
-                </View>
+            <LinearGradient colors={TOP_GRADIENT} style={styles.safeArea}>
+                <View style={styles.loadingContainer}><ActivityIndicator size="large" color={CARD_BG} /></View>
             </LinearGradient>
         );
     }
 
-
-    // Main Component View
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
-            {/* =======================================================
-               FIXED TOP SECTION (Gradient, Header, Title)
-               =======================================================
-            */}
-            <LinearGradient
-                colors={TOP_GRADIENT}
-                style={styles.fixedHeaderArea}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                <View style={styles.headerSpacer}>
-                    <Header />
-                </View>
+            <LinearGradient colors={TOP_GRADIENT} style={styles.fixedHeaderArea}>
+                <View style={styles.headerSpacer}><Header /></View>
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Add Pigmy Payment</Text>
-                    <Text style={styles.subtitle}>
-                        {customerInfo || 'Customer Details'}
-                    </Text>
+                    <Text style={styles.subtitle}>{customerInfo || 'Customer Details'}</Text>
                 </View>
             </LinearGradient>
 
-
-            {/* =======================================================
-               SCROLLABLE CONTENT AREA (Form)
-               =======================================================
-            */}
-            <KeyboardAvoidingView
-                style={styles.scrollableContentWrapper}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-            >
+            <KeyboardAvoidingView style={styles.scrollableContentWrapper} behavior={Platform.OS === "ios" ? "padding" : "height"}>
                 <View style={styles.mainContentArea}>
-                    <ScrollView
-                        contentContainerStyle={styles.scrollContentContainer}
-                        showsVerticalScrollIndicator={false}
-                    >
+                    <ScrollView contentContainerStyle={styles.scrollContentContainer} showsVerticalScrollIndicator={false}>
                         {renderContent()}
                     </ScrollView>
                 </View>
@@ -477,164 +315,28 @@ const PigmePayin = ({ route, navigation }) => {
     );
 };
 
-// --- STYLES COPIED/MODIFIED FROM LoanPayin.js ---
 const styles = StyleSheet.create({
-    // --- LAYOUT STYLES ---
-    safeArea: {
-        flex: 1,
-        backgroundColor: TOP_GRADIENT[0],
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: TOP_GRADIENT[0], // Use top gradient background
-        minHeight: 200,
-    },
-    errorText: {
-        marginTop: 10,
-        fontSize: 18,
-        color: CARD_BG, // White text on blue background
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    goBackButton: {
-        marginTop: 20,
-        backgroundColor: PRIMARY_BUTTON_COLOR,
-    },
-
-    fixedHeaderArea: {
-        paddingHorizontal: 16,
-        paddingBottom: 20,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    scrollableContentWrapper: {
-        flex: 1,
-    },
-    mainContentArea: {
-        flex: 1,
-        backgroundColor: SUBTLE_BG_GREY,
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        paddingHorizontal: 16,
-        marginTop: -20,
-        paddingTop: 30,
-    },
-    headerSpacer: {
-        paddingTop: 20,
-        paddingBottom: 5,
-    },
-
-    // --- TITLE STYLES ---
-    titleContainer: {
-        alignItems: "center",
-        marginBottom: 15,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: "900",
-        color: CARD_BG, // White text
-        marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: "rgba(255, 255, 255, 0.85)",
-        fontWeight: "500",
-        textAlign: "center",
-    },
-
-    // --- FORM CONTAINER ---
-    scrollContentContainer: {
-        paddingBottom: 50,
-        paddingTop: 10,
-        flexGrow: 1,
-    },
-    formBox: {
-        backgroundColor: CARD_BG,
-        borderRadius: 20,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: BORDER_COLOR,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-        elevation: 5,
-    },
-
-    // --- INPUT/PICKER STYLES ---
-    row: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        marginTop: 10,
-    },
-    column: {
-        flex: 1,
-        marginHorizontal: 3,
-    },
-    label: {
-        fontWeight: "600",
-        marginTop: 10,
-        fontSize: 14,
-        color: MODERN_PRIMARY,
-    },
-    star: {
-        color: ACCENT_BLUE, // Use blue accent for *
-    },
-    textInput: {
-        height: 50,
-        width: "100%",
-        borderColor: BORDER_COLOR,
-        borderWidth: 1,
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        marginVertical: 8,
-        color: MODERN_PRIMARY,
-        backgroundColor: SUBTLE_BG_GREY,
-        fontSize: 16,
-    },
-    pickerContainer: {
-        borderColor: BORDER_COLOR,
-        borderWidth: 1,
-        borderRadius: 12,
-        backgroundColor: SUBTLE_BG_GREY,
-        marginVertical: 8,
-        minHeight: 50,
-        justifyContent: 'center',
-        overflow: 'hidden',
-    },
-    picker: {
-        width: "100%",
-        minHeight: 50,
-        ...Platform.select({
-            ios: {
-                height: 50,
-            },
-            android: {
-                height: 50,
-                color: MODERN_PRIMARY,
-            },
-        }),
-    },
-    pickerItem: {
-        color: MODERN_PRIMARY,
-        fontSize: 16,
-    },
-
-    // --- BUTTON STYLES ---
-    button: {
-        flex: 1,
-        margin: 0,
-        marginTop: 20,
-        marginBottom: 0,
-        backgroundColor: PRIMARY_BUTTON_COLOR,
-        height: 55,
-        borderRadius: 12,
-    },
+    safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
+    loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", minHeight: 200 },
+    errorText: { marginTop: 10, fontSize: 18, color: CARD_BG, fontWeight: 'bold', textAlign: 'center' },
+    goBackButton: { marginTop: 20, backgroundColor: PRIMARY_BUTTON_COLOR },
+    fixedHeaderArea: { paddingHorizontal: 16, paddingBottom: 20, elevation: 3 },
+    scrollableContentWrapper: { flex: 1 },
+    mainContentArea: { flex: 1, backgroundColor: SUBTLE_BG_GREY, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 16, marginTop: -20, paddingTop: 30 },
+    headerSpacer: { paddingTop: 20, paddingBottom: 5 },
+    titleContainer: { alignItems: "center", marginBottom: 15 },
+    title: { fontSize: 28, fontWeight: "900", color: CARD_BG, marginBottom: 4 },
+    subtitle: { fontSize: 14, color: "rgba(255, 255, 255, 0.85)", fontWeight: "500", textAlign: "center" },
+    scrollContentContainer: { paddingBottom: 50, paddingTop: 10, flexGrow: 1 },
+    formBox: { backgroundColor: CARD_BG, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: BORDER_COLOR, elevation: 5 },
+    row: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
+    column: { flex: 1, marginHorizontal: 3 },
+    label: { fontWeight: "600", marginTop: 10, fontSize: 14, color: MODERN_PRIMARY },
+    star: { color: '#ff0000' },
+    textInput: { height: 50, width: "100%", borderColor: BORDER_COLOR, borderWidth: 1, borderRadius: 12, paddingHorizontal: 15, marginVertical: 8, color: MODERN_PRIMARY, backgroundColor: SUBTLE_BG_GREY, fontSize: 16 },
+    pickerContainer: { borderColor: BORDER_COLOR, borderWidth: 1, borderRadius: 12, backgroundColor: SUBTLE_BG_GREY, marginVertical: 8, minHeight: 50, justifyContent: 'center', overflow: 'hidden' },
+    picker: { width: "100%", height: 50 },
+    button: { flex: 1, marginTop: 20, backgroundColor: PRIMARY_BUTTON_COLOR, height: 55, borderRadius: 12 },
 });
 
 export default PigmePayin;
