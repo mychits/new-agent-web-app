@@ -92,6 +92,11 @@ const Routes = ({ route, navigation }) => {
               icon="trending-up-outline" // Updated icon to Ionicons
               onPress={() => navigation.navigate("RouteCustomerPigme", { user, areaId: "Pigme-customer" })}
             />
+            <CustomRouteCard
+              name="Payment Link"
+              icon="trending-up-outline" // Updated icon to Ionicons
+              onPress={() => navigation.navigate("PaymentLinkRoutes")}
+            />
           </View>
         </ScrollView>
       </View>
