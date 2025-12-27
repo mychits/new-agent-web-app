@@ -18,7 +18,7 @@ import Reprint from "../screens/Reprint";
 import PigmePrint from "../screens/PigmePrint";
 import PigmeRePrint from "../screens/PigmeRePrint";
 import LoanRePrint from "../screens/LoanRePrint";
-
+import PaymentLinkRoutes from "../screens/PaymentLinkRoutes";
 enableScreens();
 
 const stack = createNativeStackNavigator();
@@ -31,6 +31,12 @@ const PaymentNavigator = ({ route }) => {
       <stack.Screen
         name="Routes"
         component={Routes}
+        initialParams={{ user }}
+        options={{ headerShown: false }}
+      />
+      <stack.Screen
+        name="PaymentLinkRoutes"
+        component={PaymentLinkRoutes}
         initialParams={{ user }}
         options={{ headerShown: false }}
       />

@@ -24,7 +24,8 @@ import Register from "../screens/Register";
 import AboutMyChits from "../screens/AboutMyChits";
 import LoanPayin from "../screens/LoanPayin";
 import PigmePayin from "../screens/PigmePayin";
-
+import PaymentLinkRoutes from "../screens/PaymentLinkRoutes";
+import CustomerPaymentLink from "../screens/CustomerPaymentLink";
 import EnrollCustomer from "../screens/EnrollCustomer";
 import HelpAndSupport from "../screens/HelpAndSupport";
 import Commissions from "../screens/Commissions";
@@ -113,6 +114,16 @@ export default function AppNavigation() {
           name="PaymentNavigator"
           options={{ headerShown: false }}
           component={PaymentNavigator}
+        />
+        <Stack.Screen
+        name= "PaymentLinkRoutes"
+        options={{headerShown: false}}
+        component={PaymentLinkRoutes}
+        />
+        <Stack.Screen
+        name= "CustomerPaymentLink"
+        options={{headerShown: false}}
+        component={CustomerPaymentLink}
         />
           <Stack.Screen
           name="OutstandingReports"
