@@ -20,13 +20,13 @@ const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = '#f9fafb'; 
 
-// Updated Card Component with "special" styling logic
 const CustomRouteCard = ({ name, icon, onPress, subText, special }) => (
   <TouchableOpacity 
     onPress={onPress} 
     style={[styles.cardContainer, special && styles.specialCardContainer]} 
     activeOpacity={0.7}
   >
+    {/* This gradient only shows if 'special' is true */}
     {special && (
       <LinearGradient 
         colors={['#1e293b', '#334155']} 
@@ -49,6 +49,7 @@ const CustomRouteCard = ({ name, icon, onPress, subText, special }) => (
       </View>
     </View>
 
+    {/* Logic to show badge vs arrow */}
     {special ? (
       <View style={styles.actionBadge}>
         <Text style={styles.actionBadgeText}>SEND</Text>
@@ -96,12 +97,11 @@ const Routes = ({ route, navigation }) => {
               onPress={() => navigation.navigate("RouteCustomerPigme", { user, areaId: "Pigme-customer" })}
             />
 
-            {/* --- SPECIALLY STYLED PAYMENT LINK CARD --- */}
+            {/* --- UPDATED PAYMENT LINK CARD (Removed special={true}) --- */}
             <CustomRouteCard
               name="Payment Link"
               icon="flash-outline"
               subText="Generate & Share Links"
-              special={true}
               onPress={() => navigation.navigate("PaymentLinkRoutes")}
             />
           </View>
@@ -111,6 +111,7 @@ const Routes = ({ route, navigation }) => {
   );
 };
 
+// ... (Styles remain the same as the original file)
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
   topContainer: { paddingHorizontal: 16, paddingBottom: 20, elevation: 3 },
@@ -121,8 +122,6 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, color: 'rgba(255, 255, 255, 0.85)', fontWeight: '500', textAlign: 'center' },
   scrollContainer: { paddingBottom: 50, paddingTop: 10 },
   cardListContainer: { gap: 18, alignItems: 'stretch' },
-  
-  // Normal Card Style
   cardContainer: {
     backgroundColor: CARD_BG,
     borderRadius: 18, 
@@ -135,29 +134,19 @@ const styles = StyleSheet.create({
     borderColor: BORDER_COLOR,
     borderLeftWidth: 5,
     borderLeftColor: ACCENT_BLUE,
-    overflow: 'hidden', // Required for gradient background
+    overflow: 'hidden',
   },
-
-  // --- SPECIAL PAYMENT LINK CARD CSS ---
   specialCardContainer: {
-    borderLeftWidth: 0, // Remove the blue border for the special card
+    borderLeftWidth: 0,
     borderWidth: 0,
     elevation: 8,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
-  specialCardText: {
-    color: '#fff',
-    fontSize: 20,
-  },
-  specialCardSubText: {
-    color: 'rgba(255,255,255,0.7)',
-  },
-  specialCardIcon: {
-    color: '#fbbf24', // Gold/Amber icon color
-    fontSize: 32,
-  },
+  specialCardText: { color: '#fff', fontSize: 20 },
+  specialCardSubText: { color: 'rgba(255,255,255,0.7)' },
+  specialCardIcon: { color: '#fbbf24', fontSize: 32 },
   actionBadge: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 12,
@@ -167,13 +156,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
   },
-  actionBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  // -------------------------------------
-
+  actionBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
   cardContent: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   textContainer: { marginLeft: 15, flexShrink: 1 },
   cardText: { fontSize: 18, fontWeight: '800', color: MODERN_PRIMARY },

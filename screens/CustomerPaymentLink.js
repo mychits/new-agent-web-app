@@ -48,6 +48,19 @@ export default function CustomerPaymentLink({ route, navigation }) {
   const inputRef = useRef(null);
   const successScale = useRef(new Animated.Value(0)).current;
 
+  // Helper function to format date to DD/MM/YYYY
+  const formatDate = (dateString) => {
+    if (!dateString || dateString === "N/A") return "N/A";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+  };
+
   useEffect(() => { fetchAll(); }, []);
 
   useEffect(() => {
@@ -73,7 +86,6 @@ export default function CustomerPaymentLink({ route, navigation }) {
     try {
       setLoading(true);
       
-      // Use allSettled so individual 404 errors don't stop the process
       const results = await Promise.allSettled([
         axios.post(`${baseUrl}/enroll/get-user-tickets/${customer?._id}`),
         axios.get(`${baseUrl}/loans/get-borrower-by-user-id/${customer?._id}`),
@@ -82,7 +94,6 @@ export default function CustomerPaymentLink({ route, navigation }) {
 
       let finalCards = [];
 
-      // Extract results safely
       const chitRes = results[0].status === 'fulfilled' ? results[0].value : null;
       const loanRes = results[1].status === 'fulfilled' ? results[1].value : null;
       const pigmeRes = results[2].status === 'fulfilled' ? results[2].value : null;
@@ -104,11 +115,18 @@ export default function CustomerPaymentLink({ route, navigation }) {
         displayValue: `₹${l.loan_amount}`, label: "LOAN AMOUNT", loan_db_id: l._id, color: WARNING_COLOR, icon: "cash"
       }));
 
-      // PIGME Processing
+      // PIGMY Processing
       const pigmes = Array.isArray(pigmeRes?.data) ? pigmeRes.data : pigmeRes?.data ? [pigmeRes.data] : [];
       pigmes.forEach(p => finalCards.push({
-        type: "pigme", customer_name: customer?.name, title: `Pigme ID: ${p.pigme_id}`,
-        displayValue: `₹${p.payable_amount}`, label: "COLLECTION", pigme_db_id: p._id, color: PURPLE_COLOR, icon: "wallet"
+        type: "pigmy", 
+        customer_name: customer?.name, 
+        title: `Pigmy ID: ${p.pigme_id}`,
+        displayValue: `₹${p.payable_amount}`, 
+        label: "COLLECTION", 
+        pigme_db_id: p._id, 
+        color: PURPLE_COLOR, 
+        icon: "wallet",
+        start_date: p.start_date || "N/A"
       }));
 
       setCards(finalCards);
@@ -172,11 +190,10 @@ export default function CustomerPaymentLink({ route, navigation }) {
           {loading ? (
             <ActivityIndicator size="large" color={ACCENT_BLUE} style={{marginTop: 50}} />
           ) : filteredCards.length === 0 ? (
-            // CUSTOMER HAS NO GROUPS STATE
             <View style={styles.emptyContainer}>
                 <Ionicons name="folder-open-outline" size={70} color={TEXT_GREY} />
                 <Text style={styles.emptyTitle}>No Groups for customer</Text>
-                <Text style={styles.emptySubtitle}>This user is not currently enrolled in any active Chits, Loans, or Pigme accounts.</Text>
+                <Text style={styles.emptySubtitle}>This user is not currently enrolled in any active Chits, Loans, or Pigmy accounts.</Text>
             </View>
           ) : (
             <FlatList
@@ -198,16 +215,21 @@ export default function CustomerPaymentLink({ route, navigation }) {
                               <Text style={styles.cardCustName}>{item.customer_name}</Text>
                               <Text style={styles.cardGrpName}>{item.title}</Text>
                           </View>
+
                           <View style={styles.infoGrid}>
                               <View style={styles.gridItem}>
-                                  <Text style={styles.tinyLabel}>{item.label}</Text>
-                                  <Text style={[styles.gridVal, { color: item.color }]}>{item.displayValue}</Text>
+                                  <Text style={styles.tinyLabel}>{item.type === 'pigmy' ? 'START DATE' : item.label}</Text>
+                                  <Text style={[styles.gridVal, { color: item.color }]}>
+                                    {item.type === 'pigmy' ? formatDate(item.start_date) : item.displayValue}
+                                  </Text>
                               </View>
+                              
                               <View style={[styles.gridItem, { alignItems: 'flex-end' }]}>
                                   <Text style={styles.tinyLabel}>STATUS</Text>
                                   <Text style={styles.gridVal}>ACTIVE</Text>
                               </View>
                           </View>
+                          
                           <TouchableOpacity onPress={() => { setSelectedItem(item); setPaymentModal(true); }} activeOpacity={0.8} style={[styles.sendLinkBtn, { backgroundColor: item.color }]}>
                               <Text style={styles.sendLinkBtnText}>SEND PAYMENT LINK</Text>
                           </TouchableOpacity>
@@ -220,7 +242,6 @@ export default function CustomerPaymentLink({ route, navigation }) {
         </View>
       </View>
 
-      {/* SETUP PAYMENT MODAL */}
       <Modal visible={paymentModal} transparent animationType="fade">
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalBlurCenter}>
           <View style={styles.centeredCard}>
@@ -245,7 +266,6 @@ export default function CustomerPaymentLink({ route, navigation }) {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* CONFIRMATION MODAL */}
       <Modal visible={confirmModal} transparent animationType="slide">
         <View style={styles.confirmOverlay}>
           <View style={styles.glassConfirmCard}>
@@ -265,7 +285,6 @@ export default function CustomerPaymentLink({ route, navigation }) {
         </View>
       </Modal>
 
-      {/* SUCCESS MODAL */}
       <Modal visible={successModal} transparent>
         <View style={styles.successOverlay}>
           <Animated.View style={[styles.premiumSuccessCard, { transform: [{ scale: successScale }] }]}>
@@ -282,7 +301,7 @@ const styles = StyleSheet.create({
   screenContainer: { flex: 1, backgroundColor: "#f1f5f9" },
   topHeader: { paddingTop: 50, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 40, borderBottomRightRadius: 40, elevation: 12 },
   headerIconRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: -5 },
-  heroImage: { width: 45, height: 45 },
+  heroImage: { width: 45, height: 45, borderRadius: 22 },
   headerTextCenter: { alignItems: "center", marginBottom: 20 },
   headerTitle: { fontSize: 26, fontWeight: "900", color: "#fff", textAlign: 'center' },
   headerSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.8)", fontWeight: "600", marginTop: 4, textAlign: 'center' },
@@ -290,12 +309,9 @@ const styles = StyleSheet.create({
   searchField: { flex: 1, marginLeft: 10, fontSize: 16, color: MODERN_PRIMARY, fontWeight: '600' },
   mainBody: { flex: 1, marginTop: -20, paddingHorizontal: 15 },
   bigBoxContainer: { flex: 1, backgroundColor: "#ffffff", borderRadius: 30, elevation: 5, marginBottom: 20, overflow: "hidden" },
-  
-  // EMPTY STATE STYLES
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   emptyTitle: { fontSize: 18, fontWeight: '900', color: MODERN_PRIMARY, marginTop: 15 },
   emptySubtitle: { fontSize: 13, color: TEXT_GREY, textAlign: 'center', marginTop: 8, lineHeight: 18 },
-
   cardWrapper: { backgroundColor: "#fff", borderRadius: 22, borderWidth: 1, borderColor: "#e2e8f0", elevation: 2, marginBottom: 15 },
   cardInner: { padding: 18 },
   cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
@@ -309,10 +325,9 @@ const styles = StyleSheet.create({
   infoGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
   gridItem: { flex: 1 },
   tinyLabel: { fontSize: 9, fontWeight: "900", color: TEXT_GREY, marginBottom: 4 },
-  gridVal: { fontSize: 17, fontWeight: "900" },
+  gridVal: { fontSize: 16, fontWeight: "900" },
   sendLinkBtn: { width: '100%', paddingVertical: 15, borderRadius: 15, alignItems: 'center', marginTop: 10 },
   sendLinkBtnText: { color: "#fff", fontWeight: "900" },
-
   modalBlurCenter: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.8)", justifyContent: "center", alignItems: "center" },
   centeredCard: { width: width * 0.9, borderRadius: 32, overflow: "hidden" },
   centeredContent: { padding: 25, alignItems: 'center' },
@@ -326,7 +341,6 @@ const styles = StyleSheet.create({
   mInputField: { fontSize: 48, fontWeight: "900", minWidth: 100, textAlign: "center", color: MODERN_PRIMARY },
   mActionBtn: { width: "100%", padding: 20, borderRadius: 20, alignItems: "center" },
   mActionBtnText: { color: "#fff", fontWeight: "900", fontSize: 16 },
-
   confirmOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
   glassConfirmCard: { backgroundColor: '#fff', borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 30, paddingBottom: 50 },
   confirmHeading: { fontSize: 22, fontWeight: '900', color: MODERN_PRIMARY, textAlign: 'center', marginBottom: 25 },
@@ -339,7 +353,6 @@ const styles = StyleSheet.create({
   glassCancelText: { color: TEXT_GREY, fontWeight: '900' },
   glassConfirm: { flex: 2, paddingVertical: 18, borderRadius: 18, backgroundColor: MODERN_PRIMARY, alignItems: 'center' },
   glassConfirmText: { color: '#fff', fontWeight: '900' },
-
   successOverlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.95)", justifyContent: "center", alignItems: "center" },
   premiumSuccessCard: { alignItems: 'center' },
   successIconWrapper: { width: 100, height: 100, borderRadius: 50, backgroundColor: SUCCESS_GREEN, justifyContent: 'center', alignItems: 'center', marginBottom: 25 },
