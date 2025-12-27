@@ -35,16 +35,17 @@ const { height } = Dimensions.get('window');
 const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
 const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
 const ACCENT_BLUE = "#1796d1ff"; // Blue accent (General/Edit)
-const ACCENT_GREEN = "#059669";   // Vibrant green for FRESH leads
+const ACCENT_GREEN = "#059669";   // Vibrant green for FRESH leads
 const WARNING_ORANGE = "#f8c009ff"; // Orange/Yellow for NEW leads
-const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
+const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = '#f9fafb'; 
 
 // Keeping original action colors for consistency
 const CALL_BUTTON_COLOR = "#f8c009ff"; 
 const WHATSAPP_BUTTON_COLOR = "#25D366";
-const EDIT_BUTTON_COLOR = ACCENT_BLUE; // Using the main accent color for consistency
+const EDIT_BUTTON_COLOR = ACCENT_BLUE; 
+const ASSIGN_BUTTON_COLOR = "#6366f1"; // Indigo color for "Assigned To"
 
 
 const ViewLeads = ({ route, navigation }) => {
@@ -120,12 +121,10 @@ const ViewLeads = ({ route, navigation }) => {
         }
     };
 
-    // Use an effect to fetch data whenever startDate or endDate changes
     useEffect(() => {
         fetchData(startDate, endDate);
     }, [startDate, endDate, fetchData]);
 
-    // Use focus effect to refresh data when the screen comes into focus
     useFocusEffect(
         useCallback(() => {
             fetchData(startDate, endDate);
@@ -142,6 +141,12 @@ const ViewLeads = ({ route, navigation }) => {
 
     const handleEditLead = (lead) => {
         navigation.navigate("EditLead", { user: user, lead: lead });
+    };
+
+    const handleAssignLead = (lead) => {
+        // Implementation for Assignment Logic
+        console.log("Assigning lead:", lead._id);
+        // navigation.navigate("AssignLead", { lead: lead, user: user });
     };
 
     const toggleExpand = (id) => {
@@ -216,7 +221,6 @@ const ViewLeads = ({ route, navigation }) => {
         const freshLead = isFreshLead(item.createdAt);
         const newLead = isNewLead(item.createdAt);
         
-        // Determine Status Color and Border
         let borderColor = ACCENT_BLUE + '20';
         let statusColor = ACCENT_BLUE;
         let badgeText = "LEAD";
@@ -253,7 +257,6 @@ const ViewLeads = ({ route, navigation }) => {
                     <Text style={styles.customerName} numberOfLines={1}>
                         {item.lead_name || 'No Name'}
                     </Text>
-                    {/* Status Tag */}
                     <View style={[styles.statusTag, { backgroundColor: statusColor + '20' }]}> 
                         <Text style={[styles.statusTagText, { color: statusColor }]}>
                             {badgeText} ({activeTab})
@@ -261,7 +264,6 @@ const ViewLeads = ({ route, navigation }) => {
                     </View>
                 </View>
 
-                {/* Card Body - Static Info */}
                 <View style={styles.cardBody}>
                     <Text style={styles.groupInfoText}>
                         <Ionicons name="people-outline" size={16} color={ACCENT_BLUE} /> Group: <Text style={styles.groupInfoValue}>{groupName}</Text>
@@ -271,7 +273,6 @@ const ViewLeads = ({ route, navigation }) => {
                     </Text>
                 </View>
 
-                {/* Card Footer - Phone and Expand Icon */}
                 <View style={styles.cardFooter}>
                     <Text style={styles.groupInfoText}>
                         <Ionicons name="call-outline" size={16} color={NEUTRAL_GREY} /> Phone: <Text style={styles.groupInfoValue}>{item.lead_phone || 'N/A'}</Text>
@@ -298,23 +299,32 @@ const ViewLeads = ({ route, navigation }) => {
                                 onPress={() => handleCall(item.lead_phone)}
                                 style={[styles.contactButton, { backgroundColor: CALL_BUTTON_COLOR }]}
                             >
-                                <Ionicons name="call" size={15} color={CARD_BG} />
+                                <Ionicons name="call" size={14} color={CARD_BG} />
                                 <Text style={styles.buttonText}>Call</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => handleWhatsApp(item.lead_phone)}
                                 style={[styles.contactButton, { backgroundColor: WHATSAPP_BUTTON_COLOR }]}
                             >
-                                <Icon name="whatsapp" size={15} color={CARD_BG} />
+                                <Icon name="whatsapp" size={14} color={CARD_BG} />
                                 <Text style={styles.buttonText}>WhatsApp</Text>
                             </TouchableOpacity>
-                            {/* Edit Button only for Fresh Leads, using ACCENT_BLUE */}
+                            
+                            {/* NEW ASSIGNED TO BUTTON */}
+                            <TouchableOpacity
+                                onPress={() => handleAssignLead(item)}
+                                style={[styles.contactButton, { backgroundColor: ASSIGN_BUTTON_COLOR }]}
+                            >
+                                <Ionicons name="person-add" size={14} color={CARD_BG} />
+                                <Text style={styles.buttonText}>Assigned to</Text>
+                            </TouchableOpacity>
+
                             {freshLead && (
                                 <TouchableOpacity
                                     onPress={() => handleEditLead(item)}
                                     style={[styles.contactButton, { backgroundColor: EDIT_BUTTON_COLOR }]}
                                 >
-                                    <Icon name="edit" size={15} color={CARD_BG} />
+                                    <Icon name="edit" size={14} color={CARD_BG} />
                                     <Text style={styles.buttonText}>Edit</Text>
                                 </TouchableOpacity>
                             )}
@@ -331,7 +341,7 @@ const ViewLeads = ({ route, navigation }) => {
 
     const filteredLeads = searchQuery
         ? allLeads.filter((item) => {
-            const itemData = `${item.lead_name.toUpperCase()} ${item.lead_phone.toUpperCase()} ${item.group_id?.group_name ? item.group_id.group_name.toUpperCase() : ""
+            const itemData = `${item.lead_name?.toUpperCase() || ''} ${item.lead_phone?.toUpperCase() || ''} ${item.group_id?.group_name ? item.group_id.group_name.toUpperCase() : ""
                 }`;
             const textData = searchQuery.toUpperCase();
             return itemData.includes(textData);
@@ -356,10 +366,7 @@ const ViewLeads = ({ route, navigation }) => {
                         </Text>
                     </View>
                     
-                    {/* COMBINED SEARCH AND FILTER ROW */}
                     <View style={styles.searchAndFilterCombinedRow}>
-                        
-                        {/* Search Bar Container */}
                         <View style={styles.searchBarContainer}>
                             <Icon name="search" size={20} color={NEUTRAL_GREY} style={styles.searchIcon} />
                             <TextInput
@@ -372,7 +379,6 @@ const ViewLeads = ({ route, navigation }) => {
                             />
                         </View>
 
-                        {/* Filter Box */}
                         <TouchableOpacity
                             style={styles.filterBox}
                             onPress={() => setModalVisible(true)}
@@ -399,7 +405,7 @@ const ViewLeads = ({ route, navigation }) => {
                                 activeTab === "CHIT" && styles.activeTabText,
                             ]}
                         >
-                            Chit Leads ({chitLeads.length || 0})
+                            Chits ({chitLeads.length || 0})
                         </Text>
                     </TouchableOpacity>
 
@@ -418,18 +424,16 @@ const ViewLeads = ({ route, navigation }) => {
                                 activeTab === "GOLD" && styles.activeTabText,
                             ]}
                         >
-                            Gold Leads ({goldLeads.length || 0})
+                            Gold ({goldLeads.length || 0})
                         </Text>
                     </TouchableOpacity>
                 </View>
             </LinearGradient>
 
-            {/* Scrollable Content Area */}
             <View style={styles.mainContentArea}>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
                 >
                     {isLoading && (
                         <ActivityIndicator
@@ -466,23 +470,12 @@ const ViewLeads = ({ route, navigation }) => {
                 animationType="fade"
                 transparent={true}
                 visible={modalVisible}
-                onRequestClose={() => {
-                    setModalVisible(false);
-                }}
+                onRequestClose={() => setModalVisible(false)}
             >
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
                         <Text style={styles.modalTitle}>Filter Leads By Date</Text>
-                        {["All",
-                            "Today",
-                            "Yesterday",
-                            "This Week",
-                            "Last Week",
-                            "This Month",
-                            "Last Month",
-                            "This Year",
-                            "Last Year",
-                        ].map((range) => (
+                        {["All", "Today", "Yesterday", "This Week", "Last Week", "This Month", "Last Month", "This Year", "Last Year"].map((range) => (
                             <TouchableOpacity
                                 key={range}
                                 style={styles.dateRangeOption}
@@ -504,15 +497,8 @@ const ViewLeads = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    // --- LAYOUT STYLES (MODERN) ---
-    safeArea: { 
-        flex: 1, 
-        backgroundColor: TOP_GRADIENT[0] 
-    },
-    topContainer: {
-        paddingHorizontal: 22,
-        paddingBottom: 20,
-    },
+    safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
+    topContainer: { paddingHorizontal: 22, paddingBottom: 20 },
     mainContentArea: {
         flex: 1,
         backgroundColor: SUBTLE_BG_GREY, 
@@ -521,349 +507,52 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         marginTop: -20, 
         paddingTop: 10,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
         elevation: 5,
     },
-    headerSpacer: { 
-        paddingTop: 20, 
-        paddingBottom: 5 
-    }, 
-
-    // --- TITLE STYLES ---
-    titleContainer: {
-        alignItems: 'center',
-        marginBottom: 15,
-        marginTop: 10,
-    },
-    titleAndCountRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        width: "100%",
-        marginBottom: 10,
-    },
-    title: {
-        fontSize: 28, 
-        fontWeight: "900",
-        color: CARD_BG, 
-    },
-    totalAmountText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: 'rgba(255, 255, 255, 0.85)',
-    },
-    
-    // --- SEARCH & FILTER (MODIFIED TO BE IN ONE LINE) ---
-    searchAndFilterCombinedRow: {
-        flexDirection: 'row',
-        width: '100%',
-        alignItems: 'center', 
-        marginBottom: 10, 
-        gap: 10, // Space between search and filter
-    },
-    searchBarContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: CARD_BG,
-        borderRadius: 15,
-        paddingHorizontal: 15,
-        flex: 1, // Takes full available width
-        height: 45,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    searchIcon: {
-        marginRight: 10,
-        color: NEUTRAL_GREY
-    },
-    searchBar: {
-        flex: 1,
-        height: 45,
-        color: MODERN_PRIMARY,
-        fontSize: 14,
-        paddingVertical: 0,
-    },
-    filterBox: {
-        backgroundColor: CARD_BG,
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 15,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-        height: 45,
-    },
-    filterIcon: {
-        marginRight: 5,
-        fontSize: 16,
-        color: ACCENT_BLUE,
-    },
-    filterText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: MODERN_PRIMARY,
-    },
-    
-    // --- TABS ---
-    tabContainer: {
-        flexDirection: "row",
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: 15,
-        marginBottom: 10,
-        padding: 5,
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: "center",
-        flexDirection: 'row',
-        justifyContent: 'center',
-        borderRadius: 10,
-    },
-    activeTab: {
-        backgroundColor: CARD_BG,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.15,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    tabText: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.9)',
-        fontWeight: "600",
-        marginLeft: 5,
-    },
-    activeTabText: {
-        color: MODERN_PRIMARY,
-        fontWeight: 'bold',
-    },
-
-    // --- LEAD CARD STYLES (MODERN) ---
-    customerCardStyle: {
-        backgroundColor: CARD_BG, 
-        borderRadius: 18, 
-        marginBottom: 15,
-        padding: 20,
-        borderLeftWidth: 6, 
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08, 
-        shadowRadius: 8,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: SUBTLE_BG_GREY, 
-    },
-    
-    // CARD CONTENT
-    cardHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingBottom: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: SUBTLE_BG_GREY,
-    },
-    customerName: {
-        fontSize: 22,
-        fontWeight: "900",
-        color: MODERN_PRIMARY,
-        flexShrink: 1,
-        marginRight: 10,
-    },
-    statusTag: { 
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 15,
-        alignSelf: 'flex-start', 
-    },
-    statusTagText: {
-        fontSize: 11,
-        fontWeight: "700",
-        textTransform: 'uppercase',
-    },
-    cardBody: {
-        paddingVertical: 15,
-    },
-    groupInfoText: {
-        fontSize: 15,
-        color: NEUTRAL_GREY,
-        marginTop: 5,
-        fontWeight: "500",
-        lineHeight: 24,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    groupInfoValue: {
-        color: MODERN_PRIMARY,
-        fontWeight: '700',
-    },
-    cardFooter: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: SUBTLE_BG_GREY,
-    },
-
-    // EXPANDED CONTENT
-    expandedContent: {
-        marginTop: 15,
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: SUBTLE_BG_GREY,
-    },
-    createdAt: {
-        fontSize: 14,
-        color: NEUTRAL_GREY,
-        fontStyle: "italic",
-        marginBottom: 10,
-        fontWeight: '500',
-    },
-    leadImage: {
-        width: '100%',
-        height: 150,
-        borderRadius: 10,
-        marginTop: 10,
-        marginBottom: 15,
-        resizeMode: 'cover',
-    },
-
-    // CONTACT BUTTONS (STANDARD STYLE)
-    contactButtons: {
-        flexDirection: "row",
-        justifyContent: "space-between", 
-        gap: 10,
-        marginTop: 10,
-    },
-    contactButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        borderRadius: 50,
-        elevation: 2,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        gap: 6,
-        flex: 1,
-    },
-    buttonText: { 
-        color: CARD_BG, 
-        fontWeight: "bold", 
-        fontSize: 14 
-    }, 
-    
-    // --- NO DATA / FAB ---
-    noDataContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 50,
-        backgroundColor: CARD_BG,
-        padding: 20,
-        borderRadius: 15,
-    },
-    noDataText: {
-        fontSize: 16,
-        color: NEUTRAL_GREY,
-        textAlign: 'center',
-        fontWeight: '600'
-    },
-    noImage: {
-        width: 150,
-        height: 150,
-        resizeMode: "contain",
-        marginBottom: 20,
-    },
-    flatListContent: {
-        paddingBottom: 120,
-    },
-    floatingActionButton: {
-        position: "absolute",
-        bottom: 70,
-        right: 20,
-        backgroundColor: ACCENT_BLUE,
-        borderRadius: 30,
-        width: 60,
-        height: 60,
-        justifyContent: "center",
-        alignItems: "center",
-        elevation: 5,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        zIndex: 10,
-    },
-    
-    // --- MODAL STYLES (MODERN) ---
-    centeredView: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: 'rgba(0,0,0,0.6)',
-    },
-    modalView: {
-        backgroundColor: CARD_BG,
-        borderRadius: 20,
-        padding: 25,
-        alignItems: "flex-start",
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
-        width: '85%',
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: MODERN_PRIMARY,
-        marginBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: SUBTLE_BG_GREY,
-        width: '100%',
-        paddingBottom: 10,
-    },
-    dateRangeOption: {
-        paddingVertical: 12,
-        width: '100%',
-        borderBottomWidth: 1,
-        borderBottomColor: SUBTLE_BG_GREY,
-    },
-    dateRangeText: {
-        fontSize: 16,
-        color: MODERN_PRIMARY,
-        fontWeight: '500',
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        width: '100%',
-        marginTop: 20,
-    },
-    modalButtonText: {
-        fontSize: 16,
-        color: ACCENT_BLUE,
-        fontWeight: 'bold',
-        marginLeft: 20,
-    },
+    headerSpacer: { paddingTop: 20, paddingBottom: 5 }, 
+    titleContainer: { alignItems: 'center', marginBottom: 15, marginTop: 10 },
+    titleAndCountRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", width: "100%", marginBottom: 10 },
+    title: { fontSize: 28, fontWeight: "900", color: CARD_BG },
+    totalAmountText: { fontSize: 16, fontWeight: "600", color: 'rgba(255, 255, 255, 0.85)' },
+    searchAndFilterCombinedRow: { flexDirection: 'row', width: '100%', alignItems: 'center', marginBottom: 10, gap: 10 },
+    searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: CARD_BG, borderRadius: 15, paddingHorizontal: 15, flex: 1, height: 45 },
+    searchIcon: { marginRight: 10, color: NEUTRAL_GREY },
+    searchBar: { flex: 1, height: 45, color: MODERN_PRIMARY, fontSize: 14 },
+    filterBox: { backgroundColor: CARD_BG, paddingVertical: 10, paddingHorizontal: 15, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", height: 45 },
+    filterIcon: { marginRight: 5, fontSize: 16, color: ACCENT_BLUE },
+    filterText: { fontSize: 14, fontWeight: "600", color: MODERN_PRIMARY },
+    tabContainer: { flexDirection: "row", backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 15, marginBottom: 10, padding: 5 },
+    tab: { flex: 1, paddingVertical: 10, alignItems: "center", flexDirection: 'row', justifyContent: 'center', borderRadius: 10 },
+    activeTab: { backgroundColor: CARD_BG },
+    tabText: { fontSize: 13, color: 'rgba(255, 255, 255, 0.9)', fontWeight: "600", marginLeft: 5 },
+    activeTabText: { color: MODERN_PRIMARY, fontWeight: 'bold' },
+    customerCardStyle: { backgroundColor: CARD_BG, borderRadius: 18, marginBottom: 15, padding: 20, borderLeftWidth: 6, elevation: 4, borderWidth: 1, borderColor: SUBTLE_BG_GREY },
+    cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: SUBTLE_BG_GREY },
+    customerName: { fontSize: 20, fontWeight: "900", color: MODERN_PRIMARY, flexShrink: 1, marginRight: 10 },
+    statusTag: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 15 },
+    statusTagText: { fontSize: 10, fontWeight: "700", textTransform: 'uppercase' },
+    cardBody: { paddingVertical: 15 },
+    groupInfoText: { fontSize: 14, color: NEUTRAL_GREY, marginTop: 5, fontWeight: "500" },
+    groupInfoValue: { color: MODERN_PRIMARY, fontWeight: '700' },
+    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTopWidth: 1, borderTopColor: SUBTLE_BG_GREY },
+    expandedContent: { marginTop: 15, paddingTop: 10, borderTopWidth: 1, borderTopColor: SUBTLE_BG_GREY },
+    createdAt: { fontSize: 13, color: NEUTRAL_GREY, fontStyle: "italic", marginBottom: 10 },
+    leadImage: { width: '100%', height: 150, borderRadius: 10, marginTop: 10, marginBottom: 15, resizeMode: 'cover' },
+    contactButtons: { flexDirection: "row", flexWrap: 'wrap', gap: 8, marginTop: 10 },
+    contactButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 8, paddingHorizontal: 8, borderRadius: 50, flex: 1, minWidth: '22%', gap: 4 },
+    buttonText: { color: CARD_BG, fontWeight: "bold", fontSize: 11 }, 
+    noDataContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50, backgroundColor: CARD_BG, padding: 20, borderRadius: 15 },
+    noDataText: { fontSize: 16, color: NEUTRAL_GREY, fontWeight: '600' },
+    noImage: { width: 120, height: 120, resizeMode: "contain", marginBottom: 20 },
+    flatListContent: { paddingBottom: 120 },
+    floatingActionButton: { position: "absolute", bottom: 70, right: 20, backgroundColor: ACCENT_BLUE, borderRadius: 30, width: 60, height: 60, justifyContent: "center", alignItems: "center", elevation: 5, zIndex: 10 },
+    centeredView: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: 'rgba(0,0,0,0.6)' },
+    modalView: { backgroundColor: CARD_BG, borderRadius: 20, padding: 25, width: '85%' },
+    modalTitle: { fontSize: 18, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 15, borderBottomWidth: 1, borderBottomColor: SUBTLE_BG_GREY, paddingBottom: 10 },
+    dateRangeOption: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: SUBTLE_BG_GREY },
+    dateRangeText: { fontSize: 15, color: MODERN_PRIMARY },
+    buttonContainer: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 20 },
+    modalButtonText: { fontSize: 16, color: ACCENT_BLUE, fontWeight: 'bold' },
 });
 
 export default ViewLeads;
