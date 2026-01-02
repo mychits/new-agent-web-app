@@ -206,7 +206,7 @@ const Dashboard = ({ navigation }) => {
                     <Text style={styles.uDetail}>Receipt: {p.receipt_no}</Text>
                 </View>
                 <View style={styles.priceTag}>
-                    <Text style={styles.uPrice}>+₹{p.amount}</Text>
+                    <Text style={styles.uPrice}>+ ₹{p.amount}</Text>
                 </View>
               </View>
             )) : (

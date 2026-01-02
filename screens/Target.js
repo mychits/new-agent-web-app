@@ -127,7 +127,6 @@ const Target = ({ navigation }) => {
       />
 
       <SafeAreaView style={{ flex: 1 }}>
-        {/* Centered Header Section */}
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <TouchableOpacity 
@@ -161,6 +160,7 @@ const Target = ({ navigation }) => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 40 }}
             >
+              {/* Date Filter - Always Visible */}
               <TouchableOpacity 
                 style={styles.dateCard} 
                 onPress={() => setShowPicker(true)}
@@ -177,49 +177,63 @@ const Target = ({ navigation }) => {
                 <Feather name="edit-3" size={18} color={COLORS.primary} />
               </TouchableOpacity>
 
-              <View style={styles.mainCard}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardLabel}>Current Progress</Text>
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>{progress >= 100 ? 'Target Met' : 'In Progress'}</Text>
+              {/* Conditional Rendering: Target Analytics vs No Target Message */}
+              {targetData.total_target > 0 ? (
+                <>
+                  <View style={styles.mainCard}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardLabel}>Current Progress</Text>
+                      <View style={styles.statusBadge}>
+                        <Text style={styles.statusText}>{progress >= 100 ? 'Target Met' : 'In Progress'}</Text>
+                      </View>
+                    </View>
+                    
+                    <Text style={styles.percentageText}>{progress.toFixed(1)}%</Text>
+                    
+                    <View style={styles.progressTrack}>
+                      <Animated.View style={[styles.progressFill, { width: `${progress}%` }]} />
+                    </View>
+                    
+                    <View style={styles.statsRow}>
+                      <View>
+                        <Text style={styles.statLabel}>Achieved</Text>
+                        <Text style={styles.statValue}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={styles.statLabel}>Monthly Goal</Text>
+                        <Text style={styles.statValue}>₹{targetData.total_target.toLocaleString("en-IN")}</Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-                
-                <Text style={styles.percentageText}>{progress.toFixed(1)}%</Text>
-                
-                <View style={styles.progressTrack}>
-                  <Animated.View style={[styles.progressFill, { width: `${progress}%` }]} />
-                </View>
-                
-                <View style={styles.statsRow}>
-                  <View>
-                    <Text style={styles.statLabel}>Achieved</Text>
-                    <Text style={styles.statValue}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.statLabel}>Monthly Goal</Text>
-                    <Text style={styles.statValue}>₹{targetData.total_target.toLocaleString("en-IN")}</Text>
-                  </View>
-                </View>
-              </View>
 
-              <View style={styles.miniGrid}>
-                <View style={styles.miniCard}>
-                  <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}>
-                    <MaterialCommunityIcons name="account-group" size={24} color={COLORS.primary} />
+                  <View style={styles.miniGrid}>
+                    <View style={styles.miniCard}>
+                      <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}>
+                        <MaterialCommunityIcons name="account-group" size={24} color={COLORS.primary} />
+                      </View>
+                      <Text style={styles.miniVal}>{targetData.total_enrollments}</Text>
+                      <Text style={styles.miniLabel}>Total Enrollments</Text>
+                    </View>
+                    
+                    <View style={styles.miniCard}>
+                      <View style={[styles.iconBox, { backgroundColor: '#E8F5E9' }]}>
+                        <MaterialCommunityIcons name="briefcase-check" size={24} color={COLORS.success} />
+                      </View>
+                      <Text style={styles.miniVal}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
+                      <Text style={styles.miniLabel}>Revenue Generated</Text>
+                    </View>
                   </View>
-                  <Text style={styles.miniVal}>{targetData.total_enrollments}</Text>
-                  <Text style={styles.miniLabel}>Total Enrollments</Text>
+                </>
+              ) : (
+                <View style={styles.noTargetCard}>
+                  <MaterialCommunityIcons name="target-variant" size={60} color={COLORS.accent} />
+                  <Text style={styles.noTargetTitle}>No Target Assigned</Text>
+                  <Text style={styles.noTargetSub}>
+                    There is no sales target assigned to you for {moment().month(month).format("MMMM")} {year}. 
+                    Please contact your manager for further details.
+                  </Text>
                 </View>
-                
-                <View style={styles.miniCard}>
-                  <View style={[styles.iconBox, { backgroundColor: '#E8F5E9' }]}>
-                    <MaterialCommunityIcons name="briefcase-check" size={24} color={COLORS.success} />
-                  </View>
-                  <Text style={styles.miniVal}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
-                  <Text style={styles.miniLabel}>Revenue Generated</Text>
-                </View>
-              </View>
+              )}
 
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Enrollments List</Text>
@@ -395,7 +409,31 @@ const styles = StyleSheet.create({
   miniVal: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
   miniLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, marginTop: 4 },
 
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  noTargetCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 30,
+    padding: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    elevation: 8,
+  },
+  noTargetTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.primary,
+    marginTop: 15,
+  },
+  noTargetSub: {
+    fontSize: 14,
+    color: COLORS.muted,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, marginTop: 10 },
   sectionTitle: { fontSize: 24, fontWeight: "900", color: "#fff", marginRight: 10 },
   countBadge: { backgroundColor: COLORS.accent, color: COLORS.primary, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12, fontSize: 12, fontWeight: '900', overflow: 'hidden' },
 

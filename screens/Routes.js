@@ -5,7 +5,6 @@ import {
     ScrollView, 
     StyleSheet, 
     TouchableOpacity,
-    Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,13 +19,16 @@ const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = '#f9fafb'; 
 
-const CustomRouteCard = ({ name, icon, onPress, subText, special }) => (
+const CustomRouteCard = ({ name, icon, onPress, subText, special, isPayment }) => (
   <TouchableOpacity 
     onPress={onPress} 
-    style={[styles.cardContainer, special && styles.specialCardContainer]} 
+    style={[
+      styles.cardContainer, 
+      special && styles.specialCardContainer,
+      isPayment && styles.paymentLinkCard
+    ]} 
     activeOpacity={0.7}
   >
-    {/* This gradient only shows if 'special' is true */}
     {special && (
       <LinearGradient 
         colors={['#1e293b', '#334155']} 
@@ -37,10 +39,18 @@ const CustomRouteCard = ({ name, icon, onPress, subText, special }) => (
     )}
     
     <View style={styles.cardContent}>
-      <Ionicons 
-        name={icon} 
-        style={[styles.cardIcon, special && styles.specialCardIcon]} 
-      /> 
+      {/* Icon Wrapper: Circular for payment, standard for others */}
+      <View style={[styles.iconWrapper, isPayment && styles.paymentIconCircle]}>
+        <Ionicons 
+          name={icon} 
+          style={[
+            styles.cardIcon, 
+            special && styles.specialCardIcon,
+            isPayment && { color: '#fff', fontSize: 22 }
+          ]} 
+        /> 
+      </View>
+
       <View style={styles.textContainer}>
         <Text style={[styles.cardText, special && styles.specialCardText]}>{name}</Text>
         <Text style={[styles.cardSubText, special && styles.specialCardSubText]}>
@@ -49,14 +59,16 @@ const CustomRouteCard = ({ name, icon, onPress, subText, special }) => (
       </View>
     </View>
 
-    {/* Logic to show badge vs arrow */}
     {special ? (
       <View style={styles.actionBadge}>
         <Text style={styles.actionBadgeText}>SEND</Text>
         <Ionicons name="send" size={12} color="#fff" />
       </View>
     ) : (
-      <Ionicons name="chevron-forward-outline" style={styles.arrowIcon} />
+      <Ionicons 
+        name={isPayment ? "arrow-forward-circle" : "chevron-forward-outline"} 
+        style={[styles.arrowIcon, isPayment && { color: ACCENT_BLUE, fontSize: 28 }]} 
+      />
     )}
   </TouchableOpacity>
 );
@@ -97,12 +109,13 @@ const Routes = ({ route, navigation }) => {
               onPress={() => navigation.navigate("RouteCustomerPigme", { user, areaId: "Pigme-customer" })}
             />
 
-            {/* --- UPDATED PAYMENT LINK CARD (Removed special={true}) --- */}
+            {/* --- DIFFERENT STYLED PAYMENT LINK CARD --- */}
             <CustomRouteCard
               name="Payment Link"
-              icon="flash-outline"
+              icon="flash"
               subText="Generate & Share Links"
               onPress={() => navigation.navigate("PaymentLinkRoutes")}
+              isPayment={true}
             />
           </View>
         </ScrollView>
@@ -111,17 +124,25 @@ const Routes = ({ route, navigation }) => {
   );
 };
 
-// ... (Styles remain the same as the original file)
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
   topContainer: { paddingHorizontal: 16, paddingBottom: 20, elevation: 3 },
-  mainContentArea: { flex: 1, backgroundColor: SUBTLE_BG_GREY, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 16, marginTop: -20, paddingTop: 30 },
+  mainContentArea: { 
+    flex: 1, 
+    backgroundColor: SUBTLE_BG_GREY, 
+    borderTopLeftRadius: 30, 
+    borderTopRightRadius: 30, 
+    paddingHorizontal: 16, 
+    marginTop: -20, 
+    paddingTop: 30 
+  },
   headerSpacer: { paddingTop: 20, paddingBottom: 5 }, 
   titleContainer: { alignItems: 'center', marginBottom: 15 },
   title: { fontSize: 28, fontWeight: "900", color: CARD_BG, marginBottom: 4 },
   subtitle: { fontSize: 14, color: 'rgba(255, 255, 255, 0.85)', fontWeight: '500', textAlign: 'center' },
   scrollContainer: { paddingBottom: 50, paddingTop: 10 },
   cardListContainer: { gap: 18, alignItems: 'stretch' },
+  
   cardContainer: {
     backgroundColor: CARD_BG,
     borderRadius: 18, 
@@ -136,6 +157,16 @@ const styles = StyleSheet.create({
     borderLeftColor: ACCENT_BLUE,
     overflow: 'hidden',
   },
+
+  // Unique Style for Payment Link
+  paymentLinkCard: {
+    backgroundColor: '#f0f7ff', 
+    borderColor: ACCENT_BLUE,
+    borderWidth: 1.5,
+    borderLeftWidth: 1.5, // Reset standard thick left border
+    borderStyle: 'dashed',
+  },
+
   specialCardContainer: {
     borderLeftWidth: 0,
     borderWidth: 0,
@@ -144,6 +175,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
+
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  paymentIconCircle: {
+    backgroundColor: ACCENT_BLUE,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+
   specialCardText: { color: '#fff', fontSize: 20 },
   specialCardSubText: { color: 'rgba(255,255,255,0.7)' },
   specialCardIcon: { color: '#fbbf24', fontSize: 32 },

@@ -48,16 +48,13 @@ export default function CustomerPaymentLink({ route, navigation }) {
   const inputRef = useRef(null);
   const successScale = useRef(new Animated.Value(0)).current;
 
-  // Helper function to format date to DD/MM/YYYY
   const formatDate = (dateString) => {
     if (!dateString || dateString === "N/A") return "N/A";
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
-    
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-    
     return `${day}/${month}/${year}`;
   };
 
@@ -85,7 +82,6 @@ export default function CustomerPaymentLink({ route, navigation }) {
   const fetchAll = async () => {
     try {
       setLoading(true);
-      
       const results = await Promise.allSettled([
         axios.post(`${baseUrl}/enroll/get-user-tickets/${customer?._id}`),
         axios.get(`${baseUrl}/loans/get-borrower-by-user-id/${customer?._id}`),
@@ -93,12 +89,10 @@ export default function CustomerPaymentLink({ route, navigation }) {
       ]);
 
       let finalCards = [];
-
       const chitRes = results[0].status === 'fulfilled' ? results[0].value : null;
       const loanRes = results[1].status === 'fulfilled' ? results[1].value : null;
       const pigmeRes = results[2].status === 'fulfilled' ? results[2].value : null;
 
-      // CHIT Processing
       (chitRes?.data || []).forEach((c) => {
         finalCards.push({
           type: "chit", customer_name: customer?.name, title: c.group_id?.group_name,
@@ -108,34 +102,22 @@ export default function CustomerPaymentLink({ route, navigation }) {
         });
       });
 
-      // LOAN Processing
       const loans = Array.isArray(loanRes?.data) ? loanRes.data : loanRes?.data ? [loanRes.data] : [];
       loans.forEach(l => finalCards.push({
         type: "loan", customer_name: customer?.name, title: `Loan ID: ${l.loan_id}`,
         displayValue: `₹${l.loan_amount}`, label: "LOAN AMOUNT", loan_db_id: l._id, color: WARNING_COLOR, icon: "cash"
       }));
 
-      // PIGMY Processing
       const pigmes = Array.isArray(pigmeRes?.data) ? pigmeRes.data : pigmeRes?.data ? [pigmeRes.data] : [];
       pigmes.forEach(p => finalCards.push({
-        type: "pigmy", 
-        customer_name: customer?.name, 
-        title: `Pigmy ID: ${p.pigme_id}`,
-        displayValue: `₹${p.payable_amount}`, 
-        label: "COLLECTION", 
-        pigme_db_id: p._id, 
-        color: PURPLE_COLOR, 
-        icon: "wallet",
-        start_date: p.start_date || "N/A"
+        type: "pigmy", customer_name: customer?.name, title: `Pigmy ID: ${p.pigme_id}`,
+        displayValue: `₹${p.payable_amount}`, label: "COLLECTION", pigme_db_id: p._id, color: PURPLE_COLOR, 
+        icon: "wallet", start_date: p.start_date || "N/A"
       }));
 
       setCards(finalCards);
       setFilteredCards(finalCards);
-    } catch (err) { 
-        console.error("Fetch Error:", err); 
-    } finally { 
-        setLoading(false); 
-    }
+    } catch (err) { console.error("Fetch Error:", err); } finally { setLoading(false); }
   };
 
   const processFinalPayment = async () => {
@@ -164,17 +146,12 @@ export default function CustomerPaymentLink({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
-          <Image 
-            source={require('../assets/hero1.jpg')} 
-            style={styles.heroImage}
-          />
+          <Image source={require('../assets/hero1.jpg')} style={styles.heroImage} />
         </View>
-
         <View style={styles.headerTextCenter}>
           <Text style={styles.headerTitle}>Payments</Text>
           <Text style={styles.headerSubtitle}>Manage transactions for {customer?.name}</Text>
         </View>
-
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={20} color={TEXT_GREY} />
           <TextInput 
@@ -215,7 +192,6 @@ export default function CustomerPaymentLink({ route, navigation }) {
                               <Text style={styles.cardCustName}>{item.customer_name}</Text>
                               <Text style={styles.cardGrpName}>{item.title}</Text>
                           </View>
-
                           <View style={styles.infoGrid}>
                               <View style={styles.gridItem}>
                                   <Text style={styles.tinyLabel}>{item.type === 'pigmy' ? 'START DATE' : item.label}</Text>
@@ -223,13 +199,11 @@ export default function CustomerPaymentLink({ route, navigation }) {
                                     {item.type === 'pigmy' ? formatDate(item.start_date) : item.displayValue}
                                   </Text>
                               </View>
-                              
                               <View style={[styles.gridItem, { alignItems: 'flex-end' }]}>
                                   <Text style={styles.tinyLabel}>STATUS</Text>
                                   <Text style={styles.gridVal}>ACTIVE</Text>
                               </View>
                           </View>
-                          
                           <TouchableOpacity onPress={() => { setSelectedItem(item); setPaymentModal(true); }} activeOpacity={0.8} style={[styles.sendLinkBtn, { backgroundColor: item.color }]}>
                               <Text style={styles.sendLinkBtnText}>SEND PAYMENT LINK</Text>
                           </TouchableOpacity>
@@ -242,6 +216,7 @@ export default function CustomerPaymentLink({ route, navigation }) {
         </View>
       </View>
 
+      {/* Amount Entry Modal */}
       <Modal visible={paymentModal} transparent animationType="fade">
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalBlurCenter}>
           <View style={styles.centeredCard}>
@@ -253,7 +228,6 @@ export default function CustomerPaymentLink({ route, navigation }) {
                 <Text style={styles.mCustName}>{selectedItem?.customer_name}</Text>
                 <Text style={styles.modalSubInfo}>{selectedItem?.title}</Text>
                 <Text style={[styles.modalTinyInfo, { color: selectedItem?.color }]}>{selectedItem?.label}: {selectedItem?.displayValue}</Text>
-
                 <View style={[styles.mInputRow, { borderBottomColor: selectedItem?.color }]}>
                     <Text style={[styles.mCurrency, { color: selectedItem?.color }]}>₹</Text>
                     <TextInput ref={inputRef} keyboardType="numeric" value={amount} onChangeText={setAmount} style={styles.mInputField} placeholder="0" />
@@ -266,17 +240,35 @@ export default function CustomerPaymentLink({ route, navigation }) {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Confirmation Modal - Updated to show Ticket No for Chits */}
       <Modal visible={confirmModal} transparent animationType="slide">
         <View style={styles.confirmOverlay}>
           <View style={styles.glassConfirmCard}>
             <Text style={styles.confirmHeading}>Confirm Details</Text>
             <View style={styles.glassDetailBox}>
-                <View style={styles.glassRow}><Text style={styles.glassLabel}>CUSTOMER</Text><Text style={styles.glassValue}>{selectedItem?.customer_name}</Text></View>
-                <View style={styles.glassRow}><Text style={styles.glassLabel}>ACCOUNT</Text><Text style={styles.glassValue}>{selectedItem?.title}</Text></View>
-                <View style={styles.glassRow}><Text style={styles.glassLabel}>PAYABLE</Text><Text style={[styles.glassValue, { color: SUCCESS_GREEN, fontSize: 24 }]}>₹{amount}</Text></View>
+                <View style={styles.glassRow}>
+                    <Text style={styles.glassLabel}>CUSTOMER</Text>
+                    <Text style={styles.glassValue}>{selectedItem?.customer_name}</Text>
+                </View>
+                <View style={styles.glassRow}>
+                    <Text style={styles.glassLabel}>ACCOUNT</Text>
+                    <Text style={styles.glassValue}>{selectedItem?.title}</Text>
+                </View>
+                {selectedItem?.type === "chit" && (
+                    <View style={styles.glassRow}>
+                        <Text style={styles.glassLabel}>TICKET NO</Text>
+                        <Text style={[styles.glassValue, { color: ACCENT_BLUE }]}>{selectedItem?.ticket_no}</Text>
+                    </View>
+                )}
+                <View style={styles.glassRow}>
+                    <Text style={styles.glassLabel}>PAYABLE AMOUNT</Text>
+                    <Text style={[styles.glassValue, { color: SUCCESS_GREEN, fontSize: 24 }]}>₹{amount}</Text>
+                </View>
             </View>
             <View style={styles.confirmBtnRow}>
-                <TouchableOpacity style={styles.glassCancel} onPress={() => setConfirmModal(false)}><Text style={styles.glassCancelText}>CANCEL</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.glassCancel} onPress={() => setConfirmModal(false)}>
+                    <Text style={styles.glassCancelText}>CANCEL</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.glassConfirm} onPress={processFinalPayment}>
                     {isSending ? <ActivityIndicator color="#fff" /> : <Text style={styles.glassConfirmText}>YES, SEND</Text>}
                 </TouchableOpacity>
