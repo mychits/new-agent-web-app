@@ -1,345 +1,478 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    SafeAreaView,
-    ActivityIndicator,
-    Platform,
-    Dimensions,
-    Animated,
-    Image,
-    TouchableOpacity,
-    Modal,
-    StatusBar,
-    ScrollView
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+  Platform,
+  Animated,
+  Image,
+  TouchableOpacity,
+  Modal,
+  StatusBar,
+  ScrollView,
+  Dimensions,
+  Linking,
 } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import axios from "axios";
 import moment from "moment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import baseUrl from "../constants/baseUrl"; 
+import baseUrl from "../constants/baseUrl";
 
 const { width } = Dimensions.get("window");
 
-const COLOR_PALETTE = {
-    primary: '#183A5D',
-    secondary: '#7B8D9E',
-    lightText: '#FFFFFF',
-    cardBackground: '#FFFFFF',
-    errorRed: '#E74C3C',
-    accentGreen: '#27AE60',
-    accentOrange: '#f8c009ff',
-    backgroundBlue: '#1aa2ccff',
+const COLORS = {
+  primary: "#183A5D",
+  accent: "#f8c009ff",
+  bgBlue: "#1aa2ccff",
+  success: "#27AE60",
+  cardBg: "rgba(255, 255, 255, 0.95)",
+  white: "#FFFFFF",
+  muted: "#8898AA",
 };
 
-const TARGET_API_BASE = `${baseUrl}/target/employee`;
-const backgroundImage = require('../assets/hero1.jpg'); 
+const backgroundImage = require("../assets/hero1.jpg");
 
 const Target = ({ navigation }) => {
-    const [loading, setLoading] = useState(true);
-    const [targetData, setTargetData] = useState(null);
-    const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [enrollments, setEnrollments] = useState([]);
+  const [targetData, setTargetData] = useState({
+    total_target: 0,
+    total_business: 0,
+    total_enrollments: 0,
+  });
 
-    const [month, setMonth] = useState(moment().month());
-    const [year, setYear] = useState(moment().year());
-    const [tmpMonth, setTmpMonth] = useState(moment().month());
-    const [tmpYear, setTmpYear] = useState(moment().year());
-    const [showPicker, setShowPicker] = useState(false);
+  const [month, setMonth] = useState(moment().month());
+  const [year, setYear] = useState(moment().year());
+  const [tmpMonth, setTmpMonth] = useState(month);
+  const [tmpYear, setTmpYear] = useState(year);
+  const [showPicker, setShowPicker] = useState(false);
 
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const progressAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-    const generateYears = () => {
-        const currentY = moment().year();
-        const startYear = 2023; 
-        const years = [];
-        for (let i = startYear; i <= currentY; i++) {
-            years.push(i);
-        }
-        return years;
-    };
+  const fetchTargetDetails = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const agentStr = await AsyncStorage.getItem("agentInfo");
+      const agentInfo = agentStr ? JSON.parse(agentStr) : null;
+      const employeeId = agentInfo?._id;
 
-    const getAvailableMonths = () => {
-        const allMonths = moment.monthsShort();
-        const currentY = moment().year();
-        const currentM = moment().month();
+      if (!employeeId) {
+        setError("Login required");
+        return;
+      }
 
-        if (tmpYear === currentY) {
-            return allMonths.filter((_, index) => index <= currentM);
-        }
-        return allMonths;
-    };
+      const startDate = moment().year(year).month(month).startOf("month").format("YYYY-MM-DD");
+      const endDate = moment().year(year).month(month).endOf("month").format("YYYY-MM-DD");
 
-    const fetchTargetDetails = async () => {
-        setLoading(true);
-        setError("");
-        try {
-            const agentInfoStr = await AsyncStorage.getItem("agentInfo");
-            const agentInfo = agentInfoStr ? JSON.parse(agentInfoStr) : null;
-            
-            // Dynamic ID extraction - no hardcoding
-            const agentId = agentInfo?._id;
+      const [incentiveRes, targetRes] = await Promise.all([
+        axios.get(`${baseUrl}/enroll/employee/${employeeId}/incentive?start_date=${startDate}&end_date=${endDate}`),
+        axios.get(`${baseUrl}/target/employees/${employeeId}?start_date=${startDate}&end_date=${endDate}`),
+      ]);
 
-            if (!agentId) {
-                setError("Authentication Error: Please log in again.");
-                setLoading(false);
-                return;
-            }
+      const incentiveApi = incentiveRes?.data || {};
+      const targetApi = targetRes?.data || {};
+      const summary = incentiveApi?.incentiveSummary || {};
 
-            const fromDate = moment().year(year).month(month).startOf("month").format("YYYY-MM-DD");
-            const toDate = moment().year(year).month(month).endOf("month").format("YYYY-MM-DD");
+      setEnrollments(incentiveApi.incentiveData || []);
 
-            const res = await axios.get(`${TARGET_API_BASE}/${agentId}?from_date=${fromDate}&to_date=${toDate}`);
+      const achievedFromTarget = Number(targetApi?.summary?.metrics?.actual_business || 0);
+      const groupValueFromIncentive = Number(summary?.total_group_value || 0);
 
-            if (res.data.success && res.data.summary) {
-                const s = res.data.summary;
-                setTargetData({
-                    total: s.agent.target.value,
-                    achieved: s.metrics.actual_business,
-                    percent: s.agent.target.achievement_percent,
-                    remaining: s.metrics.target_remaining,
-                });
+      setTargetData({
+        total_target: Number(targetApi?.total_target || 0),
+        total_business: achievedFromTarget + groupValueFromIncentive,
+        total_enrollments: Number(summary?.total_enrollments || 0),
+      });
 
-                Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-                Animated.timing(progressAnim, {
-                    toValue: Math.min(100, s.agent.target.achievement_percent),
-                    duration: 1000,
-                    useNativeDriver: false
-                }).start();
-            } else {
-                setTargetData(null);
-                setError("No data found for this period.");
-            }
-        } catch (err) {
-            setError("Failed to load details. Check your connection.");
-            console.error("API Error:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
+      Animated.timing(fadeAnim, { 
+        toValue: 1, 
+        duration: 800, 
+        useNativeDriver: true 
+      }).start();
+    } catch (err) {
+      setError("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => { 
-        fetchTargetDetails(); 
-    }, [month, year]);
+  useEffect(() => { 
+    fetchTargetDetails(); 
+  }, [month, year]);
 
-    const animatedWidth = progressAnim.interpolate({
-        inputRange: [0, 100],
-        outputRange: ['0%', '100%'],
-    });
+  const handleCall = (phone) => {
+    if (!phone) return;
+    const url = `tel:${phone}`;
+    Linking.openURL(url).catch(() => console.log("Call failed"));
+  };
 
-    const isTargetAchieved = targetData?.remaining <= 0;
+  const progress = targetData.total_target > 0 
+    ? Math.min((targetData.total_business / targetData.total_target) * 100, 100) 
+    : 0;
 
-    const getMotivation = () => {
-        if (!targetData) return "";
-        const { achieved, percent } = targetData;
-        if (percent >= 100) return "Target achieved! You are a superstar! 🏆";
-        if (achieved > 300000) return "Great job! Milestone reached! 🚀";
-        if (achieved === 0) return "Let's make a start today! 💪";
-        return "Keep pushing! You are doing great! 🔥";
-    };
+  return (
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="light-content" />
+      
+      <Image source={backgroundImage} style={styles.bgOverlay} blurRadius={10} />
+      <LinearGradient 
+        colors={["rgba(26, 162, 204, 0.85)", COLORS.primary]} 
+        style={StyleSheet.absoluteFill} 
+      />
 
-    const SleekMetricCard = ({ title, value, icon, valueColor, iconColor, children, isPeriodCard }) => (
-        <TouchableOpacity 
-            activeOpacity={isPeriodCard ? 0.7 : 1}
-            onPress={isPeriodCard ? () => {
-                setTmpYear(year);
-                setTmpMonth(month);
-                setShowPicker(true);
-            } : null}
-            style={styles.sleekCard}
-        >
-            <View style={[styles.iconCircle, { backgroundColor: iconColor + '10' }]}>
-                {icon}
-            </View>
-            <View style={{ flex: 1 }}>
-                <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                    <Text style={styles.cardLabel}>{title}</Text>
-                    {isPeriodCard && <Ionicons name="options-outline" size={16} color={COLOR_PALETTE.primary} />}
-                </View>
-                <Text style={[styles.cardValue, { color: valueColor }]}>{value}</Text>
-                {children}
-            </View>
-        </TouchableOpacity>
-    );
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()}
+              style={styles.iconCircle}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
 
-    return (
-        <View style={{ flex: 1 }}>
-            <StatusBar barStyle="light-content" />
-            <Image source={backgroundImage} style={styles.backgroundImage} blurRadius={10} />
-            <LinearGradient colors={[COLOR_PALETTE.backgroundBlue, COLOR_PALETTE.backgroundBlue]} style={StyleSheet.absoluteFill} />
-
-            <SafeAreaView style={{ flex: 1 }}>
-                <View style={styles.customHeader}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="chevron-back" size={32} color="#fff" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={fetchTargetDetails} style={styles.refreshBtn}>
-                        <Feather name="refresh-cw" size={22} color={COLOR_PALETTE.accentOrange} />
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.mainContainer}>
-                    <Text style={styles.mainTitle}>My Performance 🎯</Text>
-
-                    {loading ? (
-                        <ActivityIndicator size="large" color={COLOR_PALETTE.accentOrange} style={{ marginTop: 50 }} />
-                    ) : (
-                        <Animated.ScrollView style={{ opacity: fadeAnim }} showsVerticalScrollIndicator={false}>
-                            
-                            <SleekMetricCard
-                                title="PERFORMANCE PERIOD"
-                                value={`${moment().month(month).format("MMMM")} ${year}`}
-                                icon={<Ionicons name="calendar-outline" size={24} color={COLOR_PALETTE.primary} />}
-                                valueColor={COLOR_PALETTE.primary}
-                                iconColor={COLOR_PALETTE.primary}
-                                isPeriodCard={true}
-                            />
-
-                            {error ? (
-                                <View style={styles.errorCard}>
-                                    <MaterialCommunityIcons name="alert-circle-outline" size={40} color={COLOR_PALETTE.errorRed} />
-                                    <Text style={styles.errorText}>{error}</Text>
-                                    <TouchableOpacity style={[styles.applyBtn, {marginTop: 20}]} onPress={fetchTargetDetails}>
-                                        <Text style={styles.applyBtnText}>RETRY</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            ) : targetData && (
-                                <>
-                                    <SleekMetricCard
-                                        title="YOUR TOTAL TARGET"
-                                        value={`${targetData.total.toLocaleString('en-IN')}`}
-                                        icon={<MaterialCommunityIcons name="bullseye-arrow" size={24} color={COLOR_PALETTE.accentOrange} />}
-                                        valueColor={COLOR_PALETTE.primary}
-                                        iconColor={COLOR_PALETTE.accentOrange}
-                                    />
-
-                                    <SleekMetricCard
-                                        title="ACHIEVED BUSINESS"
-                                        value={`${targetData.achieved.toLocaleString('en-IN')}`}
-                                        icon={<MaterialCommunityIcons name="chart-line-variant" size={24} color={COLOR_PALETTE.accentOrange} />}
-                                        valueColor={COLOR_PALETTE.accentOrange}
-                                        iconColor={COLOR_PALETTE.accentOrange}
-                                    >
-                                        <View style={styles.progressBarBackground}>
-                                            <Animated.View style={[styles.progressBarFill, { width: animatedWidth, backgroundColor: COLOR_PALETTE.accentOrange }]} />
-                                            <Text style={styles.progressText}>{targetData.percent}%</Text>
-                                        </View>
-                                        {isTargetAchieved && (
-                                            <Text style={[styles.encouragementText, { color: COLOR_PALETTE.accentGreen }]}>
-                                                {getMotivation()}
-                                            </Text>
-                                        )}
-                                    </SleekMetricCard>
-
-                                    {!isTargetAchieved && (
-                                        <SleekMetricCard
-                                            title="REMAINING TO ACHIEVE"
-                                            value={`${targetData.remaining.toLocaleString('en-IN')}`}
-                                            icon={<Ionicons name="hourglass-outline" size={24} color={COLOR_PALETTE.errorRed} />}
-                                            valueColor={COLOR_PALETTE.errorRed}
-                                            iconColor={COLOR_PALETTE.errorRed}
-                                        >
-                                            <Text style={styles.encouragementText}>{getMotivation()}</Text>
-                                        </SleekMetricCard>
-                                    )}
-                                </>
-                            )}
-                        </Animated.ScrollView>
-                    )}
-                </View>
-            </SafeAreaView>
-
-            <Modal visible={showPicker} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.bottomSheet}>
-                        <View style={styles.sheetHeader}>
-                            <Text style={styles.sheetTitle}>Select Period</Text>
-                            <TouchableOpacity onPress={() => setShowPicker(false)}>
-                                <Ionicons name="close-circle" size={30} color="#ddd" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <Text style={styles.filterLabel}>YEAR</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearRow}>
-                            {generateYears().map((y) => (
-                                <TouchableOpacity key={y} 
-                                    style={[styles.yearBox, tmpYear === y && styles.activeBox]} 
-                                    onPress={() => {
-                                        setTmpYear(y);
-                                        if (y === moment().year() && tmpMonth > moment().month()) {
-                                            setTmpMonth(moment().month());
-                                        }
-                                    }}>
-                                    <Text style={[styles.boxText, tmpYear === y && styles.activeBoxText]}>{y}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-
-                        <Text style={styles.filterLabel}>MONTH</Text>
-                        <View style={styles.monthGrid}>
-                            {getAvailableMonths().map((m, i) => (
-                                <TouchableOpacity key={m} 
-                                    style={[styles.monthBox, tmpMonth === i && styles.activeBox]} 
-                                    onPress={() => setTmpMonth(i)}>
-                                    <Text style={[styles.boxText, tmpMonth === i && styles.activeBoxText]}>{m}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        <TouchableOpacity style={styles.applyBtn} onPress={() => {
-                            setMonth(tmpMonth); setYear(tmpYear); setShowPicker(false);
-                        }}>
-                            <Text style={styles.applyBtnText}>APPLY SELECTION</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+            <TouchableOpacity 
+              onPress={fetchTargetDetails} 
+              style={styles.refreshBtn}
+              activeOpacity={0.7}
+            >
+              <Feather name="refresh-cw" size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.headerTitle}>Target Performance</Text>
         </View>
-    );
+
+        <View style={styles.contentContainer}>
+          {loading ? (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color={COLORS.accent} />
+              <Text style={styles.loadingText}>Fetching Analytics...</Text>
+            </View>
+          ) : (
+            <Animated.ScrollView 
+              style={{ opacity: fadeAnim }} 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 40 }}
+            >
+              {/* Date Filter - Always Visible */}
+              <TouchableOpacity 
+                style={styles.dateCard} 
+                onPress={() => setShowPicker(true)}
+                activeOpacity={0.9}
+              >
+                <View style={styles.dateInfo}>
+                  <View style={styles.calendarIconBg}>
+                    <Ionicons name="calendar" size={20} color={COLORS.white} />
+                  </View>
+                  <Text style={styles.dateText}>
+                    {moment().month(month).format("MMMM")} {year}
+                  </Text>
+                </View>
+                <Feather name="edit-3" size={18} color={COLORS.primary} />
+              </TouchableOpacity>
+
+              {/* Conditional Rendering: Target Analytics vs No Target Message */}
+              {targetData.total_target > 0 ? (
+                <>
+                  <View style={styles.mainCard}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardLabel}>Current Progress</Text>
+                      <View style={styles.statusBadge}>
+                        <Text style={styles.statusText}>{progress >= 100 ? 'Target Met' : 'In Progress'}</Text>
+                      </View>
+                    </View>
+                    
+                    <Text style={styles.percentageText}>{progress.toFixed(1)}%</Text>
+                    
+                    <View style={styles.progressTrack}>
+                      <Animated.View style={[styles.progressFill, { width: `${progress}%` }]} />
+                    </View>
+                    
+                    <View style={styles.statsRow}>
+                      <View>
+                        <Text style={styles.statLabel}>Achieved</Text>
+                        <Text style={styles.statValue}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={styles.statLabel}>Monthly Goal</Text>
+                        <Text style={styles.statValue}>₹{targetData.total_target.toLocaleString("en-IN")}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.miniGrid}>
+                    <View style={styles.miniCard}>
+                      <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}>
+                        <MaterialCommunityIcons name="account-group" size={24} color={COLORS.primary} />
+                      </View>
+                      <Text style={styles.miniVal}>{targetData.total_enrollments}</Text>
+                      <Text style={styles.miniLabel}>Total Enrollments</Text>
+                    </View>
+                    
+                    <View style={styles.miniCard}>
+                      <View style={[styles.iconBox, { backgroundColor: '#E8F5E9' }]}>
+                        <MaterialCommunityIcons name="briefcase-check" size={24} color={COLORS.success} />
+                      </View>
+                      <Text style={styles.miniVal}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
+                      <Text style={styles.miniLabel}>Revenue Generated</Text>
+                    </View>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.noTargetCard}>
+                  <MaterialCommunityIcons name="target-variant" size={60} color={COLORS.accent} />
+                  <Text style={styles.noTargetTitle}>No Target Assigned</Text>
+                  <Text style={styles.noTargetSub}>
+                    There is no sales target assigned to you for {moment().month(month).format("MMMM")} {year}. 
+                    Please contact your manager for further details.
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Enrollments List</Text>
+                <Text style={styles.countBadge}>{enrollments.length}</Text>
+              </View>
+              
+              {enrollments.length > 0 ? (
+                enrollments.map((item, index) => (
+                  <View key={item._id || index} style={styles.listCard}>
+                    <View style={styles.listHeader}>
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{item.user_id?.full_name?.charAt(0)}</Text>
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.clientName}>{item.user_id?.full_name}</Text>
+                        <TouchableOpacity 
+                          style={styles.phoneRow} 
+                          onPress={() => handleCall(item.user_id?.phone_number)}
+                        >
+                          <Feather name="phone" size={12} color={COLORS.bgBlue} />
+                          <Text style={styles.clientContact}> {item.user_id?.phone_number}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.amountContainer}>
+                        <Text style={styles.amountText}>₹{item.group_id?.group_value?.toLocaleString("en-IN")}</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.listFooter}>
+                      <View style={styles.schemeBadge}>
+                        <Text style={styles.schemeText}>
+                          <Text style={{fontWeight: '900'}}>SCHEME: </Text>
+                          {item.group_id?.group_name}
+                        </Text>
+                      </View>
+                      <Text style={styles.emailText} numberOfLines={1}>
+                        {item.user_id?.email || 'No email registered'}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <MaterialCommunityIcons name="database-off-outline" size={50} color="rgba(255,255,255,0.4)" />
+                  <Text style={styles.noDataText}>No enrollment records found for this period.</Text>
+                </View>
+              )}
+            </Animated.ScrollView>
+          )}
+        </View>
+      </SafeAreaView>
+
+      <Modal visible={showPicker} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowPicker(false)} />
+          <View style={styles.pickerSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Filter Period</Text>
+            
+            <Text style={styles.pickerSubLabel}>Select Year</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.yearScroll}>
+              {[2024, 2025, 2026].map(y => (
+                <TouchableOpacity 
+                  key={y} 
+                  onPress={() => setTmpYear(y)} 
+                  style={[styles.yearBox, tmpYear === y && styles.activeBox]}
+                >
+                  <Text style={[styles.boxText, tmpYear === y && styles.whiteText]}>{y}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.pickerSubLabel}>Select Month</Text>
+            <View style={styles.monthGrid}>
+              {moment.monthsShort().map((m, i) => (
+                <TouchableOpacity 
+                  key={m} 
+                  onPress={() => setTmpMonth(i)} 
+                  style={[styles.monthBox, tmpMonth === i && styles.activeBox]}
+                >
+                  <Text style={[styles.boxText, tmpMonth === i && styles.whiteText]}>{m}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              style={styles.applyBtn} 
+              onPress={() => { 
+                setMonth(tmpMonth); 
+                setYear(tmpYear); 
+                setShowPicker(false); 
+              }}
+            >
+              <Text style={styles.applyBtnText}>APPLY FILTER</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
 };
 
-const styles = StyleSheet.create({
-    backgroundImage: { ...StyleSheet.absoluteFillObject, opacity: 0.15 },
-    customHeader: { 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        paddingHorizontal: 20, 
-        paddingTop: Platform.OS === 'android' ? 60 : 30, 
-        alignItems: 'center'
-    },
-    mainContainer: { 
-        paddingHorizontal: 22, 
-        flex: 1, 
-        marginTop: 20 
-    },
-    refreshBtn: { backgroundColor: '#fff', padding: 10, borderRadius: 25, elevation: 5 },
-    mainTitle: { fontWeight: "900", fontSize: 30, color: '#fff', textAlign: 'center', marginBottom: 25 },
-    sleekCard: { backgroundColor: '#fff', borderRadius: 25, padding: 22, marginBottom: 15, flexDirection: 'row', alignItems: 'center', elevation: 8 },
-    iconCircle: { width: 55, height: 55, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 15, borderWidth: 1, borderColor: '#f0f0f0' },
-    cardLabel: { fontSize: 13, fontWeight: "600", color: COLOR_PALETTE.secondary, textTransform: 'uppercase', letterSpacing: 1 },
-    cardValue: { fontSize: 22, fontWeight: "900", color: COLOR_PALETTE.primary },
-    progressBarBackground: { height: 12, backgroundColor: '#EAEAEA', borderRadius: 6, marginTop: 10, overflow: 'hidden', position: 'relative', justifyContent: 'center' },
-    progressBarFill: { height: '100%', position: 'absolute', left: 0 },
-    progressText: { position: 'absolute', right: 8, fontSize: 10, fontWeight: '900', color: COLOR_PALETTE.primary, zIndex: 1 },
-    encouragementText: { fontSize: 14, color: COLOR_PALETTE.secondary, marginTop: 8, fontStyle: 'italic', fontWeight: '600' },
-    errorCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, alignItems: 'center', marginTop: 20 },
-    errorText: { color: COLOR_PALETTE.primary, fontSize: 16, fontWeight: '700', marginTop: 10, textAlign: 'center' },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-    bottomSheet: { backgroundColor: '#fff', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 30, paddingBottom: 50 },
-    sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-    sheetTitle: { fontSize: 22, fontWeight: '900', color: COLOR_PALETTE.primary },
-    filterLabel: { fontSize: 12, fontWeight: '900', color: '#bbb', marginVertical: 10, letterSpacing: 1 },
-    yearRow: { flexDirection: 'row', paddingVertical: 5 },
-    monthGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
-    yearBox: { paddingHorizontal: 25, marginHorizontal: 5, paddingVertical: 12, borderRadius: 12, backgroundColor: '#f5f5f5', alignItems: 'center', minWidth: 90 },
-    monthBox: { width: '30%', marginHorizontal: '1.5%', paddingVertical: 12, marginBottom: 10, borderRadius: 12, backgroundColor: '#f5f5f5', alignItems: 'center' },
-    activeBox: { backgroundColor: COLOR_PALETTE.primary },
-    boxText: { fontWeight: '700', color: '#666' },
-    activeBoxText: { color: '#fff' },
-    applyBtn: { backgroundColor: COLOR_PALETTE.accentOrange, padding: 18, borderRadius: 20, alignItems: 'center', marginTop: 10 },
-    applyBtnText: { fontWeight: '900', color: COLOR_PALETTE.primary, fontSize: 16 }
-});
-
 export default Target;
+
+const styles = StyleSheet.create({
+  mainContainer: { flex: 1, backgroundColor: COLORS.primary },
+  bgOverlay: { ...StyleSheet.absoluteFillObject, opacity: 0.2 },
+  
+  header: { 
+    paddingHorizontal: 20, 
+    paddingTop: Platform.OS === "android" ? 50 : 20,
+    paddingBottom: 15,
+    alignItems: "center"
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 10
+  },
+  headerTitle: { fontSize: 22, fontWeight: "900", color: "#fff", letterSpacing: 0.5, textAlign: 'center' },
+  iconCircle: { backgroundColor: "#fff", padding: 8, borderRadius: 12 },
+  refreshBtn: { backgroundColor: COLORS.accent, padding: 10, borderRadius: 12 },
+  
+  contentContainer: { paddingHorizontal: 20, flex: 1 },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: COLORS.white, marginTop: 10, fontWeight: '600', opacity: 0.8 },
+
+  dateCard: { 
+    backgroundColor: COLORS.white, 
+    borderRadius: 20, 
+    padding: 15, 
+    marginBottom: 20, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between",
+    elevation: 5
+  },
+  dateInfo: { flexDirection: 'row', alignItems: 'center' },
+  calendarIconBg: { backgroundColor: COLORS.bgBlue, padding: 8, borderRadius: 10, marginRight: 12 },
+  dateText: { fontSize: 18, fontWeight: "800", color: COLORS.primary },
+
+  mainCard: { 
+    backgroundColor: COLORS.cardBg, 
+    borderRadius: 30, 
+    padding: 25, 
+    marginBottom: 20, 
+    elevation: 8,
+  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardLabel: { fontSize: 12, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase" },
+  statusBadge: { backgroundColor: 'rgba(39, 174, 96, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  statusText: { color: COLORS.success, fontSize: 10, fontWeight: '900' },
+  percentageText: { fontSize: 48, fontWeight: "900", color: COLORS.primary, marginVertical: 5 },
+  
+  progressTrack: { height: 14, backgroundColor: "#E9ECEF", borderRadius: 7, overflow: "hidden", marginVertical: 15 },
+  progressFill: { height: "100%", backgroundColor: COLORS.accent, borderRadius: 7 },
+  
+  statsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 5 },
+  statLabel: { fontSize: 12, color: COLORS.muted, fontWeight: "700" },
+  statValue: { fontSize: 18, fontWeight: "900", color: COLORS.primary, marginTop: 2 },
+
+  miniGrid: { flexDirection: "row", justifyContent: "space-between", marginBottom: 25 },
+  miniCard: { 
+    backgroundColor: COLORS.white, 
+    width: "48%", 
+    borderRadius: 25, 
+    padding: 20, 
+    alignItems: "flex-start",
+    elevation: 4
+  },
+  iconBox: { padding: 10, borderRadius: 15, marginBottom: 12 },
+  miniVal: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
+  miniLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, marginTop: 4 },
+
+  noTargetCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 30,
+    padding: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    elevation: 8,
+  },
+  noTargetTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.primary,
+    marginTop: 15,
+  },
+  noTargetSub: {
+    fontSize: 14,
+    color: COLORS.muted,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, marginTop: 10 },
+  sectionTitle: { fontSize: 24, fontWeight: "900", color: "#fff", marginRight: 10 },
+  countBadge: { backgroundColor: COLORS.accent, color: COLORS.primary, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12, fontSize: 12, fontWeight: '900', overflow: 'hidden' },
+
+  listCard: { 
+    backgroundColor: COLORS.white, 
+    borderRadius: 25, 
+    padding: 18, 
+    marginBottom: 15,
+    elevation: 3
+  },
+  listHeader: { flexDirection: "row", alignItems: "center" },
+  avatar: { width: 50, height: 50, borderRadius: 18, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
+  avatarText: { color: "#fff", fontSize: 22, fontWeight: "900" },
+  clientName: { fontSize: 17, fontWeight: "800", color: COLORS.primary },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingVertical: 2 },
+  clientContact: { fontSize: 14, color: COLORS.bgBlue, fontWeight: '700', textDecorationLine: 'underline' },
+  amountContainer: { backgroundColor: '#F0F9F4', padding: 8, borderRadius: 12 },
+  amountText: { fontSize: 15, fontWeight: "900", color: COLORS.success },
+  
+  listFooter: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: "#F1F4F8" },
+  schemeBadge: { backgroundColor: '#F8F9FA', padding: 6, borderRadius: 8, alignSelf: 'flex-start' },
+  schemeText: { fontSize: 12, color: COLORS.primary },
+  emailText: { fontSize: 12, color: COLORS.muted, marginTop: 8, fontStyle: 'italic' },
+
+  emptyContainer: { alignItems: 'center', marginTop: 40, opacity: 0.6 },
+  noDataText: { color: "#fff", textAlign: "center", marginTop: 15, fontSize: 16, fontWeight: '600' },
+
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+  pickerSheet: { backgroundColor: "#fff", padding: 25, borderTopLeftRadius: 40, borderTopRightRadius: 40, paddingBottom: 40 },
+  sheetHandle: { width: 40, height: 5, backgroundColor: '#E0E0E0', borderRadius: 10, alignSelf: 'center', marginBottom: 20 },
+  sheetTitle: { fontSize: 22, fontWeight: "900", marginBottom: 25, color: COLORS.primary, textAlign: 'center' },
+  pickerSubLabel: { fontSize: 14, fontWeight: '800', color: COLORS.muted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  yearScroll: { marginBottom: 25 },
+  monthGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  monthBox: { width: "31%", paddingVertical: 15, alignItems: "center", borderRadius: 18, backgroundColor: "#F5F7FA", marginBottom: 10 },
+  yearBox: { paddingHorizontal: 25, paddingVertical: 12, borderRadius: 18, backgroundColor: "#F5F7FA", marginRight: 12 },
+  activeBox: { backgroundColor: COLORS.primary, elevation: 5 },
+  boxText: { fontWeight: "800", color: "#A0AEC0", fontSize: 15 },
+  whiteText: { color: "#fff" },
+  applyBtn: { backgroundColor: COLORS.accent, padding: 20, borderRadius: 22, marginTop: 30, alignItems: "center", elevation: 6 },
+  applyBtnText: { fontWeight: "900", fontSize: 16, color: COLORS.primary, letterSpacing: 1 },
+});

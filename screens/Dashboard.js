@@ -8,577 +8,276 @@ import {
   Dimensions,
   Animated,
   ActivityIndicator,
+  StatusBar,
+  Platform,
 } from "react-native";
-// Removed: import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
-import Svg, { G, Circle, Defs, Stop, RadialGradient } from "react-native-svg";
+import { Feather, MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import Svg, { G, Circle } from "react-native-svg";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 
-import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 
 const { width } = Dimensions.get("window");
 const circumference = 2 * Math.PI * 65;
 
-const AnimatedSvg = Animated.createAnimatedComponent(Svg);
+// Define Animated component outside to prevent errors
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-const Dashboard = ({ route, navigation }) => {
-  const { user = {} } = route.params || {};
+const COLORS = {
+  primary: "#183A5D", // Dark Navy from Target.js
+  accent: "#f8c009ff", // Gold from Target.js
+  bgBlue: "#1aa2ccff", // Light Blue gradient
+  success: "#27AE60",
+  white: "#FFFFFF",
+  muted: "#8898AA",
+  glass: "rgba(255, 255, 255, 0.15)",
+};
+
+const Dashboard = ({ navigation }) => {
   const [agent, setAgent] = useState({});
-  const [targetData, setTargetData] = useState({
-    total: 0,
-    achieved: 0,
-    remaining: 0,
-  });
+  const [targetData, setTargetData] = useState({ total: 0, achieved: 0 });
   const [totalCollection, setTotalCollection] = useState(0);
   const [todayPayments, setTodayPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Animation for circular progress bar
   const progressAnim = useRef(new Animated.Value(0)).current;
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     Animated.timing(progressAnim, {
       toValue: progress,
-      duration: 1000,
+      duration: 1200,
       useNativeDriver: false,
     }).start();
   }, [progress]);
 
-  useEffect(() => {
-    const fetchAgent = async () => {
-      if (user && user.userId) {
-        try {
-          const response = await axios.get(
-            `${baseUrl}/agent/get-agent-by-id/${user.userId}`
-          );
-          if (response.data) {
-            setAgent(response.data);
-          } else {
-            setAgent({});
-          }
-        } catch (error) {
-          setAgent({});
-        }
-      } else {
-        setAgent({});
-      }
-    };
-    fetchAgent();
-  }, [user.userId]);
-
-  const fetchTargetDetails = async (agentId, designationId) => {
+  const fetchData = async () => {
+    setIsLoading(true);
     try {
-      const startOfMonth = moment().startOf("month").format("YYYY-MM-DD");
-      const endOfMonth = moment().endOf("month").format("YYYY-MM-DD");
+      const agentInfoJson = await AsyncStorage.getItem("agentInfo");
+      const agentInfoData = agentInfoJson ? JSON.parse(agentInfoJson) : null;
+      const agentId = agentInfoData?._id;
 
-      const res = await axios.get(`${baseUrl}/target/get-targets`, {
-        params: { fromDate: startOfMonth, toDate: endOfMonth },
-      });
+      if (!agentId) return;
+      setAgent(agentInfoData);
 
-      const allTargets = res.data || [];
-      const selectedTarget = allTargets.find(
-        (t) =>
-          (t.agentId && (t.agentId._id === agentId || t.agentId === agentId)) ||
-          (!t.agentId && t.designationId === designationId)
-      );
+      const startDate = moment().startOf("month").format("YYYY-MM-DD");
+      const endDate = moment().endOf("month").format("YYYY-MM-DD");
 
-      if (!selectedTarget) {
-        setTargetData({ total: 0, achieved: 0, remaining: 0 });
-        setProgress(0);
-        return;
-      }
+      // Fast parallel fetching
+      const [incRes, tarRes, payRes] = await Promise.all([
+        axios.get(`${baseUrl}/enroll/employee/${agentId}/incentive?start_date=${startDate}&end_date=${endDate}`).catch(() => null),
+        axios.get(`${baseUrl}/target/employees/${agentId}?start_date=${startDate}&end_date=${endDate}`).catch(() => null),
+        axios.get(`${baseUrl}/payment/get-payment-agent/${agentId}`).catch(() => null)
+      ]);
 
-      const commRes = await axios.get(
-        `${baseUrl}/enroll/get-detailed-commission-per-month`,
-        {
-          params: {
-            agent_id: agentId,
-            from_date: startOfMonth,
-            to_date: endOfMonth,
-          },
-        }
-      );
+      const tarData = tarRes?.data || {};
+      const summary = incRes?.data?.incentiveSummary || {};
+      
+      const achieved = Number(tarData?.summary?.metrics?.actual_business || 0) + Number(summary?.total_group_value || 0);
+      const total = Number(tarData?.total_target || 0);
 
-      const actualBusiness = commRes.data?.summary?.actual_business || 0;
-      const cleanActual =
-        typeof actualBusiness === "string"
-          ? Number(actualBusiness.replace(/[^0-9.-]+/g, ""))
-          : actualBusiness;
+      setTargetData({ total, achieved });
+      setProgress(total > 0 ? Math.min((achieved / total) * 100, 100) : 0);
 
-      const totalTarget = selectedTarget.totalTarget || 0;
-      const achievedAmount = cleanActual;
-      const remainingAmount =
-        totalTarget > achievedAmount ? totalTarget - achievedAmount : 0;
-
-      setTargetData({
-        total: totalTarget,
-        achieved: achievedAmount,
-        remaining: remainingAmount,
-      });
-
-      const newProgress =
-        totalTarget > 0 ? (achievedAmount / totalTarget) * 100 : 0;
-      setProgress(newProgress);
-    } catch (err) {
-      console.error(
-        "Error fetching target or commission:",
-        err.response?.data || err.message
-      );
-      setTargetData({ total: 0, achieved: 0, remaining: 0 });
-      setProgress(0);
-    }
-  };
-
-  const fetchCollectionDetails = async (agentId) => {
-    try {
-      const response = await axios.get(
-        `${baseUrl}/payment/get-payment-agent/${agentId}`
-      );
-      const payments = response.data || [];
-
+      const pms = payRes?.data || [];
       const today = moment().format("YYYY-MM-DD");
-      const filteredTodayPayments = payments.filter((payment) =>
-        moment(payment.pay_date).format("YYYY-MM-DD") === today
-      );
+      const filtered = pms.filter(p => moment(p.pay_date).format("YYYY-MM-DD") === today);
+      
+      setTodayPayments(filtered);
+      setTotalCollection(filtered.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0));
 
-      setTodayPayments(filteredTodayPayments);
-
-      const totalAmount = filteredTodayPayments.reduce((sum, payment) => {
-        const amount = parseFloat(payment.amount) || 0;
-        return sum + amount;
-      }, 0);
-
-      setTotalCollection(totalAmount);
-    } catch (error) {
-      console.error("Error fetching collection data:", error);
-      setTotalCollection(0);
-      setTodayPayments([]);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    const fetchAllData = async () => {
-      setIsLoading(true);
-      try {
-        const agentInfoJson = await AsyncStorage.getItem("agentInfo");
-        const agentInfoData = agentInfoJson ? JSON.parse(agentInfoJson) : null;
-        const agentId = agentInfoData?._id;
-        const designationId = agentInfoData?.designation_id;
+  useEffect(() => { fetchData(); }, []);
 
-        if (agentId) {
-          await Promise.all([
-            fetchTargetDetails(agentId, designationId),
-            fetchCollectionDetails(agentId),
-          ]);
-        }
-      } catch (e) {
-        console.error("Error fetching data:", e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchAllData();
-  }, []);
-
-  const getStrokeDashoffset = () => {
-    const dashoffset = progressAnim.interpolate({
-      inputRange: [0, 100],
-      outputRange: [circumference, 0],
-    });
-    return dashoffset;
-  };
-
-  const getProgressColor = () => {
-    if (progress < 50) return "#FF4B2B";
-    if (progress < 80) return "#f8c009ff";
-    return "#5EBD3E";
-  };
-
-  const getMotivationalMessage = () => {
-    const percentage = ((targetData.achieved / targetData.total) * 100).toFixed(0);
-    if (targetData.total === 0) {
-      return "No target set yet. Check back soon!";
-    } else if (percentage === 0) {
-      return "Start strong and make today count!";
-    } else if (percentage < 50) {
-      return "You're off to a great start. Keep pushing!";
-    } else if (percentage < 80) {
-      return "You're so close to your goal. Go for it!";
-    } else if (percentage >= 100) {
-      return "Outstanding performance! Exceed your targets!";
-    } else {
-      return "Keep up the excellent work!";
-    }
-  };
-
-  const handlePerformancePress = () => {
-    navigation.navigate("Target");
-  };
+  const strokeDashoffset = progressAnim.interpolate({
+    inputRange: [0, 100],
+    outputRange: [circumference, 0],
+  });
 
   return (
-    <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
-      style={styles.gradientOverlay}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      {/* Removed: <SafeAreaView style={{ flex: 1 }}> */}
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          </View>
-        ) : (
-          <View style={styles.mainContentArea}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={[COLORS.bgBlue, COLORS.primary]} style={StyleSheet.absoluteFill} />
+
+      {isLoading ? (
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color={COLORS.accent} />
+        </View>
+      ) : (
+        <View style={{ flex: 1 }}>
+          {/* Header pushed down for style */}
+          <View style={styles.headerWrapper}>
             <Header />
-            <View style={styles.introSection}>
-              <View style={styles.greetingContainer}>
-                <Text style={styles.welcomeText}>
-                  Dear {agent.name || "Agent"},
-                </Text>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+            
+            {/* Greeting */}
+            <View style={styles.greetRow}>
+              <View>
+                <Text style={styles.greetText}>Hi, {agent.name?.split(' ')[0] || "Agent"}</Text>
+                <Text style={styles.dateText}>{moment().format("dddd, DD MMM")}</Text>
               </View>
+              <TouchableOpacity style={styles.notifBtn}>
+                 <Ionicons name="notifications-outline" size={24} color="#fff" />
+              </TouchableOpacity>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-             
-              <View style={styles.targetSection}>
-                <LinearGradient
-                  colors={["#E0E0E0", "#E0E0E0"]}
-                  style={styles.performanceCard}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <View style={styles.performanceContent}>
-                    {/* Left side: Circular Progress */}
-                    <View style={styles.circularProgressContainer}>
-                      <Animated.View style={StyleSheet.absoluteFillObject}>
-                        <AnimatedSvg
-                          width="100%"
-                          height="100%"
-                          viewBox="0 0 150 150"
-                        >
-                          <Defs>
-                            <RadialGradient
-                              id="grad"
-                              cx="50%"
-                              cy="50%"
-                              r="50%"
-                              fx="50%"
-                              fy="50%"
-                            >
-                              <Stop offset="0%" stopColor="#FF4B2B" />
-                              <Stop offset="50%" stopColor="#f8c009ff" />
-                              <Stop offset="100%" stopColor="#5EBD3E" />
-                            </RadialGradient>
-                          </Defs>
-                          <G rotation="-90" origin="75, 75">
-                            <Circle
-                              cx="75"
-                              cy="75"
-                              r="65"
-                              stroke="#E0E0E0"
-                              strokeWidth="10"
-                              fill="transparent"
-                            />
-                            <Circle
-                              cx="75"
-                              cy="75"
-                              r="65"
-                              stroke={targetData.total > 0 ? "url(#grad)" : "#E0E0E0"}
-                              strokeWidth="10"
-                              fill="transparent"
-                              strokeDasharray={circumference}
-                              strokeDashoffset={getStrokeDashoffset()}
-                              strokeLinecap="round"
-                            />
-                          </G>
-                        </AnimatedSvg>
-                      </Animated.View>
-                      <Text style={[styles.performanceValue, { color: getProgressColor() }]}>
-                        {targetData.total > 0
-                          ? `${((targetData.achieved / targetData.total) * 100).toFixed(0)}%`
-                          : "0%"}
-                      </Text>
-                    </View>
 
-                    {/* Right side: Text and Button */}
-                    <View style={styles.textAndButtonContainer}>
-                      <Text style={styles.performanceLabel}>Target Achieved</Text>
-                      <Text style={styles.motivationalText}>
-                        {getMotivationalMessage()}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.performanceButton}
-                        onPress={handlePerformancePress}
-                      >
-                        <Text style={styles.performanceButtonText}>
-                          Performance
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </LinearGradient>
+            {/* Premium Target Card */}
+            <LinearGradient colors={['#ffffff', '#f1f1f1']} style={styles.mainCard}>
+              <View style={styles.cardTop}>
+                <Text style={styles.cardTag}>MONTHLY PERFORMANCE</Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Target")}>
+                   <Text style={styles.viewMore}>View Details</Text>
+                </TouchableOpacity>
               </View>
 
-              {/* Today's Collection Section */}
-              <View style={styles.collectionSection}>
-                <View style={styles.collectionCard}>
-                  <LinearGradient
-                    colors={["#ecc281ff", "#f8c009ff"]}
-                    style={styles.collectionGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <View style={styles.collectionContent}>
-                      <View style={styles.collectionIconContainer}>
-                        <Feather name="trending-up" size={40} color="#fff" />
-                      </View>
-                      <View style={styles.collectionTextContainer}>
-                        <Text style={styles.collectionLabel}>
-                          Today's Collection
-                        </Text>
-                        <Text style={styles.collectionValue}>
-                          {`₹${totalCollection.toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}`}
-                        </Text>
-                      </View>
+              <View style={styles.statsContainer}>
+                 <View style={styles.chartArea}>
+                    <Svg width="120" height="120" viewBox="0 0 150 150">
+                        <G rotation="-90" origin="75, 75">
+                            <Circle cx="75" cy="75" r="65" stroke="#F0F0F0" strokeWidth="10" fill="none" />
+                            <AnimatedCircle 
+                                cx="75" cy="75" r="65" 
+                                stroke={COLORS.accent} 
+                                strokeWidth="12" 
+                                fill="none"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={strokeDashoffset}
+                                strokeLinecap="round"
+                            />
+                        </G>
+                    </Svg>
+                    <View style={styles.absoluteCenter}>
+                        <Text style={styles.percentText}>{progress.toFixed(0)}%</Text>
                     </View>
-                  </LinearGradient>
+                 </View>
+
+                 <View style={styles.textStats}>
+                    <Text style={styles.statLabel}>Target Amount</Text>
+                    <Text style={styles.targetAmt}>₹{targetData.total.toLocaleString()}</Text>
+                    
+                    <View style={styles.divider} />
+                    
+                    <Text style={styles.statLabel}>Achieved</Text>
+                    <Text style={styles.achievedAmt}>₹{targetData.achieved.toLocaleString()}</Text>
+                 </View>
+              </View>
+            </LinearGradient>
+
+            {/* Quick Stats Grid */}
+            <View style={styles.collectionStrip}>
+                <View style={styles.colIcon}>
+                    <MaterialCommunityIcons name="finance" size={24} color={COLORS.success} />
+                </View>
+                <View style={{marginLeft: 15, flex: 1}}>
+                    <Text style={styles.colLabel}>Today's Total Collection</Text>
+                    <Text style={styles.colValue}>₹{totalCollection.toLocaleString()}</Text>
+                </View>
+                <TouchableOpacity onPress={fetchData} style={styles.refreshBtn}>
+                    <Feather name="refresh-ccw" size={18} color={COLORS.muted} />
+                </TouchableOpacity>
+            </View>
+
+            {/* Activity List */}
+            <View style={styles.listHeader}>
+                <Text style={styles.listTitle}>Live Activity</Text>
+                <View style={styles.badge}><Text style={styles.badgeText}>{todayPayments.length}</Text></View>
+            </View>
+
+            {todayPayments.length > 0 ? todayPayments.map((p, i) => (
+              <View key={i} style={styles.glassItem}>
+                <View style={styles.userCircle}>
+                    <Text style={styles.userInitial}>{p?.user_id?.full_name?.charAt(0)}</Text>
+                </View>
+                <View style={{flex: 1, marginLeft: 12}}>
+                    <Text style={styles.uName}>{p?.user_id?.full_name}</Text>
+                    <Text style={styles.uDetail}>Receipt: {p.receipt_no}</Text>
+                </View>
+                <View style={styles.priceTag}>
+                    <Text style={styles.uPrice}>+ ₹{p.amount}</Text>
                 </View>
               </View>
+            )) : (
+              <Text style={styles.noData}>No collections yet today.</Text>
+            )}
 
-              {/* Collection Details List */}
-              <View style={[styles.detailListContainer, { marginBottom: 70 }]}>
-                <Text style={styles.detailListTitle}>Collection Details</Text>
-                {todayPayments.length > 0 ? (
-                  <ScrollView style={styles.detailScrollView}>
-                    {todayPayments.map((payment, index) => (
-                      <View key={index} style={styles.paymentItemCard}>
-                        <Text style={styles.paymentItemText}>
-                          <Text style={styles.paymentItemLabel}>Customer:</Text>{" "}
-                          {payment?.user_id?.full_name || "N/A"}
-                        </Text>
-                        <Text style={styles.paymentItemText}>
-                          <Text style={styles.paymentItemLabel}>Amount:</Text> ₹{" "}
-                          {parseFloat(payment.amount || 0).toLocaleString(
-                            "en-IN",
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            }
-                          )}
-                        </Text>
-                        <Text style={styles.paymentItemText}>
-                          <Text style={styles.paymentItemLabel}>
-                            Receipt No:
-                          </Text>{" "}
-                          {payment.receipt_no || "N/A"}
-                        </Text>
-                      </View>
-                    ))}
-                  </ScrollView>
-                ) : (
-                  <Text style={styles.noPaymentsText}>
-                    No payments collected today.
-                  </Text>
-                )}
-              </View>
-            </ScrollView>
-          </View>
-        )}
-      {/* Removed: </SafeAreaView> */}
-    </LinearGradient>
+          </ScrollView>
+        </View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  gradientOverlay: {
-    flex: 1,
+  container: { flex: 1 },
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  headerWrapper: { 
+    marginTop: Platform.OS === 'ios' ? 55 : 35, // Pushes header down
+    paddingHorizontal: 20 
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  mainContentArea: {
-    flex: 1,
-    paddingHorizontal: 28,
-    // Pushed the Header down by increasing paddingTop
-    paddingTop: 30, 
-  },
-  introSection: {
-    marginTop: 20,
-    marginBottom: 15,
-    paddingHorizontal: 5,
-  },
-  greetingContainer: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-    marginBottom: 5,
-  },
-  welcomeText: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  targetSection: {
-    width: "100%",
-    marginBottom: 20,
-  },
-  performanceCard: {
-    borderRadius: 20,
-    height: 250,
-    padding: 15,
-    justifyContent: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    backgroundColor: "#fff",
-  },
-  performanceContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  circularProgressContainer: {
-    width: 120,
-    height: 120,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 20,
-  },
-  performanceValue: {
-    position: "absolute",
-    fontSize: 30,
-    fontWeight: "bold",
-  },
-  textAndButtonContainer: {
-    flex: 1,
-    alignItems: "center",
-  },
-  performanceLabel: {
-    color: "#333",
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 10,
-  },
-  motivationalText: {
-    fontSize: 12,
-    color: "#888",
-    textAlign: "center",
-    marginTop: 5,
-    marginBottom: 15,
-  },
-  performanceButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 25,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  performanceButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  collectionSection: {
-    width: "100%",
-    marginBottom: 20,
-  },
-  collectionCard: {
-    borderRadius: 20,
-    overflow: "hidden",
-    height: 120, // Decreased height
-  },
-  collectionGradient: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  collectionContent: {
-    flexDirection: "row", // Aligns content horizontally
-    alignItems: "center",
-    justifyContent: "space-around", // Distributes space evenly
-    width: "100%",
-  },
-  collectionIconContainer: {
-    // marginBottom: 10, // Removed to align horizontally
-  },
-  collectionTextContainer: {
-    alignItems: "center",
-  },
-  collectionLabel: {
-    color: "#fff",
-    fontSize: 14, // Decreased font size
-    fontWeight: "600",
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  collectionValue: {
-    color: "#fff",
-    fontSize: 20, // Decreased font size
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  detailListContainer: {
-    marginTop: 10,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    marginBottom: 20,
-  },
-  detailListTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 15,
-  },
-  detailScrollView: {},
-  paymentItemCard: {
-    backgroundColor: "#f7f7f7",
-    padding: 15,
-    borderRadius: 15,
+  scrollContainer: { padding: 20, paddingBottom: 40 },
+  
+  greetRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  greetText: { fontSize: 28, fontWeight: '900', color: '#fff' },
+  dateText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600' },
+  notifBtn: { width: 45, height: 45, borderRadius: 15, backgroundColor: COLORS.glass, justifyContent: 'center', alignItems: 'center' },
+
+  mainCard: { borderRadius: 30, padding: 20, elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  cardTag: { fontSize: 10, fontWeight: '800', color: COLORS.muted, letterSpacing: 1 },
+  viewMore: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
+  
+  statsContainer: { flexDirection: 'row', alignItems: 'center' },
+  chartArea: { width: 120, height: 120, justifyContent: 'center', alignItems: 'center' },
+  absoluteCenter: { position: 'absolute' },
+  percentText: { fontSize: 26, fontWeight: '900', color: COLORS.primary },
+  
+  textStats: { flex: 1, marginLeft: 25 },
+  statLabel: { fontSize: 11, color: COLORS.muted, fontWeight: '700', marginBottom: 2 },
+  targetAmt: { fontSize: 20, fontWeight: '900', color: COLORS.primary },
+  divider: { height: 1, backgroundColor: '#eee', marginVertical: 8, width: '60%' },
+  achievedAmt: { fontSize: 20, fontWeight: '900', color: COLORS.success },
+
+  collectionStrip: { backgroundColor: '#fff', borderRadius: 20, padding: 18, marginTop: 20, flexDirection: 'row', alignItems: 'center' },
+  colIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center' },
+  colLabel: { fontSize: 11, color: COLORS.muted, fontWeight: '700' },
+  colValue: { fontSize: 22, fontWeight: '900', color: COLORS.primary },
+  refreshBtn: { padding: 5 },
+
+  listHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 30, marginBottom: 15 },
+  listTitle: { fontSize: 20, fontWeight: '900', color: '#fff' },
+  badge: { backgroundColor: COLORS.accent, marginLeft: 10, paddingHorizontal: 8, borderRadius: 8 },
+  badgeText: { fontSize: 12, fontWeight: '900', color: COLORS.primary },
+
+  glassItem: { 
+    backgroundColor: COLORS.glass, 
+    padding: 15, 
+    borderRadius: 20, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: 'rgba(255,255,255,0.1)'
   },
-  paymentItemText: {
-    fontSize: 14,
-    marginBottom: 5,
-    color: "#555",
-  },
-  paymentItemLabel: {
-    fontWeight: "bold",
-    color: "#333",
-  },
-  noPaymentsText: {
-    fontSize: 16,
-    textAlign: "center",
-    color: "#888",
-    paddingVertical: 20,
-  },
+  userCircle: { width: 45, height: 45, borderRadius: 16, backgroundColor: COLORS.accent, justifyContent: 'center', alignItems: 'center' },
+  userInitial: { fontWeight: '900', color: COLORS.primary, fontSize: 18 },
+  uName: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  uDetail: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2 },
+  priceTag: { backgroundColor: 'rgba(39, 174, 96, 0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+  uPrice: { color: '#4ade80', fontWeight: '900', fontSize: 14 },
+  noData: { color: '#fff', opacity: 0.5, textAlign: 'center', marginTop: 20, fontStyle: 'italic' }
 });
 
 export default Dashboard;
