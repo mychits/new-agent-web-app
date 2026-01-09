@@ -58,6 +58,7 @@ const cardImagePaths = {
   monthlyTurnover: require("../assets/MITB.png"),
   DueReportImage: require("../assets/dues.png"),
   LogOutImage: require("../assets/logout.png"),
+  rewards: require("../assets/rewardsidea.png"), 
 };
 
 const AttendanceModal = ({
@@ -245,6 +246,16 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("LogOut", { employeeId: user.userId, agentName: agent.name }),
       backgroundColor: SUBTLE_BG_GREY,
     },
+    {
+      id: "rewards",
+      name: "Rewards",
+      imagePath: cardImagePaths.rewards,
+      onPress: () => {
+        console.log("Navigating to Rewards screen");
+        navigation.navigate("Rewards");
+      },
+      backgroundColor: SUBTLE_BG_GREY,
+    },
   ].filter(Boolean);
 
   if (cardAnimations.current.length !== cardsData.length) {
@@ -424,7 +435,6 @@ const styles = StyleSheet.create({
   noInternetImage: { width: 200, height: 200 },
   noInternetText: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY, marginTop: 20 },
 
-  // --- STYLISH BLUE QR STYLES ---
   phonePeQrContainer: {
     marginTop: 25,
     marginBottom: 40,
@@ -435,10 +445,6 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     elevation: 15,
-    shadowColor: '#1e3c72',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
   },
   qrHeaderRow: {
     width: '100%',
@@ -473,10 +479,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginBottom: 20,
     elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
   },
   qrDisplayImage: {
     width: width * 0.5,
@@ -509,10 +511,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
-  },
-  copyIconText: {
-    marginLeft: 12,
-    fontSize: 16,
   },
   viewDetailsBtn: {
     borderTopWidth: 1,

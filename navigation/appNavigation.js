@@ -14,6 +14,7 @@ import AddCustomer from "../screens/AddCustomer";
 import ViewCustomer from "../screens/ViewCustomer";
 import CustomerNavigation from "./CustomerNavigation";
 import ForgotPassword from "../screens/ForgotPassword";
+import Rewards from "../screens/Rewards";
 import ResetPassword from "../screens/ResetPassword";
 import MyTaskListScreen from '../screens/MyTaskListScreen';
 import TaskDetailScreen from '../screens/TaskDetailScreen';
@@ -81,10 +82,14 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={Login}
         />
-        {/* All other screens can remain here as they do not need the bottom tab bar */}
         <Stack.Screen
           name="MonthlyTurnover"
           component={MonthlyTurnover}
+          options={{ headerShown: false }}
+        />
+          <Stack.Screen
+          name="Rewards"
+          component={Rewards}
           options={{ headerShown: false }}
         />
         <Stack.Screen
