@@ -58,7 +58,6 @@ const cardImagePaths = {
   monthlyTurnover: require("../assets/MITB.png"),
   DueReportImage: require("../assets/dues.png"),
   LogOutImage: require("../assets/logout.png"),
-  rewards: require("../assets/rewardsidea.png"), 
 };
 
 const AttendanceModal = ({
@@ -244,16 +243,6 @@ const Home = ({ route, navigation }) => {
       name: "Attendence",
       imagePath: cardImagePaths.LogOutImage,
       onPress: () => navigation.navigate("LogOut", { employeeId: user.userId, agentName: agent.name }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "rewards",
-      name: "Rewards",
-      imagePath: cardImagePaths.rewards,
-      onPress: () => {
-        console.log("Navigating to Rewards screen");
-        navigation.navigate("Rewards");
-      },
       backgroundColor: SUBTLE_BG_GREY,
     },
   ].filter(Boolean);

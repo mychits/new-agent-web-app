@@ -56,7 +56,6 @@ const Payin = ({ route, navigation }) => {
   const [selectedTicket, setSelectedTicket] = useState("");
   const [allData, setAllData] = useState([]);
   
-  // Balance State
   const [balance, setBalance] = useState(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
 
@@ -190,6 +189,12 @@ const Payin = ({ route, navigation }) => {
     if (selectedDate) {
       setCurrentDate(selectedDate);
     }
+  };
+
+  // Logic to prevent dots, dashes, or commas
+  const handleAmountChange = (text) => {
+    const numericValue = text.replace(/[^0-9]/g, "");
+    setAmount(numericValue);
   };
 
   const handleAddPayment = async () => {
@@ -333,7 +338,13 @@ const Payin = ({ route, navigation }) => {
 
               <View>
                 <Text style={styles.label}>Amount<Text style={styles.star}>*</Text></Text>
-                <TextInput style={styles.textInput} placeholder="Enter The Amount" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+                <TextInput 
+                  style={styles.textInput} 
+                  placeholder="Enter The Amount" 
+                  keyboardType="number-pad" 
+                  value={amount} 
+                  onChangeText={handleAmountChange} 
+                />
               </View>
 
               {additionalInfo !== "" && (

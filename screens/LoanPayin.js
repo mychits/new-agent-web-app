@@ -102,6 +102,15 @@ const LoanPayin = ({ route, navigation }) => {
     }
   };
 
+  /**
+   * Logic to prevent negative values and decimal points
+   */
+  const handleAmountChange = (value) => {
+    // Replaces any character that is not a digit (0-9) with an empty string
+    const numericValue = value.replace(/[^0-9]/g, "");
+    setAmount(numericValue);
+  };
+
   const handleAddPayment = async () => {
     setIsLoading(true);
     try {
@@ -240,7 +249,6 @@ const LoanPayin = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* --- MODIFIED SECTION: PAYMENT TYPE AND AMOUNT ON SEPARATE LINES --- */}
         <Text style={styles.label}>Payment Type<Text style={styles.star}>*</Text></Text>
         <View style={styles.pickerContainer}>
           <Picker
@@ -259,11 +267,10 @@ const LoanPayin = ({ route, navigation }) => {
         <TextInput
           style={styles.textInput}
           placeholder="Enter The Amount"
-          keyboardType="numeric"
+          keyboardType="number-pad"
           value={amount}
-          onChangeText={(value) => setAmount(value)}
+          onChangeText={handleAmountChange}
         />
-        {/* --- END OF MODIFIED SECTION --- */}
 
         {additionalInfo !== "" && (
           <>

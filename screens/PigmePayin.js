@@ -36,7 +36,7 @@ const PigmePayin = ({ route, navigation }) => {
     const [currentDate, setCurrentDate] = useState("");
     const [receipt, setReceipt] = useState({});
     const [paymentDetails, setPaymentDetails] = useState("cash"); 
-    const [amount, setAmount] = useState(""); // Initially empty string
+    const [amount, setAmount] = useState(""); 
     const [transactionId, setTransactionId] = useState("");
     const [additionalInfo, setAdditionalInfo] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +65,6 @@ const PigmePayin = ({ route, navigation }) => {
 
                     if (dataArray.length === 1) {
                         setSelectedPigme(dataArray[0]);
-                        // REMOVED: setAmount here to keep input empty initially
                         setSinglePigmeMode(true);
                     } else {
                          setSinglePigmeMode(false);
@@ -119,7 +118,21 @@ const PigmePayin = ({ route, navigation }) => {
         else setAdditionalInfo("");
     };
 
+    /**
+     * Logic to prevent negative values and decimal points
+     */
+    const handleAmountChange = (text) => {
+        // This regex ensures only numbers 0-9 are accepted
+        const filteredText = text.replace(/[^0-9]/g, '');
+        setAmount(filteredText);
+    };
+
     const handleAddPayment = async () => {
+        if (parseFloat(amount) <= 0 || isNaN(parseFloat(amount))) {
+            Alert.alert("Invalid Amount", "Please enter a valid amount greater than 0.");
+            return;
+        }
+
         setIsLoading(true);
         try {
             if (!selectedPigme || !paymentDetails || !amount || (paymentDetails !== "cash" && !transactionId)) {
@@ -192,7 +205,6 @@ const PigmePayin = ({ route, navigation }) => {
                     selectedValue={selectedPigme}
                     onValueChange={(itemValue) => {
                         setSelectedPigme(itemValue);
-                        // REMOVED: setAmount here to keep input empty when switching IDs
                     }}
                     style={styles.picker}
                 >
@@ -238,7 +250,6 @@ const PigmePayin = ({ route, navigation }) => {
                     </View>
                 </View>
 
-                {/* Separate Line: Payment Type */}
                 <Text style={styles.label}>Payment Type<Text style={styles.star}>*</Text></Text>
                 <View style={styles.pickerContainer}>
                     <Picker
@@ -252,14 +263,13 @@ const PigmePayin = ({ route, navigation }) => {
                     </Picker>
                 </View>
 
-                {/* Separate Line: Amount (Now displays placeholder initially) */}
                 <Text style={styles.label}>Amount<Text style={styles.star}>*</Text></Text>
                 <TextInput
                     style={styles.textInput}
                     placeholder="Enter The Amount"
-                    keyboardType="numeric"
+                    keyboardType="number-pad"
                     value={amount}
-                    onChangeText={setAmount}
+                    onChangeText={handleAmountChange}
                     placeholderTextColor={TEXT_GREY}
                 />
 
