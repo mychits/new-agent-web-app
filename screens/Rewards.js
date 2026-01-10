@@ -8,6 +8,7 @@ import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from "@expo/v
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur"; // Optional: For glass effect if available, otherwise fallback used
 
 const { width } = Dimensions.get("window");
 
@@ -19,6 +20,7 @@ const COLORS = {
   cardBg: "rgba(255, 255, 255, 0.95)",
   white: "#FFFFFF",
   muted: "#8898AA",
+  glass: "rgba(255, 255, 255, 0.15)"
 };
 
 const REWARD_DATA = [
@@ -46,11 +48,10 @@ const Rewards = ({ navigation }) => {
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const statusAnim = useRef(new Animated.Value(0)).current;
   const cardAnimations = useRef(REWARD_DATA.map(() => new Animated.Value(0))).current;
 
-  // --- CONFIGURATION ---
-  // If 1 Point = 25 Rupees, keep this at 25. If 1 Point = 1 Rupee, change this to 1.
   const CONVERSION_RATE = 25; 
 
   useEffect(() => {
@@ -59,16 +60,18 @@ const Rewards = ({ navigation }) => {
   }, []);
 
   const startAnimations = () => {
-    Animated.loop(
-      Animated.timing(rotateAnim, { toValue: 1, duration: 6000, easing: Easing.linear, useNativeDriver: true })
-    ).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.15, duration: 1500, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true })
-      ])
-    ).start();
+    Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.loop(
+            Animated.timing(rotateAnim, { toValue: 1, duration: 10000, easing: Easing.linear, useNativeDriver: true })
+        ),
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, { toValue: 1.05, duration: 2000, useNativeDriver: true }),
+                Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true })
+            ])
+        )
+    ]).start();
   };
 
   const showStatus = (type, title, message) => {
@@ -98,8 +101,9 @@ const Rewards = ({ navigation }) => {
         setPoints(response.data.total_earned_reward || 0);
       }
 
+      // Staggered card entrance
       const animations = cardAnimations.map((anim, i) => 
-        Animated.spring(anim, { toValue: 1, tension: 50, friction: 7, delay: i * 80, useNativeDriver: true })
+        Animated.spring(anim, { toValue: 1, tension: 50, friction: 8, delay: i * 100, useNativeDriver: true })
       );
       Animated.parallel(animations).start();
     } catch (err) {
@@ -121,7 +125,6 @@ const Rewards = ({ navigation }) => {
       
       if (!id) return showStatus('error', 'Session Expired', 'User session not found.');
 
-      // The key fix: Ensure pts is a clean number
       const payload = { 
         employee_id: id, 
         points_to_redeem: Number(pts), 
@@ -153,25 +156,28 @@ const Rewards = ({ navigation }) => {
   });
 
   const EARN_RULES = [
-    { label: "App Leads", val: "5 PTS", icon: "rocket-launch" },
-    { label: "Pigmy", val: `${dynamicRates.pigmy} PTS`, icon: "piggy-bank" },
-    { label: "New Chit", val: "10 PTS", icon: "shield-star" },
-    { label: "Loans", val: `${dynamicRates.loans} PTS`, icon: "cash-plus" },
+    { label: "App Leads", val: "5 PTS", icon: "rocket-launch", color: '#FF6B6B' },
+    { label: "Pigmy", val: `${dynamicRates.pigmy} PTS`, icon: "piggy-bank", color: '#4ECDC4' },
+    { label: "New Chit", val: "10 PTS", icon: "shield-star", color: '#FFE66D' },
+    { label: "Loans", val: `${dynamicRates.loans} PTS`, icon: "cash-plus", color: '#6BFF9D' },
   ];
 
   return (
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={[COLORS.bgBlue, COLORS.primary]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[COLORS.primary, "#0D1F2D"]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIcon}>
-              <Ionicons name="chevron-back" size={22} color={COLORS.primary} />
+              <Ionicons name="chevron-back" size={24} color={COLORS.white} />
            </TouchableOpacity>
-           <Text style={styles.headerTitle}>CLUB REWARDS</Text>
+           <View style={styles.headerTextContainer}>
+              <Text style={styles.headerSubtitle}>ROYAL CLUB</Text>
+              <Text style={styles.headerTitle}>YOUR REWARDS</Text>
+           </View>
            <TouchableOpacity style={styles.headerIcon} onPress={fetchRewards}>
-              <Feather name="refresh-ccw" size={18} color={COLORS.primary} />
+              <Feather name="refresh-cw" size={20} color={COLORS.white} />
            </TouchableOpacity>
         </View>
 
@@ -182,60 +188,61 @@ const Rewards = ({ navigation }) => {
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             
-            <View style={styles.heroContainer}>
-              <Animated.View style={[styles.haloRing, { transform: [{ scale: pulseAnim }] }]}>
-                <LinearGradient 
-                   colors={['rgba(248, 192, 9, 0.0)', 'rgba(248, 192, 9, 0.2)', 'rgba(248, 192, 9, 0.5)']} 
-                   style={StyleSheet.absoluteFill} 
-                />
-              </Animated.View>
-              
-              <Animated.View style={[styles.rotatingBorder, { transform: [{ rotate: rotation }] }]}>
-                 <View style={styles.orbitingDot} />
-              </Animated.View>
+            {/* Hero Section */}
+            <Animated.View style={[styles.heroContainer, { opacity: fadeAnim, transform: [{ scale: pulseAnim }] }]}>
+                <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.heroCircle}>
+                    <Animated.View style={[styles.glowRing, { transform: [{ rotate: rotation }] }]}>
+                        <View style={styles.glowDot} />
+                    </Animated.View>
+                    <MaterialCommunityIcons name="crown" size={30} color={COLORS.accent} style={styles.crownIcon} />
+                    <Text style={styles.pointsMainText}>{points.toLocaleString()}</Text>
+                    <Text style={styles.pointsSubText}>AVAILABLE POINTS</Text>
+                    <View style={styles.cashBadge}>
+                        <Text style={styles.cashText}>≈ ₹{(points * CONVERSION_RATE).toLocaleString()}</Text>
+                    </View>
+                </LinearGradient>
+            </Animated.View>
 
-              <View style={styles.pointsCircle}>
-                <Text style={styles.pointsSubText}>TOTAL EARNED</Text>
-                <Text style={styles.pointsMainText}>{points.toLocaleString()}</Text>
-                <View style={styles.cashBadge}>
-                  <Text style={styles.cashText}>₹{(points * CONVERSION_RATE).toLocaleString()}</Text>
-                </View>
-              </View>
-            </View>
-
+            {/* Quick Redeem */}
             <TouchableOpacity 
+              activeOpacity={0.8}
               style={styles.redeemMainBtn} 
               onPress={() => setRedeemModalVisible(true)}
             >
               <LinearGradient 
-                colors={["#F8C009", "#EAB308"]} 
+                colors={[COLORS.accent, "#EAB308"]} 
                 start={{x:0, y:0}} end={{x:1, y:0}}
                 style={styles.redeemGradient}
               >
-                <MaterialCommunityIcons name="lightning-bolt" size={20} color={COLORS.primary} />
-                <Text style={styles.redeemBtnText}>REDEEM POINTS TO CASH</Text>
+                <Text style={styles.redeemBtnText}>CONVERT TO CASH INSTANTLY</Text>
+                <Ionicons name="arrow-forward-circle" size={24} color={COLORS.primary} />
               </LinearGradient>
             </TouchableOpacity>
 
-            <Text style={styles.sectionLabel}>BONUS MULTIPLIERS</Text>
+            {/* Rules */}
+            <Text style={styles.sectionLabel}>HOW TO EARN</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rulesScroll}>
               {EARN_RULES.map((rule, i) => (
                 <View key={i} style={styles.ruleCard}>
-                  <MaterialCommunityIcons name={rule.icon} size={24} color={COLORS.primary} />
-                  <Text style={styles.ruleVal}>{rule.val}</Text>
-                  <Text style={styles.ruleLabel}>{rule.label}</Text>
+                    <View style={[styles.ruleIconBg, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                        <MaterialCommunityIcons name={rule.icon} size={24} color={COLORS.accent} />
+                    </View>
+                    <Text style={styles.ruleVal}>{rule.val}</Text>
+                    <Text style={styles.ruleLabel}>{rule.label}</Text>
                 </View>
               ))}
             </ScrollView>
 
+            {/* Catalog */}
             <View style={styles.catalogHeader}>
                 <Text style={styles.sectionLabel}>PREMIUM CATALOGUE</Text>
-                <View style={styles.countBadge}><Text style={styles.countBadgeText}>{REWARD_DATA.length}</Text></View>
+                <View style={styles.countBadge}><Text style={styles.countBadgeText}>{REWARD_DATA.length} ITEMS</Text></View>
             </View>
 
             <View style={styles.grid}>
               {REWARD_DATA.map((item, index) => {
                 const unlocked = points >= item.pts;
+                const progress = Math.min(points / item.pts, 1);
                 return (
                   <Animated.View 
                     key={index} 
@@ -243,30 +250,38 @@ const Rewards = ({ navigation }) => {
                       opacity: cardAnimations[index],
                       transform: [{ translateY: cardAnimations[index].interpolate({
                         inputRange: [0, 1],
-                        outputRange: [30, 0]
+                        outputRange: [50, 0]
                       })}]
                     }]}
                   >
                     <View style={styles.imgContainer}>
                        <Image source={{ uri: item.img }} style={styles.rewardImg} />
                        {!unlocked && (
-                         <View style={styles.lockOverlay}>
-                           <Ionicons name="lock-closed" size={24} color="white" />
-                           <Text style={styles.lockInfoText}>{item.pts - points} more</Text>
-                         </View>
+                         <BlurView intensity={20} style={styles.lockOverlay}>
+                           <MaterialCommunityIcons name="lock" size={24} color="white" />
+                           <Text style={styles.lockInfoText}>{item.pts - points} PTS LEFT</Text>
+                         </BlurView>
                        )}
                     </View>
+                    
                     <View style={styles.cardBottom}>
                       <Text style={styles.itemName} numberOfLines={1}>{item.gift}</Text>
-                      <Text style={[styles.itemPts, { color: unlocked ? COLORS.success : COLORS.primary }]}>
-                        {item.pts} PTS
-                      </Text>
+                      <View style={styles.ptsRow}>
+                        <Text style={styles.itemPts}>{item.pts} PTS</Text>
+                        {unlocked && <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />}
+                      </View>
+
+                      {/* Progress Bar */}
+                      <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${progress * 100}%`, backgroundColor: unlocked ? COLORS.success : COLORS.accent }]} />
+                      </View>
+
                       <TouchableOpacity 
                         style={[styles.claimBtn, unlocked ? styles.claimActive : styles.claimLocked]}
                         onPress={() => { setSelectedReward(item); setModalVisible(true); }}
                       >
                         <Text style={[styles.claimBtnText, { color: unlocked ? COLORS.primary : COLORS.muted }]}>
-                           {unlocked ? "CLAIM" : "LOCKED"}
+                           {unlocked ? "REDEEM NOW" : "LOCKED"}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -274,38 +289,44 @@ const Rewards = ({ navigation }) => {
                 );
               })}
             </View>
-            <View style={{ height: 60 }} />
+            <View style={{ height: 100 }} />
           </ScrollView>
         )}
 
-        {/* Redemption Modal */}
+        {/* Redemption Modal (Slide up) */}
         <Modal transparent visible={redeemModalVisible} animationType="slide">
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.modalBackdrop}>
-              <KeyboardAvoidingView behavior="padding" style={styles.bottomSheet}>
+              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? "padding" : "height"} style={styles.bottomSheet}>
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>Cash Redemption</Text>
-                <Text style={styles.sheetSub}>Total Points: {points}</Text>
-                <TextInput
-                  style={styles.sheetInput}
-                  placeholder="Enter points to redeem.."
-                  placeholderTextColor={COLORS.muted}
-                  keyboardType="numeric"
-                  value={customPoints}
-                  onChangeText={(val) => setCustomPoints(val.replace(/[^0-9]/g, ''))}
-                />
+                <Text style={styles.sheetTitle}>Redeem to Cash</Text>
+                <Text style={styles.sheetSub}>Available Balance: {points} Points</Text>
+                
+                <View style={styles.inputWrapper}>
+                    <TextInput
+                    style={styles.sheetInput}
+                    placeholder="0000"
+                    placeholderTextColor={COLORS.muted}
+                    keyboardType="numeric"
+                    value={customPoints}
+                    onChangeText={(val) => setCustomPoints(val.replace(/[^0-9]/g, ''))}
+                    />
+                    <Text style={styles.inputLabel}>POINTS</Text>
+                </View>
+
                 {customPoints > 0 && (
-                  <View style={styles.previewBox}>
-                    <Text style={styles.previewLabel}>Value in Cash</Text>
+                  <Animated.View style={styles.previewBox}>
+                    <Text style={styles.previewLabel}>YOU WILL RECEIVE</Text>
                     <Text style={styles.previewAmt}>₹{(Number(customPoints) * CONVERSION_RATE).toLocaleString()}</Text>
-                  </View>
+                  </Animated.View>
                 )}
+
                 <TouchableOpacity 
                   style={styles.sheetBtn} 
                   onPress={() => {
                     const pts = parseInt(customPoints);
-                    if(!pts || pts <= 0) return showStatus('error', 'Invalid Amount', 'Please enter points to redeem.');
-                    if(pts > points) return showStatus('error', 'Limit Exceeded', 'Insufficient points available.');
+                    if(!pts || pts <= 0) return showStatus('error', 'Invalid Amount', 'Enter points to redeem.');
+                    if(pts > points) return showStatus('error', 'Limit Exceeded', 'Insufficient points.');
                     
                     setConfirmDetails({ 
                       pts: pts, 
@@ -316,10 +337,10 @@ const Rewards = ({ navigation }) => {
                     setConfirmModalVisible(true);
                   }}
                 >
-                  <Text style={styles.sheetBtnText}>CONVERT TO CASH</Text>
+                  <Text style={styles.sheetBtnText}>PROCEED REDEMPTION</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setRedeemModalVisible(false)}>
-                  <Text style={styles.closeLink}>Close</Text>
+                  <Text style={styles.closeLink}>Cancel and Go Back</Text>
                 </TouchableOpacity>
               </KeyboardAvoidingView>
             </View>
@@ -332,9 +353,12 @@ const Rewards = ({ navigation }) => {
             <View style={styles.detailCard}>
                {selectedReward && (
                  <>
-                   <Image source={{ uri: selectedReward.img }} style={styles.detailImg} />
+                   <View style={styles.detailImgContainer}>
+                    <Image source={{ uri: selectedReward.img }} style={styles.detailImg} />
+                   </View>
                    <Text style={styles.detailName}>{selectedReward.gift}</Text>
-                   <Text style={styles.detailPts}>{selectedReward.pts} Points</Text>
+                   <Text style={styles.detailPts}>{selectedReward.pts} Points Required</Text>
+                   
                    {points >= selectedReward.pts ? (
                      <View style={styles.optGrid}>
                         <TouchableOpacity 
@@ -349,8 +373,8 @@ const Rewards = ({ navigation }) => {
                             setConfirmModalVisible(true); 
                           }}
                         >
-                          <Ionicons name="gift" size={20} color={COLORS.primary} />
-                          <Text style={styles.optText}>Deliver Gift</Text>
+                          <Ionicons name="gift-outline" size={22} color={COLORS.primary} />
+                          <Text style={styles.optText}>Get Product</Text>
                         </TouchableOpacity>
                         <TouchableOpacity 
                           style={[styles.optItem, { backgroundColor: '#E8F5E9' }]}
@@ -364,17 +388,18 @@ const Rewards = ({ navigation }) => {
                             setConfirmModalVisible(true); 
                           }}
                         >
-                          <Ionicons name="cash" size={20} color={COLORS.success} />
-                          <Text style={[styles.optText, { color: COLORS.success }]}>Swap for Cash</Text>
+                          <Ionicons name="cash-outline" size={22} color={COLORS.success} />
+                          <Text style={[styles.optText, { color: COLORS.success }]}>Swap for ₹{(selectedReward.pts * CONVERSION_RATE).toLocaleString()}</Text>
                         </TouchableOpacity>
                      </View>
                    ) : (
                      <View style={styles.lockHint}>
+                        <Ionicons name="information-circle" size={18} color="#F57F17" />
                         <Text style={styles.lockHintText}>Earn {selectedReward.pts - points} more to unlock</Text>
                      </View>
                    )}
-                   <TouchableOpacity style={styles.sheetBtn} onPress={() => setModalVisible(false)}>
-                      <Text style={styles.sheetBtnText}>GO BACK</Text>
+                   <TouchableOpacity style={[styles.sheetBtn, {backgroundColor: '#f1f1f1', marginTop: 15}]} onPress={() => setModalVisible(false)}>
+                      <Text style={[styles.sheetBtnText, {color: COLORS.primary}]}>CLOSE</Text>
                    </TouchableOpacity>
                  </>
                )}
@@ -386,15 +411,17 @@ const Rewards = ({ navigation }) => {
         <Modal transparent visible={confirmModalVisible}>
            <View style={styles.modalOverlayCenter}>
               <View style={styles.confirmBox}>
-                 <Ionicons name="help-circle" size={50} color={COLORS.accent} />
+                 <View style={styles.warnIconBg}>
+                    <Ionicons name="help-circle" size={40} color={COLORS.accent} />
+                 </View>
                  <Text style={styles.confirmTitle}>Confirm Request?</Text>
-                 <Text style={styles.confirmSub}>Redeem {confirmDetails.pts} points for {confirmDetails.type}?</Text>
+                 <Text style={styles.confirmSub}>You are about to redeem {confirmDetails.pts} points. This cannot be undone.</Text>
                  <View style={styles.row}>
                     <TouchableOpacity style={[styles.flex1, styles.btnOutline]} onPress={() => setConfirmModalVisible(false)}>
-                        <Text style={styles.btnOutlineText}>NO</Text>
+                        <Text style={styles.btnOutlineText}>CANCEL</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.flex1, styles.btnFill]} onPress={handleRedemptionRequest}>
-                        <Text style={styles.btnFillText}>YES</Text>
+                        <Text style={styles.btnFillText}>CONFIRM</Text>
                     </TouchableOpacity>
                  </View>
               </View>
@@ -405,11 +432,11 @@ const Rewards = ({ navigation }) => {
         <Modal transparent visible={statusModal.visible}>
            <View style={styles.modalOverlayCenter}>
               <Animated.View style={[styles.statusBox, { transform: [{ scale: statusAnim }] }]}>
-                 <Ionicons name={statusModal.type === 'success' ? "checkmark-circle" : "alert-circle"} size={60} color={statusModal.type === 'success' ? COLORS.success : "#EF4444"} />
+                 <Ionicons name={statusModal.type === 'success' ? "checkmark-circle" : "alert-circle"} size={70} color={statusModal.type === 'success' ? COLORS.success : "#EF4444"} />
                  <Text style={styles.statusT}>{statusModal.title}</Text>
                  <Text style={styles.statusM}>{statusModal.message}</Text>
                  <TouchableOpacity style={styles.statusB} onPress={hideStatus}>
-                    <Text style={styles.statusBT}>OKAY</Text>
+                    <Text style={styles.statusBT}>CONTINUE</Text>
                  </TouchableOpacity>
               </Animated.View>
            </View>
@@ -420,83 +447,110 @@ const Rewards = ({ navigation }) => {
   );
 };
 
-// ... Styles remain the same as your original file
 const styles = StyleSheet.create({
   mainContainer: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 50 : 10, paddingBottom: 15 },
-  headerTitle: { color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: 1 },
-  headerIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 20, 
+    paddingTop: Platform.OS === 'android' ? 50 : 10, 
+    paddingBottom: 20 
+  },
+  headerTextContainer: { alignItems: 'center' },
+  headerSubtitle: { color: COLORS.accent, fontSize: 10, fontWeight: '800', letterSpacing: 2 },
+  headerTitle: { color: 'white', fontSize: 16, fontWeight: '900' },
+  headerIcon: { width: 45, height: 45, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+  
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingHorizontal: 20 },
-  heroContainer: { height: 260, justifyContent: 'center', alignItems: 'center' },
-  haloRing: { position: 'absolute', width: 220, height: 220, borderRadius: 110 },
-  rotatingBorder: { position: 'absolute', width: 200, height: 200, borderRadius: 100, borderWidth: 2, borderColor: 'transparent', borderTopColor: COLORS.accent },
-  orbitingDot: { position: 'absolute', top: -4, left: '50%', width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.accent },
-  pointsCircle: { width: 170, height: 170, borderRadius: 85, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center', elevation: 15 },
-  pointsSubText: { color: COLORS.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  pointsMainText: { color: COLORS.primary, fontSize: 44, fontWeight: '900', marginVertical: 2 },
-  cashBadge: { backgroundColor: 'rgba(39, 174, 96, 0.15)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-  cashText: { color: COLORS.success, fontWeight: '900', fontSize: 14 },
-  redeemMainBtn: { borderRadius: 20, overflow: 'hidden', marginVertical: 20 },
-  redeemGradient: { paddingVertical: 18, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
-  redeemBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 14 },
-  sectionLabel: { color: 'white', fontSize: 12, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15, opacity: 0.9 },
+  
+  heroContainer: { height: 280, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  heroCircle: { width: 220, height: 220, borderRadius: 110, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: COLORS.accent, shadowOffset: {width: 0, height: 10}, shadowOpacity: 0.3, shadowRadius: 20 },
+  glowRing: { position: 'absolute', width: 240, height: 240, borderRadius: 120, borderWidth: 1, borderColor: 'rgba(248, 192, 9, 0.3)' },
+  glowDot: { position: 'absolute', top: -5, left: '50%', width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.accent },
+  crownIcon: { marginBottom: 5 },
+  pointsMainText: { color: 'white', fontSize: 40, fontWeight: '900' },
+  pointsSubText: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+  cashBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 6, borderRadius: 20, marginTop: 15 },
+  cashText: { color: COLORS.white, fontWeight: '800', fontSize: 12 },
+
+  redeemMainBtn: { borderRadius: 25, overflow: 'hidden', marginVertical: 15 },
+  redeemGradient: { paddingVertical: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 15 },
+  redeemBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 15, letterSpacing: 0.5 },
+
+  sectionLabel: { color: 'white', fontSize: 13, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15, opacity: 0.8 },
   rulesScroll: { marginBottom: 30 },
-  ruleCard: { backgroundColor: 'white', padding: 15, borderRadius: 20, marginRight: 12, width: 110, alignItems: 'center' },
-  ruleVal: { color: COLORS.primary, fontWeight: '900', marginTop: 8, fontSize: 14 },
-  ruleLabel: { color: COLORS.muted, fontSize: 10 },
-  catalogHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15 },
-  countBadge: { backgroundColor: COLORS.accent, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
-  countBadgeText: { color: COLORS.primary, fontWeight: '900', fontSize: 10 },
+  ruleCard: { backgroundColor: 'rgba(255,255,255,0.08)', padding: 15, borderRadius: 25, marginRight: 15, width: 120, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  ruleIconBg: { width: 50, height: 50, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  ruleVal: { color: COLORS.white, fontWeight: '900', fontSize: 15 },
+  ruleLabel: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
+
+  catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  countBadge: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10 },
+  countBadgeText: { color: COLORS.accent, fontWeight: '800', fontSize: 11 },
+
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  rewardCard: { width: '48%', backgroundColor: 'white', borderRadius: 24, marginBottom: 16, overflow: 'hidden' },
-  imgContainer: { height: 130, width: '100%' },
-  rewardImg: { width: '100%', height: '100%' },
-  lockOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-  lockInfoText: { color: 'white', fontSize: 10, fontWeight: '700', marginTop: 5 },
-  cardBottom: { padding: 12 },
-  itemName: { color: COLORS.primary, fontWeight: '800', fontSize: 13 },
-  itemPts: { fontWeight: '900', fontSize: 12, marginVertical: 5 },
-  claimBtn: { paddingVertical: 8, borderRadius: 12, alignItems: 'center' },
+  rewardCard: { width: '48%', backgroundColor: COLORS.white, borderRadius: 30, marginBottom: 20, overflow: 'hidden', elevation: 5 },
+  imgContainer: { height: 150, width: '100%' },
+  rewardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  lockOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  lockInfoText: { color: 'white', fontSize: 10, fontWeight: '900', marginTop: 8 },
+  
+  cardBottom: { padding: 15 },
+  itemName: { color: COLORS.primary, fontWeight: '800', fontSize: 14 },
+  ptsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 5 },
+  itemPts: { fontWeight: '900', fontSize: 13, color: COLORS.primary },
+  
+  progressBarBg: { height: 6, backgroundColor: '#E0E0E0', borderRadius: 3, marginVertical: 8, overflow: 'hidden' },
+  progressBarFill: { height: '100%', borderRadius: 3 },
+
+  claimBtn: { paddingVertical: 10, borderRadius: 15, alignItems: 'center', marginTop: 5 },
   claimActive: { backgroundColor: COLORS.accent },
-  claimLocked: { backgroundColor: '#F1F4F8' },
-  claimBtnText: { fontSize: 11, fontWeight: '900' },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  modalOverlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  bottomSheet: { backgroundColor: 'white', borderTopLeftRadius: 35, borderTopRightRadius: 35, padding: 25, paddingBottom: 40 },
-  sheetHandle: { width: 40, height: 4, backgroundColor: '#E0E0E0', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-  sheetTitle: { color: COLORS.primary, fontSize: 22, fontWeight: '900', textAlign: 'center' },
-  sheetSub: { color: COLORS.muted, textAlign: 'center', marginTop: 5, marginBottom: 25 },
-  sheetInput: { backgroundColor: '#F5F7FA', height: 70, borderRadius: 20, color: COLORS.primary, textAlign: 'center', fontSize: 15, fontWeight: '900' },
-  previewBox: { marginTop: 20, alignItems: 'center' },
-  previewLabel: { color: COLORS.muted, fontSize: 12 },
-  previewAmt: { color: COLORS.success, fontSize: 32, fontWeight: '900' },
-  sheetBtn: { backgroundColor: COLORS.accent, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 25 },
-  sheetBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 16 },
+  claimLocked: { backgroundColor: '#F5F5F5' },
+  claimBtnText: { fontSize: 12, fontWeight: '900' },
+
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: 'white', borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 30, paddingBottom: 40 },
+  sheetHandle: { width: 50, height: 5, backgroundColor: '#DDD', borderRadius: 10, alignSelf: 'center', marginBottom: 25 },
+  sheetTitle: { color: COLORS.primary, fontSize: 24, fontWeight: '900', textAlign: 'center' },
+  sheetSub: { color: COLORS.muted, textAlign: 'center', marginTop: 5, marginBottom: 30 },
+  inputWrapper: { position: 'relative', justifyContent: 'center' },
+  sheetInput: { backgroundColor: '#F8F9FA', height: 80, borderRadius: 25, color: COLORS.primary, textAlign: 'center', fontSize: 28, fontWeight: '900', borderWidth: 2, borderColor: '#EEE' },
+  inputLabel: { position: 'absolute', right: 20, color: COLORS.muted, fontWeight: '800', fontSize: 12 },
+  previewBox: { marginTop: 25, alignItems: 'center', padding: 20, backgroundColor: '#F0FFF4', borderRadius: 25 },
+  previewLabel: { color: COLORS.success, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  previewAmt: { color: COLORS.success, fontSize: 36, fontWeight: '900', marginTop: 5 },
+  sheetBtn: { backgroundColor: COLORS.primary, height: 65, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
+  sheetBtnText: { color: 'white', fontWeight: '900', fontSize: 16 },
   closeLink: { color: COLORS.muted, textAlign: 'center', marginTop: 20, fontWeight: '700' },
-  detailCard: { width: '85%', backgroundColor: 'white', borderRadius: 30, padding: 25, alignItems: 'center' },
-  detailImg: { width: 180, height: 180, borderRadius: 25, marginBottom: 20 },
-  detailName: { color: COLORS.primary, fontSize: 20, fontWeight: '900' },
-  detailPts: { color: COLORS.muted, fontWeight: '700', marginTop: 5 },
-  optGrid: { width: '100%', marginTop: 25, gap: 12 },
-  optItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F4F8', padding: 18, borderRadius: 18, gap: 15 },
-  optText: { color: COLORS.primary, fontWeight: '800', fontSize: 15 },
-  lockHint: { marginTop: 20, padding: 12, backgroundColor: '#FFF9C4', borderRadius: 12 },
-  lockHintText: { color: '#F57F17', fontWeight: '700' },
-  confirmBox: { width: '80%', backgroundColor: 'white', borderRadius: 30, padding: 25, alignItems: 'center' },
-  confirmTitle: { color: COLORS.primary, fontSize: 18, fontWeight: '900', marginTop: 15 },
-  confirmSub: { color: COLORS.muted, textAlign: 'center', marginTop: 10, marginBottom: 25 },
-  row: { flexDirection: 'row', gap: 10 },
-  flex1: { flex: 1 },
-  btnOutline: { height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0' },
+
+  modalOverlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
+  detailCard: { width: '90%', backgroundColor: 'white', borderRadius: 40, padding: 25, alignItems: 'center' },
+  detailImgContainer: { width: 200, height: 200, borderRadius: 100, backgroundColor: '#F8F9FA', padding: 20, marginBottom: 20 },
+  detailImg: { width: '100%', height: '100%', resizeMode: 'contain' },
+  detailName: { color: COLORS.primary, fontSize: 22, fontWeight: '900' },
+  detailPts: { color: COLORS.muted, fontWeight: '700', marginTop: 5, fontSize: 16 },
+  optGrid: { width: '100%', marginTop: 30, gap: 15 },
+  optItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', padding: 20, borderRadius: 25, gap: 15 },
+  optText: { color: COLORS.primary, fontWeight: '900', fontSize: 16 },
+  lockHint: { marginTop: 25, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 15, backgroundColor: '#FFF9C4', borderRadius: 20 },
+  lockHintText: { color: '#F57F17', fontWeight: '800', fontSize: 13 },
+
+  confirmBox: { width: '85%', backgroundColor: 'white', borderRadius: 35, padding: 30, alignItems: 'center' },
+  warnIconBg: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFF9C4', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  confirmTitle: { color: COLORS.primary, fontSize: 20, fontWeight: '900' },
+  confirmSub: { color: COLORS.muted, textAlign: 'center', marginTop: 12, marginBottom: 30, lineHeight: 20 },
+  btnOutline: { height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#EEE' },
   btnOutlineText: { color: COLORS.muted, fontWeight: '900' },
-  btnFill: { height: 50, borderRadius: 15, backgroundColor: COLORS.accent, justifyContent: 'center', alignItems: 'center' },
+  btnFill: { height: 55, borderRadius: 18, backgroundColor: COLORS.accent, justifyContent: 'center', alignItems: 'center' },
   btnFillText: { color: COLORS.primary, fontWeight: '900' },
-  statusBox: { width: '80%', backgroundColor: 'white', borderRadius: 30, padding: 30, alignItems: 'center' },
-  statusT: { fontSize: 20, fontWeight: '900', marginTop: 15, color: COLORS.primary },
-  statusM: { color: COLORS.muted, textAlign: 'center', marginVertical: 10 },
-  statusB: { backgroundColor: COLORS.primary, paddingHorizontal: 40, paddingVertical: 12, borderRadius: 15, marginTop: 10 },
-  statusBT: { color: 'white', fontWeight: '900' }
+
+  statusBox: { width: '85%', backgroundColor: 'white', borderRadius: 40, padding: 40, alignItems: 'center' },
+  statusT: { fontSize: 24, fontWeight: '900', marginTop: 20, color: COLORS.primary },
+  statusM: { color: COLORS.muted, textAlign: 'center', marginVertical: 15, fontSize: 16 },
+  statusB: { backgroundColor: COLORS.primary, width: '100%', paddingVertical: 18, borderRadius: 20, marginTop: 15, alignItems: 'center' },
+  statusBT: { color: 'white', fontWeight: '900', fontSize: 16 }
 });
 
 export default Rewards;
