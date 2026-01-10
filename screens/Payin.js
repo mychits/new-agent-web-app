@@ -191,9 +191,16 @@ const Payin = ({ route, navigation }) => {
     }
   };
 
-  // Logic to prevent dots, dashes, or commas
+  // Logic to prevent dots, dashes, commas, AND starting with zero
   const handleAmountChange = (text) => {
-    const numericValue = text.replace(/[^0-9]/g, "");
+    // 1. Remove any non-numeric characters
+    let numericValue = text.replace(/[^0-9]/g, "");
+    
+    // 2. Prevent leading zero: if length > 0 and first char is 0, remove it
+    if (numericValue.length > 0 && numericValue.startsWith("0")) {
+      numericValue = numericValue.replace(/^0+/, "");
+    }
+    
     setAmount(numericValue);
   };
 

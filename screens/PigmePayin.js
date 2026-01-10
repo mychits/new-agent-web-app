@@ -119,11 +119,17 @@ const PigmePayin = ({ route, navigation }) => {
     };
 
     /**
-     * Logic to prevent negative values and decimal points
+     * Logic to prevent negative values, decimal points, and leading zeros
      */
     const handleAmountChange = (text) => {
-        // This regex ensures only numbers 0-9 are accepted
-        const filteredText = text.replace(/[^0-9]/g, '');
+        // 1. Remove any non-numeric characters
+        let filteredText = text.replace(/[^0-9]/g, '');
+        
+        // 2. Prevent starting with 0 (removes 0 if it's the first character)
+        if (filteredText.startsWith('0')) {
+            filteredText = filteredText.replace(/^0+/, '');
+        }
+        
         setAmount(filteredText);
     };
 

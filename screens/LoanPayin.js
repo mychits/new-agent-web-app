@@ -103,11 +103,17 @@ const LoanPayin = ({ route, navigation }) => {
   };
 
   /**
-   * Logic to prevent negative values and decimal points
+   * Updated logic to prevent starting with 0, negative values, and decimals
    */
   const handleAmountChange = (value) => {
-    // Replaces any character that is not a digit (0-9) with an empty string
-    const numericValue = value.replace(/[^0-9]/g, "");
+    // 1. Remove all non-numeric characters
+    let numericValue = value.replace(/[^0-9]/g, "");
+
+    // 2. Prevent leading zero: if the string starts with '0', remove it
+    if (numericValue.startsWith("0")) {
+      numericValue = numericValue.substring(1);
+    }
+
     setAmount(numericValue);
   };
 
