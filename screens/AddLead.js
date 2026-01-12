@@ -97,14 +97,29 @@ const AddLead = ({ route, navigation }) => {
 
       const response = await axios.post(`${baseUrl}/lead/add-lead`, data);
 
-      if (response.status === 201) {
+      if (response.status === 201 || response.status === 200) {
         Alert.alert("Success", "Lead added successfully!");
         setCustomerInfo({ full_name: "", phone_number: "", profession: "" });
         setSelectedGroup("");
         navigation.navigate("ViewLeads", { user });
       }
     } catch (error) {
-      Alert.alert("Error", "Error adding lead. Please try again.");
+      // --- Error Handling for 400 and others ---
+      if (error.response) {
+        // The server responded with a status code outside the 2xx range
+        if (error.response.status === 400) {
+          const serverMessage = error.response.data.message || "Invalid details or lead already exists.";
+          Alert.alert("Request Failed", serverMessage);
+        } else {
+          Alert.alert("Server Error", `Something went wrong (Status: ${error.response.status})`);
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        Alert.alert("Network Error", "No response from server. Please check your internet.");
+      } else {
+        // Something happened in setting up the request
+        Alert.alert("Error", "An unexpected error occurred.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +146,6 @@ const AddLead = ({ route, navigation }) => {
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={styles.formCard}>
             
-            {/* Added sentence after headline */}
             <Text style={styles.subHeaderText}>
               Please provide the lead details to initiate a new connection.
             </Text>
