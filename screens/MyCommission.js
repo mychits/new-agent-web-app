@@ -19,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 
 // --- DESIGN CONSTANTS COPIED from EnrollCustomer.js ---
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
 const ACCENT_BLUE = "#1796d1ff"; // Blue accent
 const BORDER_COLOR = "#e0e0e0"; // Lighter border

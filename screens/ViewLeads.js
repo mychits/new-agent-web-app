@@ -32,7 +32,7 @@ const noImage = require("../assets/no.png");
 const { height } = Dimensions.get('window');
 
 // --- CONSTANTS MATCHING MODERN DESIGN ---
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
 const ACCENT_BLUE = "#1796d1ff"; // Blue accent (General/Edit)
 const ACCENT_GREEN = "#059669";   // Vibrant green for FRESH leads

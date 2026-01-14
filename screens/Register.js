@@ -154,7 +154,7 @@ export default function Register() {
         style={[styles.backgroundOverlayImage, { opacity: fadeAnim }]}
         resizeMode="cover"
       />
-      <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]} style={styles.gradientOverlay} />
+      <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.gradientOverlay} />
 
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />

@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Header from "../components/Header";
 
 // --- CONSTANTS MATCHING ROUTES.JS DESIGN ---
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#0d0d0eff"; 
 const ACCENT_BLUE = "#1796d1ff"; 
 const BORDER_COLOR = "#e0e0e0"; 

@@ -205,7 +205,7 @@ const LogOut = ({ navigation }) => {
               <View>
                 <View style={styles.glassCard}>
                   <View style={styles.profileRow}>
-                      <LinearGradient colors={['#e0f2fe', '#bae6fd']} style={styles.avatar}>
+                      <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.avatar}>
                           <Ionicons name="person" size={35} color={COLORS.PRIMARY} />
                       </LinearGradient>
                       <View style={styles.nameCol}>

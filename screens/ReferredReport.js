@@ -21,7 +21,7 @@ import url from "../constants/baseUrl";
 const { height } = Dimensions.get('window');
 
 // --- CONSTANTS MATCHING OutstandingReports.js ---
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; // From OutstandingReports
+const TOP_GRADIENT = ['#24C6DC', '#183A5D']; // From OutstandingReports
 const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
 const ACCENT_BLUE = "#1796d1ff"; // Blue accent
 const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable

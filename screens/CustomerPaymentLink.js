@@ -23,7 +23,7 @@ import baseUrl from "../constants/baseUrl";
 
 const { width } = Dimensions.get("window");
 
-const TOP_GRADIENT = ["#1aa2cc", "#0e7490"]; 
+const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#1e293b";
 const ACCENT_BLUE = "#1796d1";
 const TEXT_GREY = "#64748b";

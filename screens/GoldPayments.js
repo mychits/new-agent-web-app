@@ -392,7 +392,7 @@ const GoldPayments = ({ route, navigation }) => {
   // --- Render Function ---
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
+      <LinearGradient colors={['#24C6DC', '#183A5D']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

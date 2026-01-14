@@ -22,7 +22,7 @@ import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
 
 // --- DESIGN CONSTANTS ---
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
+const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
 const MODERN_PRIMARY = "#0d0d0eff"; 
 const BORDER_COLOR = "#e0e0e0"; 
 const TEXT_GREY = "#4b5563"; 

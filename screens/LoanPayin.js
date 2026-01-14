@@ -302,7 +302,7 @@ const LoanPayin = ({ route, navigation }) => {
   };
 
   return (
-    <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]} style={styles.gradientOverlay}>
+    <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.gradientOverlay}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

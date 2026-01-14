@@ -115,7 +115,7 @@ const AttendanceScreen = ({ navigation }) => {
     
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND_LIGHT }}>
-      <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]}
+      <LinearGradient colors={['#24C6DC', '#183A5D']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }} 

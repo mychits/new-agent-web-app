@@ -211,7 +211,7 @@ const AddCustomer = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <LinearGradient colors={["#1aa2ccff", "#1aa2ccff"]} style={styles.headerContainer}>
+      <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>

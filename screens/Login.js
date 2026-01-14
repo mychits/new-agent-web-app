@@ -150,7 +150,7 @@ export default function Login({ navigation }) {
 
       {/* A richer, semi-transparent gradient overlay */}
       <LinearGradient
-        colors={["#1aa2ccff", "#1aa2ccff"]}
+        colors={['#24C6DC', '#183A5D']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

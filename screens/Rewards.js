@@ -2,21 +2,22 @@ import React, { useEffect, useState, useRef } from "react";
 import {
   View, Text, StyleSheet, SafeAreaView, ActivityIndicator, Platform,
   Animated, Image, TouchableOpacity, StatusBar, ScrollView, Dimensions,
-  Easing, Modal, TextInput, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard
+  Easing, Modal, TextInput, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard,
+  Linking
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from "@expo/vector-icons";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur"; // Optional: For glass effect if available, otherwise fallback used
+import { BlurView } from "expo-blur";
 
 const { width } = Dimensions.get("window");
 
 const COLORS = {
-  primary: "#183A5D",      
-  accent: "#F8C009",     
-  bgBlue: "#1AA2CC",     
-  success: "#27AE60",      
+  primary: "#1aa2ccff",
+  accent: "#f0c740",
+  bgBlue: "#1AA2CC",
+  success: "#27AE60",
   cardBg: "rgba(255, 255, 255, 0.95)",
   white: "#FFFFFF",
   muted: "#8898AA",
@@ -37,13 +38,14 @@ const REWARD_DATA = [
 const Rewards = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [points, setPoints] = useState(0);
+  const [agentName, setAgentName] = useState(""); 
   const [dynamicRates, setDynamicRates] = useState({ pigmy: 0, loans: 0 });
   const [selectedReward, setSelectedReward] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [redeemModalVisible, setRedeemModalVisible] = useState(false);
   const [customPoints, setCustomPoints] = useState("");
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
-  const [confirmDetails, setConfirmDetails] = useState({ pts: 0, type: '', desc: '', value: 0 });
+  const [confirmDetails, setConfirmDetails] = useState({ pts: 0, type: '', desc: '', value: 0, giftName: '' });
   const [statusModal, setStatusModal] = useState({ visible: false, type: 'success', title: '', message: '' });
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -52,7 +54,7 @@ const Rewards = ({ navigation }) => {
   const statusAnim = useRef(new Animated.Value(0)).current;
   const cardAnimations = useRef(REWARD_DATA.map(() => new Animated.Value(0))).current;
 
-  const CONVERSION_RATE = 25; 
+  const CONVERSION_RATE = 25;
 
   useEffect(() => {
     fetchRewards();
@@ -61,16 +63,16 @@ const Rewards = ({ navigation }) => {
 
   const startAnimations = () => {
     Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.loop(
-            Animated.timing(rotateAnim, { toValue: 1, duration: 10000, easing: Easing.linear, useNativeDriver: true })
-        ),
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.05, duration: 2000, useNativeDriver: true }),
-                Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true })
-            ])
-        )
+      Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      Animated.loop(
+        Animated.timing(rotateAnim, { toValue: 1, duration: 10000, easing: Easing.linear, useNativeDriver: true })
+      ),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.05, duration: 2000, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true })
+        ])
+      )
     ]).start();
   };
 
@@ -91,8 +93,9 @@ const Rewards = ({ navigation }) => {
       const agentStr = await AsyncStorage.getItem("agentInfo");
       const agentInfo = agentStr ? JSON.parse(agentStr) : null;
       const id = agentInfo?._id || agentInfo?.id;
-      
+
       if (id) {
+        setAgentName(agentInfo.name || "Agent");
         const response = await axios.get(`https://mychits.online/api/reward-points/employee-reward-points/${id}`);
         setDynamicRates({
           pigmy: response.data.pigmy_reward_points || 0,
@@ -101,8 +104,7 @@ const Rewards = ({ navigation }) => {
         setPoints(response.data.total_earned_reward || 0);
       }
 
-      // Staggered card entrance
-      const animations = cardAnimations.map((anim, i) => 
+      const animations = cardAnimations.map((anim, i) =>
         Animated.spring(anim, { toValue: 1, tension: 50, friction: 8, delay: i * 100, useNativeDriver: true })
       );
       Animated.parallel(animations).start();
@@ -114,29 +116,51 @@ const Rewards = ({ navigation }) => {
   };
 
   const handleRedemptionRequest = async () => {
-    const { pts, type, desc } = confirmDetails;
+    const { pts, type, desc, giftName, value } = confirmDetails;
     setConfirmModalVisible(false);
-    
+
     try {
       setLoading(true);
       const agentStr = await AsyncStorage.getItem("agentInfo");
       const agentInfo = agentStr ? JSON.parse(agentStr) : null;
       const id = agentInfo?._id || agentInfo?.id;
-      
+
       if (!id) return showStatus('error', 'Session Expired', 'User session not found.');
 
-      const payload = { 
-        employee_id: id, 
-        points_to_redeem: Number(pts), 
-        redemption_type: type, 
-        description: desc 
+      const payload = {
+        employee_id: id,
+        points_to_redeem: Number(pts),
+        redemption_type: type,
+        description: desc
       };
 
       const response = await axios.post("https://mychits.online/api/reward-points/employee-reward-points/redeem", payload);
 
       if (response.data.success) {
-        showStatus('success', 'Request Sent!', response.data.message || "Approval pending.");
-        fetchRewards(); 
+        // If it's a Gift or a Swap, open Gmail
+        if (giftName) {
+            const subject = encodeURIComponent(`Reward Redemption Request - ${agentName}`);
+            const body = encodeURIComponent(
+                `Hello Admin,\n\nI would like to request a redemption.\n\n` +
+                `Agent Name: ${agentName}\n` +
+                `Redemption Type: ${type === 'Gift' ? 'Product Delivery' : 'Swap for Cash'}\n` +
+                `Product Selected: ${giftName}\n` +
+                `Points Redeemed: ${pts}\n` +
+               
+                `Please process this request.\n\nRegards,\n${agentName}`
+            );
+            
+            const mailtoUrl = `mailto:info.mychits@gmail.com?subject=${subject}&body=${body}`;
+            
+            Linking.canOpenURL(mailtoUrl).then(supported => {
+              if (supported) {
+                Linking.openURL(mailtoUrl);
+              }
+            });
+        }
+
+        showStatus('success', 'Request Sent!', "Your request has been sent for approval.");
+        fetchRewards();
       } else {
         showStatus('error', 'Failed', response.data.message || "Try again.");
       }
@@ -169,16 +193,15 @@ const Rewards = ({ navigation }) => {
 
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
-           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIcon}>
-              <Ionicons name="chevron-back" size={24} color={COLORS.white} />
-           </TouchableOpacity>
-           <View style={styles.headerTextContainer}>
-              <Text style={styles.headerSubtitle}>ROYAL CLUB</Text>
-              <Text style={styles.headerTitle}>YOUR REWARDS</Text>
-           </View>
-           <TouchableOpacity style={styles.headerIcon} onPress={fetchRewards}>
-              <Feather name="refresh-cw" size={20} color={COLORS.white} />
-           </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIcon}>
+            <Ionicons name="chevron-back" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>YOUR REWARDS</Text>
+          </View>
+          <TouchableOpacity style={styles.headerIcon} onPress={fetchRewards}>
+            <Feather name="refresh-cw" size={20} color={COLORS.white} />
+          </TouchableOpacity>
         </View>
 
         {loading ? (
@@ -187,31 +210,29 @@ const Rewards = ({ navigation }) => {
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            
-            {/* Hero Section */}
+
             <Animated.View style={[styles.heroContainer, { opacity: fadeAnim, transform: [{ scale: pulseAnim }] }]}>
-                <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.heroCircle}>
-                    <Animated.View style={[styles.glowRing, { transform: [{ rotate: rotation }] }]}>
-                        <View style={styles.glowDot} />
-                    </Animated.View>
-                    <MaterialCommunityIcons name="crown" size={30} color={COLORS.accent} style={styles.crownIcon} />
-                    <Text style={styles.pointsMainText}>{points.toLocaleString()}</Text>
-                    <Text style={styles.pointsSubText}>AVAILABLE POINTS</Text>
-                    <View style={styles.cashBadge}>
-                        <Text style={styles.cashText}>≈ ₹{(points * CONVERSION_RATE).toLocaleString()}</Text>
-                    </View>
-                </LinearGradient>
+              <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.heroCircle}>
+                <Animated.View style={[styles.glowRing, { transform: [{ rotate: rotation }] }]}>
+                  <View style={styles.glowDot} />
+                </Animated.View>
+                <MaterialCommunityIcons name="crown" size={30} color={COLORS.accent} style={styles.crownIcon} />
+                <Text style={styles.pointsMainText}>{points.toLocaleString()}</Text>
+                <Text style={styles.pointsSubText}>AVAILABLE POINTS</Text>
+                <View style={styles.cashBadge}>
+                  <Text style={styles.cashText}>≈ ₹{(points * CONVERSION_RATE).toLocaleString()}</Text>
+                </View>
+              </LinearGradient>
             </Animated.View>
 
-            {/* Quick Redeem */}
-            <TouchableOpacity 
+            <TouchableOpacity
               activeOpacity={0.8}
-              style={styles.redeemMainBtn} 
+              style={styles.redeemMainBtn}
               onPress={() => setRedeemModalVisible(true)}
             >
-              <LinearGradient 
-                colors={[COLORS.accent, "#EAB308"]} 
-                start={{x:0, y:0}} end={{x:1, y:0}}
+              <LinearGradient
+                colors={[COLORS.accent, "#EAB308"]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                 style={styles.redeemGradient}
               >
                 <Text style={styles.redeemBtnText}>CONVERT TO CASH INSTANTLY</Text>
@@ -219,24 +240,22 @@ const Rewards = ({ navigation }) => {
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Rules */}
             <Text style={styles.sectionLabel}>HOW TO EARN</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rulesScroll}>
               {EARN_RULES.map((rule, i) => (
                 <View key={i} style={styles.ruleCard}>
-                    <View style={[styles.ruleIconBg, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-                        <MaterialCommunityIcons name={rule.icon} size={24} color={COLORS.accent} />
-                    </View>
-                    <Text style={styles.ruleVal}>{rule.val}</Text>
-                    <Text style={styles.ruleLabel}>{rule.label}</Text>
+                  <View style={[styles.ruleIconBg, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                    <MaterialCommunityIcons name={rule.icon} size={24} color={COLORS.accent} />
+                  </View>
+                  <Text style={styles.ruleVal}>{rule.val}</Text>
+                  <Text style={styles.ruleLabel}>{rule.label}</Text>
                 </View>
               ))}
             </ScrollView>
 
-            {/* Catalog */}
             <View style={styles.catalogHeader}>
-                <Text style={styles.sectionLabel}>PREMIUM CATALOGUE</Text>
-                <View style={styles.countBadge}><Text style={styles.countBadgeText}>{REWARD_DATA.length} ITEMS</Text></View>
+              <Text style={styles.sectionLabel}>PREMIUM CATALOGUE</Text>
+              <View style={styles.countBadge}><Text style={styles.countBadgeText}>{REWARD_DATA.length} ITEMS</Text></View>
             </View>
 
             <View style={styles.grid}>
@@ -244,26 +263,28 @@ const Rewards = ({ navigation }) => {
                 const unlocked = points >= item.pts;
                 const progress = Math.min(points / item.pts, 1);
                 return (
-                  <Animated.View 
-                    key={index} 
-                    style={[styles.rewardCard, { 
+                  <Animated.View
+                    key={index}
+                    style={[styles.rewardCard, {
                       opacity: cardAnimations[index],
-                      transform: [{ translateY: cardAnimations[index].interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [50, 0]
-                      })}]
+                      transform: [{
+                        translateY: cardAnimations[index].interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [50, 0]
+                        })
+                      }]
                     }]}
                   >
                     <View style={styles.imgContainer}>
-                       <Image source={{ uri: item.img }} style={styles.rewardImg} />
-                       {!unlocked && (
-                         <BlurView intensity={20} style={styles.lockOverlay}>
-                           <MaterialCommunityIcons name="lock" size={24} color="white" />
-                           <Text style={styles.lockInfoText}>{item.pts - points} PTS LEFT</Text>
-                         </BlurView>
-                       )}
+                      <Image source={{ uri: item.img }} style={styles.rewardImg} />
+                      {!unlocked && (
+                        <BlurView intensity={20} style={styles.lockOverlay}>
+                          <MaterialCommunityIcons name="lock" size={24} color="white" />
+                          <Text style={styles.lockInfoText}>{item.pts - points} PTS LEFT</Text>
+                        </BlurView>
+                      )}
                     </View>
-                    
+
                     <View style={styles.cardBottom}>
                       <Text style={styles.itemName} numberOfLines={1}>{item.gift}</Text>
                       <View style={styles.ptsRow}>
@@ -271,17 +292,16 @@ const Rewards = ({ navigation }) => {
                         {unlocked && <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />}
                       </View>
 
-                      {/* Progress Bar */}
                       <View style={styles.progressBarBg}>
                         <View style={[styles.progressBarFill, { width: `${progress * 100}%`, backgroundColor: unlocked ? COLORS.success : COLORS.accent }]} />
                       </View>
 
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={[styles.claimBtn, unlocked ? styles.claimActive : styles.claimLocked]}
                         onPress={() => { setSelectedReward(item); setModalVisible(true); }}
                       >
                         <Text style={[styles.claimBtnText, { color: unlocked ? COLORS.primary : COLORS.muted }]}>
-                           {unlocked ? "REDEEM NOW" : "LOCKED"}
+                          {unlocked ? "REDEEM NOW" : "LOCKED"}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -293,52 +313,63 @@ const Rewards = ({ navigation }) => {
           </ScrollView>
         )}
 
-        {/* Redemption Modal (Slide up) */}
-        <Modal transparent visible={redeemModalVisible} animationType="slide">
+        {/* Redeem to Cash Modal (Instant Conversion) */}
+        <Modal transparent visible={redeemModalVisible} animationType="fade">
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.modalBackdrop}>
-              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? "padding" : "height"} style={styles.bottomSheet}>
-                <View style={styles.sheetHandle} />
+            <View style={styles.modalOverlayCenter}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? "padding" : "height"}
+                style={styles.centeredSheet}
+              >
                 <Text style={styles.sheetTitle}>Redeem to Cash</Text>
                 <Text style={styles.sheetSub}>Available Balance: {points} Points</Text>
-                
+
                 <View style={styles.inputWrapper}>
-                    <TextInput
+                  <TextInput
                     style={styles.sheetInput}
                     placeholder="0000"
                     placeholderTextColor={COLORS.muted}
                     keyboardType="numeric"
                     value={customPoints}
-                    onChangeText={(val) => setCustomPoints(val.replace(/[^0-9]/g, ''))}
-                    />
-                    <Text style={styles.inputLabel}>POINTS</Text>
+                    onChangeText={(val) => {
+                      const cleanVal = val.replace(/[^0-9]/g, '');
+                      const numVal = Number(cleanVal);
+                      if (numVal <= points) {
+                        setCustomPoints(cleanVal);
+                      } else {
+                        setCustomPoints(points.toString());
+                      }
+                    }}
+                  />
+                  <Text style={styles.inputLabel}>POINTS</Text>
                 </View>
 
                 {customPoints > 0 && (
-                  <Animated.View style={styles.previewBox}>
+                  <View style={styles.previewBox}>
                     <Text style={styles.previewLabel}>YOU WILL RECEIVE</Text>
                     <Text style={styles.previewAmt}>₹{(Number(customPoints) * CONVERSION_RATE).toLocaleString()}</Text>
-                  </Animated.View>
+                  </View>
                 )}
 
-                <TouchableOpacity 
-                  style={styles.sheetBtn} 
+                <TouchableOpacity
+                  style={styles.sheetBtn}
                   onPress={() => {
                     const pts = parseInt(customPoints);
-                    if(!pts || pts <= 0) return showStatus('error', 'Invalid Amount', 'Enter points to redeem.');
-                    if(pts > points) return showStatus('error', 'Limit Exceeded', 'Insufficient points.');
-                    
-                    setConfirmDetails({ 
-                      pts: pts, 
-                      type: 'Cash', 
-                      desc: 'Cash Redemption', 
-                      value: pts * CONVERSION_RATE 
+                    if (!pts || pts <= 0) return showStatus('error', 'Invalid Amount', 'Enter points to redeem.');
+
+                    setConfirmDetails({
+                      pts: pts,
+                      type: 'Cash',
+                      desc: `Direct Cash Redemption of ${pts} points for ₹${pts * CONVERSION_RATE}.`,
+                      value: pts * CONVERSION_RATE,
+                      giftName: '' // No email for plain cash conversion usually, or keep blank
                     });
                     setConfirmModalVisible(true);
                   }}
                 >
                   <Text style={styles.sheetBtnText}>PROCEED REDEMPTION</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity onPress={() => setRedeemModalVisible(false)}>
                   <Text style={styles.closeLink}>Cancel and Go Back</Text>
                 </TouchableOpacity>
@@ -351,95 +382,101 @@ const Rewards = ({ navigation }) => {
         <Modal transparent visible={modalVisible} animationType="fade">
           <View style={styles.modalOverlayCenter}>
             <View style={styles.detailCard}>
-               {selectedReward && (
-                 <>
-                   <View style={styles.detailImgContainer}>
+              {selectedReward && (
+                <>
+                  <View style={styles.detailImgContainer}>
                     <Image source={{ uri: selectedReward.img }} style={styles.detailImg} />
-                   </View>
-                   <Text style={styles.detailName}>{selectedReward.gift}</Text>
-                   <Text style={styles.detailPts}>{selectedReward.pts} Points Required</Text>
-                   
-                   {points >= selectedReward.pts ? (
-                     <View style={styles.optGrid}>
-                        <TouchableOpacity 
-                          style={styles.optItem} 
-                          onPress={() => { 
-                            setConfirmDetails({ 
-                              pts: selectedReward.pts, 
-                              type: 'Gift', 
-                              desc: `Claim ${selectedReward.gift}`, 
-                              value: 0 
-                            }); 
-                            setConfirmModalVisible(true); 
-                          }}
-                        >
-                          <Ionicons name="gift-outline" size={22} color={COLORS.primary} />
-                          <Text style={styles.optText}>Get Product</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={[styles.optItem, { backgroundColor: '#E8F5E9' }]}
-                          onPress={() => { 
-                            setConfirmDetails({ 
-                              pts: selectedReward.pts, 
-                              type: 'Cash', 
-                              desc: 'Cash Swap', 
-                              value: selectedReward.pts * CONVERSION_RATE 
-                            }); 
-                            setConfirmModalVisible(true); 
-                          }}
-                        >
-                          <Ionicons name="cash-outline" size={22} color={COLORS.success} />
-                          <Text style={[styles.optText, { color: COLORS.success }]}>Swap for ₹{(selectedReward.pts * CONVERSION_RATE).toLocaleString()}</Text>
-                        </TouchableOpacity>
-                     </View>
-                   ) : (
-                     <View style={styles.lockHint}>
-                        <Ionicons name="information-circle" size={18} color="#F57F17" />
-                        <Text style={styles.lockHintText}>Earn {selectedReward.pts - points} more to unlock</Text>
-                     </View>
-                   )}
-                   <TouchableOpacity style={[styles.sheetBtn, {backgroundColor: '#f1f1f1', marginTop: 15}]} onPress={() => setModalVisible(false)}>
-                      <Text style={[styles.sheetBtnText, {color: COLORS.primary}]}>CLOSE</Text>
-                   </TouchableOpacity>
-                 </>
-               )}
+                  </View>
+                  <Text style={styles.detailName}>{selectedReward.gift}</Text>
+                  <Text style={styles.detailPts}>{selectedReward.pts} Points Required</Text>
+
+                  {points >= selectedReward.pts ? (
+                    <View style={styles.optGrid}>
+                      <TouchableOpacity
+                        style={styles.optItem}
+                        onPress={() => {
+                          setConfirmDetails({
+                            pts: selectedReward.pts,
+                            type: 'Gift',
+                            desc: `Agent ${agentName} wants to claim product: ${selectedReward.gift}.`,
+                            giftName: selectedReward.gift,
+                            value: 0
+                          });
+                          setConfirmModalVisible(true);
+                        }}
+                      >
+                        <Ionicons name="gift-outline" size={22} color={COLORS.primary} />
+                        <Text style={styles.optText}>Get Product</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.optItem, { backgroundColor: '#E8F5E9' }]}
+                        onPress={() => {
+                          setConfirmDetails({
+                            pts: selectedReward.pts,
+                            type: 'Cash',
+                            desc: `Agent ${agentName} swapped ${selectedReward.gift} for cash value.`,
+                            giftName: selectedReward.gift,
+                            value: selectedReward.pts * CONVERSION_RATE
+                          });
+                          setConfirmModalVisible(true);
+                        }}
+                      >
+                        <Ionicons name="cash-outline" size={22} color={COLORS.success} />
+                        <Text style={[styles.optText, { color: COLORS.success }]}>Swap for ₹{(selectedReward.pts * CONVERSION_RATE).toLocaleString()}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.lockHint}>
+                      <Ionicons name="information-circle" size={18} color="#F57F17" />
+                      <Text style={styles.lockHintText}>Earn {selectedReward.pts - points} more to unlock</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.sheetBtn, { backgroundColor: '#f1f1f1', marginTop: 15, width: '100%' }]}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Text style={[styles.sheetBtnText, { color: COLORS.primary }]}>CLOSE</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </Modal>
 
         {/* Confirmation Modal */}
         <Modal transparent visible={confirmModalVisible}>
-           <View style={styles.modalOverlayCenter}>
-              <View style={styles.confirmBox}>
-                 <View style={styles.warnIconBg}>
-                    <Ionicons name="help-circle" size={40} color={COLORS.accent} />
-                 </View>
-                 <Text style={styles.confirmTitle}>Confirm Request?</Text>
-                 <Text style={styles.confirmSub}>You are about to redeem {confirmDetails.pts} points. This cannot be undone.</Text>
-                 <View style={styles.row}>
-                    <TouchableOpacity style={[styles.flex1, styles.btnOutline]} onPress={() => setConfirmModalVisible(false)}>
-                        <Text style={styles.btnOutlineText}>CANCEL</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.flex1, styles.btnFill]} onPress={handleRedemptionRequest}>
-                        <Text style={styles.btnFillText}>CONFIRM</Text>
-                    </TouchableOpacity>
-                 </View>
+          <View style={styles.modalOverlayCenter}>
+            <View style={styles.confirmBox}>
+              <View style={styles.warnIconBg}>
+                <Ionicons name="help-circle" size={40} color={COLORS.accent} />
               </View>
-           </View>
+              <Text style={styles.confirmTitle}>Confirm Request?</Text>
+              <Text style={styles.confirmSub}>You are about to redeem {confirmDetails.pts} points. This cannot be undone.</Text>
+              <View style={styles.row}>
+                <TouchableOpacity style={[styles.flex1, styles.btnOutline]} onPress={() => setConfirmModalVisible(false)}>
+                  <Text style={styles.btnOutlineText}>CANCEL</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.flex1, styles.btnFill]} onPress={handleRedemptionRequest}>
+                  <Text style={styles.btnFillText}>CONFIRM</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </Modal>
 
         {/* Status Modal */}
         <Modal transparent visible={statusModal.visible}>
-           <View style={styles.modalOverlayCenter}>
-              <Animated.View style={[styles.statusBox, { transform: [{ scale: statusAnim }] }]}>
-                 <Ionicons name={statusModal.type === 'success' ? "checkmark-circle" : "alert-circle"} size={70} color={statusModal.type === 'success' ? COLORS.success : "#EF4444"} />
-                 <Text style={styles.statusT}>{statusModal.title}</Text>
-                 <Text style={styles.statusM}>{statusModal.message}</Text>
-                 <TouchableOpacity style={styles.statusB} onPress={hideStatus}>
-                    <Text style={styles.statusBT}>CONTINUE</Text>
-                 </TouchableOpacity>
-              </Animated.View>
-           </View>
+          <View style={styles.modalOverlayCenter}>
+            <Animated.View style={[styles.statusBox, { transform: [{ scale: statusAnim }] }]}>
+              <Ionicons name={statusModal.type === 'success' ? "checkmark-circle" : "alert-circle"} size={70} color={statusModal.type === 'success' ? COLORS.success : "#EF4444"} />
+              <Text style={styles.statusT}>{statusModal.title}</Text>
+              <Text style={styles.statusM}>{statusModal.message}</Text>
+              <TouchableOpacity style={styles.statusB} onPress={hideStatus}>
+                <Text style={styles.statusBT}>CONTINUE</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </Modal>
 
       </SafeAreaView>
@@ -449,85 +486,65 @@ const Rewards = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   mainContainer: { flex: 1 },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: Platform.OS === 'android' ? 50 : 10, 
-    paddingBottom: 20 
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 50 : 10, paddingBottom: 20 },
   headerTextContainer: { alignItems: 'center' },
   headerSubtitle: { color: COLORS.accent, fontSize: 10, fontWeight: '800', letterSpacing: 2 },
   headerTitle: { color: 'white', fontSize: 16, fontWeight: '900' },
   headerIcon: { width: 45, height: 45, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
-  
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingHorizontal: 20 },
-  
   heroContainer: { height: 280, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  heroCircle: { width: 220, height: 220, borderRadius: 110, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: COLORS.accent, shadowOffset: {width: 0, height: 10}, shadowOpacity: 0.3, shadowRadius: 20 },
+  heroCircle: { width: 220, height: 220, borderRadius: 110, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
   glowRing: { position: 'absolute', width: 240, height: 240, borderRadius: 120, borderWidth: 1, borderColor: 'rgba(248, 192, 9, 0.3)' },
   glowDot: { position: 'absolute', top: -5, left: '50%', width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.accent },
   crownIcon: { marginBottom: 5 },
-  pointsMainText: { color: 'white', fontSize: 40, fontWeight: '900' },
+  pointsMainText: { color: 'white', fontSize: 30, fontWeight: '900' },
   pointsSubText: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
   cashBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 6, borderRadius: 20, marginTop: 15 },
-  cashText: { color: COLORS.white, fontWeight: '800', fontSize: 12 },
-
+  cashText: { color: COLORS.white, fontWeight: '800', fontSize: 10 },
   redeemMainBtn: { borderRadius: 25, overflow: 'hidden', marginVertical: 15 },
   redeemGradient: { paddingVertical: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 15 },
   redeemBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 15, letterSpacing: 0.5 },
-
+  centeredSheet: { width: '90%', backgroundColor: 'white', borderRadius: 40, padding: 30, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 10 },
   sectionLabel: { color: 'white', fontSize: 13, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15, opacity: 0.8 },
   rulesScroll: { marginBottom: 30 },
   ruleCard: { backgroundColor: 'rgba(255,255,255,0.08)', padding: 15, borderRadius: 25, marginRight: 15, width: 120, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   ruleIconBg: { width: 50, height: 50, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   ruleVal: { color: COLORS.white, fontWeight: '900', fontSize: 15 },
   ruleLabel: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
-
   catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   countBadge: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10 },
   countBadgeText: { color: COLORS.accent, fontWeight: '800', fontSize: 11 },
-
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   rewardCard: { width: '48%', backgroundColor: COLORS.white, borderRadius: 30, marginBottom: 20, overflow: 'hidden', elevation: 5 },
   imgContainer: { height: 150, width: '100%' },
   rewardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   lockOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   lockInfoText: { color: 'white', fontSize: 10, fontWeight: '900', marginTop: 8 },
-  
   cardBottom: { padding: 15 },
   itemName: { color: COLORS.primary, fontWeight: '800', fontSize: 14 },
   ptsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 5 },
   itemPts: { fontWeight: '900', fontSize: 13, color: COLORS.primary },
-  
   progressBarBg: { height: 6, backgroundColor: '#E0E0E0', borderRadius: 3, marginVertical: 8, overflow: 'hidden' },
   progressBarFill: { height: '100%', borderRadius: 3 },
-
   claimBtn: { paddingVertical: 10, borderRadius: 15, alignItems: 'center', marginTop: 5 },
   claimActive: { backgroundColor: COLORS.accent },
   claimLocked: { backgroundColor: '#F5F5F5' },
   claimBtnText: { fontSize: 12, fontWeight: '900' },
-
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  bottomSheet: { backgroundColor: 'white', borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 30, paddingBottom: 40 },
-  sheetHandle: { width: 50, height: 5, backgroundColor: '#DDD', borderRadius: 10, alignSelf: 'center', marginBottom: 25 },
   sheetTitle: { color: COLORS.primary, fontSize: 24, fontWeight: '900', textAlign: 'center' },
   sheetSub: { color: COLORS.muted, textAlign: 'center', marginTop: 5, marginBottom: 30 },
   inputWrapper: { position: 'relative', justifyContent: 'center' },
-  sheetInput: { backgroundColor: '#F8F9FA', height: 80, borderRadius: 25, color: COLORS.primary, textAlign: 'center', fontSize: 28, fontWeight: '900', borderWidth: 2, borderColor: '#EEE' },
+  sheetInput: { backgroundColor: '#F8F9FA', height: 70, borderRadius: 20, color: COLORS.primary, textAlign: 'center', fontSize: 28, fontWeight: '900', borderWidth: 2, borderColor: '#EEE' },
   inputLabel: { position: 'absolute', right: 20, color: COLORS.muted, fontWeight: '800', fontSize: 12 },
   previewBox: { marginTop: 25, alignItems: 'center', padding: 20, backgroundColor: '#F0FFF4', borderRadius: 25 },
   previewLabel: { color: COLORS.success, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   previewAmt: { color: COLORS.success, fontSize: 36, fontWeight: '900', marginTop: 5 },
-  sheetBtn: { backgroundColor: COLORS.primary, height: 65, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
+  sheetBtn: { backgroundColor: COLORS.primary, height: 65, width: '90%', alignSelf: 'center', borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
   sheetBtnText: { color: 'white', fontWeight: '900', fontSize: 16 },
   closeLink: { color: COLORS.muted, textAlign: 'center', marginTop: 20, fontWeight: '700' },
-
   modalOverlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
   detailCard: { width: '90%', backgroundColor: 'white', borderRadius: 40, padding: 25, alignItems: 'center' },
-  detailImgContainer: { width: 200, height: 200, borderRadius: 100, backgroundColor: '#F8F9FA', padding: 20, marginBottom: 20 },
+  detailImgContainer: { width: 180, height: 180, borderRadius: 90, backgroundColor: '#F8F9FA', padding: 20, marginBottom: 20 },
   detailImg: { width: '100%', height: '100%', resizeMode: 'contain' },
   detailName: { color: COLORS.primary, fontSize: 22, fontWeight: '900' },
   detailPts: { color: COLORS.muted, fontWeight: '700', marginTop: 5, fontSize: 16 },
@@ -536,16 +553,16 @@ const styles = StyleSheet.create({
   optText: { color: COLORS.primary, fontWeight: '900', fontSize: 16 },
   lockHint: { marginTop: 25, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 15, backgroundColor: '#FFF9C4', borderRadius: 20 },
   lockHintText: { color: '#F57F17', fontWeight: '800', fontSize: 13 },
-
   confirmBox: { width: '85%', backgroundColor: 'white', borderRadius: 35, padding: 30, alignItems: 'center' },
   warnIconBg: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFF9C4', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
   confirmTitle: { color: COLORS.primary, fontSize: 20, fontWeight: '900' },
   confirmSub: { color: COLORS.muted, textAlign: 'center', marginTop: 12, marginBottom: 30, lineHeight: 20 },
+  row: { flexDirection: 'row', gap: 10 },
+  flex1: { flex: 1 },
   btnOutline: { height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#EEE' },
   btnOutlineText: { color: COLORS.muted, fontWeight: '900' },
   btnFill: { height: 55, borderRadius: 18, backgroundColor: COLORS.accent, justifyContent: 'center', alignItems: 'center' },
   btnFillText: { color: COLORS.primary, fontWeight: '900' },
-
   statusBox: { width: '85%', backgroundColor: 'white', borderRadius: 40, padding: 40, alignItems: 'center' },
   statusT: { fontSize: 24, fontWeight: '900', marginTop: 20, color: COLORS.primary },
   statusM: { color: COLORS.muted, textAlign: 'center', marginVertical: 15, fontSize: 16 },

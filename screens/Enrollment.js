@@ -31,7 +31,7 @@ if (
 }
 
 // Background Gradient (Used for the top half/header)
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; // Slightly deeper blue gradient
+const TOP_GRADIENT = ['#24C6DC', '#183A5D']; // Slightly deeper blue gradient
 
 // Design Constants
 const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers

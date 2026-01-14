@@ -17,7 +17,7 @@ import baseUrl from "../constants/baseUrl";
 import axios from "axios";
 
 // --- DESIGN CONSTANTS ---
-const TOP_GRADIENT = ["#1aa2cc", "#1aa2cc"]; 
+const TOP_GRADIENT =['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#0d0d0e"; 
 const ACCENT_BLUE = "#1796d1"; 
 const BORDER_COLOR = "#e0e0e0"; 

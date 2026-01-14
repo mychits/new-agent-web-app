@@ -23,7 +23,7 @@ import axios from "axios";
 
 /* ------------------ DESIGN CONSTANTS ------------------ */
 const { width } = Dimensions.get('window');
-const TOP_GRADIENT = ["#1aa2cc", "#0e7490"];
+const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
 const MODERN_PRIMARY = "#1e293b";
 const ACCENT_BLUE = "#1796d1";
 const ACCENT_LIGHT_BLUE = "#f0f9ff";

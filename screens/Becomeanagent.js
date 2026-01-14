@@ -194,7 +194,7 @@ const Becomeanagent = ({ navigation, route }) => {
     >
       {/* The main gradient background for the entire safe area */}
       <LinearGradient
-          colors={["#1aa2ccff", "#1aa2ccff"]}
+          colors={['#24C6DC', '#183A5D']}
         style={styles.safeAreaGradientBackground}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

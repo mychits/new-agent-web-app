@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Header from "../components/Header"; 
 
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"]; 
+const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#0d0d0eff"; 
 const ACCENT_BLUE = "#1796d1ff"; 
 const BORDER_COLOR = "#e0e0e0"; 

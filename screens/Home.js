@@ -27,7 +27,7 @@ import { useNetInfo } from "@react-native-community/netinfo";
 const { width } = Dimensions.get("window");
 
 // --- DESIGN CONSTANTS ---
-const TOP_GRADIENT = ["#1aa2ccff", "#1aa2ccff"];
+const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
 const MODERN_PRIMARY = "#0d0d0eff";
 const ACCENT_BLUE = "#1796d1ff";
 const BORDER_COLOR = "#e0e0e0";
@@ -35,9 +35,10 @@ const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = '#f9fafb';
 const HIGHLIGHT_GOLD = '#f5be6dff';
+const REWARD_PURPLE = ["#6366f1", "#a855f7"]; // Stylish gradient for rewards
 
 // NEW STYLISH BLUE THEME
-const QR_CARD_GRADIENT = ["#77a5b3ff", "#1aa2ccff"]; 
+const QR_CARD_GRADIENT = ['#24C6DC', '#183A5D']; 
 
 const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
 
@@ -58,6 +59,7 @@ const cardImagePaths = {
   monthlyTurnover: require("../assets/MITB.png"),
   DueReportImage: require("../assets/dues.png"),
   LogOutImage: require("../assets/logout.png"),
+  rewards: require("../assets/rewardsidea.png"), // Reusing Target asset for Rewards, replace if you have a trophy/gift icon
 };
 
 const AttendanceModal = ({
@@ -161,6 +163,8 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("Commissions", { user }),
       backgroundColor: HIGHLIGHT_GOLD,
     },
+    // --- NEW REWARDS CARD ---
+  
     agentInfo?.designation_id?.permission?.daybook === "true" && {
       id: "daybook",
       name: "Daybook",
@@ -244,6 +248,13 @@ const Home = ({ route, navigation }) => {
       imagePath: cardImagePaths.LogOutImage,
       onPress: () => navigation.navigate("LogOut", { employeeId: user.userId, agentName: agent.name }),
       backgroundColor: SUBTLE_BG_GREY,
+    },
+      {
+      id: "rewards",
+      name: "My Rewards",
+      imagePath: cardImagePaths.rewards,
+      onPress: () => navigation.navigate("Rewards"), // Ensure this screen exists in your Navigator
+      isReward: true,
     },
   ].filter(Boolean);
 
@@ -348,13 +359,35 @@ const Home = ({ route, navigation }) => {
                 const scale = cardAnimations.current[index].interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] });
                 const translateY = cardAnimations.current[index].interpolate({ inputRange: [0, 1], outputRange: [50, 0] });
                 const animatedStyle = { opacity: cardAnimations.current[index], transform: [{ scale }, { translateY }] };
+                
                 const isOverviewCard = card.id === "commission";
+                const isRewardCard = card.id === "rewards";
+
+                // Special handling for Full Width Cards (Overview & Rewards)
+                if (isOverviewCard || isRewardCard) {
+                  return (
+                    <Animated.View key={card.id} style={[styles.bigCardWrapper, animatedStyle]}>
+                      <TouchableOpacity onPress={card.onPress} activeOpacity={0.8} style={{ flex: 1 }}>
+                        <LinearGradient 
+                          colors={isRewardCard ? REWARD_PURPLE : [card.backgroundColor, card.backgroundColor]} 
+                          style={[styles.bigCardStyle, isRewardCard && styles.rewardCardShadow]}
+                        >
+                          <Image source={card.imagePath} style={styles.bigCardImage} resizeMode="contain" />
+                          <View>
+                             <Text style={styles.bigCardText}>{card.name}</Text>
+                             {isRewardCard && <Text style={styles.rewardSubText}>Claim your points</Text>}
+                          </View>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  );
+                }
 
                 return (
-                  <Animated.View key={card.id} style={[styles.gridCardWrapper, isOverviewCard && styles.bigCardWrapper, animatedStyle]}>
-                    <TouchableOpacity style={[styles.gridCard, { backgroundColor: card.backgroundColor }, isOverviewCard && styles.bigCardStyle]} onPress={card.onPress} activeOpacity={0.7}>
-                      <Image source={card.imagePath} style={[styles.cardImage, isOverviewCard && styles.bigCardImage]} resizeMode="contain" />
-                      <Text style={[styles.gridCardText, isOverviewCard && styles.bigCardText]}>{card.name}</Text>
+                  <Animated.View key={card.id} style={[styles.gridCardWrapper, animatedStyle]}>
+                    <TouchableOpacity style={[styles.gridCard, { backgroundColor: card.backgroundColor }]} onPress={card.onPress} activeOpacity={0.7}>
+                      <Image source={card.imagePath} style={styles.cardImage} resizeMode="contain" />
+                      <Text style={styles.gridCardText}>{card.name}</Text>
                     </TouchableOpacity>
                   </Animated.View>
                 );
@@ -410,16 +443,31 @@ const styles = StyleSheet.create({
   introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
   welcomeText: { fontSize: 28, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 5 },
   questionText: { fontSize: 20, fontWeight: "600", color: TEXT_GREY, marginBottom: 10 },
-  bigCardWrapper: { width: "100%", height: (width - 22 * 2 - 20) / 2 },
-  bigCardStyle: { justifyContent: 'center', alignItems: 'center', padding: 15, borderWidth: 1, borderColor: HIGHLIGHT_GOLD, elevation: 8 },
-  bigCardImage: { width: 180, height: 100, alignSelf: 'center' },
-  bigCardText: { fontSize: 22, fontWeight: "900", color: CARD_BG, textAlign: "center" },
+  
+  // Full Width Card Styles
+  bigCardWrapper: { width: "100%", height: 110, marginBottom: 20 },
+  bigCardStyle: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    borderRadius: 20, 
+    alignItems: 'center', 
+    paddingHorizontal: 25, 
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)'
+  },
+  rewardCardShadow: { elevation: 12, shadowColor: REWARD_PURPLE[1], shadowOpacity: 0.4, shadowRadius: 10 },
+  bigCardImage: { width: 70, height: 70, marginRight: 20 },
+  bigCardText: { fontSize: 22, fontWeight: "900", color: CARD_BG },
+  rewardSubText: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '600' },
+
   cardsScrollViewContent: { paddingBottom: 50 },
   cardsGridContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginTop: 10 },
   gridCardWrapper: { width: (width - 22 * 2 - 20) / 2, height: (width - 22 * 2 - 20) / 2, marginBottom: 20 },
   gridCard: { flex: 1, borderRadius: 15, elevation: 8, borderWidth: 1, borderColor: BORDER_COLOR, justifyContent: "center", alignItems: "center", padding: 5 },
   cardImage: { width: 100, height: 70 },
   gridCardText: { fontSize: 15, fontWeight: "600", color: MODERN_PRIMARY, textAlign: "center", marginTop: 5 },
+  
   noInternetContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
   noInternetImage: { width: 200, height: 200 },
   noInternetText: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY, marginTop: 20 },
