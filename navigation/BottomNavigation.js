@@ -1,9 +1,9 @@
+import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import Home from "../screens/Home";
 import Dashboard from "../screens/Dashboard";
-import COLORS from "../constants/color"; 
 import PaymentNavigator from "./PaymentNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import { enableScreens } from "react-native-screens";
@@ -14,7 +14,6 @@ enableScreens();
 
 const Tab = createBottomTabNavigator();
 
-
 const INACTIVE_COLOR = "#A2B2A7"; 
 const ACTIVE_COLOR = "#f8c009ff"; 
 const FAB_BACKGROUND_COLOR = "#f8c009ff"; 
@@ -22,50 +21,19 @@ const ICON_COLOR_ON_FAB = "#FFFFFF";
 const BACKGROUND_COLOR = "#445C4B"; 
 const FAB_BORDER_COLOR = "#FFFFFF"; 
 
-
-const screenOptions = {
-  tabBarShowLabel: false,
-  headerShown: false,
-  tabBarHideOnKeyboard: true,
-  tabBarStyle: {
-   
-    position: "absolute",
-    bottom: 25, 
-    right: 15,
-    left: 15,
-    elevation: 15, 
-    height: 75, 
-    borderRadius: 40, 
-    borderBottomLeftRadius: 10, 
-    borderBottomRightRadius: 10,
-    backgroundColor: BACKGROUND_COLOR, 
-    shadowColor: "#000", 
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15, 
-  },
-};
-
-
 const BottomNavigation = ({ route }) => {
   const { user, agentInfo } = route.params;
 
+  // The condition check
+  const hasCollectionPermission = agentInfo?.designation_id?.permission?.collection === "true";
+
   const getTabBarStyle = (route) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "";
-
-    if (
-      routeName === "ViewLeads" ||
-      routeName === "Customer" ||
-      routeName === "ViewEnrollments" ||
-      routeName === "Reports" ||
-      routeName === "Commissions" ||
-      routeName === "Enrollment"
-    ) {
+    if (["ViewLeads", "Customer", "ViewEnrollments", "Reports", "Commissions", "Enrollment"].includes(routeName)) {
       return { display: "none" };
     }
     return null;
   };
-
 
   const ArchIcon = ({ focused, name, size, IconComponent }) => (
     <View style={{ alignItems: 'center', paddingTop: 8 }}>
@@ -74,7 +42,6 @@ const BottomNavigation = ({ route }) => {
             size={size}
             color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
         />
-       
         {focused && (
             <View style={{
                 height: 3,
@@ -87,46 +54,24 @@ const BottomNavigation = ({ route }) => {
     </View>
   );
 
-  const CenterIcon = ({ children, onPress }) => (
-    <TouchableOpacity
-        style={styles.centerFab}
-        onPress={onPress}
-    >
-        <View style={styles.centerFabInner}>
-            {children}
-        </View>
-    </TouchableOpacity>
-  );
-
-  const styles = StyleSheet.create({
-    centerFab: {
-      top: -20, 
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    centerFabInner: {
-      width: 70,
-      height: 70,
-      borderRadius: 35,
-      backgroundColor: FAB_BACKGROUND_COLOR,
-      justifyContent: 'center',
-      alignItems: 'center',
-      elevation: 18, 
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.3,
-      shadowRadius: 15,
-      borderWidth: 5, 
-      borderColor: FAB_BORDER_COLOR,
-    }
-  });
-
-  
-
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
-      
-     
+    <Tab.Navigator
+      screenOptions={{
+        tabBarShowLabel: false,
+        headerShown: false,
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: {
+          position: "absolute",
+          bottom: 25, 
+          right: 15,
+          left: 15,
+          elevation: 15, 
+          height: 75, 
+          borderRadius: 40, 
+          backgroundColor: BACKGROUND_COLOR, 
+        },
+      }}
+    >
       <Tab.Screen
         name="Home"
         component={Home}
@@ -144,7 +89,6 @@ const BottomNavigation = ({ route }) => {
         })}
       />
 
-      {/* 2. Dashboard Screen */}
       <Tab.Screen
         name="Dashboard"
         component={Dashboard}
@@ -163,34 +107,20 @@ const BottomNavigation = ({ route }) => {
       />
 
      <Tab.Screen
-  name="Attendence"
-  component={Attendence}
-  initialParams={{ user, agentInfo }}
-  options={{
-    tabBarButton: (props) => (
-      <CenterIcon
-        {...props}
-        onPress={() => {
-          
-        }}
-      />
-    ),
-    tabBarIcon: () => (
-      <MaterialCommunityIcons
-        name="calendar-clock"
-        size={32}
-        color={ICON_COLOR_ON_FAB}
-      />
-    ),
-  }}
-  listeners={{
-    tabPress: (e) => {
-      // Prevent navigation
-      e.preventDefault();
-    },
-  }}
-/>
-
+      name="Attendence"
+      component={Attendence}
+      initialParams={{ user, agentInfo }}
+      options={{
+        tabBarButton: (props) => (
+          <TouchableOpacity style={styles.centerFab} onPress={() => {}}>
+            <View style={styles.centerFabInner}>
+              <MaterialCommunityIcons name="calendar-clock" size={32} color={ICON_COLOR_ON_FAB} />
+            </View>
+          </TouchableOpacity>
+        ),
+      }}
+      listeners={{ tabPress: (e) => e.preventDefault() }}
+    />
 
       <Tab.Screen
         name="PaymentNavigator"
@@ -207,9 +137,16 @@ const BottomNavigation = ({ route }) => {
             />
           ),
         })}
+        listeners={{
+          tabPress: (e) => {
+            // If permission is not "true", stop the click from doing anything
+            if (!hasCollectionPermission) {
+              e.preventDefault();
+            }
+          },
+        }}
       />
 
-      {/* 5. Profile Navigator */}
       <Tab.Screen
         name="ProfileNavigator"
         component={ProfileNavigator}
@@ -229,5 +166,13 @@ const BottomNavigation = ({ route }) => {
     </Tab.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  centerFab: { top: -20, justifyContent: 'center', alignItems: 'center' },
+  centerFabInner: {
+    width: 70, height: 70, borderRadius: 35, backgroundColor: FAB_BACKGROUND_COLOR,
+    justifyContent: 'center', alignItems: 'center', elevation: 18, borderWidth: 5, borderColor: FAB_BORDER_COLOR,
+  }
+});
 
 export default BottomNavigation;
