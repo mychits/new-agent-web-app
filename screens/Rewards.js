@@ -44,6 +44,7 @@ const Rewards = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [redeemModalVisible, setRedeemModalVisible] = useState(false);
   const [customPoints, setCustomPoints] = useState("");
+  const [customDescription, setCustomDescription] = useState(""); // User typed description
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [confirmDetails, setConfirmDetails] = useState({ pts: 0, type: '', desc: '', value: 0, giftName: '' });
   const [statusModal, setStatusModal] = useState({ visible: false, type: 'success', title: '', message: '' });
@@ -127,26 +128,33 @@ const Rewards = ({ navigation }) => {
 
       if (!id) return showStatus('error', 'Session Expired', 'User session not found.');
 
+      // Add Console to see in terminal
+      console.log("---------------------------------");
+      console.log(`NEW REDEMPTION REQUEST RECEIVED`);
+      console.log(`Type: ${type}`);
+      console.log(`Points: ${pts}`);
+      console.log(`Description: ${desc}`);
+      console.log("---------------------------------");
+
       const payload = {
         employee_id: id,
         points_to_redeem: Number(pts),
         redemption_type: type,
-        description: desc
+        description: desc // Now correctly passing the user-typed description
       };
 
       const response = await axios.post("https://mychits.online/api/reward-points/employee-reward-points/redeem", payload);
 
       if (response.data.success) {
-        // If it's a Gift or a Swap, open Gmail
-        if (giftName) {
+        if (giftName || type === 'Gift') {
             const subject = encodeURIComponent(`Reward Redemption Request - ${agentName}`);
             const body = encodeURIComponent(
                 `Hello Admin,\n\nI would like to request a redemption.\n\n` +
                 `Agent Name: ${agentName}\n` +
                 `Redemption Type: ${type === 'Gift' ? 'Product Delivery' : 'Swap for Cash'}\n` +
-                `Product Selected: ${giftName}\n` +
+                `Product Selected: ${giftName || 'N/A'}\n` +
                 `Points Redeemed: ${pts}\n` +
-               
+                `User Note: ${desc}\n\n` +
                 `Please process this request.\n\nRegards,\n${agentName}`
             );
             
@@ -171,6 +179,7 @@ const Rewards = ({ navigation }) => {
       setModalVisible(false);
       setRedeemModalVisible(false);
       setCustomPoints("");
+      setCustomDescription(""); // Clear description
     }
   };
 
@@ -228,7 +237,10 @@ const Rewards = ({ navigation }) => {
             <TouchableOpacity
               activeOpacity={0.8}
               style={styles.redeemMainBtn}
-              onPress={() => setRedeemModalVisible(true)}
+              onPress={() => {
+                setCustomDescription("");
+                setRedeemModalVisible(true);
+              }}
             >
               <LinearGradient
                 colors={[COLORS.accent, "#EAB308"]}
@@ -240,23 +252,7 @@ const Rewards = ({ navigation }) => {
               </LinearGradient>
             </TouchableOpacity>
 
-            <Text style={styles.sectionLabel}>HOW TO EARN</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rulesScroll}>
-              {EARN_RULES.map((rule, i) => (
-                <View key={i} style={styles.ruleCard}>
-                  <View style={[styles.ruleIconBg, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-                    <MaterialCommunityIcons name={rule.icon} size={24} color={COLORS.accent} />
-                  </View>
-                  <Text style={styles.ruleVal}>{rule.val}</Text>
-                  <Text style={styles.ruleLabel}>{rule.label}</Text>
-                </View>
-              ))}
-            </ScrollView>
-
-            <View style={styles.catalogHeader}>
-              <Text style={styles.sectionLabel}>PREMIUM CATALOGUE</Text>
-              <View style={styles.countBadge}><Text style={styles.countBadgeText}>{REWARD_DATA.length} ITEMS</Text></View>
-            </View>
+            <Text style={styles.sectionLabel}>PREMIUM CATALOGUE</Text>
 
             <View style={styles.grid}>
               {REWARD_DATA.map((item, index) => {
@@ -298,7 +294,11 @@ const Rewards = ({ navigation }) => {
 
                       <TouchableOpacity
                         style={[styles.claimBtn, unlocked ? styles.claimActive : styles.claimLocked]}
-                        onPress={() => { setSelectedReward(item); setModalVisible(true); }}
+                        onPress={() => { 
+                          setCustomDescription("");
+                          setSelectedReward(item); 
+                          setModalVisible(true); 
+                        }}
                       >
                         <Text style={[styles.claimBtnText, { color: unlocked ? COLORS.primary : COLORS.muted }]}>
                           {unlocked ? "REDEEM NOW" : "LOCKED"}
@@ -313,7 +313,7 @@ const Rewards = ({ navigation }) => {
           </ScrollView>
         )}
 
-        {/* Redeem to Cash Modal (Instant Conversion) */}
+        {/* Redeem to Cash Modal */}
         <Modal transparent visible={redeemModalVisible} animationType="fade">
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.modalOverlayCenter}>
@@ -322,47 +322,40 @@ const Rewards = ({ navigation }) => {
                 style={styles.centeredSheet}
               >
                 <Text style={styles.sheetTitle}>Redeem to Cash</Text>
-                <Text style={styles.sheetSub}>Available Balance: {points} Points</Text>
-
-                <View style={styles.inputWrapper}>
+                
+                <View style={[styles.inputWrapper, { marginBottom: 15 }]}>
                   <TextInput
                     style={styles.sheetInput}
-                    placeholder="0000"
-                    placeholderTextColor={COLORS.muted}
+                    placeholder="Enter Points"
                     keyboardType="numeric"
                     value={customPoints}
-                    onChangeText={(val) => {
-                      const cleanVal = val.replace(/[^0-9]/g, '');
-                      const numVal = Number(cleanVal);
-                      if (numVal <= points) {
-                        setCustomPoints(cleanVal);
-                      } else {
-                        setCustomPoints(points.toString());
-                      }
-                    }}
+                    onChangeText={(val) => setCustomPoints(val.replace(/[^0-9]/g, ''))}
                   />
-                  <Text style={styles.inputLabel}>POINTS</Text>
                 </View>
 
-                {customPoints > 0 && (
-                  <View style={styles.previewBox}>
-                    <Text style={styles.previewLabel}>YOU WILL RECEIVE</Text>
-                    <Text style={styles.previewAmt}>₹{(Number(customPoints) * CONVERSION_RATE).toLocaleString()}</Text>
-                  </View>
-                )}
+                {/* Added Description Input */}
+                <TextInput
+                    style={styles.descInput}
+                    placeholder="Enter reason or description..."
+                    placeholderTextColor={COLORS.muted}
+                    multiline
+                    value={customDescription}
+                    onChangeText={setCustomDescription}
+                />
 
                 <TouchableOpacity
                   style={styles.sheetBtn}
                   onPress={() => {
                     const pts = parseInt(customPoints);
-                    if (!pts || pts <= 0) return showStatus('error', 'Invalid Amount', 'Enter points to redeem.');
+                    if (!pts || pts <= 0) return showStatus('error', 'Invalid Amount', 'Enter points.');
+                    if (!customDescription.trim()) return showStatus('error', 'Missing Info', 'Please enter a description.');
 
                     setConfirmDetails({
                       pts: pts,
                       type: 'Cash',
-                      desc: `Direct Cash Redemption of ${pts} points for ₹${pts * CONVERSION_RATE}.`,
+                      desc: customDescription,
                       value: pts * CONVERSION_RATE,
-                      giftName: '' // No email for plain cash conversion usually, or keep blank
+                      giftName: ''
                     });
                     setConfirmModalVisible(true);
                   }}
@@ -371,7 +364,7 @@ const Rewards = ({ navigation }) => {
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => setRedeemModalVisible(false)}>
-                  <Text style={styles.closeLink}>Cancel and Go Back</Text>
+                  <Text style={styles.closeLink}>Cancel</Text>
                 </TouchableOpacity>
               </KeyboardAvoidingView>
             </View>
@@ -388,17 +381,27 @@ const Rewards = ({ navigation }) => {
                     <Image source={{ uri: selectedReward.img }} style={styles.detailImg} />
                   </View>
                   <Text style={styles.detailName}>{selectedReward.gift}</Text>
-                  <Text style={styles.detailPts}>{selectedReward.pts} Points Required</Text>
+                  
+                  {/* Added Description Input for Gift */}
+                  <TextInput
+                    style={[styles.descInput, { width: '100%', marginTop: 20 }]}
+                    placeholder="Enter delivery address or note..."
+                    placeholderTextColor={COLORS.muted}
+                    multiline
+                    value={customDescription}
+                    onChangeText={setCustomDescription}
+                  />
 
                   {points >= selectedReward.pts ? (
                     <View style={styles.optGrid}>
                       <TouchableOpacity
                         style={styles.optItem}
                         onPress={() => {
+                          if (!customDescription.trim()) return showStatus('error', 'Missing Info', 'Please provide a note or address.');
                           setConfirmDetails({
                             pts: selectedReward.pts,
                             type: 'Gift',
-                            desc: `Agent ${agentName} wants to claim product: ${selectedReward.gift}.`,
+                            desc: customDescription,
                             giftName: selectedReward.gift,
                             value: 0
                           });
@@ -412,10 +415,11 @@ const Rewards = ({ navigation }) => {
                       <TouchableOpacity
                         style={[styles.optItem, { backgroundColor: '#E8F5E9' }]}
                         onPress={() => {
+                          if (!customDescription.trim()) return showStatus('error', 'Missing Info', 'Please provide a reason for swap.');
                           setConfirmDetails({
                             pts: selectedReward.pts,
                             type: 'Cash',
-                            desc: `Agent ${agentName} swapped ${selectedReward.gift} for cash value.`,
+                            desc: customDescription,
                             giftName: selectedReward.gift,
                             value: selectedReward.pts * CONVERSION_RATE
                           });
@@ -423,20 +427,16 @@ const Rewards = ({ navigation }) => {
                         }}
                       >
                         <Ionicons name="cash-outline" size={22} color={COLORS.success} />
-                        <Text style={[styles.optText, { color: COLORS.success }]}>Swap for ₹{(selectedReward.pts * CONVERSION_RATE).toLocaleString()}</Text>
+                        <Text style={[styles.optText, { color: COLORS.success }]}>Swap for Cash</Text>
                       </TouchableOpacity>
                     </View>
                   ) : (
                     <View style={styles.lockHint}>
-                      <Ionicons name="information-circle" size={18} color="#F57F17" />
                       <Text style={styles.lockHintText}>Earn {selectedReward.pts - points} more to unlock</Text>
                     </View>
                   )}
-                  <TouchableOpacity
-                    style={[styles.sheetBtn, { backgroundColor: '#f1f1f1', marginTop: 15, width: '100%' }]}
-                    onPress={() => setModalVisible(false)}
-                  >
-                    <Text style={[styles.sheetBtnText, { color: COLORS.primary }]}>CLOSE</Text>
+                  <TouchableOpacity style={{marginTop: 20}} onPress={() => setModalVisible(false)}>
+                    <Text style={{color: COLORS.muted}}>CLOSE</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -448,11 +448,9 @@ const Rewards = ({ navigation }) => {
         <Modal transparent visible={confirmModalVisible}>
           <View style={styles.modalOverlayCenter}>
             <View style={styles.confirmBox}>
-              <View style={styles.warnIconBg}>
-                <Ionicons name="help-circle" size={40} color={COLORS.accent} />
-              </View>
+              <Ionicons name="help-circle" size={40} color={COLORS.accent} />
               <Text style={styles.confirmTitle}>Confirm Request?</Text>
-              <Text style={styles.confirmSub}>You are about to redeem {confirmDetails.pts} points. This cannot be undone.</Text>
+              <Text style={styles.confirmSub}>Redeeming {confirmDetails.pts} points for {confirmDetails.type}.</Text>
               <View style={styles.row}>
                 <TouchableOpacity style={[styles.flex1, styles.btnOutline]} onPress={() => setConfirmModalVisible(false)}>
                   <Text style={styles.btnOutlineText}>CANCEL</Text>
@@ -488,35 +486,24 @@ const styles = StyleSheet.create({
   mainContainer: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 50 : 10, paddingBottom: 20 },
   headerTextContainer: { alignItems: 'center' },
-  headerSubtitle: { color: COLORS.accent, fontSize: 10, fontWeight: '800', letterSpacing: 2 },
   headerTitle: { color: 'white', fontSize: 16, fontWeight: '900' },
   headerIcon: { width: 45, height: 45, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingHorizontal: 20 },
   heroContainer: { height: 280, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  heroCircle: { width: 220, height: 220, borderRadius: 110, justifyContent: 'center', alignItems: 'center', elevation: 20, shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
+  heroCircle: { width: 220, height: 220, borderRadius: 110, justifyContent: 'center', alignItems: 'center' },
   glowRing: { position: 'absolute', width: 240, height: 240, borderRadius: 120, borderWidth: 1, borderColor: 'rgba(248, 192, 9, 0.3)' },
   glowDot: { position: 'absolute', top: -5, left: '50%', width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.accent },
-  crownIcon: { marginBottom: 5 },
   pointsMainText: { color: 'white', fontSize: 30, fontWeight: '900' },
-  pointsSubText: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+  pointsSubText: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '700' },
   cashBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 6, borderRadius: 20, marginTop: 15 },
   cashText: { color: COLORS.white, fontWeight: '800', fontSize: 10 },
   redeemMainBtn: { borderRadius: 25, overflow: 'hidden', marginVertical: 15 },
   redeemGradient: { paddingVertical: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 15 },
-  redeemBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 15, letterSpacing: 0.5 },
-  centeredSheet: { width: '90%', backgroundColor: 'white', borderRadius: 40, padding: 30, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 10 },
-  sectionLabel: { color: 'white', fontSize: 13, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15, opacity: 0.8 },
-  rulesScroll: { marginBottom: 30 },
-  ruleCard: { backgroundColor: 'rgba(255,255,255,0.08)', padding: 15, borderRadius: 25, marginRight: 15, width: 120, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  ruleIconBg: { width: 50, height: 50, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  ruleVal: { color: COLORS.white, fontWeight: '900', fontSize: 15 },
-  ruleLabel: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
-  catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  countBadge: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10 },
-  countBadgeText: { color: COLORS.accent, fontWeight: '800', fontSize: 11 },
+  redeemBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 15 },
+  sectionLabel: { color: 'white', fontSize: 13, fontWeight: '900', marginBottom: 15, opacity: 0.8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  rewardCard: { width: '48%', backgroundColor: COLORS.white, borderRadius: 30, marginBottom: 20, overflow: 'hidden', elevation: 5 },
+  rewardCard: { width: '48%', backgroundColor: COLORS.white, borderRadius: 30, marginBottom: 20, overflow: 'hidden' },
   imgContainer: { height: 150, width: '100%' },
   rewardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   lockOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
@@ -531,43 +518,38 @@ const styles = StyleSheet.create({
   claimActive: { backgroundColor: COLORS.accent },
   claimLocked: { backgroundColor: '#F5F5F5' },
   claimBtnText: { fontSize: 12, fontWeight: '900' },
-  sheetTitle: { color: COLORS.primary, fontSize: 24, fontWeight: '900', textAlign: 'center' },
-  sheetSub: { color: COLORS.muted, textAlign: 'center', marginTop: 5, marginBottom: 30 },
-  inputWrapper: { position: 'relative', justifyContent: 'center' },
-  sheetInput: { backgroundColor: '#F8F9FA', height: 70, borderRadius: 20, color: COLORS.primary, textAlign: 'center', fontSize: 28, fontWeight: '900', borderWidth: 2, borderColor: '#EEE' },
-  inputLabel: { position: 'absolute', right: 20, color: COLORS.muted, fontWeight: '800', fontSize: 12 },
-  previewBox: { marginTop: 25, alignItems: 'center', padding: 20, backgroundColor: '#F0FFF4', borderRadius: 25 },
-  previewLabel: { color: COLORS.success, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  previewAmt: { color: COLORS.success, fontSize: 36, fontWeight: '900', marginTop: 5 },
-  sheetBtn: { backgroundColor: COLORS.primary, height: 65, width: '90%', alignSelf: 'center', borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 30 },
-  sheetBtnText: { color: 'white', fontWeight: '900', fontSize: 16 },
-  closeLink: { color: COLORS.muted, textAlign: 'center', marginTop: 20, fontWeight: '700' },
+  centeredSheet: { width: '90%', backgroundColor: 'white', borderRadius: 40, padding: 30 },
+  sheetTitle: { color: COLORS.primary, fontSize: 24, fontWeight: '900', textAlign: 'center', marginBottom: 20 },
+  inputWrapper: { width: '100%' },
+  sheetInput: { backgroundColor: '#F8F9FA', height: 60, borderRadius: 20, color: COLORS.primary, textAlign: 'center', fontSize: 24, fontWeight: '900', borderWidth: 1, borderColor: '#EEE' },
+  descInput: { backgroundColor: '#F8F9FA', height: 80, borderRadius: 20, color: COLORS.primary, padding: 15, fontSize: 16, borderWidth: 1, borderColor: '#EEE', textAlignVertical: 'top' },
+  sheetBtn: { backgroundColor: COLORS.primary, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+  sheetBtnText: { color: 'white', fontWeight: '900' },
+  closeLink: { color: COLORS.muted, textAlign: 'center', marginTop: 20 },
   modalOverlayCenter: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
   detailCard: { width: '90%', backgroundColor: 'white', borderRadius: 40, padding: 25, alignItems: 'center' },
-  detailImgContainer: { width: 180, height: 180, borderRadius: 90, backgroundColor: '#F8F9FA', padding: 20, marginBottom: 20 },
+  detailImgContainer: { width: 150, height: 150, borderRadius: 75, backgroundColor: '#F8F9FA', padding: 20, marginBottom: 15 },
   detailImg: { width: '100%', height: '100%', resizeMode: 'contain' },
-  detailName: { color: COLORS.primary, fontSize: 22, fontWeight: '900' },
-  detailPts: { color: COLORS.muted, fontWeight: '700', marginTop: 5, fontSize: 16 },
-  optGrid: { width: '100%', marginTop: 30, gap: 15 },
-  optItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', padding: 20, borderRadius: 25, gap: 15 },
+  detailName: { color: COLORS.primary, fontSize: 20, fontWeight: '900' },
+  optGrid: { width: '100%', marginTop: 20, gap: 10 },
+  optItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', padding: 15, borderRadius: 20, gap: 10 },
   optText: { color: COLORS.primary, fontWeight: '900', fontSize: 16 },
-  lockHint: { marginTop: 25, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 15, backgroundColor: '#FFF9C4', borderRadius: 20 },
-  lockHintText: { color: '#F57F17', fontWeight: '800', fontSize: 13 },
+  lockHint: { marginTop: 20, padding: 15, backgroundColor: '#FFF9C4', borderRadius: 15 },
+  lockHintText: { color: '#F57F17', fontWeight: '800' },
   confirmBox: { width: '85%', backgroundColor: 'white', borderRadius: 35, padding: 30, alignItems: 'center' },
-  warnIconBg: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFF9C4', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
   confirmTitle: { color: COLORS.primary, fontSize: 20, fontWeight: '900' },
-  confirmSub: { color: COLORS.muted, textAlign: 'center', marginTop: 12, marginBottom: 30, lineHeight: 20 },
+  confirmSub: { color: COLORS.muted, textAlign: 'center', marginTop: 10, marginBottom: 25 },
   row: { flexDirection: 'row', gap: 10 },
   flex1: { flex: 1 },
-  btnOutline: { height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#EEE' },
-  btnOutlineText: { color: COLORS.muted, fontWeight: '900' },
-  btnFill: { height: 55, borderRadius: 18, backgroundColor: COLORS.accent, justifyContent: 'center', alignItems: 'center' },
+  btnOutline: { height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEE' },
+  btnOutlineText: { color: COLORS.muted, fontWeight: '700' },
+  btnFill: { height: 50, borderRadius: 15, backgroundColor: COLORS.accent, justifyContent: 'center', alignItems: 'center' },
   btnFillText: { color: COLORS.primary, fontWeight: '900' },
   statusBox: { width: '85%', backgroundColor: 'white', borderRadius: 40, padding: 40, alignItems: 'center' },
-  statusT: { fontSize: 24, fontWeight: '900', marginTop: 20, color: COLORS.primary },
-  statusM: { color: COLORS.muted, textAlign: 'center', marginVertical: 15, fontSize: 16 },
-  statusB: { backgroundColor: COLORS.primary, width: '100%', paddingVertical: 18, borderRadius: 20, marginTop: 15, alignItems: 'center' },
-  statusBT: { color: 'white', fontWeight: '900', fontSize: 16 }
+  statusT: { fontSize: 22, fontWeight: '900', marginTop: 15, color: COLORS.primary },
+  statusM: { color: COLORS.muted, textAlign: 'center', marginVertical: 10 },
+  statusB: { backgroundColor: COLORS.primary, width: '100%', paddingVertical: 15, borderRadius: 15, alignItems: 'center' },
+  statusBT: { color: 'white', fontWeight: '900' }
 });
 
 export default Rewards;
