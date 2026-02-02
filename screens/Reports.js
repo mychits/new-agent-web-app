@@ -54,10 +54,10 @@ const Reports = ({ route, navigation }) => {
     { name: "Chits Report", icon: "stats-chart-outline", route: "ChitPayment", params: { user, areaId: "chits" }, sub: "Chit payment history" },
     { name: "Gold Report", icon: "ribbon-outline", route: "GoldPayment", params: { user }, sub: "Gold scheme analytics" },
     { name: "Loan Report", icon: "wallet-outline", route: "LoanPayments", params: { user, areaId: "loan-chits" }, sub: "Loan & interest status" },
-    { name: "Pigme Report", icon: "trending-up-outline", route: "PigmePayments", params: { user, areaId: "pigme-chits" }, sub: "Daily collection tracking" },
+    { name: "Pigmy Report", icon: "trending-up-outline", route: "PigmePayments", params: { user, areaId: "pigme-chits" }, sub: "Daily collection tracking" },
     { name: "Collection Report", icon: "document-text-outline", route: "OutstandingReports", params: { user }, sub: "Outstanding balance list" },
     { name: "Referred Report", icon: "share-social-outline", route: "ReferredReport", params: { user }, sub: "Referral performance" },
-    { name: "RM Report", icon: "people-outline", route: "RelationshipManagerReport", params: { user }, sub: "Manager activity logs" },
+    { name: "Relation ship manager ", icon: "people-outline", route: "RelationshipManagerReport", params: { user }, sub: "Manager activity logs" },
   ];
 
   return (

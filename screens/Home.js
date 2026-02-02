@@ -209,7 +209,7 @@ const Home = ({ route, navigation }) => {
     },
     {
       id: "customerOnHold",
-      name: "Customer On Hold",
+      name: "Holded Customers",
       imagePath: cardImagePaths.customerOnHold,
       onPress: () => navigation.navigate("CustomerOnHold"),
       backgroundColor: SUBTLE_BG_GREY,
@@ -237,7 +237,7 @@ const Home = ({ route, navigation }) => {
     },
     {
       id: "DueReport",
-      name: "Outstanding Report",
+      name: "Outstanding Reports",
       imagePath: cardImagePaths.DueReportImage,
       onPress: () => navigation.navigate("PayNavigation", { screen: "Due", params: { user } }),
       backgroundColor: SUBTLE_BG_GREY,

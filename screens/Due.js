@@ -5,39 +5,36 @@ import {
   ScrollView, 
   StyleSheet, 
   TouchableOpacity, 
-  StatusBar,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons"; // Use Ionicons for a modern look
+import { Ionicons } from "@expo/vector-icons"; 
 import { LinearGradient } from "expo-linear-gradient";
 
-import COLORS from "../constants/color"; // Keeping existing import
-import Header from "../components/Header"; // Keeping existing import
+import COLORS from "../constants/color"; 
+import Header from "../components/Header"; 
 
-// --- DESIGN CONSTANTS FROM Enrollment.js ---
+// --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent (status/chip)
-const BORDER_COLOR = "#e0e0e0"; // Lighter border
+const MODERN_PRIMARY = "#0d0d0eff"; 
+const ACCENT_BLUE = "#1796d1ff"; 
+const BORDER_COLOR = "#e0e0e0"; 
 const TEXT_GREY = "#4b5563"; 
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+const SUBTLE_BG_GREY = '#f9fafb'; 
 
-
-// Custom Card Component styled to match Enrollment.js
-const CustomRouteCard = ({ name, icon, onPress }) => (
+// Updated Custom Card Component with dynamic description
+const CustomRouteCard = ({ name, description, icon, onPress }) => (
   <TouchableOpacity 
     onPress={onPress} 
     style={styles.cardContainer}
     activeOpacity={0.7}
   >
     <View style={styles.cardContent}>
-      {/* Updated to Ionicons for consistency and a modern feel */}
       <Ionicons name={icon} style={styles.cardIcon} /> 
       <View style={styles.textContainer}>
         <Text style={styles.cardText}>{name}</Text>
-        <Text style={styles.cardSubText}>View detailed report</Text>
+        <Text style={styles.cardSubText}>{description}</Text>
       </View>
     </View>
     <Ionicons name="chevron-forward-outline" style={styles.arrowIcon} />
@@ -45,7 +42,6 @@ const CustomRouteCard = ({ name, icon, onPress }) => (
 );
 
 const Due = ({ route, navigation }) => {
-  // Defensive destructuring remains in place 
   const { user } = route.params || {}; 
 
   return (
@@ -64,7 +60,7 @@ const Due = ({ route, navigation }) => {
           </View>
       </LinearGradient>
 
-      {/* Main Content Area (White Background) */}
+      {/* Main Content Area */}
       <View style={styles.mainContentArea}>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -73,17 +69,22 @@ const Due = ({ route, navigation }) => {
           <View style={styles.cardListContainer}>
             <CustomRouteCard
               name="Collection Report"
-              icon="document-text-outline" // Modern Ionicons
+              description="Review pending dues and payment collections"
+              icon="document-text-outline"
               onPress={() => navigation.navigate("OutstandingReports", { user })}
             />
+            
             <CustomRouteCard
               name="Referred Report"
-              icon="share-social-outline" // Modern Ionicons
+              description="Track status of all referred leads and customers"
+              icon="share-social-outline"
               onPress={() => navigation.navigate("ReferredReport", { user })}
             />
+            
             <CustomRouteCard
               name={`Relationship Manager\nReport`}
-              icon="people-outline" // Modern Ionicons
+              description="Analyze manager-wise performance metrics"
+              icon="people-outline"
               onPress={() => navigation.navigate("RelationshipManagerReport", { user })}
             />
           </View>
@@ -94,7 +95,6 @@ const Due = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  // --- LAYOUT STYLES (from Enrollment.js) ---
   safeArea: { 
     flex: 1, 
     backgroundColor: TOP_GRADIENT[0] 
@@ -102,11 +102,6 @@ const styles = StyleSheet.create({
   topContainer: {
     paddingHorizontal: 16,
     paddingBottom: 20,
-    shadowColor: MODERN_PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
   },
   mainContentArea: {
     flex: 1,
@@ -121,8 +116,6 @@ const styles = StyleSheet.create({
     paddingTop: 20, 
     paddingBottom: 5 
   }, 
-
-  // --- TITLE STYLES (from Enrollment.js) ---
   titleContainer: {
     alignItems: 'center',
     marginBottom: 15,
@@ -130,7 +123,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28, 
     fontWeight: "900",
-    color: CARD_BG, // White text
+    color: CARD_BG,
     marginBottom: 4,
   },
   subtitle: {
@@ -139,18 +132,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-
-  // --- CARD LIST STYLES ---
   scrollContainer: { 
-    paddingBottom: 50, // Reduced padding
+    paddingBottom: 50, 
     paddingTop: 10,
   },
   cardListContainer: {
-    gap: 18, // Gap matches the marginBottom of Enrollment cards
-    alignItems: 'stretch', // Fill the container width
+    gap: 18, 
+    alignItems: 'stretch',
   },
-  
-  // --- CARD STYLES (Styled like cardContainer from Enrollment.js) ---
   cardContainer: {
     backgroundColor: CARD_BG,
     borderRadius: 18, 
@@ -158,7 +147,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // Modern shadow from Enrollment.js
     shadowColor: MODERN_PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05, 
@@ -166,9 +154,8 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: BORDER_COLOR,
-    // Accent border kept but made subtle
     borderLeftWidth: 5,
-    borderLeftColor: ACCENT_BLUE, // Using the accent blue color
+    borderLeftColor: ACCENT_BLUE,
   },
   cardContent: {
     flexDirection: 'row',
@@ -180,22 +167,23 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   cardText: {
-    fontSize: 18, // Slightly larger
+    fontSize: 18, 
     fontWeight: '800',
-    color: MODERN_PRIMARY, // Dark text
+    color: MODERN_PRIMARY,
   },
   cardSubText: {
-    fontSize: 14,
-    color: TEXT_GREY, // Grey text
-    marginTop: 2,
+    fontSize: 13,
+    color: TEXT_GREY, 
+    marginTop: 4,
     fontWeight: '500',
+    lineHeight: 18,
   },
   cardIcon: {
-    fontSize: 28, // Larger icon
-    color: ACCENT_BLUE, // Blue accent color
+    fontSize: 28, 
+    color: ACCENT_BLUE,
   },
   arrowIcon: {
-    fontSize: 24,
+    fontSize: 22,
     color: TEXT_GREY,
     marginLeft: 10,
   },
