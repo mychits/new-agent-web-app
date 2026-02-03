@@ -10,7 +10,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import { useRoute } from '@react-navigation/native'; // Import route hook
+import { useRoute } from '@react-navigation/native';
 
 const { width } = Dimensions.get("window");
 
@@ -20,7 +20,14 @@ const COLORS = {
   success: "#27AE60",
   white: "#FFFFFF",
   muted: "#8898AA",
-  danger: "#EF4444"
+  danger: "#EF4444",
+  darkBg: "#0D1F2D",
+  // Category Colors
+  catMobile: "#3B82F6",
+  catLeads: "#8B5CF6",
+  catPigmy: "#EC4899",
+  catChit: "#F59E0B",
+  catLoan: "#10B981"
 };
 
 const REWARD_DATA = [
@@ -34,8 +41,16 @@ const REWARD_DATA = [
   { pts: 10000, gift: "Royal Enfield", img: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=600" },
 ];
 
+const POINTS_BREAKDOWN = [
+  { label: "MOBILE APP", pts: 5, icon: "cellphone", color: COLORS.catMobile },
+  { label: "LEADS", pts: 5, icon: "account-group", color: COLORS.catLeads },
+  { label: "PIGMY", pts: 10, icon: "piggy-bank", color: COLORS.catPigmy },
+  { label: "CHIT / LAKH", pts: 10, icon: "file-document", color: COLORS.catChit },
+  { label: "LOAN", pts: 5, icon: "bank-transfer", color: COLORS.catLoan },
+];
+
 const Rewards = ({ navigation }) => {
-  const route = useRoute(); // Hook to access current route details
+  const route = useRoute();
   const [loading, setLoading] = useState(true);
   const [points, setPoints] = useState(0);
   const [agentName, setAgentName] = useState(""); 
@@ -49,7 +64,6 @@ const Rewards = ({ navigation }) => {
   const [confirmDetails, setConfirmDetails] = useState({ pts: 0, type: '', desc: '', value: 0, giftName: '' });
   const [statusModal, setStatusModal] = useState({ visible: false, type: 'success', title: '', message: '' });
 
-  // Refs for Animations and Focus
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -59,13 +73,8 @@ const Rewards = ({ navigation }) => {
 
   const CONVERSION_RATE = 25;
 
-  // Log Route changes
   useEffect(() => {
     console.log(`[Navigation] Entered Route: ${route.name}`);
-    if(route.params) console.log(`[Navigation] Route Params:`, route.params);
-  }, [route]);
-
-  useEffect(() => {
     fetchRewards();
     startAnimations();
   }, []);
@@ -86,7 +95,6 @@ const Rewards = ({ navigation }) => {
   };
 
   const showStatus = (type, title, message) => {
-    console.log(`[Status Modal] ${type.toUpperCase()}: ${title} - ${message}`);
     setStatusModal({ visible: true, type, title, message });
     Animated.spring(statusAnim, { toValue: 1, useNativeDriver: true, friction: 8 }).start();
   };
@@ -104,12 +112,9 @@ const Rewards = ({ navigation }) => {
       const agentInfo = agentStr ? JSON.parse(agentStr) : null;
       const id = agentInfo?._id || agentInfo?.id;
 
-      console.log(`[Data Fetch] Fetching rewards for Agent ID: ${id}`);
-
       if (id) {
         setAgentName(agentInfo.name || "Agent");
         const response = await axios.get(`https://mychits.online/api/reward-points/employee-reward-points/${id}`);
-        console.log(`[Data Fetch] Success. Total Points: ${response.data.total_earned_reward}`);
         
         setDynamicRates({
           pigmy: response.data.pigmy_reward_points || 0,
@@ -136,7 +141,6 @@ const Rewards = ({ navigation }) => {
     if (numericVal === "") {
         setCustomPoints("");
     } else if (intVal > points) {
-        console.warn(`[Input Validation] User attempted to redeem ${intVal} but only has ${points}. Capping at max.`);
         setCustomPoints(points.toString());
     } else {
         setCustomPoints(numericVal);
@@ -145,7 +149,6 @@ const Rewards = ({ navigation }) => {
 
   const handleRedemptionRequest = async () => {
     const { pts, type, desc, giftName } = confirmDetails;
-    console.log(`[Redemption] Initiating request: ${pts} pts for ${type}`);
     setConfirmModalVisible(false);
 
     try {
@@ -166,7 +169,6 @@ const Rewards = ({ navigation }) => {
       const response = await axios.post("https://mychits.online/api/reward-points/employee-reward-points/redeem", payload);
 
       if (response.data.success) {
-        console.log(`[Redemption] Server Success:`, response.data);
         if (giftName || type === 'Gift') {
             const subject = encodeURIComponent(`Reward Redemption Request - ${agentName}`);
             const body = encodeURIComponent(
@@ -178,19 +180,15 @@ const Rewards = ({ navigation }) => {
                 `User Note: ${desc}\n\n` +
                 `Please process this request.\n\nRegards,\n${agentName}`
             );
-            
             const mailtoUrl = `mailto:info.mychits@gmail.com?subject=${subject}&body=${body}`;
-            console.log(`[Mailer] Opening mail client: ${mailtoUrl}`);
             Linking.canOpenURL(mailtoUrl).then(sup => sup && Linking.openURL(mailtoUrl));
         }
         showStatus('success', 'Request Sent!', "Your request has been sent for approval.");
         fetchRewards();
       } else {
-        console.error(`[Redemption] Server rejected request: ${response.data.message}`);
         showStatus('error', 'Failed', response.data.message || "Try again.");
       }
     } catch (error) {
-      console.error("[Redemption] Network/Request Error:", error);
       showStatus('error', 'Network Error', 'Check connection.');
     } finally {
       setLoading(false);
@@ -213,17 +211,11 @@ const Rewards = ({ navigation }) => {
 
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => {
-            console.log("[Navigation] Back button pressed");
-            navigation.goBack();
-          }} style={styles.headerIcon}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIcon}>
             <Ionicons name="chevron-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>YOUR REWARDS</Text>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => {
-            console.log("[Action] Manual Refresh Triggered");
-            fetchRewards();
-          }}>
+          <TouchableOpacity style={styles.headerIcon} onPress={fetchRewards}>
             <Feather name="refresh-cw" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
@@ -235,6 +227,7 @@ const Rewards = ({ navigation }) => {
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
+            {/* --- HERO SECTION --- */}
             <Animated.View style={[styles.heroContainer, { opacity: fadeAnim, transform: [{ scale: pulseAnim }] }]}>
               <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.heroCircle}>
                 <Animated.View style={[styles.glowRing, { transform: [{ rotate: rotation }] }]}>
@@ -249,11 +242,43 @@ const Rewards = ({ navigation }) => {
               </LinearGradient>
             </Animated.View>
 
+            {/* --- HORIZONTAL SCROLLING: HOW TO SCORE --- */}
+            <View style={styles.earnContainer}>
+                <View style={styles.earnHeader}>
+                    <MaterialCommunityIcons name="star-circle-outline" size={24} color={COLORS.accent} />
+                    <Text style={styles.earnTitle}>HOW TO EARN REWARDS ?</Text>
+                </View>
+                
+                {/* Horizontal ScrollView */}
+                <ScrollView 
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.earnScrollContent}
+                >
+                    {POINTS_BREAKDOWN.map((item, index) => (
+                        <View key={index} style={styles.earnItem}>
+                            <LinearGradient 
+                                colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.02)']}
+                                start={{x:0, y:0}} end={{x:1, y:1}}
+                                style={styles.earnItemGradient}
+                            >
+                                <View style={[styles.iconCircle, { backgroundColor: item.color + '30' }]}>
+                                    <MaterialCommunityIcons name={item.icon} size={24} color={item.color} />
+                                </View>
+                                <Text style={styles.earnLabel}>{item.label}</Text>
+                                <View style={styles.pointsTag}>
+                                    <Text style={styles.earnPtsText}>+{item.pts} PTS</Text>
+                                </View>
+                            </LinearGradient>
+                        </View>
+                    ))}
+                </ScrollView>
+            </View>
+
             <TouchableOpacity
               activeOpacity={0.8}
               style={styles.redeemMainBtn}
               onPress={() => {
-                console.log("[Modal] Opening Cash Redemption Modal");
                 setCustomDescription("");
                 setRedeemModalVisible(true);
               }}
@@ -299,7 +324,6 @@ const Rewards = ({ navigation }) => {
                       <TouchableOpacity
                         style={[styles.claimBtn, unlocked ? styles.claimActive : styles.claimLocked]}
                         onPress={() => { 
-                           console.log(`[Modal] Opening Detail Modal for: ${item.gift}`);
                            setCustomDescription(""); 
                            setSelectedReward(item); 
                            setModalVisible(true); 
@@ -465,7 +489,9 @@ const styles = StyleSheet.create({
   headerTitle: { color: 'white', fontSize: 16, fontWeight: '900' },
   headerIcon: { width: 45, height: 45, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingHorizontal: 20 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  
+  // Hero Styles
   heroContainer: { height: 260, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   heroCircle: { width: 200, height: 200, borderRadius: 100, justifyContent: 'center', alignItems: 'center' },
   glowRing: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: 'rgba(248, 192, 9, 0.3)' },
@@ -474,9 +500,81 @@ const styles = StyleSheet.create({
   pointsSubText: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '700' },
   cashBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 6, borderRadius: 20, marginTop: 15 },
   cashText: { color: COLORS.white, fontWeight: '800', fontSize: 11 },
-  redeemMainBtn: { borderRadius: 25, overflow: 'hidden', marginVertical: 15 },
+
+  // --- HORIZONTAL SCROLL: HOW TO SCORE ---
+  earnContainer: {
+    marginBottom: 20,
+  },
+  earnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingLeft: 5,
+  },
+  earnTitle: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontWeight: '800',
+    marginLeft: 10,
+    letterSpacing: 1,
+  },
+  earnScrollContent: {
+    paddingRight: 20, // Padding at the end of scroll
+  },
+  earnItem: {
+    width: 140, // Fixed width for horizontal card
+    height: 160, // Fixed height
+    marginRight: 15, // Space between cards
+    borderRadius: 20,
+    overflow: 'hidden',
+    // Shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  earnItemGradient: {
+    flex: 1,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(20, 30, 48, 0.6)',
+    borderRadius: 20,
+    justifyContent: 'space-between',
+  },
+  iconCircle: {
+    width: 45,
+    height: 45,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  earnLabel: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginTop: 10,
+  },
+  pointsTag: {
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 15,
+    alignSelf: 'flex-start',
+  },
+  earnPtsText: {
+    color: COLORS.accent,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+
+  // Redeem Button
+  redeemMainBtn: { borderRadius: 25, overflow: 'hidden', marginBottom: 20 },
   redeemGradient: { paddingVertical: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 15 },
   redeemBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 15 },
+
+  // Grid & Cards
   sectionLabel: { color: 'white', fontSize: 13, fontWeight: '900', marginBottom: 15, opacity: 0.8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   rewardCard: { width: '48%', backgroundColor: COLORS.white, borderRadius: 25, marginBottom: 20, overflow: 'hidden' },
@@ -494,6 +592,8 @@ const styles = StyleSheet.create({
   claimActive: { backgroundColor: COLORS.accent },
   claimLocked: { backgroundColor: '#F5F5F5' },
   claimBtnText: { fontSize: 11, fontWeight: '900' },
+
+  // Modals
   centeredSheet: { width: '90%', backgroundColor: 'white', borderRadius: 35, padding: 25 },
   sheetTitle: { color: COLORS.primary, fontSize: 22, fontWeight: '900', textAlign: 'center' },
   balanceInfo: { textAlign: 'center', color: COLORS.muted, fontSize: 12, marginBottom: 15, fontWeight: '600' },
