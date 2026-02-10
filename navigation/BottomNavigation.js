@@ -106,21 +106,29 @@ const BottomNavigation = ({ route }) => {
         })}
       />
 
-     <Tab.Screen
-      name="Attendence"
-      component={Attendence}
-      initialParams={{ user, agentInfo }}
-      options={{
-        tabBarButton: (props) => (
-          <TouchableOpacity style={styles.centerFab} onPress={() => {}}>
-            <View style={styles.centerFabInner}>
-              <MaterialCommunityIcons name="calendar-clock" size={32} color={ICON_COLOR_ON_FAB} />
-            </View>
-          </TouchableOpacity>
-        ),
-      }}
-      listeners={{ tabPress: (e) => e.preventDefault() }}
-    />
+ <Tab.Screen
+  name="Attendence"
+  component={Attendence}
+  initialParams={{ user, agentInfo }}
+  options={{
+    tabBarButton: (props) => (
+      <TouchableOpacity 
+        style={styles.centerFab} 
+        // Use the onPress passed in from React Navigation props
+        onPress={props.onPress} 
+      >
+        <View style={styles.centerFabInner}>
+          <MaterialCommunityIcons 
+            name="calendar-clock" 
+            size={32} 
+            color={ICON_COLOR_ON_FAB} 
+          />
+        </View>
+      </TouchableOpacity>
+    ),
+  }}
+  // REMOVED the e.preventDefault() listener that was blocking the click
+/>
 
       <Tab.Screen
         name="PaymentNavigator"

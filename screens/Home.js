@@ -35,7 +35,7 @@ const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = '#f9fafb';
 const HIGHLIGHT_GOLD = '#f5be6dff';
-const REWARD_PURPLE = ["#6366f1", "#a855f7"]; // Stylish gradient for rewards
+const REWARD_PURPLE = ["#6366f1", "#a855f7"]; 
 
 // NEW STYLISH BLUE THEME
 const QR_CARD_GRADIENT = ['#24C6DC', '#183A5D']; 
@@ -59,7 +59,7 @@ const cardImagePaths = {
   monthlyTurnover: require("../assets/MITB.png"),
   DueReportImage: require("../assets/dues.png"),
   LogOutImage: require("../assets/logout.png"),
-  rewards: require("../assets/rewardsidea.png"), // Reusing Target asset for Rewards, replace if you have a trophy/gift icon
+  rewards: require("../assets/rewardsidea.png"), 
 };
 
 const AttendanceModal = ({

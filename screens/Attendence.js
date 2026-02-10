@@ -1,553 +1,336 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions, ScrollView, Image, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StatusBar,
+  Modal,
+  Dimensions,
+} from 'react-native';
 import { LinearGradient } from "expo-linear-gradient";
-import Icon from "react-native-vector-icons/FontAwesome"; 
+import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import moment from "moment";
+import axios from "axios";
+import baseUrl from "../constants/baseUrl";
+import Header from "../components/Header";
 
-import COLORS from "../constants/color"; 
-import Header from "../components/Header"; 
+const { width } = Dimensions.get('window');
 
-// --- Configuration and Dummy Data ---
-const attendanceData = {
-  inOffice: { label: 'In Office', percentage: 63, color: '#3498db' }, // Primary Blue
-  workFromHome: { label: 'Work from Home', percentage: 22, color: '#4bcffa' }, // Secondary Light Blue
-  halfDay: { label: 'Half Day', percentage: 6, color: '#f1c40f' }, // Yellow
-  onLeave: { label: 'On Leave', percentage: 9, color: '#e74c3c' }, // Red/Orange
+const COLORS = {
+  primary: "#24C6DC",
+  secondary: "#183A5D",
+  tertiary: "#2C5364",
+  accent: "#FFD700",
+  success: "#00E676",
+  danger: "#FF5252",
+  warning: "#FFAB40",
+  white: "#FFFFFF",
+  glass: "rgba(255, 255, 255, 0.12)",
+  glassBorder: "rgba(255, 255, 255, 0.2)",
+  textMuted: "rgba(255, 255, 255, 0.6)"
 };
 
-// CONTACT CONSTANTS
-const LEAVE_CONTACT = {
-  email: 'info.mychits@gmail.com',
-  phone: '9483900777', 
+const ActivityDot = ({ status }) => {
+  let bgColor = 'rgba(255,255,255,0.1)';
+  if (status === 'Present') bgColor = COLORS.success;
+  if (status === 'Absent') bgColor = COLORS.danger;
+  if (status === 'Half Day') bgColor = COLORS.warning;
+  return <View style={[styles.heatDot, { backgroundColor: bgColor }]} />;
 };
 
-const CHART_SIZE = Dimensions.get('window').width * 0.5;
-const PRIMARY_TEXT = '#2c3e50'; // Darker text for high contrast
-const SECONDARY_TEXT = '#95a5a6'; // Softer text for details
-const BACKGROUND_LIGHT = '#ecf0f1'; // Light background color
-
-// Dummy data for the bar chart and employee cards
-const barChartData = [
-  { lastWeek: 50, thisWeek: 70, profile: 'https://randomuser.me/api/portraits/men/32.jpg' },
-  { lastWeek: 30, thisWeek: 45, profile: 'https://randomuser.me/api/portraits/women/44.jpg' },
-  { lastWeek: 60, thisWeek: 55, profile: 'https://randomuser.me/api/portraits/women/67.jpg' },
-  { lastWeek: 40, thisWeek: 65, profile: 'https://randomuser.me/api/portraits/men/78.jpg' },
-  { lastWeek: 20, thisWeek: 35, profile: 'https://randomuser.me/api/portraits/women/23.jpg' },
-];
-
-const employeeTimings = [
-  {
-    id: '1',
-    name: 'Miracle Vetrovs',
-    role: 'UX Designer - UXD3',
-    profilePic: 'https://randomuser.me/api/portraits/men/32.jpg',
-    lastWeekHrs: 36,
-    thisWeekHrs: 38,
-  },
-  {
-    id: '2',
-    name: 'Makenna Aminoff',
-    role: 'UX Designer - UXD3',
-    profilePic: 'https://randomuser.me/api/portraits/women/44.jpg',
-    lastWeekHrs: 32,
-    thisWeekHrs: 34.30,
-  },
-];
-
-// --- Helper Components ---
-const LegendItem = ({ label, percentage, color, barWidth = 8, barHeight = 25 }) => (
-  <View style={styles.legendItem}>
-    {/* Enhanced Legend Bar style */}
-    <View style={[styles.legendBar, { backgroundColor: color, width: barWidth, height: barHeight }]} />
-    <View style={styles.legendTextContainer}>
-      <Text style={styles.legendLabel}>{label}</Text>
-      {percentage !== undefined && <Text style={styles.legendPercentage}>{percentage}%</Text>}
+const AttendanceMetric = ({ label, value, color, icon, onShowDetails }) => (
+  <TouchableOpacity style={styles.metricCard} onPress={onShowDetails} activeOpacity={0.8}>
+    <View style={[styles.iconBg, { backgroundColor: color + '20' }]}>
+      <MaterialCommunityIcons name={icon} size={22} color={color} />
     </View>
-  </View>
+    <View style={styles.metricTextContent}>
+      <Text style={styles.metricValueText}>{value || 0}</Text>
+      <Text style={styles.metricLabelText}>{label}</Text>
+    </View>
+    <View style={styles.chevronBg}>
+      <Ionicons name="chevron-forward" size={14} color={COLORS.white} />
+    </View>
+  </TouchableOpacity>
 );
 
-// --- Helper Components (New Condensed Item) ---
-const CondensedLegendItem = ({ label, percentage, color }) => (
-  <View style={styles.condensedLegendItem}>
-    <View style={[styles.condensedBar, { backgroundColor: color }]} />
-    <View style={styles.condensedTextWrapper}>
-      <Text style={styles.condensedLabel}>{label}</Text>
-      <Text style={styles.condensedPercentage}>{percentage}%</Text>
-    </View>
-  </View>
-);
+const AttendanceScreen = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [month, setMonth] = useState(moment().month());
+  const [year, setYear] = useState(moment().year());
+  const [showPicker, setShowPicker] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [detailType, setDetailType] = useState('');
+  const [filteredDates, setFilteredDates] = useState([]);
 
-// --- Main Component ---
-const AttendanceScreen = ({ navigation }) => {
-    
-  // Function to handle opening the email app
-  const handleContactEmail = () => {
-    const emailAddress = LEAVE_CONTACT.email;
-    const url = `mailto:${emailAddress}?subject=Leave Request Inquiry&body=Dear HR Team,\n\nI am writing regarding my pending leave requests.`;
-    
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          console.log("Don't know how to open URI: " + url);
-          alert(`Email function not supported. Please email us at ${emailAddress}`);
-        }
-      })
-      .catch((err) => console.error('An error occurred', err));
+  const currentYear = moment().year();
+  const currentMonth = moment().month();
+
+  useEffect(() => { fetchAttendanceData(); }, [month, year]);
+
+  const fetchAttendanceData = async () => {
+    try {
+      setLoading(true);
+      const agentStr = await AsyncStorage.getItem("agentInfo");
+      const agentInfo = agentStr ? JSON.parse(agentStr) : null;
+      const startDate = moment([year, month]).startOf("month").format("YYYY-MM-DD");
+      const endDate = moment([year, month]).endOf("month").format("YYYY-MM-DD");
+
+      const response = await axios.get(`${baseUrl}/employee-attendance/app-monthly-report`, {
+        params: { from_date: startDate, to_date: endDate, employee_id: agentInfo?._id }
+      });
+
+      if (response.data.status) {
+        setData(response.data);
+      }
+    } catch (err) {
+      console.error("FETCH ERROR:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Function to handle opening the phone dialer (Not currently linked to a visible icon)
-  const handleContactCall = () => {
-    const phoneNumber = LEAVE_CONTACT.phone.replace(/ /g, '');
-    const url = `tel:${phoneNumber}`;
-    
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          console.log("Don't know how to open URI: " + url);
-          alert(`Call function not supported. Please call us at ${LEAVE_CONTACT.phone}`);
-        }
-      })
-      .catch((err) => console.error('An error occurred', err));
+  const handleShowDetails = (type) => {
+    setDetailType(type);
+    setFilteredDates((data?.attendanceDataResponse || []).filter(item => item.status === type));
+    setShowDetails(true);
   };
-    
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND_LIGHT }}>
-      <LinearGradient colors={['#24C6DC', '#183A5D']}
-        style={styles.gradientOverlay}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }} 
-      >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.contentWrapper}>
-            <Header />
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.secondary }}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={[COLORS.tertiary, COLORS.secondary]} style={StyleSheet.absoluteFillObject} />
 
-            <View style={styles.customHeader}>
-              <TouchableOpacity style={styles.headerIconContainer} onPress={() => console.log('Menu')}>
-                <Icon name="bars" size={20} color={PRIMARY_TEXT} />
-              </TouchableOpacity>
-              <View style={styles.rightIcons}>
-                <TouchableOpacity style={styles.headerIconContainer}>
-                   <Icon name="envelope-o" size={20} color={PRIMARY_TEXT} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerIconContainer}>
-                   <Icon name="comment-o" size={20} color={PRIMARY_TEXT} />
-                </TouchableOpacity>
-                {/* Profile Pic with small border */}
-                <Image source={{ uri: employeeTimings[0].profilePic }} style={styles.profilePicPlaceholder} />
-                <TouchableOpacity style={styles.headerIconContainer}>
-                    <Icon name="chevron-down" size={14} color={PRIMARY_TEXT} />
-                </TouchableOpacity>
+      <View style={styles.headerPadding}><Header /></View>
+
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+
+        <View style={styles.titleSection}>
+          <Text style={styles.mainTitle}>Attendence Report</Text>
+          <View style={styles.accentBar} />
+        </View>
+
+        <View style={styles.filterSection}>
+          <TouchableOpacity style={styles.glassFilterBtn} onPress={() => setShowPicker(true)}>
+            <View style={styles.flexRow}>
+              <View style={styles.calendarIcon}>
+                <MaterialCommunityIcons name="calendar-month" size={18} color={COLORS.secondary} />
               </View>
+              <Text style={styles.filterDateText}>{moment([year, month]).format("MMMM YYYY")}</Text>
             </View>
+            <Feather name="sliders" size={18} color={COLORS.white} />
+          </TouchableOpacity>
+        </View>
 
-            {/* --- Main Title and Pending Request Info (Tappable for Email) --- */}
-            <View style={styles.titleSection}>
-              <Text style={styles.mainTitle}>Leave & Attendance</Text>
-              
-              {/* This entire section is now the single contact touch target */}
-              <TouchableOpacity onPress={handleContactEmail} activeOpacity={0.7} style={styles.pendingTouchTarget}>
-                  <Text style={styles.subtitle}>
-                      You have 2 leave requests pending.
-                     
-                  </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* --- Attendance Dashboard Card (Pie Chart) --- */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View>
-                  <Text style={styles.cardTitle}>My Attendence</Text>
-                  <Text style={styles.dateRange}>From 4-10 Sep, 2023</Text>
-                </View>
-                <TouchableOpacity style={styles.dropdownButton}>
-                  <Text style={styles.dropdownText}>This Week <Icon name="chevron-down" size={10} color={PRIMARY_TEXT} /></Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.chartArea}>
-                <View style={[styles.donutChartPlaceholder, { width: CHART_SIZE, height: CHART_SIZE }]}>
-                  <Text style={styles.chartCenterPercentage}>63%</Text>
-                </View>
-              </View>
-
-              {/* REPLACED with CondensedLegendItem for visual match */}
-              <View style={styles.legendContainer}>
-                {/* Column 1: In Office & Work from Home */}
-                <View style={styles.legendColumn}>
-                  <CondensedLegendItem {...attendanceData.inOffice} />
-                  <CondensedLegendItem {...attendanceData.workFromHome} />
-                </View>
-                {/* Column 2: Half Day & On Leave */}
-                <View style={styles.legendColumn}>
-                  <CondensedLegendItem {...attendanceData.halfDay} />
-                  <CondensedLegendItem {...attendanceData.onLeave} />
-                </View>
-              </View>
-              
-            </View>
-
-            {/* --- Timings Section (Bar Chart) --- */}
-            <View style={[styles.card, styles.timingCard]}>
-              <View style={styles.cardHeader}>
-                <View>
-                  <Text style={styles.cardTitle}>Timings</Text>
-                  <Text style={styles.dateRange}>From 4-10 Sep, 2023</Text>
-                </View>
-                <TouchableOpacity style={styles.dropdownButton}>
-                  <Text style={styles.dropdownText}>This Week <Icon name="chevron-down" size={10} color={PRIMARY_TEXT} /></Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Bar Chart Placeholder */}
-              <View style={styles.barChartContainer}>
-                {barChartData.map((data, index) => (
-                  <View key={index} style={styles.barColumn}>
-                    <View style={styles.barWrapper}>
-                      {/* Swapped bar order for visual hierarchy: This week (lighter blue) is slightly taller */}
-                      <View style={[styles.bar, { height: data.lastWeek * 1.5, backgroundColor: attendanceData.inOffice.color }]} />
-                      <View style={[styles.bar, { height: data.thisWeek * 1.5, backgroundColor: attendanceData.workFromHome.color }]} />
-                    </View>
-                    <Image source={{ uri: data.profile }} style={styles.barProfilePic} />
-                  </View>
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.accent} style={{ marginTop: 40 }} />
+        ) : (
+          <View>
+            <View style={styles.heatmapCard}>
+              <Text style={styles.cardSmallTitle}>CONSISTENCY TRACKER</Text>
+              <View style={styles.dotGrid}>
+                {data?.attendanceDataResponse?.map((item, index) => (
+                  <ActivityDot key={index} status={item.status} />
                 ))}
-                {/* Highlighted area placeholder */}
-                <View style={styles.barChartHighlight} /> 
               </View>
-
-              {/* Bar Chart Legend */}
-              <View style={styles.barChartLegend}>
-                <LegendItem label="Last week" color={attendanceData.inOffice.color} barWidth={15} barHeight={15} percentage={undefined} />
-                <LegendItem label="This week" color={attendanceData.workFromHome.color} barWidth={15} barHeight={15} percentage={undefined} />
+              <View style={styles.legendRow}>
+                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: COLORS.success }]} /><Text style={styles.legendText}>Present</Text></View>
+                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: COLORS.danger }]} /><Text style={styles.legendText}>Absent</Text></View>
+                <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: COLORS.warning }]} /><Text style={styles.legendText}>Half Day</Text></View>
               </View>
             </View>
 
-            {/* --- Individual Employee Timing Cards --- */}
-            {employeeTimings.map(employee => (
-              <View key={employee.id} style={[styles.card, styles.employeeTimingCard]}>
-                <View style={styles.employeeHeader}>
-                  <Image source={{ uri: employee.profilePic }} style={styles.employeeProfilePic} />
-                  <View>
-                    <Text style={styles.employeeName}>{employee.name}</Text>
-                    <Text style={styles.employeeRole}>{employee.role}</Text>
-                  </View>
-                </View>
-                <View style={styles.employeeHoursContainer}>
-                  <View style={styles.employeeHourItem}>
-                    <LegendItem label="Last week" color={attendanceData.inOffice.color} barWidth={12} barHeight={12} percentage={undefined} />
-                    <Text style={styles.employeeHoursText}>{employee.lastWeekHrs} Hrs</Text>
-                  </View>
-                  <View style={styles.employeeHourItem}>
-                    <LegendItem label="This week" color={attendanceData.workFromHome.color} barWidth={12} barHeight={12} percentage={undefined} />
-                    <Text style={styles.employeeHoursText}>{employee.thisWeekHrs} Hrs</Text>
-                  </View>
+            <View style={styles.statsRow}>
+              <View style={styles.heroGlassCard}>
+                <Text style={styles.heroLabel}>AVERAGE WORK</Text>
+                <Text style={styles.heroValueText}>{data?.summary?.average_worked_time || "0h"}</Text>
+                <Text style={styles.heroSubText}>Hours / Day</Text>
+              </View>
+
+              <View style={styles.sideStatsColumn}>
+                <View style={styles.miniStatCard}>
+                  <Text style={styles.miniStatLabel}>TOTAL HOURS</Text>
+                  <Text style={styles.miniStatValue}>{data?.summary?.total_worked_time || '0h'}</Text>
                 </View>
               </View>
-            ))}
+            </View>
 
+            <Text style={styles.sectionHeading}>Summary Report</Text>
+
+            <View style={styles.metricsContainer}>
+              <AttendanceMetric
+                label="Present Days"
+                value={data?.summary?.total_present}
+                color={COLORS.success}
+                icon="check-decagram"
+                onShowDetails={() => handleShowDetails('Present')}
+              />
+              <AttendanceMetric
+                label="Absent Days"
+                value={data?.summary?.total_absent}
+                color={COLORS.danger}
+                icon="close-octagon"
+                onShowDetails={() => handleShowDetails('Absent')}
+              />
+              <AttendanceMetric
+                label="Half Day"
+                value={data?.summary?.total_half_day}
+                color={COLORS.warning}
+                icon="clock-outline"
+                onShowDetails={() => handleShowDetails('Half Day')}
+              />
+            </View>
           </View>
-        </ScrollView>
-      </LinearGradient>
+        )}
+      </ScrollView>
+
+      {/* Date Picker Modal with Validation */}
+      <Modal visible={showPicker} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Select Month</Text>
+
+            {/* Year Switcher with Lock */}
+            <View style={styles.yearSwitcher}>
+              <TouchableOpacity onPress={() => setYear(year - 1)}>
+                <Ionicons name="chevron-back" size={24} color={COLORS.accent} />
+              </TouchableOpacity>
+              <Text style={styles.yearLabel}>{year}</Text>
+              <TouchableOpacity
+                disabled={year >= currentYear}
+                onPress={() => setYear(year + 1)}
+                style={{ opacity: year >= currentYear ? 0.3 : 1 }}
+              >
+                <Ionicons name="chevron-forward" size={24} color={COLORS.accent} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Month Grid with Lock */}
+            <View style={styles.monthGrid}>
+              {moment.monthsShort().map((m, i) => {
+                const isFutureMonth = year === currentYear && i > currentMonth;
+                return (
+                  <TouchableOpacity
+                    key={m}
+                    disabled={isFutureMonth}
+                    onPress={() => { setMonth(i); setShowPicker(false); }}
+                    style={[
+                      styles.monthItem,
+                      month === i && styles.activeMonthItem,
+                      isFutureMonth && { opacity: 0.2 }
+                    ]}
+                  >
+                    <Text style={[
+                      styles.monthItemText,
+                      month === i && styles.activeMonthItemText
+                    ]}>
+                      {m.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity onPress={() => setShowPicker(false)} style={styles.cancelBtn}>
+              <Text style={styles.cancelText}>CLOSE</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Detailed Logs Modal */}
+      <Modal visible={showDetails} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { maxHeight: '70%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{detailType} History</Text>
+              <TouchableOpacity onPress={() => setShowDetails(false)}>
+                <Ionicons name="close-circle" size={28} color={COLORS.danger} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {filteredDates.length > 0 ? filteredDates.map((item, idx) => (
+                <View key={idx} style={styles.detailItem}>
+                  <View style={styles.dateBox}>
+                    <Text style={styles.dateNum}>{moment(item.date).format("DD")}</Text>
+                    <Text style={styles.dateMonth}>{moment(item.date).format("MMM")}</Text>
+                  </View>
+                  <View style={{ marginLeft: 15 }}>
+                    <Text style={styles.dayText}>{moment(item.date).format("dddd")}</Text>
+                    <Text style={styles.statusText}>Status: {item.status}</Text>
+                  </View>
+                </View>
+              )) : (
+                <Text style={{ color: COLORS.textMuted, textAlign: 'center', marginTop: 20 }}>No records found.</Text>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-// --- Stylesheets ---
 const styles = StyleSheet.create({
-  gradientOverlay: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 40,
-  },
-  contentWrapper: {
-    marginHorizontal: 22,
-    marginTop: 52,
-  },
-  // --- Header Styles ---
-  customHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 25,
-    marginTop: 10,
-  },
-  headerIconContainer: {
-    padding: 10, // Increased padding for touch target
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)', // Slightly more opaque
-    marginHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  rightIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profilePicPlaceholder: {
-    width: 32, // Slightly larger
-    height: 32,
-    borderRadius: 16,
-    marginHorizontal: 8,
-    borderWidth: 2,
-    borderColor: '#fff', // White border for emphasis
-  },
-  // --- Title Styles ---
-  titleSection: {
-    marginBottom: 30, 
-  },
-  mainTitle: {
-    fontSize: 30, // Slightly larger title
-    fontWeight: '900', // Extra bold title
-    color: PRIMARY_TEXT,
-  },
-  pendingTouchTarget: {
-    // Ensure the whole text area is tappable
-    paddingVertical: 5,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: SECONDARY_TEXT,
-  },
-  pendingCount: {
-    fontWeight: 'bold',
-    color: attendanceData.onLeave.color, 
-  },
-  // --- Card Styles (Advanced Shadow) ---
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 20, 
-    padding: 20,
-    // Layer 1: Stronger, but softer drop shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 }, 
-    shadowOpacity: 0.08,
-    shadowRadius: 15,
-    elevation: 10,
-    marginBottom: 20,
-    borderColor: 'rgba(52, 152, 219, 0.1)', // Light blue tint on the border
-    borderWidth: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  cardTitle: {
-    fontSize: 20, // Slightly larger
-    fontWeight: '800',
-    color: PRIMARY_TEXT,
-  },
-  dateRange: {
-    fontSize: 13, // Slightly larger
-    color: SECONDARY_TEXT,
-    marginTop: 2,
-  },
-  dropdownButton: {
-    paddingVertical: 8, // More vertical padding
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: BACKGROUND_LIGHT, 
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dropdownText: {
-    fontSize: 12, // Slightly larger
-    fontWeight: '600',
-    color: PRIMARY_TEXT,
-    marginRight: 5,
-  },
-  // --- Donut Chart Styles ---
-  chartArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  donutChartPlaceholder: {
-    borderRadius: CHART_SIZE / 2,
-    borderWidth: 22, // Even thicker border
-    borderColor: BACKGROUND_LIGHT,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  chartCenterPercentage: {
-    fontSize: 42, // Impactful size
-    fontWeight: '900', // Stronger weight
-    color: attendanceData.inOffice.color,
-  },
-  // --- Legend Styles (Original) ---
-  legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingTop: 10, 
-  },
-  legendColumn: {
-    width: '48%',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14, // Increased space
-  },
-  legendBar: {
-    width: 13, 
-    height: 30, // Taller bar
-    borderRadius: 4,
-    marginRight: 15,
-    // Subtle shadow on the bar itself
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 1,
-    elevation: 1,
-  },
-  legendTextContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  legendLabel: {
-    fontSize: 12, // Clearer font size
-    color: PRIMARY_TEXT,
-  },
-  legendPercentage: {
-    fontSize: 12, // Emphasize percentage
-    fontWeight: '800',
-    color: PRIMARY_TEXT,
-  },
-  // --- Condensed Legend Styles (NEW) ---
-  condensedLegendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20, 
-    width: '100%', // Take up full width of the legendColumn
-  },
-  condensedBar: {
-    width: 8, 
-    height: 60, // Very tall bar
-    borderRadius: 4,
-    marginRight: 10,
-  },
-  condensedTextWrapper: {
-    justifyContent: 'center',
-  },
-  condensedLabel: {
-    fontSize: 16, 
-    color: PRIMARY_TEXT,
-    marginBottom: 4,
-  },
-  condensedPercentage: {
-    fontSize: 24, // Large percentage for impact
-    fontWeight: '900',
-    color: PRIMARY_TEXT,
-  },
-  // --- Bar Chart Styles ---
-  timingCard: {
-    marginTop: 5, 
-  },
-  barChartContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between', // Changed to space-between for cleaner look
-    alignItems: 'flex-end',
-    height: 150, 
-    marginBottom: 15,
-    position: 'relative',
-    paddingHorizontal: 10, // Increased horizontal padding
-  },
-  barColumn: {
-    alignItems: 'center',
-  },
-  barWrapper: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  bar: {
-    width: 12, // Slightly thinner bar
-    borderRadius: 3,
-    marginHorizontal: 2, 
-  },
-  barProfilePic: {
-    width: 36, // Larger profile pic under the bar
-    height: 36,
-    borderRadius: 18,
-    marginTop: 5,
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  barChartHighlight: {
-    position: 'absolute',
-    right: '25%', 
-    width: '20%', 
-    height: '100%',
-    backgroundColor: 'rgba(52, 152, 219, 0.1)', // Use a blue tint for highlight
-    borderRadius: 10,
-    zIndex: -1, 
-  },
-  barChartLegend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 5,
-    paddingHorizontal: 15,
-  },
-  // --- Employee Timing Cards Styles ---
-  employeeTimingCard: {
-    padding: 18,
-  },
-  employeeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  employeeProfilePic: {
-    width: 48, // Larger
-    height: 48,
-    borderRadius: 24,
-    marginRight: 15,
-    borderWidth: 3, // Thicker border
-    borderColor: BACKGROUND_LIGHT,
-  },
-  employeeName: {
-    fontSize: 18, // Clearer font size
-    fontWeight: '700',
-    color: PRIMARY_TEXT,
-  },
-  employeeRole: {
-    fontSize: 14, // Clearer font size
-    color: SECONDARY_TEXT,
-    marginTop: 2,
-  },
-  employeeHoursContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginTop: 10,
-    paddingLeft: 5, 
-  },
-  employeeHourItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 30, // More space
-  },
-  employeeHoursText: {
-    fontSize: 19, // Largest size for metrics
-    fontWeight: '900', // Strongest weight for metrics
-    color: PRIMARY_TEXT,
-    marginLeft: 8, 
-  },
+  headerPadding: { paddingHorizontal: 20, paddingTop: 45 },
+  scrollContainer: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 160 },
+  titleSection: { marginTop: 10, marginBottom: 20 },
+  mainTitle: { fontSize: 28, fontWeight: '900', color: COLORS.white, letterSpacing: -1 },
+  accentBar: { width: 40, height: 4, backgroundColor: COLORS.accent, marginTop: 4, borderRadius: 2 },
+  filterSection: { marginBottom: 20 },
+  glassFilterBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: COLORS.glass, padding: 12, borderRadius: 20, borderWidth: 1, borderColor: COLORS.glassBorder },
+  calendarIcon: { backgroundColor: COLORS.accent, padding: 8, borderRadius: 12 },
+  filterDateText: { color: COLORS.white, marginLeft: 12, fontWeight: '800', fontSize: 15 },
+  flexRow: { flexDirection: 'row', alignItems: 'center' },
+  heatmapCard: { backgroundColor: 'rgba(0,0,0,0.2)', padding: 20, borderRadius: 24, marginBottom: 20, borderWidth: 1, borderColor: COLORS.glassBorder },
+  cardSmallTitle: { color: COLORS.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 15 },
+  dotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  heatDot: { width: (width - 120) / 7.5, height: 10, borderRadius: 3 },
+  legendRow: { flexDirection: 'row', marginTop: 15, gap: 15 },
+  legendItem: { flexDirection: 'row', alignItems: 'center' },
+  legendDot: { width: 8, height: 8, borderRadius: 2, marginRight: 5 },
+  legendText: { color: COLORS.textMuted, fontSize: 10 },
+  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 25 },
+  heroGlassCard: { flex: 1.4, backgroundColor: COLORS.glass, padding: 20, borderRadius: 24, borderWidth: 1, borderColor: COLORS.glassBorder, justifyContent: 'center' },
+  sideStatsColumn: { flex: 1, gap: 12 },
+  miniStatCard: { flex: 1, backgroundColor: COLORS.glass, padding: 15, borderRadius: 20, justifyContent: 'center', borderWidth: 1, borderColor: COLORS.glassBorder },
+  heroLabel: { fontSize: 10, color: COLORS.accent, fontWeight: '800' },
+  heroValueText: { fontSize: 38, color: COLORS.white, fontWeight: '900', marginVertical: 4 },
+  heroSubText: { fontSize: 12, color: COLORS.textMuted },
+  miniStatLabel: { fontSize: 9, color: COLORS.textMuted, fontWeight: '700' },
+  miniStatValue: { fontSize: 20, color: COLORS.white, fontWeight: '800' },
+  sectionHeading: { color: COLORS.white, fontSize: 14, fontWeight: '800', marginBottom: 15, marginLeft: 5 },
+  metricsContainer: { gap: 10 },
+  metricCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.glass, padding: 16, borderRadius: 22, borderWidth: 1, borderColor: COLORS.glassBorder },
+  iconBg: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  metricTextContent: { flex: 1, marginLeft: 15 },
+  metricValueText: { color: COLORS.white, fontSize: 20, fontWeight: '800' },
+  metricLabelText: { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
+  chevronBg: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 5, borderRadius: 10 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
+  modalSheet: { width: width * 0.85, backgroundColor: '#1A2229', borderRadius: 25, padding: 25, borderWidth: 1, borderColor: COLORS.glassBorder },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
+  yearSwitcher: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, backgroundColor: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 12 },
+  yearLabel: { color: COLORS.white, fontSize: 20, fontWeight: '900' },
+  monthGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  monthItem: { width: '30%', paddingVertical: 10, alignItems: 'center', borderRadius: 10, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
+  activeMonthItem: { backgroundColor: COLORS.accent },
+  monthItemText: { color: COLORS.textMuted, fontSize: 10, fontWeight: '700' },
+  activeMonthItemText: { color: COLORS.secondary },
+  cancelBtn: { marginTop: 15, alignSelf: 'center' },
+  cancelText: { color: COLORS.danger, fontWeight: '800', fontSize: 12 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 15, marginBottom: 8 },
+  dateBox: { width: 42, height: 42, backgroundColor: COLORS.accent, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  dateNum: { fontSize: 16, fontWeight: '900', color: COLORS.secondary },
+  dateMonth: { fontSize: 8, fontWeight: '700', color: COLORS.secondary, textTransform: 'uppercase' },
+  dayText: { color: COLORS.white, fontWeight: '700', fontSize: 14 },
+  statusText: { color: COLORS.textMuted, fontSize: 11 }
 });
 
 export default AttendanceScreen;
