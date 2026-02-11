@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   scrollContainer: { padding: 20, paddingBottom: 40 },
   
   greetRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-  greetText: { fontSize: 28, fontWeight: '900', color: '#fff' },
+  greetText: { fontSize: 20, fontWeight: '900', color: '#fff' },
   dateText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600' },
   notifBtn: { width: 45, height: 45, borderRadius: 15, backgroundColor: COLORS.glass, justifyContent: 'center', alignItems: 'center' },
 

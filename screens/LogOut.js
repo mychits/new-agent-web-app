@@ -227,7 +227,8 @@ const LogOut = ({ navigation }) => {
 
                       <View style={styles.infoRow}>
                           <View style={styles.miniIcon}><Ionicons name="location" size={14} color={COLORS.PRIMARY} /></View>
-                          <Text style={styles.infoValue} numberOfLines={1}>{attendanceData.employee_id?.address || 'N/A'}</Text>
+                          {/* Removed numberOfLines={1} to allow wrapping */}
+                          <Text style={styles.infoValue}>{attendanceData.employee_id?.address || 'N/A'}</Text>
                       </View>
                   </View>
                 </View>
@@ -311,7 +312,8 @@ const styles = StyleSheet.create({
   infoGrid: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 15, gap: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   miniIcon: { backgroundColor: '#f0f9ff', padding: 5, borderRadius: 8 },
-  infoValue: { fontSize: 14, color: COLORS.SLATE, fontWeight: '600' },
+  // Added flex: 1 to infoValue to ensure it stays within the box
+  infoValue: { fontSize: 14, color: COLORS.SLATE, fontWeight: '600', flex: 1 },
   
   timeSectionContainer: {
     marginTop: 35,

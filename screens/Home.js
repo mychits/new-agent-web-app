@@ -441,8 +441,8 @@ const Home = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   mainContentArea_noSafeArea: { flex: 1, marginHorizontal: 22, marginTop: 40 },
   introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
-  welcomeText: { fontSize: 28, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 5 },
-  questionText: { fontSize: 20, fontWeight: "600", color: TEXT_GREY, marginBottom: 10 },
+  welcomeText: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 5 },
+  questionText: { fontSize: 17, fontWeight: "600", color: TEXT_GREY, marginBottom: 10 },
   
   // Full Width Card Styles
   bigCardWrapper: { width: "100%", height: 110, marginBottom: 20 },

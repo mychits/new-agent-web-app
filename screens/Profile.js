@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     agentName: {
-        fontSize: 24,
+        fontSize: 18,
         fontWeight: "700",
         color: DARK_PRIMARY_TEXT, // Dark Blue Text
         marginBottom: -2,
