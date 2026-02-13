@@ -18,7 +18,7 @@ const INACTIVE_COLOR = "#A2B2A7";
 const ACTIVE_COLOR = "#f8c009ff"; 
 const FAB_BACKGROUND_COLOR = "#f8c009ff"; 
 const ICON_COLOR_ON_FAB = "#FFFFFF"; 
-const BACKGROUND_COLOR = "#445C4B"; 
+const BACKGROUND_COLOR = "#FFFFFF"; 
 const FAB_BORDER_COLOR = "#FFFFFF"; 
 
 const BottomNavigation = ({ route }) => {
@@ -61,13 +61,11 @@ const BottomNavigation = ({ route }) => {
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          position: "absolute",
-          bottom: 25, 
-          right: 15,
-          left: 15,
+          
+         
           elevation: 15, 
-          height: 75, 
-          borderRadius: 40, 
+          height: 84, 
+      
           backgroundColor: BACKGROUND_COLOR, 
         },
       }}

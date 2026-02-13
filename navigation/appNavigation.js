@@ -22,6 +22,8 @@ import CompleteTaskScreen from '../screens/CompleteTaskScreen';
 import EnrolledGroups from '../screens/EnrolledGroups';
 import Becomeanagent from '../screens/Becomeanagent';
 import Register from "../screens/Register";
+// FIXED: Removed .JS extension from the line below
+import Review from "../screens/Review";
 import AboutMyChits from "../screens/AboutMyChits";
 import LoanPayin from "../screens/LoanPayin";
 import PigmePayin from "../screens/PigmePayin";
@@ -52,6 +54,7 @@ import RouteCustomerGold from "../screens/RouteCustomerGold";
 import RouteCustomerLoan from "../screens/RouteCustomerLoan";
 import RouteCustomerPigme from "../screens/RouteCustomerPigme";
 import RouteCustomerChit from "../screens/RouteCustomerChit";
+
 enableScreens();
 
 const Stack = createNativeStackNavigator();
@@ -130,6 +133,11 @@ export default function AppNavigation() {
         options={{headerShown: false}}
         component={CustomerPaymentLink}
         />
+            <Stack.Screen
+        name= "Review"
+        options={{headerShown: false}}
+        component={Review}
+        /> 
           <Stack.Screen
           name="OutstandingReports"
           options={{ headerShown: false }}
