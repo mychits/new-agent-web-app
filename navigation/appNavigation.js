@@ -1,8 +1,9 @@
+
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "../screens/Home";
 import Login from "../screens/Login";
-import BottomNavigation from "./BottomNavigation"; // This component contains the tab navigator
+import BottomNavigation from "./BottomNavigation";
 import PaymentNavigator from "./PaymentNavigator";
 import Enrollment from "../screens/Enrollment";
 import Print from "../screens/Print";
@@ -22,7 +23,7 @@ import CompleteTaskScreen from '../screens/CompleteTaskScreen';
 import EnrolledGroups from '../screens/EnrolledGroups';
 import Becomeanagent from '../screens/Becomeanagent';
 import Register from "../screens/Register";
-// FIXED: Removed .JS extension from the line below
+import AddTaskScreen from "../screens/AddTaskScreen"; // Ensure this file exists exactly at this path
 import Review from "../screens/Review";
 import AboutMyChits from "../screens/AboutMyChits";
 import LoanPayin from "../screens/LoanPayin";
@@ -69,11 +70,6 @@ export default function AppNavigation() {
       />
 
       <Stack.Navigator initialRouteName="Login">
-        {/*
-          Keep BottomNavigation as the main entry point for the app's logged-in state.
-          The BottomNavigation component will internally handle the Home screen
-          and other screens with tabs.
-        */}
         <Stack.Screen
           name="BottomNavigation"
           component={BottomNavigation}
@@ -123,11 +119,14 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={PaymentNavigator}
         />
+        
+        {/* ADD TASK SCREEN */}
         <Stack.Screen
-        name= "PaymentLinkRoutes"
+        name= "AddTaskScreen"
         options={{headerShown: false}}
-        component={PaymentLinkRoutes}
+        component={AddTaskScreen}
         />
+
         <Stack.Screen
         name= "CustomerPaymentLink"
         options={{headerShown: false}}
@@ -173,11 +172,14 @@ export default function AppNavigation() {
           <Stack.Screen name="LogOut" component={LogOut} options={{headerShown: false}} />
           <Stack.Screen name="ExpectedCommissions" component={ExpectedCommissions} options={{headerShown: false}} />
             <Stack.Screen name="PigmePayin" component={PigmePayin} options={{headerShown: false}} />
+        
+        {/* REMOVED DUPLICATE CustomerOnHold BELOW */}
         <Stack.Screen
           name="CustomerOnHold"
           options={{ headerShown: false }}
           component={CustomerOnHold}
         />
+        
         <Stack.Screen
           name="CustomerNavigation"
           options={{ headerShown: false }}

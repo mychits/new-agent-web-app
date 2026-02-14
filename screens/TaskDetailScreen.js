@@ -7,7 +7,6 @@ import {
     TouchableOpacity,
     StatusBar,
     SafeAreaView,
-    Pressable,
     Platform,
     Image,
 } from 'react-native';
@@ -18,18 +17,18 @@ import { BlurView } from 'expo-blur';
 const { width, height } = Dimensions.get("window");
 
 const COLOR_PALETTE = {
-    primary: '#2C3E50', // Deeper, professional dark blue
-    secondary: '#7F8C8D', // Muted, sophisticated gray for labels
-    lightText: '#FFFFFF', // Pure white
-    darkText: '#4C4C4C', // Dark grey for general text
-    accentGreen: '#2ECC71', // Vibrant emerald green for success
-    accentOrange: '#f8c009ff', // Warm, energetic orange for attention/progress
-    cardBackground: 'rgba(255, 255, 255, 0.75)', // Translucent white for glass effect
-    glassBorder: 'rgba(255, 255, 255, 0.3)', // Lighter, more translucent border for glassmorphism
-    shadowColor: 'rgba(0, 0, 0, 0.15)', // Default shadow color
-    buttonGradientStart: '#4A90E2', // A modern blue for buttons
-    buttonGradientEnd: '#50E3C2', // A vibrant teal for buttons
-    softBlue: '#D6EAF8', // A very light blue for subtle accents
+    primary: '#2C3E50',
+    secondary: '#7F8C8D',
+    lightText: '#FFFFFF',
+    darkText: '#4C4C4C',
+    accentGreen: '#2ECC71',
+    accentOrange: '#f8c009ff',
+    cardBackground: 'rgba(255, 255, 255, 0.75)',
+    glassBorder: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    buttonGradientStart: '#4A90E2',
+    buttonGradientEnd: '#50E3C2',
+    softBlue: '#D6EAF8',
 };
 
 const headerImage = require('../assets/hero1.jpg');
@@ -39,21 +38,16 @@ export default function TaskDetailScreen({ navigation, route }) {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'Completed':
-                return COLOR_PALETTE.accentGreen;
-            case 'Pending':
-                return COLOR_PALETTE.accentOrange;
-            case 'In Progress':
-                return COLOR_PALETTE.primary;
-            default:
-                return COLOR_PALETTE.secondary;
+            case 'Completed': return COLOR_PALETTE.accentGreen;
+            case 'Pending': return COLOR_PALETTE.accentOrange;
+            case 'In Progress': return COLOR_PALETTE.primary;
+            default: return COLOR_PALETTE.secondary;
         }
     };
 
     return (
         <View style={styles.container}>
-            <LinearGradient
-             colors={['#24C6DC', '#183A5D']}
+            <LinearGradient colors={['#24C6DC', '#183A5D']}
                 style={styles.backgroundGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -91,12 +85,9 @@ export default function TaskDetailScreen({ navigation, route }) {
                 <View style={styles.contentWrapper}>
                     <View style={styles.card}>
                         <Text style={styles.cardMainTitle}>Task Details</Text>
-                        
-                        {/* Added a decorative separator */}
                         <View style={styles.titleSeparator} />
                         <Text style={styles.taskTitle}>{task.taskTitle}</Text>
 
-                        {/* Enhanced detail rows */}
                         <View style={styles.detailRow}>
                             <Ionicons name="document-text-outline" size={20} color={COLOR_PALETTE.secondary} style={styles.detailIcon} />
                             <Text style={styles.detailLabel}>Description:</Text>
@@ -110,12 +101,12 @@ export default function TaskDetailScreen({ navigation, route }) {
                         <View style={styles.detailRow}>
                             <Ionicons name="calendar-outline" size={20} color={COLOR_PALETTE.secondary} style={styles.detailIcon} />
                             <Text style={styles.detailLabel}>Start Date:</Text>
-                            <Text style={styles.taskDetail}>{new Date(task.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</Text>
+                            <Text style={styles.taskDetail}>{new Date(task.startDate).toLocaleDateString()}</Text>
                         </View>
                         <View style={styles.detailRow}>
                             <Ionicons name="calendar-sharp" size={20} color={COLOR_PALETTE.secondary} style={styles.detailIcon} />
                             <Text style={styles.detailLabel}>End Date:</Text>
-                            <Text style={styles.taskDetail}>{new Date(task.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</Text>
+                            <Text style={styles.taskDetail}>{new Date(task.endDate).toLocaleDateString()}</Text>
                         </View>
 
                         <TouchableOpacity
@@ -141,13 +132,8 @@ export default function TaskDetailScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        position: 'relative',
-    },
-    backgroundGradient: {
-        ...StyleSheet.absoluteFillObject,
-    },
+    container: { flex: 1, position: 'relative' },
+    backgroundGradient: { ...StyleSheet.absoluteFillObject },
     safeArea: {
         flex: 1,
         width: '100%',
@@ -184,36 +170,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 15,
-       
     },
-    backArrow: {
-        padding: 10,
-    },
-    headerTitleContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerRightImage: {
-        width: 55,
-        height: 55,
-        borderRadius: 27.5,
-    },
+    backArrow: { padding: 10 },
+    headerTitleContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    headerRightImage: { width: 55, height: 55, borderRadius: 27.5 },
     contentWrapper: {
         width: '100%',
         alignItems: 'center',
         paddingHorizontal: 20,
-        // Adjust marginTop to account for header height, and allow card to be centered
-        marginTop: Platform.OS === 'android' ? 50 : 130, // Adjusted to push content down from header
-        flex: 1, // Allows card to be centered vertically if there's extra space
-        justifyContent: 'center', // Centers the card vertically within the remaining space
+        marginTop: Platform.OS === 'android' ? 50 : 130,
+        flex: 1,
+        justifyContent: 'center',
     },
     card: {
         backgroundColor: COLOR_PALETTE.cardBackground,
         width: '100%',
         maxWidth: 450,
         paddingHorizontal: 30,
-        paddingVertical: 35, // Slightly less vertical padding
+        paddingVertical: 35,
         borderRadius: 25,
         alignItems: 'center',
         elevation: 12,
@@ -223,37 +197,28 @@ const styles = StyleSheet.create({
         shadowRadius: 15,
         borderBottomWidth: 3,
         borderBottomColor: COLOR_PALETTE.primary,
-        overflow: 'hidden', // Ensures inner shadows/borders are clipped
+        overflow: 'hidden',
     },
     cardMainTitle: {
-        fontSize: 30, // Slightly smaller to fit better
+        fontSize: 30,
         fontWeight: '800',
         color: COLOR_PALETTE.primary,
-        marginBottom: 15, // Reduce space slightly
+        marginBottom: 15,
         textAlign: 'center',
         letterSpacing: 0.5,
         textShadowColor: 'rgba(0,0,0,0.1)',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 2,
     },
-    titleSeparator: { // New separator style
+    titleSeparator: {
         width: '80%',
         height: 2,
         backgroundColor: COLOR_PALETTE.softBlue,
         marginBottom: 20,
         borderRadius: 1,
     },
-    cardIcon: {
-        marginBottom: 20, // Keep space below icon
-        opacity: 0.8,
-        // Added a subtle shadow to the icon for depth
-        shadowColor: COLOR_PALETTE.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-    },
     taskTitle: {
-        fontSize: 26, // Slightly smaller to be less overwhelming
+        fontSize: 26,
         fontWeight: '800',
         color: COLOR_PALETTE.primary,
         marginBottom: 25,
@@ -266,37 +231,32 @@ const styles = StyleSheet.create({
     },
     detailRow: {
         flexDirection: 'row',
-        alignItems: 'center', // Align items vertically in the center
+        alignItems: 'center',
         width: '100%',
         marginBottom: 15,
-        paddingHorizontal: 5, // Reduced horizontal padding
-        paddingVertical: 5, // Added vertical padding for spacing
+        paddingHorizontal: 5,
+        paddingVertical: 5,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderBottomColor: COLOR_PALETTE.glassBorder,
     },
-    detailIcon: { // New style for icons in detail rows
-        marginRight: 10,
-        width: 20, // Ensure consistent spacing
-        textAlign: 'center',
-    },
+    detailIcon: { marginRight: 10, width: 20, textAlign: 'center' },
     detailLabel: {
         fontSize: 16,
         fontWeight: '600',
         color: COLOR_PALETTE.secondary,
-        // No longer needs marginRight as the icon takes its place
-        flexShrink: 0, // Prevent label from shrinking
+        flexShrink: 0,
     },
     taskDetail: {
-        flex: 1, // Allow detail text to take remaining space
+        flex: 1,
         fontSize: 17,
         color: COLOR_PALETTE.darkText,
-        textAlign: 'right', // Align detail text to the right
-        paddingLeft: 10, // Add a little space between label and detail
+        textAlign: 'right',
+        paddingLeft: 10,
     },
     markCompleteButtonWrapper: {
         width: '100%',
-        marginTop: 35, // Adjusted spacing
-        marginBottom: 20, // Adjusted spacing
+        marginTop: 35,
+        marginBottom: 20,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -305,38 +265,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         width: width * 0.75,
-        height: 60, // Slightly shorter button
-        borderRadius: 30, // Adjusted for new height
+        height: 60,
+        borderRadius: 30,
         shadowColor: COLOR_PALETTE.buttonGradientEnd,
-        shadowOffset: { width: 0, height: 8 }, // Slightly less deep shadow
-        shadowOpacity: 0.3, // Slightly less prominent shadow
-        shadowRadius: 12, // Softer shadow
-        elevation: 10, // Adjusted elevation
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 10,
     },
     markCompleteButtonText: {
         color: COLOR_PALETTE.lightText,
-        fontSize: 18, // Slightly smaller font
+        fontSize: 18,
         fontWeight: 'bold',
         letterSpacing: 0.8,
-    },
-    backButton: {
-        marginTop: 20,
-        paddingVertical: 12, // Increased padding
-        paddingHorizontal: 25, // Increased padding
-        borderRadius: 12, // More rounded corners
-        backgroundColor: COLOR_PALETTE.softBlue, // Use a soft blue for background
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.05)', // Very subtle border
-        shadowColor: COLOR_PALETTE.shadowColor,
-        shadowOffset: { width: 0, height: 3 }, // Slightly deeper shadow
-        shadowOpacity: 0.15, // More visible shadow
-        shadowRadius: 6, // Softer shadow
-        elevation: 4,
-    },
-    backButtonText: {
-        color: COLOR_PALETTE.primary,
-        fontSize: 16,
-        fontWeight: '600',
-        textDecorationLine: 'none',
     },
 });
