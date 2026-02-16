@@ -44,7 +44,9 @@ const COLOR_PALETTE = {
 const headerImage = require('../assets/hero1.jpg');
 
 export default function MyTaskListScreen({ navigation, route }) {
-  const { assignedBy } = route.params;
+  console.log(route,"this s route")
+  const { employeeId } = route.params;
+ 
 
   const [tasks, setTasks] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
@@ -55,7 +57,7 @@ export default function MyTaskListScreen({ navigation, route }) {
 
   useEffect(() => {
     fetchTasks();
-  }, [assignedBy]);
+  }, []);
 
   useEffect(() => {
     if (!loadingTasks && tasks.length > 0) {
@@ -83,7 +85,7 @@ export default function MyTaskListScreen({ navigation, route }) {
     setLoadingTasks(true);
     try {
       const response = await axios.get(
-        `${baseUrl}/task/get-tasks/${assignedBy}`
+        `${baseUrl}/task/get-tasks/${employeeId}`
       );
       setTasks(response.data);
     } catch (error) {
@@ -213,10 +215,10 @@ export default function MyTaskListScreen({ navigation, route }) {
           {/* ADD TASK FAB */}
           <TouchableOpacity
             style={styles.fab}
-            onPress={() => navigation.navigate("AddTaskScreen", { assignedBy: assignedBy })}
+            onPress={() => navigation.navigate("AddTaskScreen", { employeeId })}
             activeOpacity={0.8}
           >
-            <Ionicons name="add" size={30} color={COLOR_PALETTE.lightText} />
+            <Ionicons name="add" size={30} color={COLOR_PALETTE.darkText} />
           </TouchableOpacity>
 
         </KeyboardAvoidingView>
@@ -388,12 +390,12 @@ const styles = StyleSheet.create({
   flatListContent: { paddingBottom: 30 },
   fab: {
     position: 'absolute',
-    bottom: 30,
-    right: 20,
+    bottom: 70,
+    right: 30,
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLOR_PALETTE.primary,
+    backgroundColor: "orange",
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

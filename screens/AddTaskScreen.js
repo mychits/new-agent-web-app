@@ -20,7 +20,8 @@ import { BlurView } from 'expo-blur';
 import axios from 'axios';
 
 import baseUrl from "../constants/baseUrl";
-
+import moment from "moment-timezone";
+import DateTimePicker from "@react-native-community/datetimepicker";
 // Reusing the consistent Color Palette
 const COLOR_PALETTE = {
   primary: '#2C3E50',
@@ -43,64 +44,39 @@ const headerImage = require('../assets/hero1.jpg');
  * HELPER 1: Generates IST time for DISPLAY (12-hour format)
  * Returns format: "25-10-2023 4:04 PM"
  */
-const getISTDisplayString = (overrideHour = null, overrideMinute = null) => {
-  const now = new Date();
-  
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: "Asia/Kolkata",
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false // Get 24h numbers first to do our own 12h conversion
-  });
-
-  const parts = formatter.formatToParts(now);
-  const getPart = (type) => {
-    const part = parts.find(p => p.type === type);
-    return part ? part.value : '';
-  };
-
-  let year = getPart('year');
-  let month = getPart('month');
-  let day = getPart('day');
-  let hour = parseInt(getPart('hour')); 
-  let minute = getPart('minute'); 
-
-  if (overrideHour !== null) hour = overrideHour;
-  if (overrideMinute !== null) minute = overrideMinute.toString().padStart(2, '0');
-
-  // Convert to 12-hour format
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour % 12;
-  const finalHour = displayHour === 0 ? 12 : displayHour; 
-
-  // Return: DD-MM-YYYY h:mm AM/PM
-  return `${day}-${month}-${year} ${finalHour}:${minute} ${ampm}`;
+const formatIST = (date) => {
+  if (!date) return "";
+  return moment(date).tz("Asia/Kolkata").format("DD-MM-YYYY hh:mm A");
 };
 
 export default function AddTaskScreen({ route, navigation }) {
-  const { employeeId } = route.params;
+  const { employeeId:assignedBy } = route.params;
+  console.log("test12343",route );
 
   // --- DATE LOGIC START ---
-  const initialStartDate = getISTDisplayString(); 
-  const initialEndDate = getISTDisplayString(19, 0); // 7:00 PM IST
+const now = new Date();
+
+
+const oneHourLater = new Date();
 
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
-  const [startDate, setStartDate] = useState(initialStartDate);
-  const [endDate, setEndDate] = useState(initialEndDate);
+  const [startDate, setStartDate] = useState(now);
+  const [endDate, setEndDate] = useState(oneHourLater);
   const [status, setStatus] = useState('Pending');
+  const [showStart, setShowStart] = useState(false);
+const [showEnd, setShowEnd] = useState(false);
   // --- DATE LOGIC END ---
 
   const [referredType, setReferredType] = useState('Employee');
-  const [listData, setListData] = useState([]); 
-  const [selectedItem, setSelectedItem] = useState(null); 
+  const [listData, setListData] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [loadingList, setLoadingList] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  // const [endDate, setEndDate] = useState(new Date());
+const [showPicker, setShowPicker] = useState(false);
+const [mode, setMode] = useState("date");
 
   useEffect(() => {
     setSelectedItem(null);
@@ -112,28 +88,28 @@ export default function AddTaskScreen({ route, navigation }) {
   }, [referredType]);
 
   // --- HELPER 2: Converts "25-10-2023 4:04 PM" to "2023-10-25 16:04" for Server ---
-  const formatDateForBackend = (dateString) => {
-    if (!dateString) return "";
-    
-    const parts = dateString.split(' '); 
-    // Expected: ["25-10-2023", "4:04", "PM"]
-    
-    if (parts.length < 3) return dateString; 
+  // const formatDateForBackend = (dateString) => {
+  //   if (!dateString) return "";
 
-    const [day, month, year] = parts[0].split('-');
-    let [hour, minute] = parts[1].split(':');
-    const ampm = parts[2];
+  //   const parts = dateString.split(' ');
+  //   // Expected: ["25-10-2023", "4:04", "PM"]
 
-    let h = parseInt(hour);
-    if (ampm === 'PM' && h !== 12) {
-        h = h + 12;
-    } else if (ampm === 'AM' && h === 12) {
-        h = 0;
-    }
+  //   if (parts.length < 3) return dateString;
 
-    const finalHour = h.toString().padStart(2, '0');
-    return `${year}-${month}-${day} ${finalHour}:${minute}`;
-  };
+  //   const [day, month, year] = parts[0].split('-');
+  //   let [hour, minute] = parts[1].split(':');
+  //   const ampm = parts[2];
+
+  //   let h = parseInt(hour);
+  //   if (ampm === 'PM' && h !== 12) {
+  //     h = h + 12;
+  //   } else if (ampm === 'AM' && h === 12) {
+  //     h = 0;
+  //   }
+
+  //   const finalHour = h.toString().padStart(2, '0');
+  //   return `${year}-${month}-${day} ${finalHour}:${minute}`;
+  // };
 
   const fetchEmployees = async () => {
     setLoadingList(true);
@@ -164,7 +140,7 @@ export default function AddTaskScreen({ route, navigation }) {
     } catch (error) {
       console.error("Error fetching employees:", error);
       Alert.alert("Error", "Could not fetch employees.");
-      setListData([]); 
+      setListData([]);
     } finally {
       setLoadingList(false);
     }
@@ -198,7 +174,7 @@ export default function AddTaskScreen({ route, navigation }) {
     } catch (error) {
       console.error("Error fetching leads:", error);
       Alert.alert("Error", "Could not fetch leads.");
-      setListData([]); 
+      setListData([]);
     } finally {
       setLoadingList(false);
     }
@@ -210,24 +186,31 @@ export default function AddTaskScreen({ route, navigation }) {
       return;
     }
 
-    setSubmitting(true);
-    
-    // --- FIX: Convert display format to server format ---
-    const serverStartDate = formatDateForBackend(startDate);
-    const serverEndDate = formatDateForBackend(endDate);
+     if (endDate <= startDate) {
+    Alert.alert("Invalid Date", "End date must be after start date");
+    return;
+  }
 
+    setSubmitting(true);
+
+    // --- FIX: Convert display format to server format ---
+    // const serverStartDate = formatDateForBackend(startDate);
+    // const serverEndDate = formatDateForBackend(endDate);
+ 
     const payload = {
-      employeeId: employeeId,
+      assignedBy: assignedBy,
       taskTitle,
       taskDescription,
-      startDate: serverStartDate,
-      endDate: serverEndDate,
+      startDate: startDate,
+      endDate: endDate,
       status,
       referred_type: referredType,
+      assignedTo: null,
+      lead: null
     };
 
     if (referredType === 'Employee') {
-      payload.employee = selectedItem._id;
+      payload.assignedTo = selectedItem._id;
     } else {
       payload.lead = selectedItem._id;
     }
@@ -250,7 +233,7 @@ export default function AddTaskScreen({ route, navigation }) {
       console.error("Status:", error.response?.status);
       console.error("Data:", error.response?.data);
       console.error("Config:", error.config);
-      
+
       Alert.alert("Error", "Failed to add task. Check terminal for details.");
     } finally {
       setSubmitting(false);
@@ -302,7 +285,7 @@ export default function AddTaskScreen({ route, navigation }) {
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.card}>
-            
+
             <View style={styles.toggleContainer}>
               <TouchableOpacity
                 style={[styles.toggleButton, referredType === 'Employee' && styles.toggleButtonActive]}
@@ -351,25 +334,65 @@ export default function AddTaskScreen({ route, navigation }) {
             </View>
 
             <View style={styles.rowInputs}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                <Text style={styles.inputLabel}>Start Date (IST)</Text>
-                <TextInput
-                  value={startDate}
-                  onChangeText={setStartDate}
-                  placeholder="DD-MM-YYYY h:mm AM/PM"
-                  style={styles.textInput}
-                />
-              </View>
-              <View style={[styles.inputGroup, { flex: 1, marginLeft: 10 }]}>
-                <Text style={styles.inputLabel}>End Date (IST)</Text>
-                <TextInput
-                  value={endDate}
-                  onChangeText={setEndDate}
-                  placeholder="DD-MM-YYYY h:mm AM/PM"
-                  style={styles.textInput}
-                />
-              </View>
-            </View>
+
+  {/* START DATE */}
+  <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+    <Text style={styles.inputLabel}>Start Date (IST)</Text>
+
+    <TouchableOpacity
+      style={styles.textInput}
+      onPress={() => setShowStart(true)}
+      activeOpacity={0.7}
+    >
+      <Text style={{ color: startDate ? "#000" : "#999" }}>
+        {startDate ? formatIST(startDate) : "Select start date & time"}
+      </Text>
+    </TouchableOpacity>
+
+    {showStart && (
+      <DateTimePicker
+        value={startDate || new Date()}
+        mode="datetime"
+        is24Hour={false}
+        display="default"
+        onChange={(event, selectedDate) => {
+          setShowStart(false);
+          console.log(startDate,"this si startDate", )
+          if (selectedDate) setStartDate(selectedDate);
+        }}
+      />
+    )}
+  </View>
+
+  {/* END DATE */}
+  <View style={[styles.inputGroup, { flex: 1, marginLeft: 10 }]}>
+    <Text style={styles.inputLabel}>End Date (IST)</Text>
+
+    <TouchableOpacity
+      style={styles.textInput}
+      onPress={() => setShowEnd(true)}
+      activeOpacity={0.7}
+    >
+      <Text style={{ color: endDate ? "#000" : "#999" }}>
+        {endDate ? formatIST(endDate) : "Select end date & time"}
+      </Text>
+    </TouchableOpacity>
+
+    {showEnd && (
+      <DateTimePicker
+        value={endDate || new Date()}
+        mode="datetime"
+        is24Hour={false}
+        display="default"
+        onChange={(event, selectedDate) => {
+          setShowEnd(false);
+          if (selectedDate) setEndDate(selectedDate);
+        }}
+      />
+    )}
+  </View>
+
+</View>
 
             <TouchableOpacity style={styles.submitButtonWrapper} onPress={handleSubmit} disabled={submitting}>
               <LinearGradient
@@ -452,7 +475,7 @@ const styles = StyleSheet.create({
   toggleButtonActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   toggleText: { color: COLOR_PALETTE.secondary, fontWeight: '600' },
   toggleTextActive: { color: COLOR_PALETTE.primary, fontWeight: 'bold' },
-  
+
   inputGroup: { marginBottom: 15, width: '100%' },
   rowInputs: { flexDirection: 'row', width: '100%', marginBottom: 15 },
   inputLabel: { fontSize: 16, fontWeight: '600', color: COLOR_PALETTE.primary, marginBottom: 8, marginLeft: 5 },
@@ -478,7 +501,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, shadowRadius: 10, elevation: 10,
   },
   submitButtonText: { color: COLOR_PALETTE.lightText, fontSize: 18, fontWeight: 'bold' },
-  
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: '#fff', borderTopLeftRadius: 25, borderTopRightRadius: 25, height: '50%',

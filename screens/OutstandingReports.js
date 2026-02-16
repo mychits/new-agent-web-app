@@ -96,8 +96,8 @@ const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
     const getFinancialValue = (value) =>
         Array.isArray(value) && value[0] ? value[0] : value || 0;
 
-    const totalPayable = getFinancialValue(item.total_payable_amount);
-    const totalToBePaid = item?.total_to_be_paid || 0;
+    const totalPayable = getFinancialValue(item?.total_to_be_paid || 0);
+    const totalPaidAmount = item?.overall_payments?.sum_of_amounts || 0;
     const balance = item?.balance || item?.Balance || 0;
 
     const balanceStatusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
@@ -174,9 +174,9 @@ const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
                     <View style={cardStyles.detailsSection}>
                         {/* Total To Be Paid */}
                         <View style={cardStyles.financialRow}>
-                            <Text style={cardStyles.financialLabel}>Total To Be Paid</Text>
+                            <Text style={cardStyles.financialLabel}>Total Paid Amount</Text>
                             <Text style={cardStyles.financialValue}>
-                                {formatCurrency(totalToBePaid)}
+                                {formatCurrency(totalPaidAmount)}
                             </Text>
                         </View>
 

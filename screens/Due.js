@@ -68,21 +68,21 @@ const Due = ({ route, navigation }) => {
         >
           <View style={styles.cardListContainer}>
             <CustomRouteCard
-              name="Collection Report"
+              name="Customer Collection Outstanding Report"
               description="Review pending dues and payment collections"
               icon="document-text-outline"
               onPress={() => navigation.navigate("OutstandingReports", { user })}
             />
             
             <CustomRouteCard
-              name="Referred Report"
+              name="Referral Customer Outstanding Report"
               description="Track status of all referred leads and customers"
               icon="share-social-outline"
               onPress={() => navigation.navigate("ReferredReport", { user })}
             />
             
             <CustomRouteCard
-              name={`Relationship Manager\nReport`}
+              name={`Group Outstanding \nReport`}
               description="Analyze manager-wise performance metrics"
               icon="people-outline"
               onPress={() => navigation.navigate("RelationshipManagerReport", { user })}
