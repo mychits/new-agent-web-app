@@ -352,7 +352,7 @@ const [mode, setMode] = useState("date");
     {showStart && (
       <DateTimePicker
         value={startDate || new Date()}
-        mode="datetime"
+        mode="date"
         is24Hour={false}
         display="default"
         onChange={(event, selectedDate) => {
@@ -381,7 +381,7 @@ const [mode, setMode] = useState("date");
     {showEnd && (
       <DateTimePicker
         value={endDate || new Date()}
-        mode="datetime"
+        mode="date"
         is24Hour={false}
         display="default"
         onChange={(event, selectedDate) => {
