@@ -10,6 +10,7 @@ import Print from "../screens/Print";
 import { enableScreens } from "react-native-screens";
 import PaymentList from "../screens/PaymentList";
 import PayNavigation from "./PayNavigation";
+import SalesReport from "../screens/SalesReport";
 import { StatusBar } from "react-native";
 import AddCustomer from "../screens/AddCustomer";
 import ViewCustomer from "../screens/ViewCustomer";
@@ -154,6 +155,11 @@ export default function AppNavigation() {
           name="ReferredReport"
           options={{ headerShown: false }}
           component={ReferredReport}
+          />
+             <Stack.Screen
+          name="SalesReport"
+          options={{ headerShown: false }}
+          component={SalesReport}
           />
           <Stack.Screen name="RouteCustomerChit" options={{headerShown: false}} component={RouteCustomerChit}/>
 

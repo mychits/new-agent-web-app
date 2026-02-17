@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
@@ -61,6 +60,8 @@ const cardImagePaths = {
   DueReportImage: require("../assets/dues.png"),
   LogOutImage: require("../assets/logout.png"),
   rewards: require("../assets/rewardsidea.png"), 
+  // FIXED: Matches your file 'sales.png'
+  SalesReport: require("../assets/sales.png") 
 };
 
 const AttendanceModal = ({
@@ -164,7 +165,6 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("Commissions", { user }),
       backgroundColor: HIGHLIGHT_GOLD,
     },
-    // --- NEW REWARDS CARD ---
   
     agentInfo?.designation_id?.permission?.daybook === "true" && {
       id: "daybook",
@@ -250,13 +250,22 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("LogOut", { employeeId: user.userId, agentName: agent.name }),
       backgroundColor: SUBTLE_BG_GREY,
     },
-      {
+        {
+      id: "SalesReport",
+      name: "Sales Report",
+      imagePath: cardImagePaths.SalesReport, // Uses the corrected 'sales.png'
+      onPress: () => navigation.navigate("SalesReport", { employeeId: user.userId, agentName: agent.name }),
+      backgroundColor: SUBTLE_BG_GREY,
+    },
+    {
       id: "rewards",
       name: "My Rewards",
       imagePath: cardImagePaths.rewards,
-      onPress: () => navigation.navigate("Rewards"), // Ensure this screen exists in your Navigator
+      onPress: () => navigation.navigate("Rewards"), 
       isReward: true,
     },
+    // --- FIXED SALES REPORT CARD ---
+
   ].filter(Boolean);
 
   if (cardAnimations.current.length !== cardsData.length) {

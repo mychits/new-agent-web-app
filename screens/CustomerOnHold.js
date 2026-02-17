@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
-  Platform,
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,31 +16,28 @@ import {
   Ionicons,
   FontAwesome5,
   MaterialCommunityIcons,
-}
- from "@expo/vector-icons";
+} from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import chitBaseUrl from "../constants/baseUrl";
 
-const { height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 
-// --- CONSTANTS MATCHING ReferredReport.js ---
-const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
-const MODERN_PRIMARY = "#0d0d0eff"; 
-const ACCENT_BLUE = "#1796d1ff"; 
-const ACCENT_GREEN = "#059669";   
-const WARNING_RED = "#dc2626";    
-const NEUTRAL_GREY = "#6b7280";   
-const BORDER_COLOR = "#e0e0e0"; 
-const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; 
-
-// Keeping original action colors for brand recognition, but updating the call button aesthetic
-const CALL_BUTTON_COLOR = "#f8c009ff"; 
-const WHATSAPP_BUTTON_COLOR = "#25D366";
-const EMAIL_BUTTON_COLOR = "#3498db";
-
+// --- THEME CONSTANTS ---
+const THEME = {
+  primary: "#24C6DC",
+  secondary: "#183A5D",
+  accent: "#0f3460",
+  highlight: "#e94560", // Vibrant Red/Pink for actions
+  success: "#00d09c",
+  warning: "#ffb347",
+  white: "#ffffff",
+  background: "#f4f7fe",
+  textDark: "#1e1e1e",
+  textMuted: "#7f8c8d",
+  cardBg: "#ffffff",
+};
 
 const CustomerOnHold = () => {
   const [customers, setCustomers] = useState([]);
@@ -49,7 +45,7 @@ const CustomerOnHold = () => {
   const [error, setError] = useState(null);
   const [agent, setAgent] = useState(null);
 
-  // Fetch agent details from AsyncStorage → then fetch agent info from API
+  // Fetch agent details
   useEffect(() => {
     const fetchAgentById = async () => {
       try {
@@ -61,7 +57,7 @@ const CustomerOnHold = () => {
         }
 
         const parsedAgent = JSON.parse(storedAgentInfo);
-        const agentId = parsedAgent?._id; 
+        const agentId = parsedAgent?._id;
 
         if (!agentId) {
           setError("Agent ID not found in stored info.");
@@ -69,7 +65,6 @@ const CustomerOnHold = () => {
           return;
         }
 
-        // Fetch agent from backend
         const response = await axios.get(
           `${chitBaseUrl}/agent/get-agent-by-id/${agentId}`
         );
@@ -84,7 +79,7 @@ const CustomerOnHold = () => {
     fetchAgentById();
   }, []);
 
-  // Fetch customers on hold when agent is loaded
+  // Fetch customers on hold
   useEffect(() => {
     if (!agent || !agent._id) return;
 
@@ -94,14 +89,11 @@ const CustomerOnHold = () => {
         const response = await axios.get(apiUrl);
 
         const formattedCustomers = response.data.map((item) => ({
-          // FIX: Use the unique enrollment ID (item._id) as the key
-          // instead of the user ID (item.user_id._id) to prevent key collisions
-          id: item._id, 
+          id: item._id,
           name: item.user_id.full_name,
           groupName: item.group_id.group_name,
           phoneNumber: item.user_id.phone_number,
-          // Ensure email is a non-empty string or null/undefined
-          email: item.user_id.email ? item.user_id.email.trim() : null, 
+          email: item.user_id.email ? item.user_id.email.trim() : null,
         }));
 
         setCustomers(formattedCustomers);
@@ -118,7 +110,7 @@ const CustomerOnHold = () => {
     fetchCustomersOnHold();
   }, [agent]);
 
-  // -------- helper functions for call, email, whatsapp ----------
+  // -------- helper functions ----------
   const handleCall = async (phoneNumber) => {
     if (!phoneNumber) return;
     try {
@@ -131,7 +123,6 @@ const CustomerOnHold = () => {
   };
 
   const handleEmail = async (email, customerName) => {
-    // Only proceed if email exists
     if (!email) {
       console.warn("Attempted to email customer with no email address.");
       return;
@@ -153,15 +144,12 @@ const CustomerOnHold = () => {
   const handleWhatsApp = async (phoneNumber) => {
     if (!phoneNumber) return;
     try {
-      // The URL format is correct: `whatsapp://send?phone=` 
       const url = `whatsapp://send?phone=${phoneNumber}`;
       const supported = await Linking.canOpenURL(url);
 
       if (supported) {
         await Linking.openURL(url);
       } else {
-        // This is the alert you were seeing, which means the OS couldn't verify WhatsApp 
-        // (due to missing 'queries' in app.json on Android 11+).
         Alert.alert("Error", "WhatsApp is not installed on this device.");
       }
     } catch (error) {
@@ -170,121 +158,170 @@ const CustomerOnHold = () => {
     }
   };
 
+  // Helper to get initials
+  const getInitials = (name) => {
+    if (!name) return "?";
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
   const renderCustomerCard = (customer) => {
-    // Check if email is valid (non-null and non-empty string)
     const hasEmail = !!customer.email;
+    const initials = getInitials(customer.name);
 
     return (
-        <View key={customer.id} style={styles.customerCardStyle}> 
+      <View key={customer.id} style={styles.cardContainer}>
+        <View style={styles.cardContent}>
+          {/* Header Row with Avatar and Info */}
+          <View style={styles.cardHeaderRow}>
+            <LinearGradient 
+                colors={['#667eea', '#764ba2']} 
+                style={styles.avatarContainer}
+            >
+              <Text style={styles.avatarText}>{initials}</Text>
+            </LinearGradient>
             
-            {/* Header (Customer Name & Status Tag) */}
-            <View style={styles.cardHeader}>
+            <View style={styles.infoContainer}>
+              <View style={styles.nameRow}>
                 <Text style={styles.customerName} numberOfLines={1}>{customer.name}</Text>
-                {/* Fixed "On Hold" status tag */}
-                <View style={[styles.statusTag, { backgroundColor: '#fef3c7' }]}> 
-                    <Text style={[styles.statusTagText, { color: WARNING_RED }]}>
-                        ON HOLD
-                    </Text>
+                <View style={styles.holdBadge}>
+                    <Text style={styles.holdBadgeText}>Holded Customers</Text>
                 </View>
+              </View>
+              <Text style={styles.groupNameText}>
+                <Ionicons name="people-circle-outline" size={14} color={THEME.textMuted} /> {customer.groupName}
+              </Text>
             </View>
+          </View>
 
-            {/* Customer Info (Group Name & Email) */}
-            <View style={styles.cardBody}>
-                <Text style={styles.groupInfo}><Ionicons name="people" size={14} color={NEUTRAL_GREY} /> Group: {customer.groupName}</Text>
-                
-                {/* Display Email only if customer.email is present */}
-                {hasEmail ? ( 
-                    <Text style={styles.groupInfo}>
-                        <Ionicons name="mail" size={14} color={NEUTRAL_GREY} /> {customer.email}
-                    </Text>
-                ) : null}
-            </View>
-            
-            {/* Phone Number Section (Clickable) */}
-            <View style={styles.phoneSection}>
-                <Text style={styles.phoneLabel}>Phone:</Text>
-                <TouchableOpacity
-                    onPress={() => handleCall(customer.phoneNumber)}
-                    style={styles.callLink}
-                >
-                    <Ionicons name="call" size={18} color={ACCENT_BLUE} />
-                    <Text style={styles.phoneNumberText}>{customer.phoneNumber}</Text>
-                </TouchableOpacity>
-            </View>
-            
-            {/* Contact Action Buttons */}
-            <View style={styles.buttonContainer}>
-                {/* Call Button (Always displayed if phone number is available, which it should be) */}
-                <TouchableOpacity
-                    style={[styles.contactButton, { backgroundColor: CALL_BUTTON_COLOR }]}
-                    onPress={() => handleCall(customer.phoneNumber)}
-                >
-                    <Ionicons name="call" size={15} color="#fff" />
-                    <Text style={styles.buttonText}>Call</Text>
-                </TouchableOpacity>
-                
-                {/* WhatsApp Button (Always displayed if phone number is available) */}
-                <TouchableOpacity
-                    style={[styles.contactButton, { backgroundColor: WHATSAPP_BUTTON_COLOR }]}
-                    onPress={() => handleWhatsApp(customer.phoneNumber)}
-                >
-                    <FontAwesome5 name="whatsapp" size={15} color="#fff" />
-                    <Text style={styles.buttonText}>WhatsApp</Text>
-                </TouchableOpacity>
-                
-                {/* Email Button (Only displayed if customer.email is present) */}
-                {hasEmail ? (
-                    <TouchableOpacity
-                        style={[styles.contactButton, { backgroundColor: EMAIL_BUTTON_COLOR }]}
-                        onPress={() => handleEmail(customer.email, customer.name)}
-                    >
-                        <MaterialCommunityIcons name="email" size={15} color="#fff" />
-                        <Text style={styles.buttonText}>Email</Text>
-                    </TouchableOpacity>
-                ) : null}
+          {/* Contact Details Row */}
+          <View style={styles.contactRow}>
+             <View style={styles.contactItem}>
+                <Ionicons name="call-outline" size={16} color={THEME.highlight} />
+                <Text style={styles.contactText}>{customer.phoneNumber}</Text>
+             </View>
+             {hasEmail && (
+                <View style={styles.contactItem}>
+                    <Ionicons name="mail-outline" size={16} color={THEME.highlight} />
+                    <Text style={styles.contactText} numberOfLines={1}>{customer.email}</Text>
+                </View>
+             )}
+          </View>
 
-            </View>
+          {/* Action Buttons Footer */}
+          <View style={styles.actionFooter}>
+            <TouchableOpacity 
+                style={styles.actionBtn} 
+                onPress={() => handleCall(customer.phoneNumber)}
+                activeOpacity={0.7}
+            >
+                <LinearGradient colors={['#00b09b', '#96c93d']} style={styles.btnGradient}>
+                    <Ionicons name="call" size={16} color="#fff" />
+                </LinearGradient>
+                <Text style={styles.actionBtnText}>Call</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+                style={styles.actionBtn} 
+                onPress={() => handleWhatsApp(customer.phoneNumber)}
+                activeOpacity={0.7}
+            >
+                <LinearGradient colors={['#25D366', '#128C7E']} style={styles.btnGradient}>
+                    <FontAwesome5 name="whatsapp" size={16} color="#fff" />
+                </LinearGradient>
+                <Text style={styles.actionBtnText}>WhatsApp</Text>
+            </TouchableOpacity>
+
+            {hasEmail && (
+                <TouchableOpacity 
+                    style={styles.actionBtn} 
+                    onPress={() => handleEmail(customer.email, customer.name)}
+                    activeOpacity={0.7}
+                >
+                    <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.btnGradient}>
+                        <MaterialCommunityIcons name="email" size={16} color="#fff" />
+                    </LinearGradient>
+                    <Text style={styles.actionBtnText}>Email</Text>
+                </TouchableOpacity>
+            )}
+          </View>
         </View>
+      </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Top Header Section with Gradient */}
-        <LinearGradient colors={TOP_GRADIENT} style={styles.topContainer}>
-            <View style={styles.headerSpacer}>
+        {/* Header Section */}
+        <LinearGradient 
+            colors={[THEME.primary, THEME.secondary]} 
+            style={styles.headerGradient}
+        >
+            <View style={{ paddingTop: 10, paddingHorizontal: 10 }}>
                 <Header />
             </View>
-
-            <View style={styles.titleContainer}>
-                <Text style={styles.title}>Customers On Hold</Text>
-                <Text style={styles.subtitle}>
-                    Follow up with these customers to resolve their hold status.
-                </Text>
+            <View style={styles.headerContent}>
+                <Text style={styles.headerTitle}>Holded Customers</Text>
+                <Text style={styles.headerSubtitle}>Customers requiring attention</Text>
             </View>
         </LinearGradient>
 
-        {/* Main Content Area (Light Background) */}
-        <View style={styles.mainContentArea}>
+        <View style={styles.mainContainer}>
             {loading ? (
                 <View style={styles.loader}>
-                    <ActivityIndicator size="large" color={ACCENT_BLUE} />
-                    <Text style={styles.loadingTextBlue}>Fetching customers on hold...</Text>
+                    <ActivityIndicator size="large" color={THEME.highlight} />
+                    <Text style={styles.loadingText}>Fetching customers...</Text>
                 </View>
             ) : error ? (
-                <Text style={styles.statusText}>{error}</Text>
+                <View style={styles.errorContainer}>
+                    <Ionicons name="cloud-offline-outline" size={50} color={THEME.textMuted} />
+                    <Text style={styles.errorText}>{error}</Text>
+                </View>
             ) : (
-                <ScrollView contentContainerStyle={styles.cardsScrollViewContent} style={styles.scrollViewStyle}>
+                <ScrollView 
+                    showsVerticalScrollIndicator={false} 
+                    contentContainerStyle={styles.scrollContent}
+                >
+                    
+                    {/* --- UNIQUE STYLISH SUMMARY BOX --- */}
+                    <LinearGradient
+                        colors={['#232526', '#414345']}
+                        style={styles.summaryBox}
+                    >
+                        <View style={styles.summaryDecorativeCircle} />
+                        <View style={styles.summaryDecorativeCircle2} />
+                        
+                        <View style={styles.summaryTopRow}>
+                            <View style={styles.summaryIconCircle}>
+                                <Ionicons name="warning" size={24} color="#fff" />
+                            </View>
+                            <View style={styles.summaryTextCol}>
+                                <Text style={styles.summaryLabel}>Total Customers</Text>
+                                <Text style={styles.summaryBigNumber}>{customers.length}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.summaryDivider} />
+
+                        <View style={styles.summaryMessageRow}>
+                            <Ionicons name="information-circle" size={20} color={THEME.warning} />
+                            <Text style={styles.summaryMessageText}>
+                                Please contact your customers immediately to resolve pending issues.
+                            </Text>
+                        </View>
+                    </LinearGradient>
+
+                    {/* Customer List */}
                     {customers.length > 0 ? (
-                        // This mapping now uses the unique enrollment ID as the key
                         customers.map(renderCustomerCard)
                     ) : (
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="documents-outline" size={50} color={NEUTRAL_GREY} />
-                            <Text style={styles.emptyText}>No customers currently on hold.</Text>
-                            <Text style={{ color: NEUTRAL_GREY, marginTop: 5, fontSize: 14 }}>
-                                Great job! Your follow-up is working.
-                            </Text>
+                        <View style={styles.emptyState}>
+                            <Ionicons name="checkmark-done-circle" size={80} color={THEME.success} />
+                            <Text style={styles.emptyTitle}>All Clear!</Text>
+                            <Text style={styles.emptyDesc}>No customers are currently on hold. Great work!</Text>
                         </View>
                     )}
                 </ScrollView>
@@ -297,195 +334,290 @@ const CustomerOnHold = () => {
 export default CustomerOnHold;
 
 const styles = StyleSheet.create({
-    // --- LAYOUT STYLES (MATCHING ReferredReport.js) ---
-    safeArea: { 
-        flex: 1, 
-        backgroundColor: TOP_GRADIENT[0] 
-    },
-    topContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 20,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    mainContentArea: {
+    safeArea: {
         flex: 1,
-        backgroundColor: SUBTLE_BG_GREY, 
-        borderTopLeftRadius: 30, 
-        borderTopRightRadius: 30,
-        paddingHorizontal: 16,
-        marginTop: -20, 
-        paddingTop: 30,
+        backgroundColor: THEME.primary,
     },
-    headerSpacer: { 
-        paddingTop: 20, 
-        paddingBottom: 5 
-    }, 
+    headerGradient: {
+        paddingBottom: 20,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        overflow: 'hidden',
+    },
+    headerContent: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 10,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: "800",
+        color: THEME.white,
+        letterSpacing: 0.5,
+    },
+    headerSubtitle: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.7)',
+        marginTop: 4,
+    },
+    mainContainer: {
+        flex: 1,
+        backgroundColor: THEME.background,
+        marginTop: -15, // overlap header
+        borderTopLeftRadius: 25,
+        borderTopRightRadius: 25,
+        overflow: 'hidden',
+    },
+    scrollContent: {
+        paddingHorizontal: 16,
+        paddingTop: 30,
+        paddingBottom: 100,
+    },
 
-    // --- TITLE STYLES (MATCHING ReferredReport.js) ---
-    titleContainer: {
+    // --- SUMMARY BOX STYLES ---
+    summaryBox: {
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 25,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        // Neumorphic shadow for depth
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        elevation: 10,
+    },
+    summaryDecorativeCircle: {
+        position: 'absolute',
+        top: -30,
+        right: -30,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+    },
+    summaryDecorativeCircle2: {
+        position: 'absolute',
+        bottom: -50,
+        left: -20,
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+    },
+    summaryTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    summaryIconCircle: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: THEME.highlight,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    summaryTextCol: {
+        justifyContent: 'center',
+    },
+    summaryLabel: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.6)',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    summaryBigNumber: {
+        fontSize: 40,
+        fontWeight: '800',
+        color: THEME.white,
+    },
+    summaryDivider: {
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        marginVertical: 15,
+    },
+    summaryMessageRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        padding: 12,
+        borderRadius: 12,
+    },
+    summaryMessageText: {
+        color: THEME.white,
+        fontSize: 13,
+        fontWeight: '500',
+        marginLeft: 10,
+        flex: 1,
+    },
+
+    // --- CARD STYLES ---
+    cardContainer: {
+        marginBottom: 18,
+        borderRadius: 24,
+        backgroundColor: THEME.cardBg,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.03)',
+    },
+    cardContent: {
+        padding: 18,
+    },
+    cardHeaderRow: {
+        flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 15,
     },
-    title: {
-        fontSize: 28, 
-        fontWeight: "900",
-        color: CARD_BG, 
-        marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.85)', 
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-
-    // --- NEW REDESIGNED CUSTOMER CARD STYLE ---
-    customerCardStyle: {
-        backgroundColor: '#fff7f7', // Light red/pink background for urgency
-        borderRadius: 18, 
-        marginBottom: 18,
-        padding: 20,
-        borderLeftWidth: 6, // Thick left border
-        borderLeftColor: WARNING_RED, // Red for urgency
-        shadowColor: MODERN_PRIMARY,
+    avatarContainer: {
+        width: 50,
+        height: 50,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 14,
+        shadowColor: "#764ba2",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08, 
-        shadowRadius: 8,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: '#fcd3d1', // Lighter red border
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
     },
-    
-    // CARD CONTENT
-    cardHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 15, // Increased padding
+    avatarText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    infoContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 3,
     },
     customerName: {
-        fontSize: 22,
-        fontWeight: "900",
-        color: MODERN_PRIMARY,
-        flexShrink: 1,
-        marginRight: 10,
-    },
-    statusTag: { // Used for "ON HOLD" status
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 15,
-        alignSelf: 'flex-start', 
-    },
-    statusTagText: {
-        fontSize: 12,
-        fontWeight: "700",
-        textTransform: 'uppercase',
-    },
-    cardBody: {
-        marginBottom: 20, // Increased padding
-    },
-    groupInfo: {
-        fontSize: 12, // Slightly increased font size
-        color: NEUTRAL_GREY,
-        marginTop: 5,
-        fontWeight: "500",
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-
-    // PHONE SECTION (CLICKABLE)
-    phoneSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        paddingVertical: 10,
-        marginBottom: 10,
-        borderBottomWidth: 1, // Added a bottom divider to visually separate from buttons
-        borderBottomColor: '#fcd3d1', // Light red divider
-    },
-    phoneLabel: {
-        fontSize: 15,
-        color: NEUTRAL_GREY,
-        fontWeight: "500",
-        marginRight: 15,
-    },
-    callLink: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 5,
-        paddingHorizontal: 5,
-    },
-    phoneNumberText: {
-        color: ACCENT_BLUE,
-        textDecorationLine: 'underline',
-        fontWeight: '700',
         fontSize: 18,
-        marginLeft: 5,
-    },
-    
-    // Contact Buttons
-    buttonContainer: {
-        flexDirection: "row",
-        justifyContent: "space-between", // Changed to space-between to spread buttons out
-        gap: 10,
-        marginTop: 10,
-    },
-    contactButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 8,
-        paddingHorizontal: 10,
-        borderRadius: 50,
-        elevation: 2,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        gap: 6,
-        flex: 1, // Make buttons take up equal space
-    },
-    buttonText: { color: "#fff", fontWeight: "bold", fontSize: 12 }, // Slightly smaller text for fit
-
-    // --- SCROLLVIEW / LOADER / EMPTY STATE ---
-    scrollViewStyle: {
+        fontWeight: '800',
+        color: THEME.textDark,
         flex: 1,
     },
-    cardsScrollViewContent: { 
-        paddingBottom: 120,
+    holdBadge: {
+        backgroundColor: 'rgba(233, 69, 96, 0.1)',
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: 20,
+        marginLeft: 10,
     },
+    holdBadgeText: {
+        color: THEME.highlight,
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+    },
+    groupNameText: {
+        fontSize: 13,
+        color: THEME.textMuted,
+        fontWeight: '500',
+        marginTop: 2,
+    },
+    
+    // Contact Row
+    contactRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        marginBottom: 15,
+    },
+    contactItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    contactText: {
+        marginLeft: 8,
+        fontSize: 13,
+        color: THEME.textDark,
+        fontWeight: '600',
+    },
+
+    // Action Footer
+    actionFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 5,
+    },
+    actionBtn: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    btnGradient: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 4,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+    },
+    actionBtnText: {
+        fontSize: 11,
+        color: THEME.textMuted,
+        fontWeight: '600',
+    },
+
+    // Misc
     loader: {
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: height * 0.4,
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    loadingTextBlue: {
+    loadingText: {
         marginTop: 10,
-        color: ACCENT_BLUE,
-        fontSize: 16,
-        fontWeight: '600'
+        color: THEME.textMuted,
+        fontWeight: '600',
     },
-    statusText: {
-        fontSize: 16,
-        color: NEUTRAL_GREY,
-        textAlign: "center",
-        marginTop: 20,
-    },
-    emptyContainer: {
-        alignItems: "center",
-        marginTop: 80,
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
         padding: 20,
-        backgroundColor: CARD_BG,
-        borderRadius: 15,
     },
-    emptyText: {
-        color: NEUTRAL_GREY,
+    errorText: {
+        marginTop: 10,
+        color: THEME.textMuted,
+        textAlign: 'center',
+    },
+    emptyState: {
+        alignItems: 'center',
+        marginTop: 60,
+    },
+    emptyTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: THEME.textDark,
         marginTop: 15,
-        fontWeight: "600",
-        fontSize: 18,
     },
+    emptyDesc: {
+        fontSize: 14,
+        color: THEME.textMuted,
+        marginTop: 8,
+        textAlign: 'center',
+    }
 });
