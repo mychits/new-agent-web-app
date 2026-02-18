@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
   
   salaryHeroCard: { backgroundColor: 'linear-gradient(135deg, rgba(36, 198, 220, 0.2) 0%, rgba(28, 58, 93, 0.6) 100%)', padding: 30, borderRadius: 24, alignItems: 'center', borderWidth: 1, borderColor: COLORS.primary, marginBottom: 20 },
   salarySubtitle: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 5, textTransform: 'uppercase' },
-  salaryHeroAmount: { fontSize: 42, color: COLORS.white, fontWeight: '900', letterSpacing: 1 },
+  salaryHeroAmount: { fontSize: 22, color: COLORS.white, fontWeight: '900', letterSpacing: 1 },
   salarySubText: { color: COLORS.primary, fontSize: 14, fontWeight: '700', marginTop: 5 },
   
   financialsList: { gap: 12 },

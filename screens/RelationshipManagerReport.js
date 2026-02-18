@@ -1,553 +1,489 @@
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, useRef } from "react";
 import {
     View,
     Text,
     StyleSheet,
-    FlatList,
+    SafeAreaView,
     ActivityIndicator,
-    Image,
     Platform,
-    LayoutAnimation,
-    UIManager,
+    Animated,
+    Image,
+    TouchableOpacity,
+    Modal,
+    StatusBar,
+    ScrollView,
     Dimensions,
+    Linking,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Picker } from "@react-native-picker/picker";
-import { Ionicons } from "@expo/vector-icons";
-import Header from "../components/Header";
-import url from "../constants/baseUrl"; // Assuming 'url' constant is available for API base path
+import url from "../constants/baseUrl";
 
-const { height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
-// --- CONSTANTS MATCHING ReferredReport.js ---
-const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent
-const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
-const WARNING_RED = "#dc2626";    // Strong red for negative/balance
-const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
-const BORDER_COLOR = "#e0e0e0"; // Lighter border
-const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb';
-
-// --- API CONSTANTS ---
-// NOTE: Replaced hardcoded URL with the template from ReferredReport.js
-const DUE_API = `${url}/enroll/due/relationship-manager/`;
-const GROUP_API = `${url}/group/get-group`;
-
-if (
-    Platform.OS === "android" &&
-    UIManager &&
-    UIManager.setLayoutAnimationEnabledExperimental
-) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-/**
- * Formats a number into Indian Rupee currency string.
- * @param {number|string} amount
- * @returns {string} Formatted currency string
- */
-const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return "₹0.00";
-    const num = typeof amount === "number" ? amount : parseFloat(amount);
-    if (isNaN(num)) return "₹0.00";
-    return `₹ ${num.toLocaleString("en-IN", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })}`;
+// --- THEME CONSTANTS ---
+const COLORS = {
+    primary: "#183A5D",
+    accent: "#f8c009ff", // Gold for Profit
+    bgBlue: "#1aa2ccff",
+    success: "#27AE60",
+    danger: "#e74c3c",
+    cardBg: "rgba(255, 255, 255, 0.97)",
+    white: "#FFFFFF",
+    muted: "#8898AA",
+    background: "#0f172a",
 };
 
-const RelationshipManagerReport = ({ route }) => {
-    // Ensure user data is available
-    const { user } = route.params || {};
+const backgroundImage = require("../assets/hero1.jpg"); 
 
+// =================================================================
+// COMPONENT: RMReportCard (Stylized)
+// =================================================================
+const RMReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            delay: index * 100,
+            useNativeDriver: true,
+        }).start();
+    }, []);
+
+    const name = item?.user_id?.full_name || "Unknown Client";
+    const phone = item?.user_id?.phone_number;
+    const email = item?.user_id?.email;
+    const groupName = item?.group_id?.group_name || "N/A";
+    const paymentType = item?.payment_type || "N/A";
+
+    const isCalling = activeCallId === item?._id;
+
+    // Financial Extraction
+    const getFinancialValue = (value) =>
+        Array.isArray(value) && value.length > 0 ? value[0] : value || 0;
+
+    const totalPayable = getFinancialValue(item.total_payable_amount);
+    const totalProfit = getFinancialValue(item.total_profit); // UNIQUE
+    const totalToBePaid = item?.total_to_be_paid || 0;
+    const balance = item?.balance || item?.Balance || 0;
+
+    const statusColor = balance > 0 ? COLORS.danger : COLORS.success;
+
+    const handlePhonePress = () => {
+        if (phone) {
+            setActiveCallId(item?._id);
+            Linking.openURL(`tel:${phone}`).catch(() => console.log("Call failed"));
+            setTimeout(() => setActiveCallId(null), 3000);
+        }
+    };
+
+    return (
+        <Animated.View style={[styles.listCard, { opacity: fadeAnim }]}>
+            {/* Top Section: Client Info & Profit Badge */}
+            <View style={styles.cardTopSection}>
+                <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{name.charAt(0)}</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.clientName}>{name}</Text>
+                    <View style={styles.rowCenter}>
+                        <Ionicons name="business-outline" size={12} color={COLORS.muted} />
+                        <Text style={styles.subText}> {groupName}</Text>
+                        <Text style={styles.dotSeparator}>•</Text>
+                        <Text style={[styles.subText, {textTransform: 'capitalize'}]}>{paymentType}</Text>
+                    </View>
+                </View>
+                
+                {/* UNIQUE: Profit Tag prominently displayed */}
+                <View style={styles.profitTag}>
+                    <Text style={styles.profitTagText}>₹{Number(totalProfit).toLocaleString("en-IN")}</Text>
+                    <Text style={styles.profitTagLabel}>Profit</Text>
+                </View>
+            </View>
+
+            {/* Financial Details Grid */}
+            <View style={styles.detailsGrid}>
+                <View style={styles.gridItem}>
+                    <Text style={styles.gridLabel}>Payable</Text>
+                    <Text style={styles.gridValue}>₹{Number(totalPayable).toLocaleString("en-IN")}</Text>
+                </View>
+                <View style={styles.gridDivider} />
+                <View style={styles.gridItem}>
+                    <Text style={styles.gridLabel}>Paid</Text>
+                    <Text style={[styles.gridValue, {color: COLORS.success}]}>₹{Number(totalToBePaid).toLocaleString("en-IN")}</Text>
+                </View>
+            </View>
+
+            {/* Balance Section */}
+            <View style={[styles.balanceFooter, { borderLeftColor: statusColor }]}>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.balanceLabel}>Current Balance</Text>
+                    <Text style={[styles.balanceAmount, { color: statusColor }]}>
+                        ₹{balance.toLocaleString("en-IN")}
+                    </Text>
+                </View>
+
+                {phone && (
+                    <TouchableOpacity 
+                        onPress={handlePhonePress} 
+                        style={[styles.smallActionBtn, { backgroundColor: isCalling ? COLORS.muted : COLORS.bgBlue }]}
+                    >
+                        <Feather name={isCalling ? "phone-missed" : "phone"} size={14} color={COLORS.white} />
+                    </TouchableOpacity>
+                )}
+            </View>
+        </Animated.View>
+    );
+};
+
+// =================================================================
+// MAIN COMPONENT: RelationshipManagerReport
+// =================================================================
+const RelationshipManagerReport = ({ route, navigation }) => {
+    const { user } = route.params || {};
     const [groups, setGroups] = useState([]);
     const [dues, setDues] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
-    const [selectedGroup, setSelectedGroup] = useState("all");
+    const [selectedGroup, setSelectedGroup] = useState({ _id: "all", group_name: "All Groups" });
     const [loading, setLoading] = useState(true);
+    const [activeCallId, setActiveCallId] = useState(null);
+    const [showPicker, setShowPicker] = useState(false);
 
-    // Fetch groups + dues
+    // Animation Refs
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const blinkAnim = useRef(new Animated.Value(1)).current;
+
     useEffect(() => {
-        const fetchData = async () => {
-            if (!user?.userId) {
-                setLoading(false);
-                return;
-            }
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(blinkAnim, { toValue: 0.4, duration: 600, useNativeDriver: true }),
+                Animated.timing(blinkAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
 
-            try {
-                setLoading(true);
-                const [groupRes, dueRes] = await Promise.all([
-                    fetch(GROUP_API),
-                    fetch(`${DUE_API}${user.userId}`),
-                ]);
-                const groupJson = await groupRes.json();
-                const dueJson = await dueRes.json();
+    // Fetch Data
+    const fetchData = async () => {
+        if (!user?.userId) {
+            setLoading(false);
+            return;
+        }
+        try {
+            setLoading(true);
+            const [groupRes, dueRes] = await Promise.all([
+                fetch(`${url}/group/get-group`),
+                fetch(`${url}/enroll/due/relationship-manager/${user.userId}`),
+            ]);
+            
+            const groupJson = await groupRes.json();
+            const dueJson = await dueRes.json();
 
-                const allGroups = Array.isArray(groupJson?.data)
-                    ? groupJson.data
-                    : Array.isArray(groupJson)
-                        ? groupJson
-                        : [];
+            const allGroups = Array.isArray(groupJson?.data) ? groupJson.data : Array.isArray(groupJson) ? groupJson : [];
+            const allDues = dueJson?.enrollments || [];
 
-                // Assuming `dueJson.enrollments` holds the report data
-                const allDues = dueJson?.enrollments || [];
+            setGroups([{ _id: "all", group_name: "All Groups" }, ...allGroups]);
+            setDues(allDues);
+            setFilteredData(allDues);
+            
+            Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+        } catch (err) {
+            console.error("Error fetching RM reports:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-                setGroups(allGroups);
-                setDues(allDues);
-
-                // *** ANIMATION TRIGGER ***
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                setFilteredData(allDues);
-            } catch (err) {
-                console.error("Error fetching Relationship Manager reports:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    useEffect(() => {
         fetchData();
     }, [user?.userId]);
 
-    // Filter dues by group
-    useEffect(() => {
-        // *** ANIMATION TRIGGER ***
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        if (selectedGroup === "all") setFilteredData(dues);
-        else
-            setFilteredData(
-                dues.filter((item) => item.group_id?._id === selectedGroup)
-            );
-    }, [selectedGroup, dues]);
-
-    const renderItem = ({ item }) => {
-        // Data structure cleanup: Assuming referred data structure looks like:
-        const name = item?.user_id?.full_name || "Unknown";
-        const email = item?.user_id?.email;
-        const phone = item?.user_id?.phone_number;
-        const groupName = item?.group_id?.group_name || "N/A";
-        const paymentType = item?.payment_type || "N/A"; // Retaining this unique data point
-
-        // Safely extract financial values which might be nested in an array
-        const getFinancialValue = (value) =>
-            Array.isArray(value) && value.length > 0 ? value[0] : value || 0;
-
-        const totalPayable = getFinancialValue(item.total_payable_amount);
-        const totalProfit = getFinancialValue(item.total_profit); // UNIQUE TO RM REPORT
-        const totalToBePaid = item?.total_to_be_paid || 0;
-        const balance = item?.balance || item?.Balance || 0;
-
-        // Status bar color: Red for positive balance (outstanding), Green otherwise
-        const statusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
-
-        return (
-            <View style={styles.cardContainer}>
-                {/* Main Card Content */}
-                <View style={styles.card}>
-                    {/* Header (Group + Status Tag) */}
-                    <View style={styles.cardHeader}>
-                        <Text style={styles.groupName} numberOfLines={1}>{groupName}</Text>
-                        <View style={[styles.statusTag, { backgroundColor: balance > 0 ? '#fee2e2' : '#d1fae5' }]}>
-                            <Text style={[styles.statusTagText, { color: statusColor }]}>
-                                {balance > 0 ? 'Outstanding' : 'Paid'}
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* Customer Info */}
-                    <View style={styles.cardBody}>
-                        <Text style={styles.customerName}>{name}</Text>
-                        {phone ? <Text style={styles.customerInfo}><Ionicons name="call" size={14} color={NEUTRAL_GREY} /> {phone}</Text> : null}
-                        {email ? <Text style={styles.customerInfo}><Ionicons name="mail" size={14} color={NEUTRAL_GREY} /> {email}</Text> : null}
-                        <Text style={styles.customerInfo}>Payment Type: {paymentType}</Text>
-                    </View>
-
-                    {/* Financial Info */}
-                    <View style={styles.cardFinancial}>
-
-                        {/* Total Payable Row (Compact) */}
-                        <View style={styles.financialRowCompact}>
-                            <Text style={styles.financialLabelCompact}>Total Payable :</Text>
-                            <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
-                                {formatCurrency(totalPayable)}
-                            </Text>
-                        </View>
-
-                        {/* Total Profit Row (Compact) - Unique to RM Report */}
-                        <View style={styles.financialRowCompact}>
-                            <Text style={styles.financialLabelCompact}>Total Profit :</Text>
-                            <Text style={[styles.financialValue, { color: ACCENT_GREEN }]}>
-                                {formatCurrency(totalProfit)}
-                            </Text>
-                        </View>
-
-                        {/* Total Paid Row (Compact) */}
-                        <View style={styles.financialRowCompact}>
-                            <Text style={styles.financialLabelCompact}>Total Paid :</Text>
-                            <Text style={styles.financialValue}>
-                                {formatCurrency(totalToBePaid)}
-                            </Text>
-                        </View>
-
-                        {/* Balance (Stands out - Compact) */}
-                        <View style={[styles.balanceRowCompact, { backgroundColor: balance > 0 ? '#fff7f7' : '#f0fff5', borderColor: balance > 0 ? WARNING_RED : ACCENT_GREEN }]}>
-                            <Text style={[styles.balanceLabel, { color: balance > 0 ? WARNING_RED : ACCENT_GREEN, marginRight: 5 }]}>
-                                {balance > 0 ? 'Outstanding Balance :' : 'Current Balance :'}
-                            </Text>
-                            <Text style={[styles.balanceValue, { color: balance > 0 ? WARNING_RED : ACCENT_GREEN }]}>
-                                {formatCurrency(balance)}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-            </View>
-        );
+    // Filter Logic
+    const applyFilter = (group) => {
+        setSelectedGroup(group);
+        if (group._id === "all") setFilteredData(dues);
+        else setFilteredData(dues.filter((item) => item.group_id?._id === group._id));
+        setShowPicker(false);
     };
 
-    const totalPending = filteredData.reduce(
-        (sum, item) => sum + (item?.balance || item?.Balance || 0),
-        0
-    );
-
-    const EmptyList = () => (
-        <View style={styles.emptyContainer}>
-            <Ionicons name="documents-outline" size={50} color={NEUTRAL_GREY} />
-            <Text style={styles.emptyText}>No pending dues found.</Text>
-            <Text style={{ color: NEUTRAL_GREY, marginTop: 5, fontSize: 14 , textAlign:'center' }}>
-                Try selecting "All Groups" or check back later.
-            </Text>
-        </View>
-    );
+    // Calculations
+    const totalPending = filteredData.reduce((sum, item) => sum + (item?.balance || item?.Balance || 0), 0);
+    
+    // UNIQUE: Calculate Total Profit
+    const totalProfit = filteredData.reduce((sum, item) => {
+        const val = Array.isArray(item.total_profit) && item.total_profit.length > 0 
+            ? item.total_profit[0] 
+            : item.total_profit || 0;
+        return sum + Number(val);
+    }, 0);
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-            {/* Top Header Section with Gradient */}
-            <LinearGradient colors={TOP_GRADIENT} style={styles.topContainer}>
-                <View style={styles.headerSpacer}>
-                    <Header />
-                </View>
+        <View style={styles.mainContainer}>
+            <StatusBar barStyle="light-content" />
+            
+            <Image source={backgroundImage} style={styles.bgOverlay} blurRadius={10} />
+            <LinearGradient colors={["rgba(26, 162, 204, 0.9)", COLORS.primary]} style={StyleSheet.absoluteFill} />
 
-                <View style={styles.titleContainer}>
-                    <Text style={styles.title}>RM Report</Text>
-                    <Text style={styles.subtitle}>
-                        Select a group to view pending details
-                    </Text>
-                </View>
-            </LinearGradient>
-
-            {/* Main Content Area (Light Background) */}
-            <View style={styles.mainContentArea}>
-
-                {/* Total Summary (Highlighted Card) */}
-                <View style={styles.totalWrapper}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                        <Ionicons name="wallet-outline" size={20} color={MODERN_PRIMARY} style={{ marginRight: 8 }} />
-                        <Text style={styles.totalText}>
-                            Overall Outstanding Balance:
-                        </Text>
+            <SafeAreaView style={{ flex: 1 }}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.headerTopRow}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconCircle}>
+                            <Ionicons name="chevron-back" size={22} color={COLORS.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={fetchData} style={styles.refreshBtn}>
+                            <Feather name="refresh-cw" size={18} color={COLORS.primary} />
+                        </TouchableOpacity>
                     </View>
-                    <Text style={styles.totalAmount}>
-                        {formatCurrency(totalPending)}
-                    </Text>
+                    <Text style={styles.headerTitle}>RM Performance</Text>
+                    <Text style={styles.headerSub}>Relationship Manager Report</Text>
                 </View>
 
-                {/* Group Filter */}
-                <View style={styles.dropdownWrapper}>
-                    <Text style={styles.dropdownLabel}>Filter by Group</Text>
-                    <View style={styles.pickerWrapper}>
-                        <Picker
-                            selectedValue={selectedGroup}
-                            onValueChange={(itemValue) => setSelectedGroup(itemValue)}
-                            style={styles.picker}
-                        >
-                            <Picker.Item label="All Groups" value="all" color={MODERN_PRIMARY} />
+                {/* Content */}
+                <View style={styles.contentContainer}>
+                    {loading ? (
+                        <View style={styles.loaderContainer}>
+                            <ActivityIndicator size="large" color={COLORS.accent} />
+                            <Text style={styles.loadingText}>Calculating Metrics...</Text>
+                        </View>
+                    ) : (
+                        <Animated.ScrollView style={{ opacity: fadeAnim }} showsVerticalScrollIndicator={false}>
+                            
+                            {/* UNIQUE: Dual Summary Dashboard */}
+                            <View style={styles.dualSummaryContainer}>
+                                <View style={[styles.summaryBox, { borderLeftColor: COLORS.danger }]}>
+                                    <View style={[styles.summaryIconBg, { backgroundColor: 'rgba(231, 76, 60, 0.1)' }]}>
+                                        <MaterialCommunityIcons name="file-document-minus-outline" size={20} color={COLORS.danger} />
+                                    </View>
+                                    <Text style={styles.summaryBoxLabel}>Total Outstanding</Text>
+                                    <Text style={[styles.summaryBoxValue, { color: COLORS.danger }]}>
+                                        ₹{totalPending.toLocaleString("en-IN")}
+                                    </Text>
+                                </View>
+
+                                <View style={[styles.summaryBox, { borderLeftColor: COLORS.accent }]}>
+                                    <View style={[styles.summaryIconBg, { backgroundColor: 'rgba(248, 192, 9, 0.15)' }]}>
+                                        <MaterialCommunityIcons name="chart-line-variant" size={20} color={COLORS.accent} />
+                                    </View>
+                                    <Text style={styles.summaryBoxLabel}>Total Profit</Text>
+                                    <Text style={[styles.summaryBoxValue, { color: COLORS.primary }]}>
+                                        ₹{totalProfit.toLocaleString("en-IN")}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Filter Button */}
+                            <TouchableOpacity style={styles.filterBtn} onPress={() => setShowPicker(true)}>
+                                <View style={styles.filterContent}>
+                                    <Ionicons name="filter" size={16} color={COLORS.primary} />
+                                    <Text style={styles.filterText}>Filter: {selectedGroup.group_name}</Text>
+                                </View>
+                                <Animated.View style={{ opacity: blinkAnim }}>
+                                    <Feather name="chevron-down" size={18} color={COLORS.primary} />
+                                </Animated.View>
+                            </TouchableOpacity>
+
+                            {/* List */}
+                            {filteredData.length > 0 ? (
+                                filteredData.map((item, index) => (
+                                    <RMReportCard 
+                                        key={item._id || index} 
+                                        item={item} 
+                                        index={index}
+                                        activeCallId={activeCallId}
+                                        setActiveCallId={setActiveCallId}
+                                    />
+                                ))
+                            ) : (
+                                <View style={styles.emptyContainer}>
+                                    <MaterialCommunityIcons name="account-off-outline" size={50} color="rgba(255,255,255,0.6)" />
+                                    <Text style={styles.emptyText}>No RM reports found.</Text>
+                                </View>
+                            )}
+
+                        </Animated.ScrollView>
+                    )}
+                </View>
+            </SafeAreaView>
+
+            {/* Bottom Sheet Modal */}
+            <Modal visible={showPicker} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowPicker(false)} />
+                    <View style={styles.pickerSheet}>
+                        <View style={styles.sheetHandle} />
+                        <Text style={styles.sheetTitle}>Select Group</Text>
+                        
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: height * 0.4 }}>
                             {groups.map((g) => (
-                                <Picker.Item
-                                    key={g._id}
-                                    label={g.group_name}
-                                    value={g._id}
-                                    color={MODERN_PRIMARY}
-                                />
+                                <TouchableOpacity 
+                                    key={g._id} 
+                                    style={[styles.pickerOption, selectedGroup._id === g._id && styles.activeOption]} 
+                                    onPress={() => applyFilter(g)}
+                                >
+                                    <Text style={[styles.pickerOptionText, selectedGroup._id === g._id && styles.activeText]}>
+                                        {g.group_name}
+                                    </Text>
+                                    {selectedGroup._id === g._id && (
+                                        <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} />
+                                    )}
+                                </TouchableOpacity>
                             ))}
-                        </Picker>
+                        </ScrollView>
                     </View>
                 </View>
-
-                {/* Content List / Loader */}
-                {loading ? (
-                    <View style={styles.loader}>
-                        <ActivityIndicator size="large" color={ACCENT_BLUE} />
-                        <Text style={styles.loadingTextBlue}>Fetching reports...</Text>
-                    </View>
-                ) : (
-                    <FlatList
-                        data={filteredData}
-                        renderItem={renderItem}
-                        keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
-                        ListEmptyComponent={EmptyList}
-                        style={styles.flatListStyle}
-                        contentContainerStyle={styles.flatListContentContainer}
-                    />
-                )}
-            </View>
-        </SafeAreaView>
+            </Modal>
+        </View>
     );
 };
 
 export default RelationshipManagerReport;
 
 const styles = StyleSheet.create({
-    // --- LAYOUT STYLES (from ReferredReport.js) ---
-    safeArea: {
-        flex: 1,
-        backgroundColor: TOP_GRADIENT[0]
+    mainContainer: { flex: 1, backgroundColor: COLORS.primary },
+    bgOverlay: { ...StyleSheet.absoluteFillObject, opacity: 0.15 },
+    
+    // Header
+    header: { 
+        paddingHorizontal: 20, 
+        paddingTop: Platform.OS === "android" ? 50 : 20, 
+        paddingBottom: 15,
+        alignItems: "center"
     },
-    topContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 20,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    mainContentArea: {
-        flex: 1,
-        backgroundColor: SUBTLE_BG_GREY,
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        paddingHorizontal: 16,
-        marginTop: -20,
-        paddingTop: 30,
-    },
-    headerSpacer: {
-        paddingTop: 20,
-        paddingBottom: 5
-    },
+    headerTopRow: { flexDirection: "row", justifyContent: "space-between", width: "100%", marginBottom: 15 },
+    headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", letterSpacing: 0.5 },
+    headerSub: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+    iconCircle: { backgroundColor: "#fff", padding: 6, borderRadius: 12 },
+    refreshBtn: { backgroundColor: COLORS.accent, padding: 8, borderRadius: 12 },
+    
+    // Content
+    contentContainer: { paddingHorizontal: 16, flex: 1 },
+    loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { color: COLORS.white, marginTop: 8, fontWeight: '600', opacity: 0.8 },
 
-    // --- TITLE STYLES (from ReferredReport.js) ---
-    titleContainer: {
-        alignItems: 'center',
+    // UNIQUE: Dual Summary
+    dualSummaryContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         marginBottom: 15,
     },
-    title: {
-        fontSize: 28,
-        fontWeight: "900",
-        color: CARD_BG,
-        marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.85)',
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-
-    // --- DROP DOWN / FILTER (from ReferredReport.js) ---
-    dropdownWrapper: {
-        backgroundColor: CARD_BG,
-        padding: 15,
-        borderRadius: 15,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: BORDER_COLOR,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
+    summaryBox: {
+        width: '48%',
+        backgroundColor: COLORS.cardBg,
+        borderRadius: 16,
+        padding: 14,
+        borderLeftWidth: 4,
         elevation: 2,
     },
-    dropdownLabel: {
-        fontWeight: "700",
-        marginBottom: 8,
-        color: MODERN_PRIMARY,
-        fontSize: 15,
+    summaryIconBg: { 
+        width: 36, height: 36, borderRadius: 10, 
+        justifyContent: 'center', alignItems: 'center', 
+        marginBottom: 10 
     },
-    pickerWrapper: {
-        borderWidth: 1,
-        borderColor: BORDER_COLOR,
-        borderRadius: 10,
-        overflow: "hidden",
-        backgroundColor: SUBTLE_BG_GREY,
-        // ** FIX 1: Increased height for Android container **
-        height: Platform.OS === 'android' ? 55 : 40,
-        justifyContent: 'center',
-    },
-    picker: {
-        color: MODERN_PRIMARY,
-        // ** FIX 2: Increased height for Android Picker **
-        height: Platform.OS === 'android' ? 55 : 40,
-        // ** FIX 3: CRITICAL for Android text alignment **
-        ...(Platform.OS === 'android' && { textAlignVertical: 'center' }),
-    },
+    summaryBoxLabel: { fontSize: 11, color: COLORS.muted, fontWeight: '700', textTransform: 'uppercase' },
+    summaryBoxValue: { fontSize: 18, fontWeight: '900', marginTop: 2 },
 
-    // --- TOTAL SUMMARY CARD (from ReferredReport.js) ---
-    totalWrapper: {
-        backgroundColor: "#fef3c7",
-        borderRadius: 18,
-        padding: 20,
-        marginBottom: 25,
-        borderLeftWidth: 6,
-        borderLeftColor: ACCENT_BLUE,
-        alignItems: 'center',
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    totalText: {
-        color: MODERN_PRIMARY,
-        fontWeight: "700",
-        fontSize: 18,
-    },
-    totalAmount: {
-        color: WARNING_RED,
-        fontWeight: "900",
-        fontSize: 28,
-        marginTop: 5,
-    },
-
-    // --- REPORT CARD (Matching ReferredReport.js) ---
-    cardContainer: {
-        backgroundColor: CARD_BG,
-        borderRadius: 18,
-        marginBottom: 18,
-        overflow: 'hidden',
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: BORDER_COLOR,
-    },
-    card: {
-        flex: 1,
-        padding: 20,
-    },
-
-    // CARD CONTENT
-    cardHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 10,
-        paddingBottom: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: BORDER_COLOR,
-    },
-    groupName: {
-        fontSize: 18,
-        fontWeight: "900",
-        color: MODERN_PRIMARY,
-        marginRight: 10,
-        flexShrink: 1,
-    },
-    statusTag: {
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 15,
-        alignSelf: 'flex-start',
-    },
-    statusTagText: {
-        fontSize: 12,
-        fontWeight: "700",
-        textTransform: 'uppercase',
-    },
-    cardBody: {
+    // Filter
+    filterBtn: {
+        backgroundColor: COLORS.white,
+        borderRadius: 14,
+        padding: 14,
         marginBottom: 15,
-    },
-    customerName: {
-        fontSize: 22,
-        fontWeight: "900",
-        color: MODERN_PRIMARY,
-        marginBottom: 5,
-    },
-    customerInfo: {
-        fontSize: 14,
-        color: NEUTRAL_GREY,
-        marginTop: 5,
-        fontWeight: "500",
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-    },
-    cardFinancial: {
-        paddingTop: 10,
-    },
-
-    // Compact row for label and value
-    financialRowCompact: {
-        flexDirection: "row",
-        justifyContent: "flex-start",
-        alignItems: 'baseline',
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: BORDER_COLOR,
-    },
-    financialLabelCompact: {
-        fontSize: 15,
-        color: NEUTRAL_GREY,
-        fontWeight: "500",
-        marginRight: 8,
-    },
-
-    financialValue: {
-        fontSize: 16,
-        color: MODERN_PRIMARY,
-        fontWeight: "800",
-    },
-
-    // Balance Row (Stands out - Compact)
-    balanceRowCompact: {
-        flexDirection: "row",
-        justifyContent: "flex-start",
-        paddingVertical: 15,
-        marginTop: 10,
-        borderRadius: 12,
-        paddingHorizontal: 15,
         borderWidth: 1,
-        alignItems: 'baseline',
+        borderColor: 'rgba(0,0,0,0.05)'
     },
-    balanceLabel: {
-        fontSize: 13,
-        fontWeight: "700",
+    filterContent: { flexDirection: 'row', alignItems: 'center' },
+    filterText: { fontSize: 15, fontWeight: '700', color: COLORS.primary, marginLeft: 8 },
+
+    // Cards
+    listCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 18,
+        padding: 16,
+        marginBottom: 12,
+        elevation: 3,
     },
-    balanceValue: {
-        fontSize: 17,
-        fontWeight: "900",
+    cardTopSection: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginBottom: 12, 
+        paddingBottom: 12, 
+        borderBottomWidth: 1, 
+        borderBottomColor: '#f0f0f0' 
+    },
+    avatar: { width: 42, height: 42, borderRadius: 12, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
+    avatarText: { color: '#fff', fontSize: 16, fontWeight: '900' },
+    clientName: { fontSize: 16, fontWeight: '800', color: COLORS.primary },
+    subText: { fontSize: 12, color: COLORS.muted, fontWeight: '500' },
+    rowCenter: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    dotSeparator: { marginHorizontal: 5, color: COLORS.muted },
+
+    // Profit Tag (Unique)
+    profitTag: {
+        alignItems: 'flex-end',
+    },
+    profitTagText: { fontSize: 14, fontWeight: '900', color: COLORS.accent },
+    profitTagLabel: { fontSize: 10, color: COLORS.muted, textTransform: 'uppercase', fontWeight: '700' },
+
+    // Grid
+    detailsGrid: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    gridItem: { alignItems: 'center', flex: 1 },
+    gridDivider: { width: 1, height: '100%', backgroundColor: '#eee' },
+    gridLabel: { fontSize: 11, color: COLORS.muted, fontWeight: '600' },
+    gridValue: { fontSize: 14, fontWeight: '800', color: COLORS.primary, marginTop: 2 },
+
+    // Footer Balance
+    balanceFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+        borderLeftWidth: 3, // Indicator color set inline
+    },
+    balanceLabel: { fontSize: 11, color: COLORS.muted, fontWeight: '600' },
+    balanceAmount: { fontSize: 18, fontWeight: '900' },
+    smallActionBtn: { 
+        padding: 8, 
+        borderRadius: 8, 
+        flexDirection: 'row', 
+        alignItems: 'center' 
     },
 
-    // --- FLATLIST ---
-    flatListStyle: {
-        flex: 1,
+    // Modal
+    modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+    pickerSheet: { 
+        backgroundColor: "#fff", 
+        padding: 20, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30, 
+        paddingBottom: 30 
     },
-    flatListContentContainer: {
-        paddingBottom: 120,
+    sheetHandle: { width: 35, height: 4, backgroundColor: '#E0E0E0', borderRadius: 10, alignSelf: 'center', marginBottom: 15 },
+    sheetTitle: { fontSize: 18, fontWeight: "900", marginBottom: 15, color: COLORS.primary, textAlign: 'center' },
+    pickerOption: { 
+        padding: 15, 
+        borderRadius: 12, 
+        marginBottom: 8, 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        backgroundColor: '#F5F7FA' 
     },
+    activeOption: { backgroundColor: 'rgba(248, 192, 9, 0.15)' },
+    pickerOptionText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
+    activeText: { color: COLORS.primary, fontWeight: '800' },
 
-    // --- LOADER/EMPTY STATE ---
-    loader: {
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: height * 0.4,
-    },
-    loadingTextBlue: {
-        marginTop: 10,
-        color: ACCENT_BLUE,
-        fontSize: 16,
-        fontWeight: '600'
-    },
-    emptyContainer: {
-        alignItems: "center",
-        marginTop: 80,
-        padding: 20,
-    },
-    emptyText: {
-        color: NEUTRAL_GREY,
-        marginTop: 15,
-        fontWeight: "600",
-        fontSize: 18,
-    },
+    // Empty
+    emptyContainer: { alignItems: 'center', marginTop: 50, padding: 20 },
+    emptyText: { color: "rgba(255,255,255,0.8)", marginTop: 10, fontSize: 16, fontWeight: '600', textAlign: 'center' }
 });

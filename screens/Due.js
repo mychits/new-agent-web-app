@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   title: {
-    fontSize: 28, 
+    fontSize: 24, 
     fontWeight: "900",
     color: CARD_BG,
     marginBottom: 4,

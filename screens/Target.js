@@ -52,7 +52,27 @@ const Target = ({ navigation }) => {
   const [tmpYear, setTmpYear] = useState(year);
   const [showPicker, setShowPicker] = useState(false);
 
+  // Animation Refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const blinkAnim = useRef(new Animated.Value(1)).current; // Ref for blinking
+
+  // Blinking Animation Effect
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(blinkAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(blinkAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [blinkAnim]);
 
   const fetchTargetDetails = async () => {
     try {
@@ -92,7 +112,7 @@ const Target = ({ navigation }) => {
 
       Animated.timing(fadeAnim, { 
         toValue: 1, 
-        duration: 800, 
+        duration: 600, 
         useNativeDriver: true 
       }).start();
     } catch (err) {
@@ -134,7 +154,7 @@ const Target = ({ navigation }) => {
               style={styles.iconCircle}
               activeOpacity={0.7}
             >
-              <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
+              <Ionicons name="chevron-back" size={22} color={COLORS.primary} />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -142,7 +162,7 @@ const Target = ({ navigation }) => {
               style={styles.refreshBtn}
               activeOpacity={0.7}
             >
-              <Feather name="refresh-cw" size={20} color={COLORS.primary} />
+              <Feather name="refresh-cw" size={18} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
           <Text style={styles.headerTitle}>Target Performance</Text>
@@ -158,9 +178,9 @@ const Target = ({ navigation }) => {
             <Animated.ScrollView 
               style={{ opacity: fadeAnim }} 
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 40 }}
+              contentContainerStyle={{ paddingBottom: 30 }}
             >
-              {/* Date Filter - Always Visible */}
+              {/* Date Filter - Compact */}
               <TouchableOpacity 
                 style={styles.dateCard} 
                 onPress={() => setShowPicker(true)}
@@ -168,18 +188,23 @@ const Target = ({ navigation }) => {
               >
                 <View style={styles.dateInfo}>
                   <View style={styles.calendarIconBg}>
-                    <Ionicons name="calendar" size={20} color={COLORS.white} />
+                    <Ionicons name="calendar" size={16} color={COLORS.white} />
                   </View>
                   <Text style={styles.dateText}>
                     {moment().month(month).format("MMMM")} {year}
                   </Text>
                 </View>
-                <Feather name="edit-3" size={18} color={COLORS.primary} />
+                
+                {/* Wrapped Pencil Icon in Animated View for Blinking */}
+                <Animated.View style={{ opacity: blinkAnim }}>
+                  <Feather name="edit-3" size={16} color={COLORS.primary} />
+                </Animated.View>
+                
               </TouchableOpacity>
 
-              {/* Conditional Rendering: Target Analytics vs No Target Message */}
               {targetData.total_target > 0 ? (
                 <>
+                  {/* Main Progress Card - Compact */}
                   <View style={styles.mainCard}>
                     <View style={styles.cardHeader}>
                       <Text style={styles.cardLabel}>Current Progress</Text>
@@ -200,43 +225,43 @@ const Target = ({ navigation }) => {
                         <Text style={styles.statValue}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={styles.statLabel}>Monthly Goal</Text>
+                        <Text style={styles.statLabel}>Goal</Text>
                         <Text style={styles.statValue}>₹{targetData.total_target.toLocaleString("en-IN")}</Text>
                       </View>
                     </View>
                   </View>
 
+                  {/* Mini Stats Grid - Compact */}
                   <View style={styles.miniGrid}>
                     <View style={styles.miniCard}>
                       <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}>
-                        <MaterialCommunityIcons name="account-group" size={24} color={COLORS.primary} />
+                        <MaterialCommunityIcons name="account-group" size={20} color={COLORS.primary} />
                       </View>
                       <Text style={styles.miniVal}>{targetData.total_enrollments}</Text>
-                      <Text style={styles.miniLabel}>Total Enrollments</Text>
+                      <Text style={styles.miniLabel}>Enrollments</Text>
                     </View>
                     
                     <View style={styles.miniCard}>
                       <View style={[styles.iconBox, { backgroundColor: '#E8F5E9' }]}>
-                        <MaterialCommunityIcons name="briefcase-check" size={24} color={COLORS.success} />
+                        <MaterialCommunityIcons name="briefcase-check" size={20} color={COLORS.success} />
                       </View>
                       <Text style={styles.miniVal}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
-                      <Text style={styles.miniLabel}>Revenue Generated</Text>
+                      <Text style={styles.miniLabel}>Revenue</Text>
                     </View>
                   </View>
                 </>
               ) : (
                 <View style={styles.noTargetCard}>
-                  <MaterialCommunityIcons name="target-variant" size={60} color={COLORS.accent} />
+                  <MaterialCommunityIcons name="target-variant" size={50} color={COLORS.accent} />
                   <Text style={styles.noTargetTitle}>No Target Assigned</Text>
                   <Text style={styles.noTargetSub}>
-                    There is no sales target assigned to you for {moment().month(month).format("MMMM")} {year}. 
-                    Please contact your manager for further details.
+                    No target for {moment().month(month).format("MMMM")} {year}. Contact manager.
                   </Text>
                 </View>
               )}
 
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Enrollments List</Text>
+                <Text style={styles.sectionTitle}>Enrollments</Text>
                 <Text style={styles.countBadge}>{enrollments.length}</Text>
               </View>
               
@@ -247,15 +272,19 @@ const Target = ({ navigation }) => {
                       <View style={styles.avatar}>
                         <Text style={styles.avatarText}>{item.user_id?.full_name?.charAt(0)}</Text>
                       </View>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
+                      <View style={{ flex: 1, marginLeft: 10 }}>
                         <Text style={styles.clientName}>{item.user_id?.full_name}</Text>
                         <TouchableOpacity 
                           style={styles.phoneRow} 
                           onPress={() => handleCall(item.user_id?.phone_number)}
                         >
-                          <Feather name="phone" size={12} color={COLORS.bgBlue} />
+                          <Feather name="phone" size={11} color={COLORS.bgBlue} />
                           <Text style={styles.clientContact}> {item.user_id?.phone_number}</Text>
                         </TouchableOpacity>
+                        {/* Email moved here below phone number */}
+                        <Text style={styles.emailText} numberOfLines={1}>
+                          {item.user_id?.email || 'No email registered'}
+                        </Text>
                       </View>
                       <View style={styles.amountContainer}>
                         <Text style={styles.amountText}>₹{item.group_id?.group_value?.toLocaleString("en-IN")}</Text>
@@ -269,16 +298,13 @@ const Target = ({ navigation }) => {
                           {item.group_id?.group_name}
                         </Text>
                       </View>
-                      <Text style={styles.emailText} numberOfLines={1}>
-                        {item.user_id?.email || 'No email registered'}
-                      </Text>
                     </View>
                   </View>
                 ))
               ) : (
                 <View style={styles.emptyContainer}>
-                  <MaterialCommunityIcons name="database-off-outline" size={50} color="rgba(255,255,255,0.4)" />
-                  <Text style={styles.noDataText}>No enrollment records found for this period.</Text>
+                  <MaterialCommunityIcons name="database-off-outline" size={40} color="rgba(255,255,255,0.4)" />
+                  <Text style={styles.noDataText}>No records found.</Text>
                 </View>
               )}
             </Animated.ScrollView>
@@ -344,135 +370,149 @@ const styles = StyleSheet.create({
   
   header: { 
     paddingHorizontal: 20, 
-    paddingTop: Platform.OS === "android" ? 50 : 20,
-    paddingBottom: 15,
+    // Increased paddingTop to move header down
+    paddingTop: Platform.OS === "android" ? 60 : 25, 
+    paddingBottom: 10,
     alignItems: "center"
   },
   headerTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    marginBottom: 10
+    marginBottom: 18
   },
-  headerTitle: { fontSize: 22, fontWeight: "900", color: "#fff", letterSpacing: 0.5, textAlign: 'center' },
-  iconCircle: { backgroundColor: "#fff", padding: 8, borderRadius: 12 },
-  refreshBtn: { backgroundColor: COLORS.accent, padding: 10, borderRadius: 12 },
+  headerTitle: { fontSize: 20, fontWeight: "900", color: "#fff", letterSpacing: 0.5 },
+  iconCircle: { backgroundColor: "#fff", padding: 6, borderRadius: 10 },
+  refreshBtn: { backgroundColor: COLORS.accent, padding: 8, borderRadius: 10 },
   
-  contentContainer: { paddingHorizontal: 20, flex: 1 },
+  contentContainer: { paddingHorizontal: 16, flex: 1 },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: COLORS.white, marginTop: 10, fontWeight: '600', opacity: 0.8 },
+  loadingText: { color: COLORS.white, marginTop: 8, fontWeight: '600', opacity: 0.8 },
 
   dateCard: { 
     backgroundColor: COLORS.white, 
-    borderRadius: 20, 
-    padding: 15, 
-    marginBottom: 20, 
+    borderRadius: 14, 
+    padding: 12, 
+    marginBottom: 12, 
     flexDirection: "row", 
     alignItems: "center", 
     justifyContent: "space-between",
-    elevation: 5
+    elevation: 3
   },
   dateInfo: { flexDirection: 'row', alignItems: 'center' },
-  calendarIconBg: { backgroundColor: COLORS.bgBlue, padding: 8, borderRadius: 10, marginRight: 12 },
-  dateText: { fontSize: 18, fontWeight: "800", color: COLORS.primary },
+  calendarIconBg: { backgroundColor: COLORS.bgBlue, padding: 6, borderRadius: 8, marginRight: 10 },
+  dateText: { fontSize: 15, fontWeight: "800", color: COLORS.primary },
 
   mainCard: { 
     backgroundColor: COLORS.cardBg, 
-    borderRadius: 30, 
-    padding: 25, 
-    marginBottom: 20, 
-    elevation: 8,
+    borderRadius: 20, 
+    padding: 16, 
+    marginBottom: 12, 
+    elevation: 6,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardLabel: { fontSize: 12, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase" },
-  statusBadge: { backgroundColor: 'rgba(39, 174, 96, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  statusText: { color: COLORS.success, fontSize: 10, fontWeight: '900' },
-  percentageText: { fontSize: 48, fontWeight: "900", color: COLORS.primary, marginVertical: 5 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+  cardLabel: { fontSize: 11, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase" },
+  statusBadge: { backgroundColor: 'rgba(39, 174, 96, 0.1)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusText: { color: COLORS.success, fontSize: 9, fontWeight: '900' },
+  percentageText: { fontSize: 36, fontWeight: "900", color: COLORS.primary },
   
-  progressTrack: { height: 14, backgroundColor: "#E9ECEF", borderRadius: 7, overflow: "hidden", marginVertical: 15 },
-  progressFill: { height: "100%", backgroundColor: COLORS.accent, borderRadius: 7 },
+  progressTrack: { height: 10, backgroundColor: "#E9ECEF", borderRadius: 5, overflow: "hidden", marginVertical: 10 },
+  progressFill: { height: "100%", backgroundColor: COLORS.accent, borderRadius: 5 },
   
-  statsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 5 },
-  statLabel: { fontSize: 12, color: COLORS.muted, fontWeight: "700" },
-  statValue: { fontSize: 18, fontWeight: "900", color: COLORS.primary, marginTop: 2 },
+  statsRow: { flexDirection: "row", justifyContent: "space-between" },
+  statLabel: { fontSize: 11, color: COLORS.muted, fontWeight: "700" },
+  statValue: { fontSize: 15, fontWeight: "900", color: COLORS.primary, marginTop: 1 },
 
-  miniGrid: { flexDirection: "row", justifyContent: "space-between", marginBottom: 25 },
+  miniGrid: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
   miniCard: { 
     backgroundColor: COLORS.white, 
     width: "48%", 
-    borderRadius: 25, 
-    padding: 20, 
+    borderRadius: 16, 
+    padding: 14, 
     alignItems: "flex-start",
-    elevation: 4
+    elevation: 3
   },
-  iconBox: { padding: 10, borderRadius: 15, marginBottom: 12 },
-  miniVal: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
-  miniLabel: { fontSize: 12, fontWeight: "600", color: COLORS.muted, marginTop: 4 },
+  iconBox: { padding: 8, borderRadius: 12, marginBottom: 8 },
+  miniVal: { fontSize: 15, fontWeight: "900", color: COLORS.primary },
+  miniLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, marginTop: 2 },
 
   noTargetCard: {
     backgroundColor: COLORS.cardBg,
-    borderRadius: 30,
-    padding: 35,
+    borderRadius: 20,
+    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    elevation: 8,
+    marginBottom: 12,
+    elevation: 6,
   },
   noTargetTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '900',
     color: COLORS.primary,
-    marginTop: 15,
+    marginTop: 10,
   },
   noTargetSub: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.muted,
     textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 20,
+    marginTop: 6,
+    lineHeight: 18,
     fontWeight: '600',
   },
 
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, marginTop: 10 },
-  sectionTitle: { fontSize: 24, fontWeight: "900", color: "#fff", marginRight: 10 },
-  countBadge: { backgroundColor: COLORS.accent, color: COLORS.primary, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12, fontSize: 12, fontWeight: '900', overflow: 'hidden' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 5 },
+  sectionTitle: { fontSize: 18, fontWeight: "900", color: "#fff", marginRight: 8 },
+  countBadge: { backgroundColor: COLORS.accent, color: COLORS.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, fontSize: 11, fontWeight: '900', overflow: 'hidden' },
 
   listCard: { 
     backgroundColor: COLORS.white, 
-    borderRadius: 25, 
-    padding: 18, 
-    marginBottom: 15,
-    elevation: 3
+    borderRadius: 16, 
+    padding: 12, 
+    marginBottom: 10,
+    elevation: 2
   },
   listHeader: { flexDirection: "row", alignItems: "center" },
-  avatar: { width: 50, height: 50, borderRadius: 18, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
-  avatarText: { color: "#fff", fontSize: 22, fontWeight: "900" },
-  clientName: { fontSize: 17, fontWeight: "800", color: COLORS.primary },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingVertical: 2 },
-  clientContact: { fontSize: 14, color: COLORS.bgBlue, fontWeight: '700', textDecorationLine: 'underline' },
-  amountContainer: { backgroundColor: '#F0F9F4', padding: 8, borderRadius: 12 },
-  amountText: { fontSize: 15, fontWeight: "900", color: COLORS.success },
+  avatar: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
+  avatarText: { color: "#fff", fontSize: 16, fontWeight: "900" },
+  clientName: { fontSize: 14, fontWeight: "800", color: COLORS.primary },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  clientContact: { fontSize: 12, color: COLORS.bgBlue, fontWeight: '700', textDecorationLine: 'underline' },
+  amountContainer: { backgroundColor: '#F0F9F4', padding: 6, borderRadius: 8 },
+  amountText: { fontSize: 13, fontWeight: "900", color: COLORS.success },
   
-  listFooter: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: "#F1F4F8" },
-  schemeBadge: { backgroundColor: '#F8F9FA', padding: 6, borderRadius: 8, alignSelf: 'flex-start' },
-  schemeText: { fontSize: 12, color: COLORS.primary },
-  emailText: { fontSize: 12, color: COLORS.muted, marginTop: 8, fontStyle: 'italic' },
+  // Style for email moved inside the main content
+  emailText: { 
+    fontSize: 11, 
+    color: COLORS.muted, 
+    marginTop: 2,
+    paddingRight: 10 // Prevent overlap with amount
+  },
 
-  emptyContainer: { alignItems: 'center', marginTop: 40, opacity: 0.6 },
-  noDataText: { color: "#fff", textAlign: "center", marginTop: 15, fontSize: 16, fontWeight: '600' },
+  listFooter: { 
+    marginTop: 1, 
+    paddingTop: 5, 
+    borderTopWidth: 1, 
+    borderTopColor: "#F1F4F8", 
+    alignItems: 'center',
+  },
+  schemeBadge: { backgroundColor: '#F8F9FA', padding: 4, borderRadius: 6 },
+  schemeText: { fontSize: 12, color: COLORS.primary },
+
+  emptyContainer: { alignItems: 'center', marginTop: 30, opacity: 0.6 },
+  noDataText: { color: "#fff", textAlign: "center", marginTop: 10, fontSize: 14, fontWeight: '600' },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
-  pickerSheet: { backgroundColor: "#fff", padding: 25, borderTopLeftRadius: 40, borderTopRightRadius: 40, paddingBottom: 40 },
-  sheetHandle: { width: 40, height: 5, backgroundColor: '#E0E0E0', borderRadius: 10, alignSelf: 'center', marginBottom: 20 },
-  sheetTitle: { fontSize: 22, fontWeight: "900", marginBottom: 25, color: COLORS.primary, textAlign: 'center' },
-  pickerSubLabel: { fontSize: 14, fontWeight: '800', color: COLORS.muted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  yearScroll: { marginBottom: 25 },
+  pickerSheet: { backgroundColor: "#fff", padding: 20, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingBottom: 30 },
+  sheetHandle: { width: 35, height: 4, backgroundColor: '#E0E0E0', borderRadius: 10, alignSelf: 'center', marginBottom: 15 },
+  sheetTitle: { fontSize: 18, fontWeight: "900", marginBottom: 20, color: COLORS.primary, textAlign: 'center' },
+  pickerSubLabel: { fontSize: 12, fontWeight: '800', color: COLORS.muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
+  yearScroll: { marginBottom: 20 },
   monthGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-  monthBox: { width: "31%", paddingVertical: 15, alignItems: "center", borderRadius: 18, backgroundColor: "#F5F7FA", marginBottom: 10 },
-  yearBox: { paddingHorizontal: 25, paddingVertical: 12, borderRadius: 18, backgroundColor: "#F5F7FA", marginRight: 12 },
-  activeBox: { backgroundColor: COLORS.primary, elevation: 5 },
-  boxText: { fontWeight: "800", color: "#A0AEC0", fontSize: 15 },
+  monthBox: { width: "31%", paddingVertical: 12, alignItems: "center", borderRadius: 12, backgroundColor: "#F5F7FA", marginBottom: 8 },
+  yearBox: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: "#F5F7FA", marginRight: 10 },
+  activeBox: { backgroundColor: COLORS.primary, elevation: 4 },
+  boxText: { fontWeight: "800", color: "#A0AEC0", fontSize: 13 },
   whiteText: { color: "#fff" },
-  applyBtn: { backgroundColor: COLORS.accent, padding: 20, borderRadius: 22, marginTop: 30, alignItems: "center", elevation: 6 },
-  applyBtnText: { fontWeight: "900", fontSize: 16, color: COLORS.primary, letterSpacing: 1 },
+  applyBtn: { backgroundColor: COLORS.accent, padding: 14, borderRadius: 16, marginTop: 20, alignItems: "center", elevation: 4 },
+  applyBtnText: { fontWeight: "900", fontSize: 14, color: COLORS.primary, letterSpacing: 1 },
 });

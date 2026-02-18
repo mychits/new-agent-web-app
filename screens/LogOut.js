@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { 
     View, 
     Text, 
@@ -9,15 +10,17 @@ import {
     ActivityIndicator, 
     Dimensions, 
     Modal,
-    RefreshControl
+    RefreshControl,
+    Platform
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"; 
+import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Header from "../components/Header"; 
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import baseUrl from "../constants/baseUrl";
+import moment from "moment";
 
 const { width } = Dimensions.get('window');
 
@@ -27,14 +30,63 @@ const COLORS = {
     DARK: "#1e293b",
     SLATE: "#64748b",
     WHITE: "#ffffff",
-    BG: "#f8fafc",
+    BG: "#f1f5f9", 
     SUCCESS: "#10b981",
+    SUCCESS_LIGHT: "#d1fae5",
     SUCCESS_GRADIENT: ["#10b981", "#059669"],
     DANGER: ["#ff4b2b", "#ff416c"],
-    DANGER_LIGHT: "#fff1f2"
+    DANGER_LIGHT: "#fee2e2",
+    WARNING: "#f59e0b",
+    WARNING_LIGHT: "#fef3c7",
+    ACCENT: "#6366f1", 
+    MUTED: "#94a3b8"
 };
 
+// --- Helper Components ---
+
+const TabSwitcher = ({ activeTab, setActiveTab }) => (
+  <View style={localStyles.tabContainer}>
+    <TouchableOpacity
+      style={[localStyles.tabButton, activeTab === 'attendance' && localStyles.activeTabButton]}
+      onPress={() => setActiveTab('attendance')}
+    >
+      <Text style={[localStyles.tabText, activeTab === 'attendance' && localStyles.activeTabText]}>Attendance</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[localStyles.tabButton, activeTab === 'salary' && localStyles.activeTabButton]}
+      onPress={() => setActiveTab('salary')}
+    >
+      <Text style={[localStyles.tabText, activeTab === 'salary' && localStyles.activeTabText]}>Salary</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const ActivityDot = ({ status }) => {
+  let bgColor = '#e2e8f0';
+  if (status === 'Present') bgColor = COLORS.SUCCESS;
+  if (status === 'Absent') bgColor = COLORS.DANGER[0];
+  if (status === 'Half Day') bgColor = COLORS.WARNING;
+  if (status === 'On Leave') bgColor = '#9C27B0';
+  return <View style={[localStyles.heatDot, { backgroundColor: bgColor }]} />;
+};
+
+const AttendanceMetric = ({ label, value, color, icon, onPress }) => (
+  <TouchableOpacity style={localStyles.metricCard} onPress={onPress} activeOpacity={0.7}>
+    <View style={[localStyles.metricIconBg, { backgroundColor: color + '15' }]}>
+      <MaterialCommunityIcons name={icon} size={22} color={color} />
+    </View>
+    <View style={localStyles.metricContent}>
+      <Text style={localStyles.metricValue}>{value || 0}</Text>
+      <Text style={localStyles.metricLabel}>{label}</Text>
+    </View>
+    <Ionicons name="chevron-forward" size={18} color={COLORS.MUTED} />
+  </TouchableOpacity>
+);
+
+// --- Main Component ---
+
 const LogOut = ({ navigation }) => {
+  // --- State: Daily Punch ---
   const [attendanceData, setAttendanceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [punchingOut, setPunchingOut] = useState(false);
@@ -42,112 +94,138 @@ const LogOut = ({ navigation }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false); 
   const [refreshKey, setRefreshKey] = useState(0); 
 
-  const fetchAttendance = async () => {
+  // --- State: Monthly & Salary ---
+  const [activeTab, setActiveTab] = useState('attendance');
+  const [monthlyData, setMonthlyData] = useState(null);
+  const [ledgerArray, setLedgerArray] = useState([]);
+  const [month, setMonth] = useState(moment().month());
+  const [year, setYear] = useState(moment().year());
+  const [showPicker, setShowPicker] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [detailType, setDetailType] = useState('');
+  const [filteredDates, setFilteredDates] = useState([]);
+  const [salaryLoading, setSalaryLoading] = useState(false);
+
+  // --- Config ---
+  const currentYear = moment().year();
+  const currentMonth = moment().month();
+
+  // --- Effects ---
+  useEffect(() => { fetchDailyAttendance(); }, []);
+  useEffect(() => { fetchMonthlyReport(); fetchLedgerData(); }, [month, year]);
+
+  // --- API Calls ---
+
+  const fetchDailyAttendance = async () => {
     try {
       const userJson = await AsyncStorage.getItem("user");
       if (!userJson) return;
       const user = JSON.parse(userJson);
       const employeeId = user?.userId || user?._id;
-
       const response = await axios.get(`${baseUrl}/employee-attendance/${employeeId}`);
       if (response.data.success) {
         setAttendanceData(response.data.data);
         setRefreshKey(prev => prev + 1); 
       }
     } catch (err) {
-      console.error("Fetch Error:", err);
+      console.error("Daily Fetch Error:", err);
     } finally {
       setLoading(false);
-      setPunchingOut(false); 
     }
+  };
+
+  const fetchMonthlyReport = async () => {
+    try {
+      const userJson = await AsyncStorage.getItem("user");
+      const user = JSON.parse(userJson);
+      const employeeId = user?.userId || user?._id;
+      const startDate = moment([year, month]).startOf("month").format("YYYY-MM-DD");
+      const endDate = moment([year, month]).endOf("month").format("YYYY-MM-DD");
+      const response = await axios.get(`${baseUrl}/employee-attendance/app-monthly-report`, {
+        params: { from_date: startDate, to_date: endDate, employee_id: employeeId }
+      });
+      if (response.data.status) setMonthlyData(response.data);
+    } catch (err) { console.error("Monthly Fetch Error:", err); }
+  };
+
+  const fetchLedgerData = async () => {
+    try {
+      setSalaryLoading(true);
+      const userJson = await AsyncStorage.getItem("user");
+      const user = JSON.parse(userJson);
+      const employeeId = user?.userId || user?._id;
+      if (employeeId) {
+        const response = await axios.get(`${baseUrl}/employee/ledgernew/${employeeId}`);
+        if (response.data.status && response.data.ledger) setLedgerArray(response.data.ledger);
+      }
+    } catch (err) { console.error("Ledger Error:", err); } 
+    finally { setSalaryLoading(false); }
   };
 
   const handlePunchOut = async () => {
     setShowConfirmModal(false);
     setPunchingOut(true); 
-    
     try {
       const userJson = await AsyncStorage.getItem("user");
       const user = JSON.parse(userJson);
       const employeeId = user?.userId || user?._id;
-
-      const response = await axios.put(`${baseUrl}/employee-attendance/punch`, {
-        employee_id: employeeId
-      });
-
-      const isSuccessful = response.data.success || 
-                          (response.data.message && response.data.message.toLowerCase().includes("successfully"));
-
+      const response = await axios.put(`${baseUrl}/employee-attendance/punch`, { employee_id: employeeId });
+      const isSuccessful = response.data.success || (response.data.message && response.data.message.toLowerCase().includes("successfully"));
       if (isSuccessful) {
-        await fetchAttendance(); 
+        await fetchDailyAttendance();
+        await fetchMonthlyReport();
         setShowSuccessModal(true);
       } else {
-        setPunchingOut(false);
         alert(response.data.message || "Could not end shift.");
       }
     } catch (err) {
-      setPunchingOut(false);
-      console.error("Punch Out Error:", err);
       alert("Check your connection or API route.");
-    }
+    } finally { setPunchingOut(false); }
   };
 
-  useEffect(() => {
-    fetchAttendance();
-  }, []);
-
+  // --- Helpers ---
   const formatWorkingHours = (decimalHours) => {
-    if (!decimalHours || decimalHours === "N/A") return "Calculating...";
-    
+    if (!decimalHours || decimalHours === "N/A") return "0h 0m";
     const totalSeconds = Math.floor(parseFloat(decimalHours) * 3600);
     const hrs = Math.floor(totalSeconds / 3600);
     const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-
-    let result = "";
-    if (hrs > 0) result += `${hrs} hr${hrs > 1 ? 's' : ''} `;
-    if (mins > 0) result += `${mins} min${mins > 1 ? 's' : ''} `;
-    if (secs > 0 || result === "") result += `${secs} sec${secs !== 1 ? 's' : ''}`;
-    
-    return result.trim();
+    return `${hrs}h ${mins}m`;
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+  const handleShowDetails = (type) => {
+    setDetailType(type);
+    setFilteredDates((monthlyData?.attendanceDataResponse || []).filter(item => item.status === type));
+    setShowDetails(true);
   };
 
+  const currentLedger = useMemo(() => {
+    if (!ledgerArray || ledgerArray.length === 0) return null;
+    const currentPeriod = moment([year, month]).format("MMMM YYYY");
+    return ledgerArray.find(item => item.period === currentPeriod) || null;
+  }, [ledgerArray, month, year]);
+
+  // Determine if we are viewing the current month/year
+  const isCurrentMonth = year === currentYear && month === currentMonth;
+
+  // --- Render ---
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" />
 
       {/* SUCCESS MODAL */}
-      <Modal visible={showSuccessModal} transparent animationType="slide">
+      <Modal visible={showSuccessModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-                <View style={styles.successModalPadding}>
-                    <View style={styles.successIconOuter}>
-                        <LinearGradient colors={COLORS.SUCCESS_GRADIENT} style={styles.successIconInner}>
-                            <Ionicons name="checkmark-done" size={50} color="#fff" />
-                        </LinearGradient>
-                    </View>
-                    <Text style={styles.modalTitle}>Shift Ended!</Text>
-                    <Text style={styles.modalSub}>Great job today. Your logout time has been recorded.</Text>
-                    
-                    <TouchableOpacity 
-                        style={styles.doneBtn} 
-                        onPress={() => setShowSuccessModal(false)}
-                    >
-                        <LinearGradient colors={COLORS.SUCCESS_GRADIENT} style={styles.doneBtnGradient}>
-                            <Text style={styles.confirmBtnText}>CLOSE OVERVIEW</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
+            <View style={localStyles.successCard}>
+                <View style={localStyles.successIconWrapper}>
+                    <LinearGradient colors={COLORS.SUCCESS_GRADIENT} style={localStyles.successIconInner}>
+                        <Ionicons name="checkmark-done" size={40} color="#fff" />
+                    </LinearGradient>
                 </View>
+                <Text style={localStyles.successTitle}>Shift Ended!</Text>
+                <Text style={localStyles.successSub}>Your logout time has been recorded. Have a great day!</Text>
+                <TouchableOpacity style={localStyles.successBtn} onPress={() => setShowSuccessModal(false)}>
+                    <Text style={localStyles.successBtnText}>BACK TO HOME</Text>
+                </TouchableOpacity>
             </View>
         </View>
       </Modal>
@@ -155,34 +233,90 @@ const LogOut = ({ navigation }) => {
       {/* CONFIRMATION MODAL */}
       <Modal visible={showConfirmModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-                <LinearGradient colors={[COLORS.DANGER_LIGHT, '#ffffff']} style={styles.modalGradient}>
-                    <View style={styles.modalIconBg}>
-                        <MaterialCommunityIcons name="clock-end" size={40} color="#ff416c" />
-                    </View>
-                    <Text style={styles.modalTitle}>End Shift?</Text>
-                    <Text style={styles.modalSub}>Are you sure you want to punch out for today?</Text>
-                    
-                    <View style={styles.modalActions}>
-                        <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowConfirmModal(false)}>
-                            <Text style={styles.cancelBtnText}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.confirmBtn} onPress={handlePunchOut}>
-                            <LinearGradient colors={COLORS.DANGER} style={styles.confirmBtnGradient}>
-                                <Text style={styles.confirmBtnText}>Punch Out</Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </View>
-                </LinearGradient>
+            <View style={localStyles.confirmCard}>
+                <View style={localStyles.confirmIconBg}>
+                    <MaterialCommunityIcons name="timer-sand" size={32} color="#fff" />
+                </View>
+                <Text style={localStyles.confirmTitle}>End Shift?</Text>
+                <Text style={localStyles.confirmSub}>You are about to punch out. This action cannot be undone.</Text>
+                <View style={localStyles.confirmActions}>
+                    <TouchableOpacity style={localStyles.confirmCancelBtn} onPress={() => setShowConfirmModal(false)}>
+                        <Text style={localStyles.confirmCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={localStyles.confirmActionBtn} onPress={handlePunchOut}>
+                        <LinearGradient colors={COLORS.DANGER} style={localStyles.confirmActionGradient}>
+                            <Text style={localStyles.confirmActionText}>Confirm</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
       </Modal>
 
+      {/* DATE PICKER MODAL */}
+      <Modal visible={showPicker} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={localStyles.pickerSheet}>
+            <Text style={localStyles.pickerTitle}>Select Period</Text>
+            <View style={localStyles.yearSwitcher}>
+              <TouchableOpacity onPress={() => setYear(year - 1)}><Ionicons name="chevron-back" size={24} color={COLORS.PRIMARY} /></TouchableOpacity>
+              <Text style={localStyles.yearLabel}>{year}</Text>
+              <TouchableOpacity disabled={year >= currentYear} onPress={() => setYear(year + 1)} style={{ opacity: year >= currentYear ? 0.3 : 1 }}><Ionicons name="chevron-forward" size={24} color={COLORS.PRIMARY} /></TouchableOpacity>
+            </View>
+            <View style={localStyles.monthGrid}>
+              {moment.monthsShort().map((m, i) => {
+                const isFutureMonth = year === currentYear && i > currentMonth;
+                const isCurrentMonthSelection = year === currentYear && i === currentMonth;
+                const isDisabled = isFutureMonth || (activeTab === 'salary' && isCurrentMonthSelection);
+                return (
+                  <TouchableOpacity 
+                    key={m} 
+                    disabled={isDisabled} 
+                    onPress={() => { setMonth(i); setShowPicker(false); }} 
+                    style={[localStyles.monthItem, month === i && localStyles.activeMonthItem, isDisabled && { opacity: 0.3 }]}
+                  >
+                    <Text style={[localStyles.monthItemText, month === i && localStyles.activeMonthItemText]}>{m}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity onPress={() => setShowPicker(false)} style={localStyles.cancelPickerBtn}><Text style={localStyles.cancelPickerText}>CLOSE</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* DETAIL LIST MODAL */}
+      <Modal visible={showDetails} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[localStyles.detailSheet]}>
+            <View style={localStyles.detailHeader}>
+              <Text style={localStyles.detailTitle}>{detailType} Dates</Text>
+              <TouchableOpacity onPress={() => setShowDetails(false)}><Ionicons name="close-circle" size={26} color={COLORS.SLATE} /></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 30}}>
+              {filteredDates.length > 0 ? filteredDates.map((item, idx) => (
+                <View key={idx} style={localStyles.detailRow}>
+                  <View style={localStyles.detailDateBox}>
+                    <Text style={localStyles.detailDateNum}>{moment(item.date).format("DD")}</Text>
+                    <Text style={localStyles.detailDateMon}>{moment(item.date).format("MMM")}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={localStyles.detailDayText}>{moment(item.date).format("dddd")}</Text>
+                    <Text style={localStyles.detailStatusText}>{item.status}</Text>
+                  </View>
+                </View>
+              )) : <Text style={localStyles.emptyText}>No records found.</Text>}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MAIN CONTENT */}
       <LinearGradient colors={[COLORS.PRIMARY_LIGHT, COLORS.PRIMARY]} style={styles.topHeader}>
           <Header />
           <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}>Attendance Overview</Text>
-              <Text style={styles.headerSubTitle}>View your daily logs and manage shifts</Text>
+               <Text style={styles.headerTitle}>My Activity</Text>
+        <Text style={styles.headerSubTitle}>Daily check-ins, monthly reports & payroll</Text>
           </View>
       </LinearGradient>
 
@@ -190,101 +324,180 @@ const LogOut = ({ navigation }) => {
         {(loading || punchingOut) ? (
           <View style={styles.fullPageLoader}>
             <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-            <Text style={styles.loaderText}>Processing...</Text>
           </View>
         ) : (
           <ScrollView 
               key={refreshKey} 
               showsVerticalScrollIndicator={false} 
-              contentContainerStyle={styles.scroll}
+              contentContainerStyle={styles.scrollContent}
               refreshControl={
-                  <RefreshControl refreshing={loading} onRefresh={fetchAttendance} color={COLORS.PRIMARY} />
+                  <RefreshControl refreshing={loading} onRefresh={fetchDailyAttendance} color={COLORS.PRIMARY} tintColor={COLORS.WHITE} />
               }
           >
-            {attendanceData ? (
+            {/* Controls: Tabs & Filter */}
+            <View style={localStyles.controlRow}>
+                <TabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} />
+                <TouchableOpacity style={localStyles.filterBtn} onPress={() => setShowPicker(true)}>
+                    <Ionicons name="calendar" size={16} color={COLORS.WHITE} />
+                    <Text style={localStyles.filterBtnText}>{moment([year, month]).format("MMM YYYY")}</Text>
+                </TouchableOpacity>
+            </View>
+
+            {activeTab === 'attendance' && (
               <View>
-                <View style={styles.glassCard}>
-                  <View style={styles.profileRow}>
-                      <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.avatar}>
-                          <Ionicons name="person" size={35} color={COLORS.PRIMARY} />
-                      </LinearGradient>
-                      <View style={styles.nameCol}>
-                          <Text style={styles.nameText}>{attendanceData.employee_id?.name || 'User'}</Text>
-                          <Text style={styles.roleText}>Official Employee</Text>
+                {/* 
+                   CONDITIONAL RENDERING:
+                   Only show Punch In/Out section if viewing the CURRENT month/year 
+                   AND attendanceData exists.
+                */}
+                {isCurrentMonth && attendanceData && (
+                  <>
+                    {/* Profile Summary */}
+                    <View style={localStyles.profileCard}>
+                      <View style={localStyles.profileRow}>
+                          <View style={localStyles.avatarContainer}>
+                              <LinearGradient colors={[COLORS.PRIMARY_LIGHT, COLORS.PRIMARY]} style={localStyles.avatar}>
+                                  <Ionicons name="person" size={26} color={COLORS.WHITE} />
+                              </LinearGradient>
+                          </View>
+                          <View style={localStyles.nameCol}>
+                              <Text style={localStyles.nameText}>{attendanceData.employee_id?.name || 'User'}</Text>
+                              <View style={localStyles.roleBadge}>
+                                  <Text style={localStyles.roleText}>{attendanceData.employee_id?.designation || 'Employee'}</Text>
+                              </View>
+                          </View>
+                          <View style={localStyles.datePill}>
+                              <Text style={localStyles.datePillText}>{moment(attendanceData.date).format("DD MMM")}</Text>
+                          </View>
                       </View>
-                  </View>
+                    </View>
 
-                  <View style={styles.infoGrid}>
-                      <View style={styles.infoRow}>
-                          <View style={styles.miniIcon}><Ionicons name="call" size={14} color={COLORS.PRIMARY} /></View>
-                          <Text style={styles.infoValue}>{attendanceData.employee_id?.phone_number || 'N/A'}</Text>
-                      </View>
-                      
-                      <View style={styles.infoRow}>
-                          <View style={styles.miniIcon}><Ionicons name="calendar" size={14} color={COLORS.PRIMARY} /></View>
-                          <Text style={styles.infoValue}>{formatDate(attendanceData.date || attendanceData.createdAt)}</Text>
-                      </View>
+                    {/* Time Stats (Gradient Cards) */}
+                    <View style={localStyles.timeRow}>
+                        {/* Punch In */}
+                        <LinearGradient colors={COLORS.SUCCESS_GRADIENT} style={localStyles.timeCard}>
+                            <View style={localStyles.timeIconBg}>
+                              <Ionicons name="log-in" size={20} color={COLORS.SUCCESS} />
+                            </View>
+                            <Text style={localStyles.timeLabel}>PUNCH IN</Text>
+                            <Text style={localStyles.timeValue}>{attendanceData.time || '--:--'}</Text>
+                        </LinearGradient>
 
-                      <View style={styles.infoRow}>
-                          <View style={styles.miniIcon}><Ionicons name="location" size={14} color={COLORS.PRIMARY} /></View>
-                          {/* Removed numberOfLines={1} to allow wrapping */}
-                          <Text style={styles.infoValue}>{attendanceData.employee_id?.address || 'N/A'}</Text>
-                      </View>
-                  </View>
-                </View>
-
-                {/* BOXES SECTION */}
-                <View style={styles.timeSectionContainer}>
-                    <View style={styles.timeBoxesRow}>
-                        <View style={[styles.timeCircle, styles.successCircle]}>
-                            <Text style={styles.timeLabel}>PUNCH IN</Text>
-                            <Text style={styles.timeMain}>{attendanceData.time}</Text>
-                        </View>
-                        
-                        <View style={[
-                            styles.timeCircle, 
-                            attendanceData.logout_time && styles.dangerCircle
-                        ]}>
-                            <Text style={styles.timeLabel}>PUNCH OUT</Text>
-                            <Text style={[styles.timeMain, !attendanceData.logout_time && {color: '#cbd5e1'}]}>
-                              {attendanceData.logout_time || '--:--'}
+                        {/* Punch Out */}
+                        <LinearGradient 
+                          colors={attendanceData.logout_time ? COLORS.DANGER : ['#e2e8f0', '#cbd5e1']} 
+                          style={localStyles.timeCard}
+                        >
+                            <View style={localStyles.timeIconBg}>
+                              <Ionicons name="log-out" size={20} color={attendanceData.logout_time ? COLORS.DANGER[0] : COLORS.SLATE} />
+                            </View>
+                            <Text style={[localStyles.timeLabel, !attendanceData.logout_time && {color: COLORS.SLATE}]}>PUNCH OUT</Text>
+                            <Text style={[localStyles.timeValue, !attendanceData.logout_time && {color: COLORS.DARK}]}>
+                                {attendanceData.logout_time || 'Pending'}
                             </Text>
+                        </LinearGradient>
+                    </View>
+
+                    {/* Work Duration */}
+                    {attendanceData.logout_time && (
+                      <View style={localStyles.durationCard}>
+                        <MaterialCommunityIcons name="timer-sand" size={22} color={COLORS.PRIMARY} />
+                        <View style={localStyles.durationContent}>
+                            <Text style={localStyles.durationLabel}>Total Duration</Text>
+                            <Text style={localStyles.durationValue}>{formatWorkingHours(attendanceData.working_hours)}</Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {!attendanceData.logout_time && (
+                      <TouchableOpacity activeOpacity={0.8} onPress={() => setShowConfirmModal(true)} style={localStyles.actionBtnContainer}>
+                          <LinearGradient colors={COLORS.DANGER} style={localStyles.actionBtnGradient}>
+                              <Ionicons name="exit" size={24} color="#fff" />
+                              <Text style={localStyles.actionBtnText}>END MY SHIFT</Text>
+                          </LinearGradient>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
+
+                {/* Monthly Overview - Shows for any selected month */}
+                {monthlyData && (
+                  <>
+                    <View style={localStyles.sectionHeader}>
+                        <Text style={localStyles.sectionTitle}>Monthly Overview</Text>
+                        <View style={localStyles.divider} />
+                    </View>
+
+                    <View style={localStyles.heatmapCard}>
+                        <Text style={localStyles.cardSmallTitle}>CONSISTENCY</Text>
+                        <View style={localStyles.dotGrid}>
+                            {monthlyData?.attendanceDataResponse?.map((item, index) => (
+                                <ActivityDot key={index} status={item.status} />
+                            ))}
+                        </View>
+                        <View style={localStyles.legendRow}>
+                            <View style={localStyles.legendItem}><View style={[localStyles.legendDot, { backgroundColor: COLORS.SUCCESS }]} /><Text style={localStyles.legendText}>Present</Text></View>
+                            <View style={localStyles.legendItem}><View style={[localStyles.legendDot, { backgroundColor: COLORS.DANGER[0] }]} /><Text style={localStyles.legendText}>Absent</Text></View>
+                            <View style={localStyles.legendItem}><View style={[localStyles.legendDot, { backgroundColor: COLORS.WARNING }]} /><Text style={localStyles.legendText}>Half</Text></View>
+                            <View style={localStyles.legendItem}><View style={[localStyles.legendDot, { backgroundColor: '#9C27B0' }]} /><Text style={localStyles.legendText}>Leave</Text></View>
                         </View>
                     </View>
 
-                    {/* DURATION DISPLAYED ON SEPARATE LINES */}
-                    {attendanceData.logout_time && (
-                      <View style={styles.workedDurationContainer}>
-                         <View style={styles.workedDurationHeader}>
-                            <MaterialCommunityIcons name="timer-sand" size={20} color={COLORS.PRIMARY} />
-                            <Text style={styles.workedDurationLabel}>Worked hrs is:</Text>
-                         </View>
-                         <Text style={styles.workedDurationValue}>
-                            {formatWorkingHours(attendanceData.working_hours)}
-                         </Text>
-                      </View>
-                    )}
-                </View>
-
-                {!attendanceData.logout_time && (
-                  <View style={styles.buttonWrapper}>
-                      <TouchableOpacity 
-                          activeOpacity={0.8}
-                          style={styles.fabButton}
-                          onPress={() => setShowConfirmModal(true)}
-                      >
-                          <LinearGradient colors={COLORS.DANGER} style={styles.fabGradient}>
-                              <MaterialCommunityIcons name="logout" size={28} color="#fff" />
-                              <Text style={styles.fabText}>END MY SHIFT</Text>
-                          </LinearGradient>
-                      </TouchableOpacity>
-                  </View>
+                    <View style={localStyles.metricsContainer}>
+                        <AttendanceMetric label="Present Days" value={monthlyData?.summary?.total_present} color={COLORS.SUCCESS} icon="check-decagram" onPress={() => handleShowDetails('Present')} />
+                        <AttendanceMetric label="Absent Days" value={monthlyData?.summary?.total_absent} color={COLORS.DANGER[0]} icon="close-octagon" onPress={() => handleShowDetails('Absent')} />
+                        <AttendanceMetric label="Half Day" value={monthlyData?.summary?.total_half_day} color={COLORS.WARNING} icon="clock-outline" onPress={() => handleShowDetails('Half Day')} />
+                        <AttendanceMetric label="Leaves" value={monthlyData?.summary?.total_on_leave} color="#9C27B0" icon="calendar-remove" onPress={() => handleShowDetails('On Leave')} />
+                    </View>
+                  </>
                 )}
               </View>
-            ) : (
-               <View style={{alignItems: 'center', marginTop: 50}}>
-                  <Text style={{color: COLORS.SLATE}}>No attendance record found.</Text>
-               </View>
+            )}
+
+            {/* SALARY TAB */}
+            {activeTab === 'salary' && (
+              <View style={localStyles.salaryContainer}>
+                {salaryLoading ? (
+                   <ActivityIndicator size="large" color={COLORS.PRIMARY} style={{ marginTop: 50 }} />
+                ) : currentLedger ? (
+                   <View>
+                        <View style={localStyles.salaryHeroCard}>
+                            <LinearGradient colors={[COLORS.PRIMARY_LIGHT, COLORS.PRIMARY]} style={localStyles.salaryHeroGradient}>
+                                <MaterialCommunityIcons name="wallet" size={36} color="#fff" style={{ marginBottom: 10 }} />
+                                <Text style={localStyles.salaryHeroLabel}>Net Payable</Text>
+                                <Text style={localStyles.salaryHeroAmount}>₹{currentLedger.financials?.net_payable || 0}</Text>
+                                <Text style={localStyles.salaryHeroSub}>Gross: ₹{currentLedger.financials?.gross_salary || 0}</Text>
+                            </LinearGradient>
+                        </View>
+
+                        <View style={localStyles.salaryList}>
+                            <View style={localStyles.salaryRow}>
+                                <MaterialCommunityIcons name="cash-plus" size={22} color={COLORS.SUCCESS} />
+                                <Text style={localStyles.salaryRowLabel}>Gross Salary</Text>
+                                <Text style={localStyles.salaryRowValue}>₹{currentLedger.financials?.gross_salary || 0}</Text>
+                            </View>
+                            <View style={localStyles.salaryRow}>
+                                <MaterialCommunityIcons name="cash-minus" size={22} color={COLORS.DANGER[0]} />
+                                <Text style={localStyles.salaryRowLabel}>Deductions</Text>
+                                <Text style={[localStyles.salaryRowValue, {color: COLORS.DANGER[0]}]}>- ₹{currentLedger.financials?.standard_deductions || 0}</Text>
+                            </View>
+                            <View style={localStyles.salaryRow}>
+                                <MaterialCommunityIcons name="fast-forward" size={22} color={COLORS.WARNING} />
+                                <Text style={localStyles.salaryRowLabel}>Advances</Text>
+                                <Text style={[localStyles.salaryRowValue, {color: COLORS.WARNING}]}>- ₹{currentLedger.financials?.advance_amount || 0}</Text>
+                            </View>
+                        </View>
+                   </View>
+                ) : (
+                    <View style={localStyles.errorBox}>
+                        <Ionicons name="file-tray-stacked-outline" size={50} color={COLORS.MUTED} />
+                        <Text style={localStyles.errorText}>No salary data found for this period.</Text>
+                        <TouchableOpacity style={localStyles.retryBtn} onPress={() => setShowPicker(true)}>
+                            <Text style={localStyles.retryBtnText}>CHANGE MONTH</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+              </View>
             )}
           </ScrollView>
         )}
@@ -293,108 +506,248 @@ const LogOut = ({ navigation }) => {
   );
 };
 
+// --- Base Styles ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.PRIMARY_LIGHT },
-  topHeader: { paddingHorizontal: 20, paddingBottom: 50, paddingTop: 10 },
+  topHeader: { 
+      paddingHorizontal: 20, 
+      paddingBottom: 40, 
+      paddingTop: 10 
+  },
   headerTitleContainer: { marginTop: 15, alignItems: 'center' },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
-  headerSubTitle: { fontSize: 13, color: 'rgba(255, 255, 255, 0.8)', marginTop: 5, textAlign: 'center' },
-  contentContainer: { flex: 1, backgroundColor: COLORS.BG, borderTopLeftRadius: 40, borderTopRightRadius: 40, marginTop: -30 },
-  scroll: { padding: 25, paddingBottom: 50 },
+  headerTitle: { fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
+  headerSubTitle: { fontSize: 13, color: 'rgba(255, 255, 255, 0.85)', marginTop: 5, fontWeight:'500' },
+  
+  contentContainer: { 
+      flex: 1, 
+      backgroundColor: COLORS.BG, 
+      borderTopLeftRadius: 30, 
+      borderTopRightRadius: 30, 
+      marginTop: -25 
+  },
+  scrollContent: { 
+      padding: 20, 
+      paddingBottom: 50 
+  },
   fullPageLoader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loaderText: { marginTop: 10, color: COLORS.SLATE, fontWeight: '600' },
-  glassCard: { backgroundColor: '#fff', borderRadius: 30, padding: 20, elevation: 6, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 },
-  profileRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  avatar: { width: 65, height: 65, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  nameCol: { marginLeft: 15 },
-  nameText: { fontSize: 18, fontWeight: '900', color: COLORS.DARK },
-  roleText: { fontSize: 13, color: COLORS.PRIMARY, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  infoGrid: { borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 15, gap: 12 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  miniIcon: { backgroundColor: '#f0f9ff', padding: 5, borderRadius: 8 },
-  // Added flex: 1 to infoValue to ensure it stays within the box
-  infoValue: { fontSize: 14, color: COLORS.SLATE, fontWeight: '600', flex: 1 },
   
-  timeSectionContainer: {
-    marginTop: 35,
-    alignItems: 'center',
-  },
-  timeBoxesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  timeCircle: { 
-    width: (width / 2) - 40, 
-    height: 110, 
-    backgroundColor: '#fff', 
-    borderRadius: 25, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderWidth: 2, 
-    borderColor: '#f1f5f9',
-    elevation: 3,
-  },
-  successCircle: { borderColor: COLORS.SUCCESS, backgroundColor: '#f0fdf4' },
-  dangerCircle: { borderColor: "#ff416c", backgroundColor: '#fff1f2' },
-  timeLabel: { fontSize: 11, fontWeight: '900', color: COLORS.SLATE, marginBottom: 8, letterSpacing: 1 },
-  timeMain: { fontSize: 20, fontWeight: '900', color: COLORS.DARK },
-  
-  // SEPARATE LINES STYLING
-  workedDurationContainer: {
-    marginTop: 25,
-    backgroundColor: '#fff',
-    paddingVertical: 18,
-    paddingHorizontal: 25,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    alignItems: 'center', // Center everything inside
-    width: '100%',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
-  workedDurationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8, // Space between lines
-  },
-  workedDurationLabel: {
-    fontSize: 14,
-    color: COLORS.SLATE,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  workedDurationValue: {
-    fontSize: 18,
-    color: COLORS.PRIMARY,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
+  modalOverlay: { 
+      flex: 1, 
+      backgroundColor: 'rgba(15, 118, 153, 0.6)', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      padding: 20 
+  }
+});
 
-  buttonWrapper: { marginTop: 45, alignItems: 'center' },
-  fabButton: { width: '100%', height: 75, borderRadius: 25, overflow: 'hidden', elevation: 12 },
-  fabGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15 },
-  fabText: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 1.5 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 25 },
-  modalContent: { width: '100%', borderRadius: 35, backgroundColor: '#fff', overflow: 'hidden' },
-  modalGradient: { padding: 35, alignItems: 'center' },
-  modalIconBg: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 26, fontWeight: '900', color: COLORS.DARK },
-  modalSub: { fontSize: 16, color: COLORS.SLATE, textAlign: 'center', marginTop: 12, lineHeight: 24 },
-  modalActions: { flexDirection: 'row', gap: 15, marginTop: 35 },
-  cancelBtn: { flex: 1, height: 60, justifyContent: 'center', alignItems: 'center', borderRadius: 18, backgroundColor: '#f1f5f9' },
-  cancelBtnText: { color: COLORS.SLATE, fontWeight: '700' },
-  confirmBtn: { flex: 2, height: 60, borderRadius: 18, overflow: 'hidden' },
-  confirmBtnGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  confirmBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
-  successModalPadding: { padding: 40, alignItems: 'center' },
-  successIconOuter: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#ecfdf5', padding: 10, marginBottom: 20 },
-  successIconInner: { flex: 1, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  doneBtn: { width: '100%', height: 60, borderRadius: 18, overflow: 'hidden', marginTop: 30 },
-  doneBtnGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' }
+// --- Local Stylish Styles ---
+const localStyles = StyleSheet.create({
+    // Tabs & Controls
+    controlRow: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginBottom: 20, 
+        gap: 10 
+    },
+    tabContainer: { 
+        flex: 1, 
+        flexDirection: 'row', 
+        backgroundColor: '#fff', 
+        borderRadius: 16, 
+        padding: 4, 
+        shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 
+    },
+    tabButton: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center' },
+    activeTabButton: { backgroundColor: COLORS.PRIMARY },
+    tabText: { color: COLORS.SLATE, fontWeight: '700', fontSize: 13 },
+    activeTabText: { color: COLORS.WHITE },
+    filterBtn: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        backgroundColor: COLORS.DARK, 
+        padding: 10, 
+        borderRadius: 16, 
+        gap: 6, 
+        paddingHorizontal: 14 
+    },
+    filterBtnText: { color: COLORS.WHITE, fontWeight: '700', fontSize: 12 },
+
+    // Profile Card
+    profileCard: {
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 16,
+        marginBottom: 20,
+        shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.08, shadowRadius: 10, elevation: 5,
+    },
+    profileRow: { flexDirection: 'row', alignItems: 'center' },
+    avatarContainer: { shadowColor: COLORS.PRIMARY, shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 6 },
+    avatar: { width: 52, height: 52, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+    nameCol: { marginLeft: 14, flex: 1 },
+    nameText: { fontSize: 18, fontWeight: '800', color: COLORS.DARK },
+    roleBadge: { 
+        backgroundColor: COLORS.PRIMARY_LIGHT + '20', 
+        paddingHorizontal: 8, 
+        paddingVertical: 2, 
+        borderRadius: 6, 
+        alignSelf: 'flex-start', 
+        marginTop: 4 
+    },
+    roleText: { fontSize: 11, color: COLORS.PRIMARY, fontWeight: '700', textTransform: 'uppercase' },
+    datePill: { backgroundColor: COLORS.BG, padding: 8, borderRadius: 12 },
+    datePillText: { fontSize: 12, fontWeight: '700', color: COLORS.DARK },
+
+    // Time Cards
+    timeRow: { flexDirection: 'row', gap: 12, marginBottom: 15 },
+    timeCard: {
+        flex: 1,
+        padding: 16,
+        borderRadius: 24,
+        alignItems: 'center',
+        shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.15, shadowRadius: 8, elevation: 6
+    },
+    timeIconBg: { backgroundColor: 'rgba(255,255,255,0.9)', padding: 6, borderRadius: 10, marginBottom: 8 },
+    timeLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.9)', letterSpacing: 1 },
+    timeValue: { fontSize: 22, fontWeight: '900', color: '#fff', marginTop: 4 },
+
+    // Duration Card
+    durationCard: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 25,
+        borderWidth: 1,
+        borderColor: '#e2e8f0'
+    },
+    durationContent: { marginLeft: 12 },
+    durationLabel: { fontSize: 12, color: COLORS.SLATE, fontWeight: '600' },
+    durationValue: { fontSize: 18, color: COLORS.DARK, fontWeight: '800' },
+
+    // Action Button
+    actionBtnContainer: { marginTop: 10, marginBottom: 30, borderRadius: 20, overflow: 'hidden' },
+    actionBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 18, gap: 10 },
+    actionBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
+
+    // Section Header
+    sectionHeader: { marginBottom: 15 },
+    sectionTitle: { fontSize: 16, fontWeight: '800', color: COLORS.DARK },
+    divider: { height: 3, width: 40, backgroundColor: COLORS.PRIMARY, marginTop: 6, borderRadius: 2 },
+
+    // Heatmap
+    heatmapCard: { backgroundColor: '#fff', borderRadius: 24, padding: 16, marginBottom: 15, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 3 },
+    cardSmallTitle: { color: COLORS.SLATE, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12 },
+    dotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    heatDot: { width: (width - 70) / 8, height: 10, borderRadius: 3 },
+    legendRow: { flexDirection: 'row', marginTop: 15, justifyContent: 'space-between' },
+    legendItem: { flexDirection: 'row', alignItems: 'center' },
+    legendDot: { width: 8, height: 8, borderRadius: 2, marginRight: 5 },
+    legendText: { color: COLORS.SLATE, fontSize: 10, fontWeight: '600' },
+
+    // Metrics
+    metricsContainer: { gap: 10 },
+    metricCard: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        backgroundColor: '#fff', 
+        padding: 14, 
+        borderRadius: 18,
+        shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 
+    },
+    metricIconBg: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    metricContent: { flex: 1, marginLeft: 12 },
+    metricValue: { fontSize: 18, fontWeight: '800', color: COLORS.DARK },
+    metricLabel: { fontSize: 11, color: COLORS.SLATE, fontWeight: '600', marginTop: 1 },
+
+    // Salary
+    salaryHeroCard: { borderRadius: 24, overflow: 'hidden', marginBottom: 20, elevation: 8 },
+    salaryHeroGradient: { padding: 25, alignItems: 'center' },
+    salaryHeroLabel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 1 },
+    salaryHeroAmount: { fontSize: 34, fontWeight: '900', color: '#fff', marginVertical: 4 },
+    salaryHeroSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
+    
+    salaryList: { gap: 10 },
+    salaryRow: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        backgroundColor: '#fff', 
+        padding: 16, 
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#f1f5f9'
+    },
+    salaryRowLabel: { flex: 1, marginLeft: 12, fontSize: 13, fontWeight: '600', color: COLORS.DARK },
+    salaryRowValue: { fontSize: 15, fontWeight: '800' },
+
+    // Error Box
+    errorBox: { alignItems: 'center', marginTop: 60, padding: 20 },
+    errorText: { color: COLORS.SLATE, fontSize: 14, marginTop: 10, textAlign: 'center', fontWeight: '600' },
+    retryBtn: { backgroundColor: COLORS.DARK, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, marginTop: 15 },
+    retryBtnText: { color: COLORS.WHITE, fontWeight: '700' },
+
+    // Modals
+    successCard: { 
+        backgroundColor: '#fff', 
+        width: '100%', 
+        borderRadius: 30, 
+        padding: 30, 
+        alignItems: 'center' 
+    },
+    successIconWrapper: { marginBottom: 15 },
+    successIconInner: { width: 70, height: 70, borderRadius: 35, justifyContent: 'center', alignItems: 'center' },
+    successTitle: { fontSize: 22, fontWeight: '800', color: COLORS.DARK },
+    successSub: { fontSize: 14, color: COLORS.SLATE, textAlign: 'center', marginTop: 8, lineHeight: 22 },
+    successBtn: { backgroundColor: COLORS.BG, padding: 14, borderRadius: 14, marginTop: 25, width: '100%', alignItems: 'center' },
+    successBtnText: { color: COLORS.PRIMARY, fontWeight: '700', fontSize: 15 },
+
+    confirmCard: { backgroundColor: '#fff', width: '100%', borderRadius: 30, padding: 25, alignItems: 'center' },
+    confirmIconBg: { backgroundColor: COLORS.DANGER[0], width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+    confirmTitle: { fontSize: 20, fontWeight: '800', color: COLORS.DARK },
+    confirmSub: { fontSize: 13, color: COLORS.SLATE, textAlign: 'center', marginTop: 6 },
+    confirmActions: { flexDirection: 'row', gap: 10, marginTop: 25, width: '100%' },
+    confirmCancelBtn: { flex: 1, backgroundColor: COLORS.BG, padding: 14, borderRadius: 14, alignItems: 'center' },
+    confirmCancelText: { fontWeight: '600', color: COLORS.DARK },
+    confirmActionBtn: { flex: 1.2, borderRadius: 14, overflow: 'hidden' },
+    confirmActionGradient: { padding: 14, alignItems: 'center' },
+    confirmActionText: { color: '#fff', fontWeight: '700' },
+
+    pickerSheet: { 
+        width: '100%', 
+        backgroundColor: '#fff', 
+        borderRadius: 30, 
+        padding: 25 
+    },
+    pickerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.DARK, marginBottom: 20, textAlign: 'center' },
+    yearSwitcher: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, backgroundColor: COLORS.BG, padding: 10, borderRadius: 12 },
+    yearLabel: { color: COLORS.DARK, fontSize: 18, fontWeight: '900' },
+    monthGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    monthItem: { width: '30%', paddingVertical: 12, alignItems: 'center', borderRadius: 12, marginBottom: 8, backgroundColor: COLORS.BG },
+    activeMonthItem: { backgroundColor: COLORS.PRIMARY },
+    monthItemText: { color: COLORS.SLATE, fontSize: 11, fontWeight: '700' },
+    activeMonthItemText: { color: COLORS.WHITE },
+    cancelPickerBtn: { marginTop: 10, alignSelf: 'center' },
+    cancelPickerText: { color: COLORS.DANGER[0], fontWeight: '700', fontSize: 13 },
+
+    detailSheet: { 
+        width: '100%', 
+        backgroundColor: '#fff', 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30, 
+        padding: 25, 
+        maxHeight: '70%', 
+        position: 'absolute', 
+        bottom: 0 
+    },
+    detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    detailTitle: { fontSize: 18, fontWeight: '800', color: COLORS.DARK },
+    detailRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.BG, padding: 12, borderRadius: 16, marginBottom: 8 },
+    detailDateBox: { width: 48, height: 48, backgroundColor: COLORS.PRIMARY, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    detailDateNum: { fontSize: 16, fontWeight: '900', color: '#fff' },
+    detailDateMon: { fontSize: 9, fontWeight: '700', color: '#fff' },
+    detailDayText: { marginLeft: 12, fontSize: 14, fontWeight: '700', color: COLORS.DARK },
+    detailStatusText: { marginLeft: 12, fontSize: 12, color: COLORS.SLATE, marginTop: 2 },
+    emptyText: { textAlign: 'center', color: COLORS.SLATE, marginTop: 30 }
 });
 
 export default LogOut;

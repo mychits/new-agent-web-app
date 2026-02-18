@@ -54,7 +54,7 @@ const CustomRouteCard = ({ name, icon, onPress, subText, special, isPayment }) =
       <View style={styles.textContainer}>
         <Text style={[styles.cardText, special && styles.specialCardText]}>{name}</Text>
         <Text style={[styles.cardSubText, special && styles.specialCardSubText]}>
-          {subText || "View Customer List"}
+          {subText || "View Customers List"}
         </Text>
       </View>
     </View>
@@ -90,21 +90,21 @@ const Routes = ({ route, navigation }) => {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContainer}>
           <View style={styles.cardListContainer}>
             <CustomRouteCard
-              name="Chits Customer"
+              name="Chits Customers"
               icon="people-outline"
               onPress={() => navigation.navigate("RouteCustomerChit", { user, areaId: "chits" })}
             />
             <CustomRouteCard
-              name="Gold Chits Customer"
+              name="Gold Chits Customers"
               icon="star-outline"
             />
             <CustomRouteCard
-              name="Loan Customer"
+              name="Loan Customers"
               icon="wallet-outline"
               onPress={() => navigation.navigate("RouteCustomerLoan", { user, areaId: "loan-customer" })}
             />
             <CustomRouteCard
-              name="Pigmy Customer"
+              name="Pigmy Customers"
               icon="trending-up-outline"
               onPress={() => navigation.navigate("RouteCustomerPigme", { user, areaId: "Pigme-customer" })}
             />

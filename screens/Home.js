@@ -231,7 +231,7 @@ const Home = ({ route, navigation }) => {
     },
     {
       id: "monthlyTurnover",
-      name: "Monthly Turnover",
+      name: "MIT",
       imagePath: cardImagePaths.monthlyTurnover,
       onPress: () => navigation.navigate("MonthlyTurnover"),
       backgroundColor: SUBTLE_BG_GREY,

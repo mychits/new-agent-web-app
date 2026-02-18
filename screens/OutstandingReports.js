@@ -1,236 +1,197 @@
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, useRef } from "react";
 import {
     View,
     Text,
     StyleSheet,
-    FlatList,
+    SafeAreaView,
     ActivityIndicator,
-    Image,
     Platform,
-    LayoutAnimation,
-    UIManager,
+    Animated,
+    Image,
     TouchableOpacity,
-    Linking,
+    Modal,
+    StatusBar,
+    ScrollView,
     Dimensions,
+    Linking,
+    Keyboard,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Picker } from "@react-native-picker/picker";
-import { Ionicons } from "@expo/vector-icons";
-
-// 🚨 IMPORTING THE ACTUAL HEADER COMPONENT 🚨
-import Header from "../components/Header";
-
-// --- BASE URL IMPORT ---
-// Assuming baseUrl.js exports 'url' as default from ../constants/baseUrl
+import axios from "axios"; // Assuming axios is used based on typical patterns, or standard fetch
 import url from "../constants/baseUrl";
 
-const { height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
-// --- CONSTANTS MATCHING Enrollment.js ---
-const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent
-const ACCENT_GREEN = "#059669";   // Vibrant green for positive/payable
-const WARNING_RED = "#dc2626";    // Strong red for negative/balance
-const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
-const BORDER_COLOR = "#e0e0e0"; // Lighter border
-const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
-
-
-// --- ORIGINAL API/IMAGE CONSTANTS (UPDATED TO USE IMPORTED 'url') ---
-const DUE_API = `${url}/enroll/due/routes/agent/`;
-const GROUP_API = `${url}/group/get-group`;
-const NO_REPORTS_IMAGE = require("../assets/NoReports.png");
-
-// Enable LayoutAnimation for Android
-if (
-    Platform.OS === "android" &&
-    UIManager && // Added check for UIManager itself
-    UIManager.setLayoutAnimationEnabledExperimental
-) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return "₹0.00";
-    const num = typeof amount === "number" ? amount : parseFloat(amount);
-    if (isNaN(num)) return "₹0.00";
-    return `₹ ${num.toLocaleString("en-IN", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })}`;
+// --- THEME CONSTANTS (Matching Target.js) ---
+const COLORS = {
+    primary: "#183A5D",
+    accent: "#f8c009ff", // Gold
+    bgBlue: "#1aa2ccff",
+    success: "#27AE60",
+    danger: "#e74c3c",
+    cardBg: "rgba(255, 255, 255, 0.97)",
+    white: "#FFFFFF",
+    muted: "#8898AA",
+    background: "#0f172a", // Dark fallback
 };
 
-// --- FUNCTION TO HANDLE CALLS ---
-const handleCall = (phoneNumber) => {
-    if (phoneNumber) {
-        const telUrl = `tel:${phoneNumber}`;
-        Linking.canOpenURL(telUrl)
-            .then((supported) => {
-                if (supported) {
-                    return Linking.openURL(telUrl);
-                } else {
-                    console.log(`Don't know how to open URI: ${telUrl}`);
-                }
-            })
-            .catch((err) => console.error('An error occurred while opening dialer', err));
-    }
-};
+// Asset for background (Ensure this path exists or change to a valid path)
+const backgroundImage = require("../assets/hero1.jpg"); 
 
 // =================================================================
-// STYLIZED COMPONENT: OutstandingReportCard 
+// COMPONENT: OutstandingReportCard (Stylized)
 // =================================================================
-
-const OutstandingReportCard = ({ item, activeCallId, setActiveCallId }) => {
+const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
     const [isDetailsVisible, setIsDetailsVisible] = useState(false);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
 
-    const name = item?.user_id?.full_name || "Unknown";
+    // Entrance animation
+    useEffect(() => {
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            delay: index * 100, // Stagger effect
+            useNativeDriver: true,
+        }).start();
+    }, []);
+
+    const name = item?.user_id?.full_name || "Unknown Client";
     const phone = item?.user_id?.phone_number;
     const groupName = item?.group_id?.group_name || "N/A";
     const paymentType = item?.payment_type || "N/A";
-
     const isCalling = activeCallId === item?._id;
 
-    const getFinancialValue = (value) =>
-        Array.isArray(value) && value[0] ? value[0] : value || 0;
-
-    const totalPayable = getFinancialValue(item?.total_to_be_paid || 0);
+    const totalPayable = item?.total_to_be_paid?.[0] || item?.total_to_be_paid || 0;
     const totalPaidAmount = item?.overall_payments?.sum_of_amounts || 0;
     const balance = item?.balance || item?.Balance || 0;
+    const balanceStatusColor = balance > 0 ? COLORS.danger : COLORS.success;
 
-    const balanceStatusColor = balance > 0 ? WARNING_RED : ACCENT_GREEN;
-
-    const handlePhonePress = (phone) => {
+    const handlePhonePress = () => {
         if (phone) {
             setActiveCallId(item?._id);
-            handleCall(phone);
-
-            setTimeout(() => {
-                setActiveCallId(null);
-            }, 3000);
+            Linking.openURL(`tel:${phone}`).catch(() => console.log("Call failed"));
+            setTimeout(() => setActiveCallId(null), 3000);
         }
-    }
+    };
 
     const toggleDetails = () => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        // Simple layout animation for toggle
         setIsDetailsVisible(!isDetailsVisible);
     };
 
     return (
-        <View style={cardStyles.cardContainer}>
-            {/* Main Content Area */}
-            <View style={cardStyles.cardContent}>
-                {/* Header: Group Name & Payment Type */}
-                <View style={cardStyles.cardHeader}>
-                    <Text style={cardStyles.groupName} numberOfLines={1}>{groupName}</Text>
-                    <View style={[
-                        cardStyles.paymentTypeTag,
-                        paymentType === 'Normal' && cardStyles.tagNormal,
-                    ]}>
-                        <Text style={cardStyles.paymentTypeText}>{paymentType}</Text>
+        <Animated.View style={[styles.listCard, { opacity: fadeAnim }]}>
+            <View style={styles.listHeader}>
+                <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{name.charAt(0)}</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.clientName}>{name}</Text>
+                    <View style={styles.rowCenter}>
+                        <Ionicons name="layers-outline" size={12} color={COLORS.muted} />
+                        <Text style={styles.subText}> {groupName}</Text>
                     </View>
                 </View>
-
-                {/* Customer Name and Call Button */}
-                <View style={cardStyles.customerInfoRow}>
-                    <Text style={cardStyles.customerName}>{name}</Text>
-                    {phone ? (
-                        <TouchableOpacity
-                            onPress={() => handlePhonePress(phone)}
-                            style={[
-                                cardStyles.callButton,
-                                { backgroundColor: isCalling ? ACCENT_BLUE : ACCENT_GREEN }
-                            ]}
-                            disabled={isCalling}
-                        >
-                            <Ionicons name="call" size={16} color={CARD_BG} style={{ marginRight: 5 }} />
-                            <Text style={cardStyles.callButtonText}>
-                                {isCalling ? 'Calling...' : 'Call'}
-                            </Text>
-                        </TouchableOpacity>
-                    ) : null}
-                </View>
-
-                {/* Outstanding Balance */}
-                <View style={cardStyles.balanceRow}>
-                    <Text style={cardStyles.balanceLabel}>Outstanding Balance:</Text>
-                    <Text style={[cardStyles.balanceValue, { color: balanceStatusColor }]}>
-                        {formatCurrency(balance)}
-                    </Text>
-                </View>
-
-                {/* Toggler for Details */}
-                <TouchableOpacity onPress={toggleDetails} style={cardStyles.detailsToggle}>
-                    <Text style={cardStyles.detailsToggleText}>
-                        {isDetailsVisible ? 'Hide Details' : 'Show More Details'}
-                        <Ionicons name={isDetailsVisible ? 'chevron-up-outline' : 'chevron-down-outline'} size={14} color={ACCENT_BLUE} style={{ marginLeft: 5 }} />
-                    </Text>
-                </TouchableOpacity>
-
-                {/* Financial Details (Only visible when toggled) */}
-                {isDetailsVisible && (
-                    <View style={cardStyles.detailsSection}>
-                        {/* Total To Be Paid */}
-                        <View style={cardStyles.financialRow}>
-                            <Text style={cardStyles.financialLabel}>Total Paid Amount</Text>
-                            <Text style={cardStyles.financialValue}>
-                                {formatCurrency(totalPaidAmount)}
-                            </Text>
-                        </View>
-
-                        {/* Total Payable */}
-                        <View style={cardStyles.financialRow}>
-                            <Text style={cardStyles.financialLabel}>Total Payable</Text>
-                            <Text style={[cardStyles.financialValue, { color: ACCENT_GREEN }]}>
-                                {formatCurrency(totalPayable)}
-                            </Text>
-                        </View>
-                    </View>
+                
+                {phone && (
+                    <TouchableOpacity 
+                        onPress={handlePhonePress} 
+                        style={[styles.callBtnSmall, { backgroundColor: isCalling ? COLORS.muted : COLORS.bgBlue }]}
+                    >
+                        <Feather name={isCalling ? "phone-missed" : "phone"} size={14} color={COLORS.white} />
+                    </TouchableOpacity>
                 )}
             </View>
-        </View>
+
+            {/* Balance Section */}
+            <View style={styles.balanceContainer}>
+                <View style={styles.balanceRow}>
+                    <Text style={styles.balanceLabel}>Outstanding Balance</Text>
+                    <Text style={[styles.balanceAmount, { color: balanceStatusColor }]}>
+                        ₹{balance.toLocaleString("en-IN")}
+                    </Text>
+                </View>
+            </View>
+
+            {/* Toggle Button */}
+            <TouchableOpacity onPress={toggleDetails} style={styles.toggleBtn}>
+                <Text style={styles.toggleText}>
+                    {isDetailsVisible ? "Hide Details" : "View Breakdown"}
+                </Text>
+                <Feather 
+                    name={isDetailsVisible ? "chevron-up" : "chevron-down"} 
+                    size={14} 
+                    color={COLORS.primary} 
+                />
+            </TouchableOpacity>
+
+            {/* Collapsible Details */}
+            {isDetailsVisible && (
+                <View style={styles.detailsGrid}>
+                    <View style={styles.detailItem}>
+                        <Text style={styles.detailLabel}>Payable</Text>
+                        <Text style={styles.detailValue}>₹{Number(totalPayable).toLocaleString("en-IN")}</Text>
+                    </View>
+                    <View style={styles.detailDivider} />
+                    <View style={styles.detailItem}>
+                        <Text style={styles.detailLabel}>Paid</Text>
+                        <Text style={[styles.detailValue, {color: COLORS.success}]}>₹{Number(totalPaidAmount).toLocaleString("en-IN")}</Text>
+                    </View>
+                </View>
+            )}
+        </Animated.View>
     );
 };
 
 // =================================================================
-// MAIN COMPONENT: OutstandingReports (Styled like Enrollment.js)
+// MAIN COMPONENT: OutstandingReports
 // =================================================================
-const OutstandingReports = ({ route }) => {
-    const { user } = route.params || {}; // Defensive destructuring
+const OutstandingReports = ({ route, navigation }) => {
+    const { user } = route.params || {};
     const [groups, setGroups] = useState([]);
     const [dues, setDues] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
-    const [selectedGroup, setSelectedGroup] = useState("all");
+    const [selectedGroup, setSelectedGroup] = useState({ _id: "all", group_name: "All Groups" });
     const [loading, setLoading] = useState(true);
     const [activeCallId, setActiveCallId] = useState(null);
+    const [showPicker, setShowPicker] = useState(false);
 
+    // Animation Refs
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const blinkAnim = useRef(new Animated.Value(1)).current;
 
-    // Fetch groups + dues
+    // Blinking Animation
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(blinkAnim, { toValue: 0.4, duration: 600, useNativeDriver: true }),
+                Animated.timing(blinkAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
+
+    // Fetch Data
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [groupRes, dueRes] = await Promise.all([
-                    fetch(GROUP_API),
-                    fetch(`${DUE_API}${user?.userId}`),
-                ]);
+                const groupRes = await fetch(`${url}/group/get-group`);
+                const dueRes = await fetch(`${url}/enroll/due/routes/agent/${user?.userId}`);
+                
                 const groupJson = await groupRes.json();
                 const dueJson = await dueRes.json();
 
-                const allGroups = Array.isArray(groupJson?.data)
-                    ? groupJson.data
-                    : Array.isArray(groupJson)
-                        ? groupJson
-                        : [];
-
+                const allGroups = Array.isArray(groupJson?.data) ? groupJson.data : Array.isArray(groupJson) ? groupJson : [];
                 const allDues = dueJson?.enrollments || [];
 
-                setGroups(allGroups);
+                setGroups([{ _id: "all", group_name: "All Groups" }, ...allGroups]);
                 setDues(allDues);
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setFilteredData(allDues);
+                
+                // Trigger entrance animation
+                Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
             } catch (err) {
                 console.error("Error fetching:", err);
             } finally {
@@ -238,400 +199,258 @@ const OutstandingReports = ({ route }) => {
             }
         };
         fetchData();
-    }, [user?.userId]);
+    }, []);
 
-    // Filter dues by group
-    useEffect(() => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        if (selectedGroup === "all") setFilteredData(dues);
-        else
-            setFilteredData(
-                dues.filter((item) => item.group_id?._id === selectedGroup)
-            );
-    }, [selectedGroup, dues]);
+    // Filter Logic
+    const applyFilter = (group) => {
+        setSelectedGroup(group);
+        if (group._id === "all") setFilteredData(dues);
+        else setFilteredData(dues.filter((item) => item.group_id?._id === group._id));
+        setShowPicker(false);
+    };
 
-    const renderItem = ({ item }) => (
-        <OutstandingReportCard
-            item={item}
-            activeCallId={activeCallId}
-            setActiveCallId={setActiveCallId}
-        />
-    );
-
-    const totalPending = filteredData.reduce(
-        (sum, item) => sum + (item?.balance || item?.Balance || 0),
-        0
-    );
-
-    const EmptyList = () => (
-        <View style={pageStyles.emptyContainer}>
-            <Ionicons name="documents-outline" size={50} color={NEUTRAL_GREY} />
-            <Text style={pageStyles.emptyText}>No outstanding reports found.</Text>
-        </View>
-    );
+    const totalPending = filteredData.reduce((sum, item) => sum + (item?.balance || item?.Balance || 0), 0);
 
     return (
-        <SafeAreaView style={pageStyles.safeArea} edges={['top']}>
-            {/* Top Header Section with Gradient */}
-            <LinearGradient colors={TOP_GRADIENT} style={pageStyles.topContainer}>
-                <View style={pageStyles.headerSpacer}>
-                    <Header />
-                </View>
+        <View style={styles.mainContainer}>
+            <StatusBar barStyle="light-content" />
+            
+            {/* Background Styling */}
+            <Image source={backgroundImage} style={styles.bgOverlay} blurRadius={10} />
+            <LinearGradient colors={["rgba(26, 162, 204, 0.9)", COLORS.primary]} style={StyleSheet.absoluteFill} />
 
-                <View style={pageStyles.titleContainer}>
-                    <Text style={pageStyles.title}>Outstanding Report</Text>
-                    <Text style={pageStyles.subtitle}>
-                        Easily manage and track pending payments
-                    </Text>
-                </View>
-            </LinearGradient>
-
-            {/* Main Content Area (Light Background) */}
-            <View style={pageStyles.mainContentArea}>
-
-                {/* Total Summary (Highlighted Card) */}
-                <View style={pageStyles.totalWrapper}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                        <Ionicons name="wallet-outline" size={20} color={MODERN_PRIMARY} style={{ marginRight: 8 }} />
-                        <Text style={pageStyles.totalText}>
-                            Overall Outstanding Balance:
-                        </Text>
+            <SafeAreaView style={{ flex: 1 }}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.headerTopRow}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconCircle}>
+                            <Ionicons name="chevron-back" size={22} color={COLORS.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => fetchData()} style={styles.refreshBtn}>
+                            <Feather name="refresh-cw" size={18} color={COLORS.primary} />
+                        </TouchableOpacity>
                     </View>
-                    <Text style={pageStyles.totalAmount}>
-                        {formatCurrency(totalPending)}
-                    </Text>
+                    <Text style={styles.headerTitle}>Outstanding Report</Text>
+                    <Text style={styles.headerSub}>Manage pending dues efficiently</Text>
                 </View>
 
-                {/* Group Filter */}
-                <View style={pageStyles.dropdownWrapper}>
-                    <Text style={pageStyles.dropdownLabel}>Filter by Group</Text>
-                    <View style={pageStyles.pickerWrapper}>
-                        <Picker
-                            selectedValue={selectedGroup}
-                            onValueChange={(itemValue) => setSelectedGroup(itemValue)}
-                            style={pageStyles.picker}
-                        >
-                            <Picker.Item label="All Groups" value="all" color={MODERN_PRIMARY} />
+                {/* Content */}
+                <View style={styles.contentContainer}>
+                    {loading ? (
+                        <View style={styles.loaderContainer}>
+                            <ActivityIndicator size="large" color={COLORS.accent} />
+                            <Text style={styles.loadingText}>Fetching Data...</Text>
+                        </View>
+                    ) : (
+                        <Animated.ScrollView style={{ opacity: fadeAnim }} showsVerticalScrollIndicator={false}>
+                            
+                            {/* Summary Card */}
+                            <View style={styles.summaryCard}>
+                                <View style={styles.summaryRow}>
+                                    <View style={styles.summaryIconBg}>
+                                        <MaterialCommunityIcons name="cash-multiple" size={24} color={COLORS.white} />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.summaryLabel}>Total Outstanding</Text>
+                                        <Text style={styles.summaryValue}>₹{totalPending.toLocaleString("en-IN")}</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Filter Button */}
+                            <TouchableOpacity style={styles.filterBtn} onPress={() => setShowPicker(true)}>
+                                <View style={styles.filterContent}>
+                                    <Ionicons name="filter" size={16} color={COLORS.primary} />
+                                    <Text style={styles.filterText}>Filter: {selectedGroup.group_name}</Text>
+                                </View>
+                                <Animated.View style={{ opacity: blinkAnim }}>
+                                    <Feather name="chevron-down" size={18} color={COLORS.primary} />
+                                </Animated.View>
+                            </TouchableOpacity>
+
+                            {/* List */}
+                            {filteredData.length > 0 ? (
+                                filteredData.map((item, index) => (
+                                    <OutstandingReportCard 
+                                        key={item._id || index} 
+                                        item={item} 
+                                        index={index}
+                                        activeCallId={activeCallId}
+                                        setActiveCallId={setActiveCallId}
+                                    />
+                                ))
+                            ) : (
+                                <View style={styles.emptyContainer}>
+                                    <MaterialCommunityIcons name="folder-open-outline" size={50} color="rgba(255,255,255,0.6)" />
+                                    <Text style={styles.emptyText}>No outstanding reports found.</Text>
+                                </View>
+                            )}
+
+                        </Animated.ScrollView>
+                    )}
+                </View>
+            </SafeAreaView>
+
+            {/* Bottom Sheet Modal for Group Selection */}
+            <Modal visible={showPicker} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowPicker(false)} />
+                    <View style={styles.pickerSheet}>
+                        <View style={styles.sheetHandle} />
+                        <Text style={styles.sheetTitle}>Select Group</Text>
+                        
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: height * 0.4 }}>
                             {groups.map((g) => (
-                                <Picker.Item
-                                    key={g._id}
-                                    label={g.group_name}
-                                    value={g._id}
-                                    color={MODERN_PRIMARY}
-                                />
+                                <TouchableOpacity 
+                                    key={g._id} 
+                                    style={[styles.pickerOption, selectedGroup._id === g._id && styles.activeOption]} 
+                                    onPress={() => applyFilter(g)}
+                                >
+                                    <Text style={[styles.pickerOptionText, selectedGroup._id === g._id && styles.activeText]}>
+                                        {g.group_name}
+                                    </Text>
+                                    {selectedGroup._id === g._id && (
+                                        <Ionicons name="checkmark-circle" size={20} color={COLORS.accent} />
+                                    )}
+                                </TouchableOpacity>
                             ))}
-                        </Picker>
+                        </ScrollView>
                     </View>
                 </View>
-
-                {loading ? (
-                    <View style={pageStyles.loader}>
-                        <ActivityIndicator size="large" color={ACCENT_BLUE} />
-                        <Text style={pageStyles.loadingTextBlue}>Fetching reports...</Text>
-                    </View>
-                ) : (
-                    <FlatList
-                        data={filteredData}
-                        renderItem={renderItem}
-                        keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
-                        ListEmptyComponent={EmptyList}
-                        style={pageStyles.flatListStyle}
-                        contentContainerStyle={pageStyles.flatListContentContainer}
-                    />
-                )}
-            </View>
-        </SafeAreaView>
+            </Modal>
+        </View>
     );
 };
 
 export default OutstandingReports;
 
-// =================================================================
-// STYLES 
-// =================================================================
-const pageStyles = StyleSheet.create({
-    // --- LAYOUT STYLES (from Enrollment.js) ---
-    safeArea: {
-        flex: 1,
-        backgroundColor: TOP_GRADIENT[0]
+const styles = StyleSheet.create({
+    mainContainer: { flex: 1, backgroundColor: COLORS.primary },
+    bgOverlay: { ...StyleSheet.absoluteFillObject, opacity: 0.15 },
+    
+    // Header
+    header: { 
+        paddingHorizontal: 20, 
+        paddingTop: Platform.OS === "android" ? 50 : 20, 
+        paddingBottom: 15,
+        alignItems: "center"
     },
-    topContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 20,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    mainContentArea: {
-        flex: 1,
-        backgroundColor: SUBTLE_BG_GREY,
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        paddingHorizontal: 16,
-        marginTop: -20,
-        paddingTop: 30,
-    },
-    headerSpacer: {
-        paddingTop: 20,
-        paddingBottom: 5
-    },
+    headerTopRow: { flexDirection: "row", justifyContent: "space-between", width: "100%", marginBottom: 15 },
+    headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", letterSpacing: 0.5 },
+    headerSub: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+    iconCircle: { backgroundColor: "#fff", padding: 6, borderRadius: 12 },
+    refreshBtn: { backgroundColor: COLORS.accent, padding: 8, borderRadius: 12 },
+    
+    // Content
+    contentContainer: { paddingHorizontal: 16, flex: 1 },
+    loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { color: COLORS.white, marginTop: 8, fontWeight: '600', opacity: 0.8 },
 
-    // --- TITLE STYLES (from Enrollment.js) ---
-    titleContainer: {
-        alignItems: 'center',
+    // Summary
+    summaryCard: {
+        backgroundColor: COLORS.cardBg,
+        borderRadius: 18,
+        padding: 20,
         marginBottom: 15,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: "900",
-        color: CARD_BG,
-        marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.85)',
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-
-    // --- DROP DOWN / FILTER ---
-    dropdownWrapper: {
-        backgroundColor: CARD_BG,
-        padding: 15,
-        borderRadius: 15,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: BORDER_COLOR,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    dropdownLabel: {
-        fontWeight: "700",
-        marginBottom: 8,
-        color: MODERN_PRIMARY,
-        fontSize: 15,
-    },
-    pickerWrapper: {
-        borderWidth: 1,
-        borderColor: BORDER_COLOR,
-        borderRadius: 10,
-        overflow: "hidden",
-        backgroundColor: SUBTLE_BG_GREY,
-        // Increased height for Android container
-        height: Platform.OS === 'android' ? 55 : 40, 
-        justifyContent: 'center', // Helps center content vertically
-    },
-    picker: {
-        color: MODERN_PRIMARY,
-        // Increased height for Android Picker
-        height: Platform.OS === 'android' ? 55 : 40, 
-        // CRITICAL FIX FOR ANDROID TEXT ALIGNMENT
-        ...(Platform.OS === 'android' && { textAlignVertical: 'center' }),
-    },
-
-    // --- TOTAL SUMMARY ---
-    totalWrapper: {
-        backgroundColor: "#fef3c7",
-        borderRadius: 18,
-        padding: 20,
-        marginBottom: 25,
         borderLeftWidth: 6,
-        borderLeftColor: ACCENT_BLUE,
-        alignItems: 'center',
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 4,
+        borderLeftColor: COLORS.accent,
+        elevation: 6,
     },
-    totalText: {
-        color: MODERN_PRIMARY,
-        fontWeight: "700",
-        fontSize: 18,
+    summaryRow: { flexDirection: 'row', alignItems: 'center' },
+    summaryIconBg: { 
+        backgroundColor: COLORS.primary, 
+        width: 48, height: 48, borderRadius: 14, 
+        justifyContent: 'center', alignItems: 'center', 
+        marginRight: 15 
     },
-    totalAmount: {
-        color: WARNING_RED,
-        fontWeight: "900",
-        fontSize: 28,
-        marginTop: 5,
-    },
+    summaryLabel: { fontSize: 13, color: COLORS.muted, fontWeight: '700', textTransform: 'uppercase' },
+    summaryValue: { fontSize: 26, fontWeight: '900', color: COLORS.primary, marginTop: 2 },
 
-    // --- FLATLIST ---
-    flatListStyle: {
-        flex: 1,
-    },
-    flatListContentContainer: {
-        paddingBottom: 120,
-    },
-
-    // --- LOADER/EMPTY STATE ---
-    loader: {
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: height * 0.4,
-    },
-    loadingTextBlue: {
-        marginTop: 10,
-        color: ACCENT_BLUE,
-        fontSize: 16,
-        fontWeight: '600'
-    },
-    emptyContainer: {
-        alignItems: "center",
-        marginTop: 80,
-        padding: 20,
-    },
-    emptyText: {
-        color: NEUTRAL_GREY,
-        marginTop: 15,
-        fontWeight: "600",
-        fontSize: 18,
-    },
-});
-
-// =================================================================
-// CARD-SPECIFIC STYLES 
-// =================================================================
-const cardStyles = StyleSheet.create({
-    cardContainer: {
-        backgroundColor: CARD_BG,
-        borderRadius: 18,
-        marginBottom: 18,
-        overflow: 'hidden',
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: BORDER_COLOR,
-    },
-    cardContent: {
-        padding: 20,
-    },
-    cardHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 10,
-        paddingBottom: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: BORDER_COLOR,
-    },
-    groupName: {
-        fontSize: 18,
-        fontWeight: "900",
-        color: MODERN_PRIMARY,
-        marginRight: 10,
-        flexShrink: 1,
-    },
-    paymentTypeTag: {
-        backgroundColor: '#e0f2fe',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 15,
-        alignSelf: 'flex-start',
-    },
-    tagNormal: {
-        backgroundColor: '#ffedd5',
-    },
-    paymentTypeText: {
-        fontSize: 11,
-        color: ACCENT_BLUE,
-        textTransform: "uppercase",
-        fontWeight: "800",
-    },
-
-    customerInfoRow: {
+    // Filter
+    filterBtn: {
+        backgroundColor: COLORS.white,
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 15,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
-    },
-    customerName: {
-        fontSize: 22,
-        fontWeight: "900",
-        color: MODERN_PRIMARY,
-        flexShrink: 1,
-        marginRight: 10,
-    },
-    callButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 10,
-    },
-    callButtonText: {
-        color: CARD_BG,
-        fontWeight: '700',
-        fontSize: 14,
-    },
-
-    // --- ADJUSTED BALANCE ROW STYLES ---
-    balanceRow: {
-        flexDirection: "row",
-        justifyContent: "flex-start",
-        alignItems: 'center',
-        paddingVertical: 15,
-        // Reduced paddingHorizontal to move content left
-        paddingHorizontal: 10,
-        backgroundColor: "#fff7f7",
-        borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#fee2e2',
-        marginBottom: 10,
+        borderColor: 'rgba(0,0,0,0.05)'
     },
-    balanceLabel: {
-        fontSize: 13,
-        color: MODERN_PRIMARY,
-        fontWeight: '700',
-        marginRight: 8,
-    },
-    balanceValue: {
-        fontSize: 20,
-        fontWeight: "900",
-    },
-    // ------------------------------------
+    filterContent: { flexDirection: 'row', alignItems: 'center' },
+    filterText: { fontSize: 15, fontWeight: '700', color: COLORS.primary, marginLeft: 8 },
 
-    detailsToggle: {
-        paddingVertical: 12,
-        alignItems: 'center',
-        borderTopWidth: 1,
-        borderTopColor: BORDER_COLOR,
-        marginTop: 10,
-        flexDirection: 'row',
-        justifyContent: 'center',
+    // Cards
+    listCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 18,
+        padding: 16,
+        marginBottom: 12,
+        elevation: 3,
     },
-    detailsToggleText: {
-        color: ACCENT_BLUE,
-        fontWeight: '700',
-        fontSize: 14,
-        marginRight: 5,
-    },
+    listHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    avatar: { width: 42, height: 42, borderRadius: 12, backgroundColor: COLORS.bgBlue, justifyContent: 'center', alignItems: 'center' },
+    avatarText: { color: '#fff', fontSize: 16, fontWeight: '900' },
+    clientName: { fontSize: 16, fontWeight: '800', color: COLORS.primary },
+    subText: { fontSize: 12, color: COLORS.muted, fontWeight: '500' },
+    rowCenter: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    callBtnSmall: { padding: 8, borderRadius: 10 },
 
-    detailsSection: {
-        paddingTop: 10,
-    },
-    financialRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
+    // Balance
+    balanceContainer: {
+        backgroundColor: '#F8F9FA',
+        borderRadius: 10,
         paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: BORDER_COLOR,
+        paddingHorizontal: 12,
+        marginBottom: 8
     },
-    financialLabel: {
-        fontSize: 15,
-        color: NEUTRAL_GREY,
-        fontWeight: "500",
+    balanceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    balanceLabel: { fontSize: 12, color: COLORS.muted, fontWeight: '600' },
+    balanceAmount: { fontSize: 18, fontWeight: '900' },
+
+    // Details
+    toggleBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, marginTop: 4 },
+    toggleText: { fontSize: 12, color: COLORS.primary, fontWeight: '700', marginRight: 5 },
+    
+    detailsGrid: { 
+        marginTop: 12, 
+        paddingTop: 12, 
+        borderTopWidth: 1, 
+        borderTopColor: '#eee', 
+        flexDirection: 'row', 
+        justifyContent: 'space-between' 
     },
-    financialValue: {
-        fontSize: 16,
-        color: MODERN_PRIMARY,
-        fontWeight: "800",
+    detailItem: { alignItems: 'center', flex: 1 },
+    detailDivider: { width: 1, height: '100%', backgroundColor: '#eee' },
+    detailLabel: { fontSize: 11, color: COLORS.muted, fontWeight: '600' },
+    detailValue: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginTop: 2 },
+
+    // Modal
+    modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+    pickerSheet: { 
+        backgroundColor: "#fff", 
+        padding: 20, 
+        borderTopLeftRadius: 30, 
+        borderTopRightRadius: 30, 
+        paddingBottom: 30 
     },
+    sheetHandle: { width: 35, height: 4, backgroundColor: '#E0E0E0', borderRadius: 10, alignSelf: 'center', marginBottom: 15 },
+    sheetTitle: { fontSize: 18, fontWeight: "900", marginBottom: 15, color: COLORS.primary, textAlign: 'center' },
+    pickerOption: { 
+        padding: 15, 
+        borderRadius: 12, 
+        marginBottom: 8, 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        backgroundColor: '#F5F7FA' 
+    },
+    activeOption: { backgroundColor: 'rgba(248, 192, 9, 0.15)' },
+    pickerOptionText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
+    activeText: { color: COLORS.primary, fontWeight: '800' },
+
+    // Empty
+    emptyContainer: { alignItems: 'center', marginTop: 50, padding: 20 },
+    emptyText: { color: "rgba(255,255,255,0.8)", marginTop: 10, fontSize: 16, fontWeight: '600', textAlign: 'center' }
 });
