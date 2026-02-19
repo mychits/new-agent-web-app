@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -29,9 +30,10 @@ const COLORS = {
   accent: "#f8c009ff",
   bgBlue: "#1aa2ccff",
   success: "#27AE60",
-  cardBg: "rgba(255, 255, 255, 0.95)",
+  cardBg: "rgba(255, 255, 255, 0.98)",
   white: "#FFFFFF",
   muted: "#8898AA",
+  background: "#0f2a44",
 };
 
 const backgroundImage = require("../assets/hero1.jpg");
@@ -54,22 +56,14 @@ const Target = ({ navigation }) => {
 
   // Animation Refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current; // Ref for blinking
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // Blinking Animation Effect
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
+        Animated.timing(blinkAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
+        Animated.timing(blinkAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
       ])
     ).start();
   }, [blinkAnim]);
@@ -84,6 +78,7 @@ const Target = ({ navigation }) => {
 
       if (!employeeId) {
         setError("Login required");
+        setLoading(false);
         return;
       }
 
@@ -103,18 +98,26 @@ const Target = ({ navigation }) => {
 
       const achievedFromTarget = Number(targetApi?.summary?.metrics?.actual_business || 0);
       const groupValueFromIncentive = Number(summary?.total_group_value || 0);
+      const totalBusiness = achievedFromTarget + groupValueFromIncentive;
+      const totalTarget = Number(targetApi?.total_target || 0);
 
       setTargetData({
-        total_target: Number(targetApi?.total_target || 0),
-        total_business: achievedFromTarget + groupValueFromIncentive,
+        total_target: totalTarget,
+        total_business: totalBusiness,
         total_enrollments: Number(summary?.total_enrollments || 0),
       });
 
-      Animated.timing(fadeAnim, { 
-        toValue: 1, 
-        duration: 600, 
-        useNativeDriver: true 
+      const progressVal = totalTarget > 0 ? Math.min((totalBusiness / totalTarget) * 100, 100) : 0;
+      
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+      
+      Animated.spring(progressAnim, {
+        toValue: progressVal,
+        tension: 40,
+        friction: 7,
+        useNativeDriver: false,
       }).start();
+
     } catch (err) {
       setError("Failed to load data");
     } finally {
@@ -122,147 +125,158 @@ const Target = ({ navigation }) => {
     }
   };
 
-  useEffect(() => { 
-    fetchTargetDetails(); 
-  }, [month, year]);
+  useEffect(() => { fetchTargetDetails(); }, [month, year]);
 
   const handleCall = (phone) => {
     if (!phone) return;
-    const url = `tel:${phone}`;
-    Linking.openURL(url).catch(() => console.log("Call failed"));
+    Linking.openURL(`tel:${phone}`).catch(() => console.log("Call failed"));
   };
 
   const progress = targetData.total_target > 0 
     ? Math.min((targetData.total_business / targetData.total_target) * 100, 100) 
     : 0;
 
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 100],
+    outputRange: ["0%", "100%"],
+  });
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" />
-      
-      <Image source={backgroundImage} style={styles.bgOverlay} blurRadius={10} />
-      <LinearGradient 
-        colors={["rgba(26, 162, 204, 0.85)", COLORS.primary]} 
-        style={StyleSheet.absoluteFill} 
-      />
+      <Image source={backgroundImage} style={styles.bgOverlay} blurRadius={12} />
+      <LinearGradient colors={["rgba(26, 162, 204, 0.9)", COLORS.primary]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={{ flex: 1 }}>
+        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
-            <TouchableOpacity 
-              onPress={() => navigation.goBack()}
-              style={styles.iconCircle}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chevron-back" size={22} color={COLORS.primary} />
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconCircle} activeOpacity={0.7}>
+              <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
             </TouchableOpacity>
-
-            <TouchableOpacity 
-              onPress={fetchTargetDetails} 
-              style={styles.refreshBtn}
-              activeOpacity={0.7}
-            >
-              <Feather name="refresh-cw" size={18} color={COLORS.primary} />
+            <TouchableOpacity onPress={fetchTargetDetails} style={styles.refreshBtn} activeOpacity={0.7}>
+              <Feather name="refresh-cw" size={20} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
           <Text style={styles.headerTitle}>Target Performance</Text>
+          <Text style={styles.headerSubTitle}>Track your monthly goals</Text>
         </View>
 
         <View style={styles.contentContainer}>
           {loading ? (
             <View style={styles.loaderContainer}>
               <ActivityIndicator size="large" color={COLORS.accent} />
-              <Text style={styles.loadingText}>Fetching Analytics...</Text>
+              <Text style={styles.loadingText}>Crunching numbers...</Text>
             </View>
           ) : (
-            <Animated.ScrollView 
-              style={{ opacity: fadeAnim }} 
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 30 }}
-            >
-              {/* Date Filter - Compact */}
-              <TouchableOpacity 
-                style={styles.dateCard} 
-                onPress={() => setShowPicker(true)}
-                activeOpacity={0.9}
-              >
+            <Animated.ScrollView style={{ opacity: fadeAnim }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+              
+              {/* Date Picker Card */}
+              <TouchableOpacity style={styles.dateCard} onPress={() => setShowPicker(true)} activeOpacity={0.9}>
                 <View style={styles.dateInfo}>
                   <View style={styles.calendarIconBg}>
-                    <Ionicons name="calendar" size={16} color={COLORS.white} />
+                    <Ionicons name="calendar" size={18} color={COLORS.white} />
                   </View>
-                  <Text style={styles.dateText}>
-                    {moment().month(month).format("MMMM")} {year}
-                  </Text>
+                  <View>
+                    <Text style={styles.dateLabel}>SELECTED PERIOD</Text>
+                    <Text style={styles.dateText}>{moment().month(month).format("MMMM")} {year}</Text>
+                  </View>
                 </View>
-                
-                {/* Wrapped Pencil Icon in Animated View for Blinking */}
                 <Animated.View style={{ opacity: blinkAnim }}>
-                  <Feather name="edit-3" size={16} color={COLORS.primary} />
+                  <View style={styles.editIconBg}>
+                     <Feather name="edit-3" size={14} color={COLORS.primary} />
+                  </View>
                 </Animated.View>
-                
               </TouchableOpacity>
 
               {targetData.total_target > 0 ? (
                 <>
-                  {/* Main Progress Card - Compact */}
+                  {/* Main Progress Card - COMPACT */}
                   <View style={styles.mainCard}>
                     <View style={styles.cardHeader}>
-                      <Text style={styles.cardLabel}>Current Progress</Text>
-                      <View style={styles.statusBadge}>
-                        <Text style={styles.statusText}>{progress >= 100 ? 'Target Met' : 'In Progress'}</Text>
+                      <Text style={styles.cardLabel}>Monthly Progress</Text>
+                      <View style={[styles.statusBadge, progress >= 100 ? styles.badgeSuccess : styles.badgeWarning]}>
+                        <Text style={styles.statusText}>{progress >= 100 ? 'Achieved' : 'In Progress'}</Text>
                       </View>
                     </View>
-                    
-                    <Text style={styles.percentageText}>{progress.toFixed(1)}%</Text>
-                    
+
+                    <View style={styles.progressCenter}>
+                      <Text style={styles.percentageText}>{progress.toFixed(1)}%</Text>
+                    </View>
+
                     <View style={styles.progressTrack}>
-                      <Animated.View style={[styles.progressFill, { width: `${progress}%` }]} />
+                      <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
                     </View>
-                    
+
                     <View style={styles.statsRow}>
-                      <View>
-                        <Text style={styles.statLabel}>Achieved</Text>
-                        <Text style={styles.statValue}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
+                      <View style={styles.statBox}>
+                        <View style={[styles.statIconSmall, { backgroundColor: 'rgba(39, 174, 96, 0.15)' }]}>
+                          <Feather name="check-circle" size={10} color={COLORS.success} />
+                        </View>
+                        <View style={{ marginLeft: 6 }}>
+                          <Text style={styles.statLabel}>Achieved</Text>
+                          <Text style={[styles.statValue, { color: COLORS.success }]}>
+                            ₹{targetData.total_business.toLocaleString("en-IN")}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={styles.statLabel}>Goal</Text>
-                        <Text style={styles.statValue}>₹{targetData.total_target.toLocaleString("en-IN")}</Text>
+                      
+                      <View style={styles.statDivider} />
+
+                      <View style={styles.statBox}>
+                        <View style={[styles.statIconSmall, { backgroundColor: 'rgba(248, 192, 9, 0.15)' }]}>
+                          <Feather name="target" size={10} color={COLORS.accent} />
+                        </View>
+                        <View style={{ marginLeft: 6 }}>
+                          <Text style={styles.statLabel}>Target</Text>
+                          <Text style={[styles.statValue, { color: COLORS.primary }]}>
+                            ₹{targetData.total_target.toLocaleString("en-IN")}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   </View>
 
-                  {/* Mini Stats Grid - Compact */}
+                  {/* Horizontal Mini Stats */}
                   <View style={styles.miniGrid}>
                     <View style={styles.miniCard}>
                       <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}>
-                        <MaterialCommunityIcons name="account-group" size={20} color={COLORS.primary} />
+                        <MaterialCommunityIcons name="account-group" size={22} color={COLORS.primary} />
                       </View>
-                      <Text style={styles.miniVal}>{targetData.total_enrollments}</Text>
-                      <Text style={styles.miniLabel}>Enrollments</Text>
+                      <View style={styles.textCol}>
+                        <Text style={styles.miniLabel}>Enrollments</Text>
+                        <Text style={styles.miniVal}>{targetData.total_enrollments}</Text>
+                      </View>
                     </View>
                     
                     <View style={styles.miniCard}>
                       <View style={[styles.iconBox, { backgroundColor: '#E8F5E9' }]}>
-                        <MaterialCommunityIcons name="briefcase-check" size={20} color={COLORS.success} />
+                        <MaterialCommunityIcons name="cash-multiple" size={22} color={COLORS.success} />
                       </View>
-                      <Text style={styles.miniVal}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
-                      <Text style={styles.miniLabel}>Revenue</Text>
+                      <View style={styles.textCol}>
+                        <Text style={styles.miniLabel}>Revenue</Text>
+                        <Text style={styles.miniVal}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
+                      </View>
                     </View>
                   </View>
                 </>
               ) : (
                 <View style={styles.noTargetCard}>
-                  <MaterialCommunityIcons name="target-variant" size={50} color={COLORS.accent} />
+                  <View style={styles.noTargetIconBg}>
+                    <MaterialCommunityIcons name="target-variant" size={40} color={COLORS.accent} />
+                  </View>
                   <Text style={styles.noTargetTitle}>No Target Assigned</Text>
                   <Text style={styles.noTargetSub}>
-                    No target for {moment().month(month).format("MMMM")} {year}. Contact manager.
+                    No goals found for {moment().month(month).format("MMMM")} {year}. Contact your manager.
                   </Text>
                 </View>
               )}
 
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Enrollments</Text>
-                <Text style={styles.countBadge}>{enrollments.length}</Text>
+                <Text style={styles.sectionTitle}>Enrollment List</Text>
+                <View style={styles.countBadge}>
+                   <Text style={styles.countText}>{enrollments.length}</Text>
+                </View>
               </View>
               
               {enrollments.length > 0 ? (
@@ -270,41 +284,40 @@ const Target = ({ navigation }) => {
                   <View key={item._id || index} style={styles.listCard}>
                     <View style={styles.listHeader}>
                       <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{item.user_id?.full_name?.charAt(0)}</Text>
+                        <Text style={styles.avatarText}>{item.user_id?.full_name?.charAt(0) || 'U'}</Text>
                       </View>
-                      <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.clientName}>{item.user_id?.full_name}</Text>
-                        <TouchableOpacity 
-                          style={styles.phoneRow} 
-                          onPress={() => handleCall(item.user_id?.phone_number)}
-                        >
-                          <Feather name="phone" size={11} color={COLORS.bgBlue} />
-                          <Text style={styles.clientContact}> {item.user_id?.phone_number}</Text>
-                        </TouchableOpacity>
-                        {/* Email moved here below phone number */}
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.clientName} numberOfLines={1}>{item.user_id?.full_name}</Text>
+                        
+                        <View style={styles.contactRow}>
+                          <TouchableOpacity style={styles.contactItem} onPress={() => handleCall(item.user_id?.phone_number)}>
+                            <Feather name="phone" size={11} color={COLORS.bgBlue} />
+                            <Text style={styles.contactText}> {item.user_id?.phone_number}</Text>
+                          </TouchableOpacity>
+                        </View>
+                        
                         <Text style={styles.emailText} numberOfLines={1}>
                           {item.user_id?.email || 'No email registered'}
                         </Text>
                       </View>
-                      <View style={styles.amountContainer}>
+                      
+                      <View style={styles.amountPill}>
                         <Text style={styles.amountText}>₹{item.group_id?.group_value?.toLocaleString("en-IN")}</Text>
                       </View>
                     </View>
                     
                     <View style={styles.listFooter}>
                       <View style={styles.schemeBadge}>
-                        <Text style={styles.schemeText}>
-                          <Text style={{fontWeight: '900'}}>SCHEME: </Text>
-                          {item.group_id?.group_name}
-                        </Text>
+                        <MaterialCommunityIcons name="file-document-outline" size={12} color={COLORS.muted} />
+                        <Text style={styles.schemeText}> {item.group_id?.group_name}</Text>
                       </View>
                     </View>
                   </View>
                 ))
               ) : (
                 <View style={styles.emptyContainer}>
-                  <MaterialCommunityIcons name="database-off-outline" size={40} color="rgba(255,255,255,0.4)" />
-                  <Text style={styles.noDataText}>No records found.</Text>
+                  <MaterialCommunityIcons name="database-off-outline" size={48} color="rgba(255,255,255,0.3)" />
+                  <Text style={styles.noDataText}>No enrollment records found.</Text>
                 </View>
               )}
             </Animated.ScrollView>
@@ -312,6 +325,7 @@ const Target = ({ navigation }) => {
         </View>
       </SafeAreaView>
 
+      {/* Modal Picker */}
       <Modal visible={showPicker} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowPicker(false)} />
@@ -322,11 +336,7 @@ const Target = ({ navigation }) => {
             <Text style={styles.pickerSubLabel}>Select Year</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.yearScroll}>
               {[2024, 2025, 2026].map(y => (
-                <TouchableOpacity 
-                  key={y} 
-                  onPress={() => setTmpYear(y)} 
-                  style={[styles.yearBox, tmpYear === y && styles.activeBox]}
-                >
+                <TouchableOpacity key={y} onPress={() => setTmpYear(y)} style={[styles.yearBox, tmpYear === y && styles.activeBox]}>
                   <Text style={[styles.boxText, tmpYear === y && styles.whiteText]}>{y}</Text>
                 </TouchableOpacity>
               ))}
@@ -335,24 +345,13 @@ const Target = ({ navigation }) => {
             <Text style={styles.pickerSubLabel}>Select Month</Text>
             <View style={styles.monthGrid}>
               {moment.monthsShort().map((m, i) => (
-                <TouchableOpacity 
-                  key={m} 
-                  onPress={() => setTmpMonth(i)} 
-                  style={[styles.monthBox, tmpMonth === i && styles.activeBox]}
-                >
+                <TouchableOpacity key={m} onPress={() => setTmpMonth(i)} style={[styles.monthBox, tmpMonth === i && styles.activeBox]}>
                   <Text style={[styles.boxText, tmpMonth === i && styles.whiteText]}>{m}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <TouchableOpacity 
-              style={styles.applyBtn} 
-              onPress={() => { 
-                setMonth(tmpMonth); 
-                setYear(tmpYear); 
-                setShowPicker(false); 
-              }}
-            >
+            <TouchableOpacity style={styles.applyBtn} onPress={() => { setMonth(tmpMonth); setYear(tmpYear); setShowPicker(false); }}>
               <Text style={styles.applyBtnText}>APPLY FILTER</Text>
             </TouchableOpacity>
           </View>
@@ -366,153 +365,174 @@ export default Target;
 
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: COLORS.primary },
-  bgOverlay: { ...StyleSheet.absoluteFillObject, opacity: 0.2 },
+  bgOverlay: { ...StyleSheet.absoluteFillObject, opacity: 0.15 },
   
   header: { 
     paddingHorizontal: 20, 
-    // Increased paddingTop to move header down
-    paddingTop: Platform.OS === "android" ? 60 : 25, 
+    paddingTop: Platform.OS === "android" ? 50 : 20,
     paddingBottom: 10,
-    alignItems: "center"
   },
   headerTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    marginBottom: 18
+    marginBottom: 15
   },
-  headerTitle: { fontSize: 20, fontWeight: "900", color: "#fff", letterSpacing: 0.5 },
-  iconCircle: { backgroundColor: "#fff", padding: 6, borderRadius: 10 },
-  refreshBtn: { backgroundColor: COLORS.accent, padding: 8, borderRadius: 10 },
+  headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: 5 },
+  headerSubTitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2 },
+  iconCircle: { backgroundColor: "#fff", padding: 8, borderRadius: 12, elevation: 4 },
+  refreshBtn: { backgroundColor: COLORS.accent, padding: 10, borderRadius: 12, elevation: 4 },
   
   contentContainer: { paddingHorizontal: 16, flex: 1 },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: COLORS.white, marginTop: 8, fontWeight: '600', opacity: 0.8 },
+  loadingText: { color: COLORS.white, marginTop: 10, fontWeight: '600', opacity: 0.8 },
 
+  // Date Card
   dateCard: { 
     backgroundColor: COLORS.white, 
-    borderRadius: 14, 
-    padding: 12, 
-    marginBottom: 12, 
+    borderRadius: 16, 
+    padding: 14, 
+    marginBottom: 16, 
     flexDirection: "row", 
     alignItems: "center", 
     justifyContent: "space-between",
-    elevation: 3
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   dateInfo: { flexDirection: 'row', alignItems: 'center' },
-  calendarIconBg: { backgroundColor: COLORS.bgBlue, padding: 6, borderRadius: 8, marginRight: 10 },
-  dateText: { fontSize: 15, fontWeight: "800", color: COLORS.primary },
+  calendarIconBg: { backgroundColor: COLORS.bgBlue, padding: 8, borderRadius: 10, marginRight: 12 },
+  dateLabel: { fontSize: 10, color: COLORS.muted, fontWeight: '800', letterSpacing: 1 },
+  dateText: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
+  editIconBg: { backgroundColor: '#F5F7FA', padding: 8, borderRadius: 10 },
 
+  // Main Progress Card - COMPACT STYLES
   mainCard: { 
     backgroundColor: COLORS.cardBg, 
     borderRadius: 20, 
-    padding: 16, 
-    marginBottom: 12, 
+    padding: 14, // Reduced padding
+    marginBottom: 16, 
     elevation: 6,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  cardLabel: { fontSize: 11, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase" },
-  statusBadge: { backgroundColor: 'rgba(39, 174, 96, 0.1)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  statusText: { color: COLORS.success, fontSize: 9, fontWeight: '900' },
-  percentageText: { fontSize: 36, fontWeight: "900", color: COLORS.primary },
+  cardHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 2 // Reduced margin
+  },
+  cardLabel: { fontSize: 11, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1 },
   
-  progressTrack: { height: 10, backgroundColor: "#E9ECEF", borderRadius: 5, overflow: "hidden", marginVertical: 10 },
-  progressFill: { height: "100%", backgroundColor: COLORS.accent, borderRadius: 5 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  badgeSuccess: { backgroundColor: 'rgba(39, 174, 96, 0.15)' },
+  badgeWarning: { backgroundColor: 'rgba(248, 192, 9, 0.15)' },
+  statusText: { fontSize: 9, fontWeight: '900', textTransform: 'uppercase' },
   
-  statsRow: { flexDirection: "row", justifyContent: "space-between" },
-  statLabel: { fontSize: 11, color: COLORS.muted, fontWeight: "700" },
-  statValue: { fontSize: 15, fontWeight: "900", color: COLORS.primary, marginTop: 1 },
+  progressCenter: { alignItems: 'center', marginVertical: 4 },
+  percentageText: { 
+    fontSize: 32, // Reduced from 56
+    fontWeight: "900", 
+    color: COLORS.primary 
+  },
 
-  miniGrid: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
+  progressTrack: { 
+    height: 8, // Reduced from 12
+    backgroundColor: "#E9ECEF", 
+    borderRadius: 4, 
+    overflow: "hidden", 
+    marginVertical: 8 
+  },
+  progressFill: { height: "100%", backgroundColor: COLORS.accent, borderRadius: 4 },
+  
+  statsRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: 'center', 
+    marginTop: 4 
+  },
+  statBox: { flexDirection: 'row', alignItems: 'center' },
+  statIconSmall: { padding: 4, borderRadius: 6 }, // Smaller icon box
+  statLabel: { fontSize: 10, color: COLORS.muted, fontWeight: "700" },
+  statValue: { fontSize: 13, fontWeight: "900", marginTop: 1 },
+  statDivider: { width: 1, height: 20, backgroundColor: '#E9ECEF', marginHorizontal: 5 },
+
+  // Mini Grid (Horizontal Layout)
+  miniGrid: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
   miniCard: { 
     backgroundColor: COLORS.white, 
     width: "48%", 
-    borderRadius: 16, 
+    borderRadius: 18, 
     padding: 14, 
-    alignItems: "flex-start",
-    elevation: 3
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 4,
   },
-  iconBox: { padding: 8, borderRadius: 12, marginBottom: 8 },
+  iconBox: { padding: 6, borderRadius: 12, marginRight: 6 },
+  textCol: { justifyContent: 'center' },
   miniVal: { fontSize: 15, fontWeight: "900", color: COLORS.primary },
-  miniLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, marginTop: 2 },
+  miniLabel: { fontSize: 9, fontWeight: "700", color: COLORS.muted, marginTop: 2 },
 
+  // No Target
   noTargetCard: {
     backgroundColor: COLORS.cardBg,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 24,
+    padding: 30,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    elevation: 6,
+    marginBottom: 16,
+    elevation: 8,
   },
-  noTargetTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: COLORS.primary,
-    marginTop: 10,
-  },
-  noTargetSub: {
-    fontSize: 12,
-    color: COLORS.muted,
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 18,
-    fontWeight: '600',
-  },
+  noTargetIconBg: { backgroundColor: 'rgba(248, 192, 9, 0.15)', padding: 15, borderRadius: 20, marginBottom: 10 },
+  noTargetTitle: { fontSize: 18, fontWeight: '900', color: COLORS.primary, marginTop: 5 },
+  noTargetSub: { fontSize: 13, color: COLORS.muted, textAlign: 'center', marginTop: 6, lineHeight: 20 },
 
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 5 },
-  sectionTitle: { fontSize: 18, fontWeight: "900", color: "#fff", marginRight: 8 },
-  countBadge: { backgroundColor: COLORS.accent, color: COLORS.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, fontSize: 11, fontWeight: '900', overflow: 'hidden' },
+  // Section Header
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, marginTop: 8 },
+  sectionTitle: { fontSize: 18, fontWeight: "900", color: "#fff", marginRight: 10 },
+  countBadge: { backgroundColor: COLORS.accent, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12 },
+  countText: { color: COLORS.primary, fontWeight: '900', fontSize: 12 },
 
+  // List Card
   listCard: { 
     backgroundColor: COLORS.white, 
-    borderRadius: 16, 
-    padding: 12, 
-    marginBottom: 10,
-    elevation: 2
+    borderRadius: 20, 
+    padding: 14, 
+    marginBottom: 12,
+    elevation: 4
   },
   listHeader: { flexDirection: "row", alignItems: "center" },
-  avatar: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
-  avatarText: { color: "#fff", fontSize: 16, fontWeight: "900" },
-  clientName: { fontSize: 14, fontWeight: "800", color: COLORS.primary },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  clientContact: { fontSize: 12, color: COLORS.bgBlue, fontWeight: '700', textDecorationLine: 'underline' },
-  amountContainer: { backgroundColor: '#F0F9F4', padding: 6, borderRadius: 8 },
+  avatar: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
+  avatarText: { color: "#fff", fontSize: 18, fontWeight: "900" },
+  
+  clientName: { fontSize: 15, fontWeight: "800", color: COLORS.primary, marginBottom: 2 },
+  contactRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  contactItem: { flexDirection: 'row', alignItems: 'center' },
+  contactText: { fontSize: 12, color: COLORS.bgBlue, fontWeight: '700' },
+  emailText: { fontSize: 11, color: COLORS.muted, marginTop: 2, marginRight: 10 },
+  
+  amountPill: { backgroundColor: '#F0F9F4', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10 },
   amountText: { fontSize: 13, fontWeight: "900", color: COLORS.success },
   
-  // Style for email moved inside the main content
-  emailText: { 
-    fontSize: 11, 
-    color: COLORS.muted, 
-    marginTop: 2,
-    paddingRight: 10 // Prevent overlap with amount
-  },
+  listFooter: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#F1F4F8", flexDirection: 'row' },
+  schemeBadge: { backgroundColor: '#F8F9FA', padding: 6, borderRadius: 8, flexDirection: 'row', alignItems: 'center' },
+  schemeText: { fontSize: 11, color: COLORS.primary, fontWeight: '700' },
 
-  listFooter: { 
-    marginTop: 1, 
-    paddingTop: 5, 
-    borderTopWidth: 1, 
-    borderTopColor: "#F1F4F8", 
-    alignItems: 'center',
-  },
-  schemeBadge: { backgroundColor: '#F8F9FA', padding: 4, borderRadius: 6 },
-  schemeText: { fontSize: 12, color: COLORS.primary },
+  emptyContainer: { alignItems: 'center', marginTop: 40, opacity: 0.6 },
+  noDataText: { color: "#fff", textAlign: "center", marginTop: 12, fontSize: 15, fontWeight: '600' },
 
-  emptyContainer: { alignItems: 'center', marginTop: 30, opacity: 0.6 },
-  noDataText: { color: "#fff", textAlign: "center", marginTop: 10, fontSize: 14, fontWeight: '600' },
-
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
-  pickerSheet: { backgroundColor: "#fff", padding: 20, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingBottom: 30 },
-  sheetHandle: { width: 35, height: 4, backgroundColor: '#E0E0E0', borderRadius: 10, alignSelf: 'center', marginBottom: 15 },
-  sheetTitle: { fontSize: 18, fontWeight: "900", marginBottom: 20, color: COLORS.primary, textAlign: 'center' },
-  pickerSubLabel: { fontSize: 12, fontWeight: '800', color: COLORS.muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
+  // Modal Styles
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  pickerSheet: { backgroundColor: "#fff", padding: 24, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingBottom: 40 },
+  sheetHandle: { width: 40, height: 5, backgroundColor: '#E0E0E0', borderRadius: 10, alignSelf: 'center', marginBottom: 20 },
+  sheetTitle: { fontSize: 20, fontWeight: "900", marginBottom: 25, color: COLORS.primary, textAlign: 'center' },
+  pickerSubLabel: { fontSize: 12, fontWeight: '800', color: COLORS.muted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
   yearScroll: { marginBottom: 20 },
   monthGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-  monthBox: { width: "31%", paddingVertical: 12, alignItems: "center", borderRadius: 12, backgroundColor: "#F5F7FA", marginBottom: 8 },
-  yearBox: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: "#F5F7FA", marginRight: 10 },
+  monthBox: { width: "31%", paddingVertical: 14, alignItems: "center", borderRadius: 14, backgroundColor: "#F5F7FA", marginBottom: 10 },
+  yearBox: { paddingHorizontal: 22, paddingVertical: 12, borderRadius: 14, backgroundColor: "#F5F7FA", marginRight: 10 },
   activeBox: { backgroundColor: COLORS.primary, elevation: 4 },
-  boxText: { fontWeight: "800", color: "#A0AEC0", fontSize: 13 },
+  boxText: { fontWeight: "800", color: "#8898AA", fontSize: 14 },
   whiteText: { color: "#fff" },
-  applyBtn: { backgroundColor: COLORS.accent, padding: 14, borderRadius: 16, marginTop: 20, alignItems: "center", elevation: 4 },
-  applyBtnText: { fontWeight: "900", fontSize: 14, color: COLORS.primary, letterSpacing: 1 },
+  applyBtn: { backgroundColor: COLORS.accent, padding: 16, borderRadius: 18, marginTop: 25, alignItems: "center", elevation: 4 },
+  applyBtnText: { fontWeight: "900", fontSize: 15, color: COLORS.primary, letterSpacing: 1 },
 });
