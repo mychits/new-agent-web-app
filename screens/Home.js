@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
@@ -9,20 +10,17 @@ import {
   Image,
   Modal,
   Animated,
-  Easing,
   ToastAndroid,
   ActivityIndicator,
   TextInput,
   Clipboard,
 } from "react-native";
-import COLORS from "../constants/color";
-import Header from "../components/Header";
-import baseUrl from "../constants/baseUrl";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { AgentContext } from "../context/AgentContextProvider";
 import { useNetInfo } from "@react-native-community/netinfo";
+import Header from "../components/Header";
+import baseUrl from "../constants/baseUrl";
+import axios from "axios";
 
 const { width } = Dimensions.get("window");
 
@@ -30,17 +28,18 @@ const { width } = Dimensions.get("window");
 const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
 const MODERN_PRIMARY = "#0d0d0eff";
 const ACCENT_BLUE = "#1796d1ff";
-const BORDER_COLOR = "#e0e0e0";
 const TEXT_GREY = "#4b5563";
-const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb';
+const CARD_BG = "#d8adad";
 const HIGHLIGHT_GOLD = '#f5be6dff';
-const REWARD_PURPLE = ["#6366f1", "#a855f7"]; 
+const REWARD_PURPLE = ["#6366f1", "#a855f7"];
+const STAR_POINTS_GRADIENT = ["#FFD700", "#FFA500"]; 
+const QR_CARD_GRADIENT = ['#24C6DC', '#183A5D'];
 
-// NEW STYLISH BLUE THEME
-const QR_CARD_GRADIENT = ['#24C6DC', '#183A5D']; 
+// Vibrant colors for the rotating border animation
+const NEON_COLORS = ['#85f6b2', '#73a6d8', '#dc628d', '#c188e7', '#8cebb2'];
 
 const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
+const EMPLOYEE_DETAILS_URL = `${baseUrl}/employee`; 
 
 const cardImagePaths = {
   attendence: require("../assets/ab.png"),
@@ -59,287 +58,212 @@ const cardImagePaths = {
   monthlyTurnover: require("../assets/MITB.png"),
   DueReportImage: require("../assets/dues.png"),
   LogOutImage: require("../assets/logout.png"),
-  rewards: require("../assets/rewardsidea.png"), 
-  // FIXED: Matches your file 'sales.png'
-  SalesReport: require("../assets/sales.png") 
+  rewards: require("../assets/rewardsidea.png"),
+  SalesReport: require("../assets/sales.png"),
 };
 
-const AttendanceModal = ({
-  attendanceLoading,
-  selectedStatus,
-  visible,
-  message,
-  onClose,
-  handleSubmitAttendance,
-  note,
-  setNote,
-}) => {
-  const [isNoteOpen, setIsNoteOpen] = useState(false);
+const AttendanceModal = ({ attendanceLoading, visible, message, onClose, handleSubmitAttendance, note, setNote }) => {
   const scaleAnim = useState(new Animated.Value(0.5))[0];
 
   useEffect(() => {
     if (visible) {
+      Animated.spring(scaleAnim, { toValue: 1, friction: 5, useNativeDriver: true }).start();
+    } else {
       scaleAnim.setValue(0.5);
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.out(Easing.back(1.7)),
-        useNativeDriver: true,
-      }).start();
-      setIsNoteOpen(false);
-      setNote("");
     }
   }, [visible]);
-
-  const animatedImageStyle = { transform: [{ scale: scaleAnim }] };
 
   return (
     <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={modalStyles.centeredView}>
-        <View style={modalStyles.modalView}>
-          <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
-            <Text style={modalStyles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
+        <Animated.View style={[modalStyles.modalView, { transform: [{ scale: scaleAnim }] }]}>
+          <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}><Text style={modalStyles.closeButtonText}>✕</Text></TouchableOpacity>
           <LinearGradient colors={[ACCENT_BLUE, ACCENT_BLUE]} style={modalStyles.iconHeader}>
-            <Animated.Image source={cardImagePaths.attendence} style={[modalStyles.modalImage, animatedImageStyle]} resizeMode="contain" />
+             <Image source={cardImagePaths.attendence} style={{width: 60, height: 60}} resizeMode="contain" />
           </LinearGradient>
           <Text style={modalStyles.modalHeading}>Daily Status Check</Text>
           <Text style={modalStyles.modalText}>{message}</Text>
-          <TouchableOpacity style={modalStyles.accordionHeader} onPress={() => setIsNoteOpen(!isNoteOpen)}>
-            <Text style={modalStyles.noteLabel}>{isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'}</Text>
-            <Text style={modalStyles.arrowIcon}>{isNoteOpen ? '▲' : '▼'}</Text>
-          </TouchableOpacity>
-          {isNoteOpen && (
-            <View style={modalStyles.accordionContent}>
-              <TextInput style={modalStyles.inputField} placeholder="e.g., Working remotely..." value={note} onChangeText={setNote} multiline />
-            </View>
-          )}
-          <TouchableOpacity disabled={!selectedStatus || attendanceLoading} onPress={handleSubmitAttendance} style={modalStyles.markAttendanceButtonWrapper}>
-            <LinearGradient colors={!selectedStatus ? [BORDER_COLOR, BORDER_COLOR] : [ACCENT_BLUE, ACCENT_BLUE]} style={modalStyles.markAttendanceButton}>
-              {attendanceLoading ? <ActivityIndicator size="small" color={CARD_BG} /> : <Text style={modalStyles.markAttendanceButtonText}>PRESENT</Text>}
+          
+          <TextInput 
+            style={modalStyles.inputField} 
+            placeholder="Add a note (optional)..." 
+            value={note} 
+            onChangeText={setNote} 
+            multiline 
+          />
+          
+          <TouchableOpacity onPress={handleSubmitAttendance} style={{width: '100%'}}>
+            <LinearGradient colors={[ACCENT_BLUE, ACCENT_BLUE]} style={modalStyles.markAttendanceButton}>
+              {attendanceLoading ? <ActivityIndicator color="#fff" /> : <Text style={modalStyles.markAttendanceButtonText}>MARK PRESENT</Text>}
             </LinearGradient>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
 };
 
+// --- COMPONENT: ANIMATED GRID CARD WITH COLOR ANIMATION ---
+const AnimatedGridCard = ({ item, index, onPress, parentAnimStyle }) => {
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // 1. Floating Animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: 1, duration: 2500, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 2500, useNativeDriver: true }),
+      ])
+    ).start();
+
+    // 2. Spinning Color Border Animation
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 4000, // 4 seconds for a full spin
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  const translateY = floatAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -4],
+  });
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <Animated.View style={[styles.boxCardWrapper, parentAnimStyle]}>
+      <TouchableOpacity style={styles.boxCard} onPress={onPress} activeOpacity={0.7}>
+        
+        {/* --- COLORED ANIMATION CONTAINER --- */}
+        <View style={styles.iconContainerRelative}>
+          {/* 1. Rotating Gradient Ring (The Color Animation) */}
+          <Animated.View style={[styles.rotatingRing, { transform: [{ rotate: spin }] }]}>
+            <LinearGradient
+              colors={NEON_COLORS}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.gradientStyle}
+            />
+          </Animated.View>
+
+          {/* 2. Inner White Circle (Masks the center of the gradient) */}
+          <View style={styles.iconCircle}>
+            <Animated.Image 
+              source={item.imagePath} 
+              style={[styles.boxImage, { transform: [{ translateY }] }]} 
+              resizeMode="contain" 
+            />
+          </View>
+        </View>
+
+        <Text style={styles.boxText}>{item.name}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+const AnimatedFullWidthCard = ({ item, onPress, parentAnimStyle }) => {
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-200, 200],
+  });
+
+  const isStar = item.variant === 'star';
+  const isReward = item.variant === 'reward';
+  const isOverview = item.variant === 'overview';
+
+  let gradientColors = [HIGHLIGHT_GOLD, HIGHLIGHT_GOLD];
+  if (isReward) gradientColors = REWARD_PURPLE;
+  if (isStar) gradientColors = STAR_POINTS_GRADIENT;
+
+  return (
+    <Animated.View key={item.id} style={[styles.fullWidthCardWrapper, parentAnimStyle]}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+        <LinearGradient 
+          colors={gradientColors} 
+          style={[styles.fullWidthCard, isOverview && styles.centeredCard ]}
+        >
+          {!isOverview && (
+            <Animated.View style={[styles.shimmerOverlay, { transform: [{ translateX: shimmerTranslate }] }]} />
+          )}
+
+          {isOverview ? (
+            <>
+              <Image source={item.imagePath} style={[styles.fullWidthImage, { marginRight: 0, marginBottom: 8 }]} resizeMode="contain" />
+              <View style={{alignItems: 'center'}}>
+                <Text style={[styles.fullWidthText, { color: MODERN_PRIMARY }]}>{item.name}</Text>
+                <Text style={{ color: TEXT_GREY, fontSize: 12, marginTop: 2 }}>Performance</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              {isStar ? (
+                <View style={styles.starIconContainer}><Text style={{fontSize: 28}}>⭐</Text></View>
+              ) : (
+                <Image source={item.imagePath} style={styles.fullWidthImage} resizeMode="contain" />
+              )}
+              <View>
+                <Text style={[styles.fullWidthText, { color: isReward ? '#fff' : MODERN_PRIMARY }]}>{item.name}</Text>
+                <Text style={{ color: isReward ? 'rgba(255,255,255,0.8)' : TEXT_GREY, fontSize: 12, marginTop: 2 }}>
+                  {isStar ? "Redeem rewards" : isReward ? "Claim points" : "Performance"}
+                </Text>
+              </View>
+            </>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+
 const Home = ({ route, navigation }) => {
   const { user = {}, agentInfo = {} } = route.params || {};
-  const [agent, setAgent] = useState({});
-  const [selectedStatus] = useState("Present");
+  const [agent, setAgent] = useState(agentInfo || {});
   const { setModifyPayment } = useContext(AgentContext);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState("");
-  const netInfo = useNetInfo();
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [note, setNote] = useState("");
-  const cardAnimations = useRef([]);
-  const hasAnimated = useRef(false);
-
-  const copyToClipboard = (text) => {
-    Clipboard.setString(text);
-    ToastAndroid.show("UPI ID Copied!", ToastAndroid.SHORT);
-  };
-
-  const cardsData = [
-    agentInfo?.designation_id?.permission?.collection === "true" && {
-      id: "collections",
-      name: "Collections",
-      imagePath: cardImagePaths.collections,
-      onPress: () => navigation.navigate("PaymentNavigator"),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    agentInfo?.designation_id?.permission?.collection === "true" && {
-      id: "qrCode",
-      name: "QR Code",
-      imagePath: cardImagePaths.qrCode,
-      onPress: () => navigation.navigate("qrCode"),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "commission",
-      name: "My Overview",
-      imagePath: cardImagePaths.commission,
-      onPress: () => navigation.navigate("Commissions", { user }),
-      backgroundColor: HIGHLIGHT_GOLD,
-    },
-  
-    agentInfo?.designation_id?.permission?.daybook === "true" && {
-      id: "daybook",
-      name: "Daybook",
-      imagePath: cardImagePaths.daybook,
-      onPress: () => navigation.navigate("PayNavigation", { user }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    agentInfo?.designation_id?.permission?.reports === "true" && {
-      id: "reports",
-      name: "Reports",
-      imagePath: cardImagePaths.reports,
-      onPress: () => navigation.navigate("PayNavigation", { screen: "Reports", params: { user } }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    agentInfo?.designation_id?.permission?.targets === "true" && {
-      id: "targets",
-      name: "Targets",
-      imagePath: cardImagePaths.targets,
-      onPress: () => navigation.navigate("Target"),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    agentInfo?.designation_id?.permission?.leads === "true" && {
-      id: "myLeads",
-      name: "My Leads",
-      imagePath: cardImagePaths.myLeads,
-      onPress: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user } }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "addCustomers",
-      name: "Add Customers",
-      imagePath: cardImagePaths.addCustomers,
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Customer", params: { user } }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "myCustomers",
-      name: "My Customers",
-      imagePath: cardImagePaths.myCustomers,
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "ViewEnrollments", params: { user } }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "customerOnHold",
-      name: "Holded Customers",
-      imagePath: cardImagePaths.customerOnHold,
-      onPress: () => navigation.navigate("CustomerOnHold"),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "myTasks",
-      name: "My Tasks",
-      imagePath: cardImagePaths.myTasks,
-      onPress: () => navigation.navigate("MyTasks", { employeeId: user.userId, agentName: agent.name }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "groups",
-      name: "Groups",
-      imagePath: cardImagePaths.groups,
-      onPress: () => navigation.navigate("Enrollment", { screen: "Enrollment", params: { user } }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "monthlyTurnover",
-      name: "MIT",
-      imagePath: cardImagePaths.monthlyTurnover,
-      onPress: () => navigation.navigate("MonthlyTurnover"),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "DueReport",
-      name: "Outstanding Reports",
-      imagePath: cardImagePaths.DueReportImage,
-      onPress: () => navigation.navigate("PayNavigation", { screen: "Due", params: { user } }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "LogOut",
-      name: "Attendence",
-      imagePath: cardImagePaths.LogOutImage,
-      onPress: () => navigation.navigate("LogOut", { employeeId: user.userId, agentName: agent.name }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-        {
-      id: "SalesReport",
-      name: "Sales Report",
-      imagePath: cardImagePaths.SalesReport, // Uses the corrected 'sales.png'
-      onPress: () => navigation.navigate("SalesReport", { employeeId: user.userId, agentName: agent.name }),
-      backgroundColor: SUBTLE_BG_GREY,
-    },
-    {
-      id: "rewards",
-      name: "My Rewards",
-      imagePath: cardImagePaths.rewards,
-      onPress: () => navigation.navigate("Rewards"), 
-      isReward: true,
-    },
-    // --- FIXED SALES REPORT CARD ---
-
-  ].filter(Boolean);
-
-  if (cardAnimations.current.length !== cardsData.length) {
-    cardAnimations.current = cardsData.map((_, i) => cardAnimations.current[i] || new Animated.Value(0));
-  }
+  const netInfo = useNetInfo();
 
   useEffect(() => {
-    if (cardsData.length > 0 && netInfo.isConnected && !hasAnimated.current) {
-      const animations = cardAnimations.current.map((anim, index) => {
-        return Animated.timing(anim, {
-          toValue: 1,
-          duration: 400,
-          delay: index * 50,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        });
-      });
-      Animated.stagger(10, animations).start(() => { hasAnimated.current = true; });
-    }
-  }, [cardsData.length, netInfo.isConnected]);
-
-  const handleSubmitAttendance = async () => {
-    try {
-      setAttendanceLoading(true);
-      const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
-        employee_id: user?.userId,
-        status: "Present",
-        method: "No Auth",
-        type: "in",
-        note: note,
-      });
-      ToastAndroid.show(response?.data?.message || "Attendance Marked Successfully", ToastAndroid.SHORT);
-    } catch (error) {
-      ToastAndroid.show("Failed to Mark Attendance", ToastAndroid.SHORT);
-    } finally {
-      setAttendanceLoading(false);
-      setShowAttendanceModal(false);
-      setNote("");
-    }
-  };
-
-  useEffect(() => {
-    if (agentInfo?.designation_id?.permission) {
-      setModifyPayment(agentInfo.designation_id.permission.modify_payments === "true");
-    }
-  }, [agentInfo, setModifyPayment]);
-
-  useEffect(() => {
-    const fetchAgent = async () => {
+    const fetchAgentDetails = async () => {
       if (user?.userId && netInfo.isConnected) {
         try {
-          const response = await axios.get(`${baseUrl}/agent/get-agent-by-id/${user.userId}`);
+          const response = await axios.get(`${EMPLOYEE_DETAILS_URL}/get-employee/${user.userId}`);
           if (response.data) {
-            // ADDED CONSOLE LOGS HERE
-            console.log("Full Agent Data Response:", response.data);
-            console.log("User isVerified status:", response.data.isVerified);
-            
-            // CHECK VERIFICATION STATUS
-            if (response.data.isVerified === false) {
-              console.log("User is NOT verified. Redirecting to Review screen...");
-             
-              navigation.replace("Review"); 
-              return; 
-            }
-            
             setAgent(response.data);
+            if (response.data?.designation_id?.permission) {
+              setModifyPayment(response.data.designation_id.permission.modify_payments === "true");
+            }
           }
         } catch (error) {
-          console.error("Error fetching agent data:", error.message);
+          console.log("Error fetching agent details.");
         }
       }
     };
-    fetchAgent();
-  }, [user.userId, netInfo.isConnected, navigation]);
+    fetchAgentDetails();
+  }, [user?.userId, netInfo.isConnected]);
 
   useEffect(() => {
     const checkAttendance = async () => {
@@ -347,264 +271,331 @@ const Home = ({ route, navigation }) => {
         try {
           const response = await axios.post(`${baseUrl}/employee-attendance/modal`, { employee_id: user.userId });
           if (response.data?.showModal === true) {
-            setAttendanceMessage(response.data.message || "Eligible to mark attendance");
+            setAttendanceMessage(response.data.message || "Please mark your attendance");
             setShowAttendanceModal(true);
           }
         } catch (error) {
-          setShowAttendanceModal(false);
+          console.log("Attendance check failed");
         }
       }
     };
     checkAttendance();
   }, [user.userId, netInfo.isConnected]);
 
+  const cardsData = [
+    agentInfo?.designation_id?.permission?.collection === "true" && {
+      id: "collections", name: "Collections", imagePath: cardImagePaths.collections,
+      onPress: () => navigation.navigate("PaymentNavigator"), backgroundColor: CARD_BG,
+    },
+    agentInfo?.designation_id?.permission?.collection === "true" && {
+      id: "qrCode", name: "QR Code", imagePath: cardImagePaths.qrCode,
+      onPress: () => navigation.navigate("qrCode"), backgroundColor: CARD_BG,
+    },
+     agentInfo?.designation_id?.permission?.daybook === "true" && {
+      id: "daybook", name: "Daybook", imagePath: cardImagePaths.daybook,
+      onPress: () => navigation.navigate("PayNavigation", { user }), backgroundColor: CARD_BG,
+    },
+    {
+      id: "commission", name: "My Overview", imagePath: cardImagePaths.commission,
+      onPress: () => navigation.navigate("Commissions", { user }),
+      isFullWidth: true, variant: 'overview'
+    },
+    agentInfo?.designation_id?.permission?.reports === "true" && {
+      id: "reports", name: "Reports", imagePath: cardImagePaths.reports,
+      onPress: () => navigation.navigate("PayNavigation", { screen: "Reports", params: { user } }), backgroundColor: CARD_BG,
+    },
+    agentInfo?.designation_id?.permission?.targets === "true" && {
+      id: "targets", name: "Targets", imagePath: cardImagePaths.targets,
+      onPress: () => navigation.navigate("Target"), backgroundColor: CARD_BG,
+    },
+    agentInfo?.designation_id?.permission?.leads === "true" && {
+      id: "myLeads", name: "My Leads", imagePath: cardImagePaths.myLeads,
+      onPress: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user } }), backgroundColor: CARD_BG,
+    },
+    {
+      id: "addCustomers", name: "Add Customers", imagePath: cardImagePaths.addCustomers,
+      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Customer", params: { user } }), backgroundColor: CARD_BG,
+    },
+    {
+      id: "myCustomers", name: "My Customers", imagePath: cardImagePaths.myCustomers,
+      onPress: () => navigation.navigate("CustomerNavigation", { screen: "ViewEnrollments", params: { user } }), backgroundColor: CARD_BG,
+    },
+     {
+      id: "myTasks", name: "My Tasks", imagePath: cardImagePaths.myTasks,
+      onPress: () => navigation.navigate("MyTasks", { employeeId: user.userId, agentName: agent.name }), backgroundColor: CARD_BG,
+    },
+    {
+      id: "groups", name: "Groups", imagePath: cardImagePaths.groups,
+      onPress: () => navigation.navigate("Enrollment", { screen: "Enrollment", params: { user } }), backgroundColor: CARD_BG,
+    },
+     {
+      id: "LogOut", name: "Attendance", imagePath: cardImagePaths.LogOutImage,
+      onPress: () => navigation.navigate("LogOut", { employeeId: user.userId, agentName: agent.name }), backgroundColor: CARD_BG,
+    },
+    {
+      id: "monthlyTurnover", name: "MIT", imagePath: cardImagePaths.monthlyTurnover,
+      onPress: () => navigation.navigate("MonthlyTurnover"), backgroundColor: CARD_BG,
+    },
+       {
+      id: "DueReport", name: "Outstanding Reports", imagePath: cardImagePaths.DueReportImage,
+      onPress: () => navigation.navigate("PayNavigation", { screen: "Due", params: { user } }), backgroundColor: CARD_BG,
+    },
+       {
+      id: "customerOnHold", name: "Holded Customers", imagePath: cardImagePaths.customerOnHold,
+      onPress: () => navigation.navigate("CustomerOnHold"), backgroundColor: CARD_BG,
+    },
+    {
+      id: "SalesReport", name: "Sales Report", imagePath: cardImagePaths.SalesReport,
+      onPress: () => navigation.navigate("SalesReport", { employeeId: user.userId, agentName: agent.name }), backgroundColor: CARD_BG,
+    },
+    {
+      id: "rewards", name: "My Rewards", imagePath: cardImagePaths.rewards,
+      onPress: () => navigation.navigate("Rewards"),
+      isFullWidth: true, variant: 'reward'
+    },
+    {
+      id: "starPoints", name: "Star Points",
+      onPress: () => navigation.navigate("StarPoints"),
+      isFullWidth: true, variant: 'star'
+    },
+  ].filter(Boolean);
+
+  const cardAnims = useRef(cardsData.map(() => new Animated.Value(0))).current;
+  
+  useEffect(() => {
+    if (cardsData.length > 0) {
+       Animated.stagger(
+         80,
+         cardAnims.map(anim => 
+           Animated.spring(anim, { 
+             toValue: 1, 
+             friction: 7, 
+             tension: 40, 
+             useNativeDriver: true 
+           })
+         )
+       ).start();
+    }
+  }, [cardsData.length]);
+
+  const copyToClipboard = (text) => {
+    Clipboard.setString(text);
+    ToastAndroid.show("UPI ID Copied!", ToastAndroid.SHORT);
+  };
+
+  const handleSubmitAttendance = async () => {
+    setAttendanceLoading(true);
+    try {
+      await axios.post(ATTENDANCE_SUBMIT_URL, { 
+        employee_id: user?.userId, 
+        status: "Present", 
+        type: "in", 
+        note 
+      });
+      ToastAndroid.show("Attendance Marked", ToastAndroid.SHORT);
+      setShowAttendanceModal(false);
+    } catch (e) { 
+      ToastAndroid.show("Failed to mark attendance", ToastAndroid.SHORT);
+    }
+    setAttendanceLoading(false);
+  };
+
   return (
     <LinearGradient colors={TOP_GRADIENT} style={{ flex: 1 }}>
-      <View style={styles.mainContentArea_noSafeArea}>
+      <View style={styles.mainContentArea}>
         <Header />
         <View style={styles.introSection}>
           <Text style={styles.welcomeText}>Hello {agent.name || "Agent"},</Text>
-          <Text style={styles.questionText}>Welcome to MyChits Agent App</Text>
+          <Text style={styles.questionText}>Welcome to MyChits</Text>
         </View>
 
-        {!user.userId ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={ACCENT_BLUE} />
-          </View>
-        ) : netInfo.isConnected === false ? (
-          <View style={styles.noInternetContainer}>
-            <Image source={require("../assets/Nointernetp.png")} style={styles.noInternetImage} resizeMode="contain" />
-            <Text style={styles.noInternetText}>Oops! No internet connection.</Text>
-          </View>
-        ) : (
-          <ScrollView contentContainerStyle={styles.cardsScrollViewContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.cardsGridContainer}>
-              {cardsData.map((card, index) => {
-                const scale = cardAnimations.current[index].interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] });
-                const translateY = cardAnimations.current[index].interpolate({ inputRange: [0, 1], outputRange: [50, 0] });
-                const animatedStyle = { opacity: cardAnimations.current[index], transform: [{ scale }, { translateY }] };
-                
-                const isOverviewCard = card.id === "commission";
-                const isRewardCard = card.id === "rewards";
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+          <View style={styles.cardsGridContainer}>
+            {cardsData.map((item, index) => {
+              const translateY = cardAnims[index]?.interpolate({inputRange: [0, 1], outputRange: [40, 0]}) || 0;
+              const scale = cardAnims[index]?.interpolate({inputRange: [0, 1], outputRange: [0.8, 1]}) || 1;
+              const animStyle = { opacity: cardAnims[index], transform: [{ translateY }, { scale }] };
 
-                // Special handling for Full Width Cards (Overview & Rewards)
-                if (isOverviewCard || isRewardCard) {
-                  return (
-                    <Animated.View key={card.id} style={[styles.bigCardWrapper, animatedStyle]}>
-                      <TouchableOpacity onPress={card.onPress} activeOpacity={0.8} style={{ flex: 1 }}>
-                        <LinearGradient 
-                          colors={isRewardCard ? REWARD_PURPLE : [card.backgroundColor, card.backgroundColor]} 
-                          style={[styles.bigCardStyle, isRewardCard && styles.rewardCardShadow]}
-                        >
-                          <Image source={card.imagePath} style={styles.bigCardImage} resizeMode="contain" />
-                          <View>
-                             <Text style={styles.bigCardText}>{card.name}</Text>
-                             {isRewardCard && <Text style={styles.rewardSubText}>Claim your points</Text>}
-                          </View>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  );
-                }
-
+              if (item.isFullWidth) {
                 return (
-                  <Animated.View key={card.id} style={[styles.gridCardWrapper, animatedStyle]}>
-                    <TouchableOpacity style={[styles.gridCard, { backgroundColor: card.backgroundColor }]} onPress={card.onPress} activeOpacity={0.7}>
-                      <Image source={card.imagePath} style={styles.cardImage} resizeMode="contain" />
-                      <Text style={styles.gridCardText}>{card.name}</Text>
-                    </TouchableOpacity>
-                  </Animated.View>
+                   <AnimatedFullWidthCard 
+                     key={item.id}
+                     item={item}
+                     onPress={item.onPress}
+                     parentAnimStyle={animStyle}
+                   />
                 );
-              })}
-            </View>
+              }
 
-            {/* --- STYLISH ROYAL BLUE QR SECTION --- */}
-            <View style={styles.phonePeQrContainer}>
-              <LinearGradient colors={QR_CARD_GRADIENT} style={styles.qrCardMain}>
-                <View style={styles.qrHeaderRow}>
-                  <Text style={styles.qrTitleText}>Business QR</Text>
-                  <View style={styles.brandBadge}>
-                    <Text style={styles.brandBadgeText}>MyChits Pay</Text>
-                  </View>
+              return (
+                <AnimatedGridCard 
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  onPress={item.onPress}
+                  parentAnimStyle={animStyle}
+                />
+              );
+            })}
+          </View>
+
+          <View style={styles.qrContainer}>
+            <LinearGradient colors={QR_CARD_GRADIENT} style={styles.qrCardMain}>
+              <View style={styles.qrHeaderRow}>
+                <Text style={styles.qrTitleText}>Business QR</Text>
+                <View style={styles.brandBadge}>
+                  <Text style={styles.brandBadgeText}>MyChits Pay</Text>
                 </View>
-
-                <View style={styles.qrImageContainer}>
-                  <Image
-                    source={require("../assets/upi_qr (1).png")}
-                    style={styles.qrDisplayImage}
-                    resizeMode="contain"
-                  />
-                </View>
-
-                <View style={styles.upiInfoWrapper}>
-                  <Text style={styles.upiLabel}>Accept payments via UPI</Text>
-                  <TouchableOpacity 
-                    onPress={() => copyToClipboard("mychits@kotak")}
-                    style={styles.upiCopyRow}
-                  >
-                    <Text style={styles.qrUpiText}>mychits@kotak</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("qrCode")}
-                  style={styles.viewDetailsBtn}
-                >
-                  <Text style={styles.viewDetailsBtnText}>VIEW FULL DETAILS</Text>
-                </TouchableOpacity>
-              </LinearGradient>
-            </View>
-          </ScrollView>
-        )}
+              </View>
+              <View style={styles.qrWhiteBox}>
+                <Image source={require("../assets/upi_qr (1).png")} style={styles.qrImage} resizeMode="contain" />
+              </View>
+              <TouchableOpacity onPress={() => copyToClipboard("mychits@kotak")} style={styles.upiBadge}>
+                <Text style={styles.upiText}>mychits@kotak</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        </ScrollView>
       </View>
-      <AttendanceModal attendanceLoading={attendanceLoading} selectedStatus="Present" visible={showAttendanceModal} message={attendanceMessage} onClose={() => setShowAttendanceModal(false)} handleSubmitAttendance={handleSubmitAttendance} note={note} setNote={setNote} />
+      
+      <AttendanceModal 
+        visible={showAttendanceModal} 
+        message={attendanceMessage} 
+        onClose={() => setShowAttendanceModal(false)} 
+        handleSubmitAttendance={handleSubmitAttendance} 
+        note={note} 
+        setNote={setNote} 
+        attendanceLoading={attendanceLoading} 
+      />
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  mainContentArea_noSafeArea: { flex: 1, marginHorizontal: 22, marginTop: 40 },
-  introSection: { marginTop: 20, marginBottom: 20, paddingHorizontal: 5 },
-  welcomeText: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 5 },
-  questionText: { fontSize: 17, fontWeight: "600", color: TEXT_GREY, marginBottom: 10 },
+  mainContentArea: { flex: 1, marginHorizontal: 20, marginTop: 40 },
+  introSection: { marginBottom: 25, paddingHorizontal: 5 },
+  welcomeText: { fontSize: 26, fontWeight: "bold", color: "#fff" },
+  questionText: { fontSize: 16, color: "rgba(255,255,255,0.85)" },
+  cardsGridContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
   
-  // Full Width Card Styles
-  bigCardWrapper: { width: "100%", height: 110, marginBottom: 20 },
-  bigCardStyle: { 
+  boxCardWrapper: { 
+    width: (width - 70) / 3, 
+    height: (width - 70) / 3, 
+    marginBottom: 18 
+  },
+  boxCard: { 
     flex: 1, 
-    flexDirection: 'row', 
-    borderRadius: 20, 
-    alignItems: 'center', 
-    paddingHorizontal: 25, 
+    borderRadius: 22, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)', 
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
     elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)'
   },
-  rewardCardShadow: { elevation: 12, shadowColor: REWARD_PURPLE[1], shadowOpacity: 0.4, shadowRadius: 10 },
-  bigCardImage: { width: 70, height: 70, marginRight: 20 },
-  bigCardText: { fontSize: 22, fontWeight: "900", color: CARD_BG },
-  rewardSubText: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '600' },
 
-  cardsScrollViewContent: { paddingBottom: 50 },
-  cardsGridContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginTop: 10 },
-  gridCardWrapper: { width: (width - 22 * 2 - 20) / 2, height: (width - 22 * 2 - 20) / 2, marginBottom: 20 },
-  gridCard: { flex: 1, borderRadius: 15, elevation: 8, borderWidth: 1, borderColor: BORDER_COLOR, justifyContent: "center", alignItems: "center", padding: 5 },
-  cardImage: { width: 100, height: 70 },
-  gridCardText: { fontSize: 15, fontWeight: "600", color: MODERN_PRIMARY, textAlign: "center", marginTop: 5 },
-  
-  noInternetContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  noInternetImage: { width: 200, height: 200 },
-  noInternetText: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY, marginTop: 20 },
-
-  phonePeQrContainer: {
-    marginTop: 25,
-    marginBottom: 40,
-    paddingHorizontal: 2,
-  },
-  qrCardMain: {
-    borderRadius: 30,
-    padding: 24,
+  // --- NEW STYLES FOR COLORED ANIMATION ---
+  iconContainerRelative: {
+    width: 55,
+    height: 55,
+    justifyContent: 'center',
     alignItems: 'center',
-    elevation: 15,
+    marginBottom: 4,
   },
-  qrHeaderRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+  rotatingRing: {
+    position: 'absolute',
+    width: 55,
+    height: 55,
+    borderRadius: 28,
+    padding: 2, // Acts as the border thickness
   },
-  qrTitleText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+  gradientStyle: {
+    flex: 1,
+    borderRadius: 28,
   },
-  brandBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  brandBadgeText: {
-    color: '#fff', 
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  qrImageContainer: {
-    backgroundColor: '#ffffff',
-    padding: 12,
+  iconCircle: {
+    width: 48,
+    height: 48,
     borderRadius: 24,
-    marginBottom: 20,
-    elevation: 5,
-  },
-  qrDisplayImage: {
-    width: width * 0.5,
-    height: width * 0.5,
-  },
-  upiInfoWrapper: {
+    backgroundColor: '#fff', // White background to cover the center
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    // Add a subtle shadow to lift it off the gradient
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  upiLabel: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    marginBottom: 8,
+  boxImage: { 
+    width: 30, 
+    height: 30, 
   },
-  upiCopyRow: {
-    flexDirection: 'row',
+  boxText: { 
+    fontSize: 11, 
+    fontWeight: "700", 
+    color: MODERN_PRIMARY, 
+    textAlign: 'center' 
+  },
+
+  fullWidthCardWrapper: { width: "100%", marginBottom: 18 },
+  fullWidthCard: { 
+    borderRadius: 22, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 18, 
+    elevation: 6,
+    overflow: 'hidden'
+  },
+  shimmerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '50%',
+    height: '100%',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    transform: [{ skewX: '-20deg' }]
+  },
+  centeredCard: {
+    flexDirection: 'column',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 22
   },
-  qrUpiText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+  fullWidthImage: { width: 45, height: 45, marginRight: 15 },
+  fullWidthText: { fontSize: 18, fontWeight: "bold" },
+  starIconContainer: { 
+    width: 50, height: 50, borderRadius: 25, backgroundColor: '#fff', 
+    justifyContent: 'center', alignItems: 'center', marginRight: 15, elevation: 3 
   },
-  viewDetailsBtn: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
-    width: '100%',
-    paddingTop: 18,
-    alignItems: 'center',
-  },
-  viewDetailsBtnText: {
-    color: HIGHLIGHT_GOLD,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
+  qrContainer: { marginTop: 15 },
+  qrCardMain: { borderRadius: 30, padding: 25, alignItems: 'center', elevation: 10 },
+  qrHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 15 },
+  qrTitleText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  brandBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  brandBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  qrWhiteBox: { backgroundColor: '#fff', padding: 10, borderRadius: 20 },
+  qrImage: { width: 160, height: 160 },
+  upiBadge: { marginTop: 15, backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
+  upiText: { color: '#fff', fontWeight: 'bold' }
 });
 
 const modalStyles = StyleSheet.create({
-  centeredView: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.6)" },
-  modalView: { backgroundColor: CARD_BG, borderRadius: 15, padding: 30, alignItems: "center", width: "90%", elevation: 10, marginTop: 50, borderWidth: 2, borderColor: BORDER_COLOR },
-  iconHeader: { width: 120, height: 120, borderRadius: 60, justifyContent: "center", alignItems: "center", marginBottom: 20, marginTop: -80, elevation: 10 },
-  modalImage: { width: 85, height: 65 },
-  modalHeading: { fontSize: 26, fontWeight: "900", color: MODERN_PRIMARY, marginBottom: 5 },
-  modalText: { textAlign: "center", fontSize: 16, fontWeight: "500", color: TEXT_GREY, lineHeight: 22, marginBottom: 25 },
-  closeButton: { position: "absolute", top: 15, right: 15, padding: 5, zIndex: 10 },
-  closeButtonText: { fontSize: 28, fontWeight: "300", color: TEXT_GREY },
-  accordionHeader: { width: "100%", flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15, backgroundColor: SUBTLE_BG_GREY, borderRadius: 8, borderWidth: 1, borderColor: BORDER_COLOR },
-  noteLabel: { fontSize: 14, fontWeight: '600', color: MODERN_PRIMARY },
-  arrowIcon: { fontSize: 16, color: ACCENT_BLUE, fontWeight: '900' },
-  accordionContent: { width: "100%", marginTop: 8, marginBottom: 10 },
-  inputField: { width:"100%", minHeight: 90, borderColor: BORDER_COLOR, borderWidth: 1, borderRadius: 8, padding: 15, fontSize: 16, color: MODERN_PRIMARY, textAlignVertical: 'top' },
-  markAttendanceButtonWrapper: { width: "100%", marginTop: 30, borderRadius: 10, overflow: "hidden", elevation: 10 },
-  markAttendanceButton: { paddingVertical: 18, alignItems: "center" },
-  markAttendanceButtonText: { color: CARD_BG, fontWeight: "bold", fontSize: 19, letterSpacing: 1 },
+  centeredView: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.6)" },
+  modalView: { backgroundColor: '#fff', borderRadius: 25, padding: 25, width: "85%", alignItems: "center", overflow: 'hidden' },
+  iconHeader: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 15, marginTop: -60 },
+  modalHeading: { fontSize: 22, fontWeight: "bold", marginBottom: 10, color: MODERN_PRIMARY },
+  modalText: { textAlign: "center", marginBottom: 20, color: TEXT_GREY },
+  inputField: { width: "100%", borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 12, padding: 12, height: 70, marginBottom: 20, textAlignVertical: 'top' },
+  markAttendanceButton: { padding: 15, borderRadius: 12, alignItems: 'center', width: '100%' },
+  markAttendanceButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  closeButton: { position: 'absolute', top: 10, right: 15 },
+  closeButtonText: { fontSize: 20, color: TEXT_GREY }
 });
 
 export default Home;

@@ -22,23 +22,22 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.gagansk.agentapp",
-      
       "queries": [
         {
           "schemes": [
-            "whatsapp", 
+            "whatsapp",
             "mailto",
             "tel"
           ]
         }
       ]
-     
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

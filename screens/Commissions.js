@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
     View,
     Text,
@@ -10,599 +11,370 @@ import {
     Image,
     Animated,
     Dimensions,
+    StatusBar,
 } from "react-native";
-import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons, Feather, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Header from "../components/Header";
+import baseUrl from "../constants/baseUrl";
 
 const { width, height } = Dimensions.get('window');
 
-// Assuming this path is correct
-const noImage = require('../assets/no.png'); 
+const COLORS = {
+    primary: "#29547e",
+    accent: "#f8c009ff",
+    bgBlue: "rgb(86, 171, 197)",
+    success: "#27AE60",
+    cardBg: "rgba(255, 255, 255, 1)",
+    white: "#FFFFFF",
+    muted: "#8898AA",
+    background: "#2c5071",
+    GRADIENT: ["#1a62a4", "#122b46"],
+    TEXT_MAIN: "#2d5379",
+    BG_LIGHT: "#f0f4f8", // Lightened for better contrast with stylized cards
+    
+    // Stylized Section Colors
+    customers: { bg: "#e0f2fe", icon: "#0284c7" },
+    groups: { bg: "#fef3c7", icon: "#d97706" },
+    business: { bg: "#dcfce7", icon: "#16a34a" },
+    estimate: { bg: "#f3e8ff", icon: "#9333ea" },
+    commission: { bg: "#ffedd5", icon: "#ea580c" }
+};
 
-// --- DESIGN CONSTANTS ---
-const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
-const MODERN_PRIMARY = "#0d0d0eff"; 
-const ACCENT_BLUE = "#1796d1ff"; 
-const TEXT_GREY = "#4b5563"; 
-const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = CARD_BG; 
-// ------------------------
+const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
-import Header from "../components/Header";
-import baseUrl from "../constants/baseUrl"; 
-const CustomCommissionCard = ({ title, icon, value, onPress, showArrow = true }) => (
-    <TouchableOpacity onPress={onPress} style={styles.card} disabled={!showArrow}>
+const CommissionCard = ({ title, icon, value, onPress, showArrow = true, isCurrency = true, colorTheme, IconComponent = MaterialIcons }) => (
+    <TouchableOpacity 
+        onPress={onPress} 
+        style={styles.enhancedCard} 
+        activeOpacity={0.8}
+        disabled={!onPress}
+    >
         <View style={styles.cardContent}>
-            <View style={styles.iconContainer}>
-                <MaterialIcons name={icon} size={24} style={styles.cardIcon} />
+            <View style={[styles.iconCircle, { backgroundColor: colorTheme.bg }]}>
+                <IconComponent name={icon} size={24} color={colorTheme.icon} />
             </View>
             <View style={styles.textContainer}>
-                <Text style={styles.cardText}>{title}</Text>
-                <Text style={styles.cardSubText}>{value}</Text>
+                <Text style={styles.cardLabel}>{title}</Text>
+                <Text style={styles.cardValue}>
+                    {typeof value === 'number' 
+                        ? isCurrency 
+                            ? `₹${value.toLocaleString('en-IN')}` 
+                            : value.toLocaleString('en-IN') 
+                        : value}
+                </Text>
             </View>
         </View>
-        {showArrow && <MaterialIcons name="keyboard-arrow-right" style={styles.arrowIcon} />}
+        {showArrow && (
+            <View style={styles.arrowCircle}>
+                <Feather name="chevron-right" size={20} color="#cbd5e1" />
+            </View>
+        )}
     </TouchableOpacity>
 );
-
 
 const Commissions = ({ route, navigation }) => {
     const { user } = route.params || {};
     const currentUser = user || {};
 
-    const [isChitLoading, setIsChitLoading] = useState(false);
-    const [isGoldLoading, setIsGoldLoading] = useState(false);
-    const [isLoanLoading, setIsLoanLoading] = useState(false);
-    const [isPigmyLoading, setIsPigmyLoading] = useState(false);
-
+    const [isLoading, setIsLoading] = useState(false);
     const [commissions, setCommissions] = useState({});
     const [activeTab, setActiveTab] = useState("CHIT");
 
-    // Animation values for card list slide-in
-    const cardListOpacity = React.useRef(new Animated.Value(0)).current;
-    const dataContainerTranslateY = React.useRef(new Animated.Value(-height * 0.1)).current;
+    const [fromDateObj, setFromDateObj] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const [toDateObj, setToDateObj] = useState(new Date());
+    const [fromDate, setFromDate] = useState(formatDate(fromDateObj));
+    const [toDate, setToDate] = useState(formatDate(toDateObj));
 
-    const handleEstimatedCommission = () => {
-        navigation.navigate("ExpectedCommissions", { user: currentUser });
-    };
+    const [showFromPicker, setShowFromPicker] = useState(false);
+    const [showToPicker, setShowToPicker] = useState(false);
 
-    const handleMyCommission = () => {
-        navigation.navigate("MyCommission", { commissions: commissions });
-    };
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(30)).current;
 
-    /**
-     * Navigates to a different customer screen based on the currently active tab.
-     */
-    const handleMyCustomers = (tab) => {
-        if (tab === "PIGMY") {
-            navigation.navigate("RouteCustomerPigme", { user: currentUser });
-        } else if (tab === "LOAN") {
-            navigation.navigate("RouteCustomerLoan", { user: currentUser });
-        } else {
-            // Default navigation for CHIT/GOLD
-            navigation.navigate("ViewEnrollments", { user: currentUser });
+    useEffect(() => {
+        fetchCommissions();
+    }, [fromDate, toDate, activeTab]);
+
+    const fetchCommissions = async () => {
+        if (!currentUser.userId) return;
+        
+        setIsLoading(true);
+        fadeAnim.setValue(0);
+        slideAnim.setValue(30);
+
+        let pathSegment = "";
+        const userId = currentUser.userId;
+
+        switch (activeTab) {
+            case "CHIT": 
+                pathSegment = `/enroll/get-detailed-commission/${userId}?from_date=${fromDate}&to_date=${toDate}`; 
+                break;
+            case "GOLD": 
+                pathSegment = `/enroll/get-detailed-commission/${userId}`; 
+                break;
+            case "LOAN": 
+                pathSegment = `/payment/agent/${userId}/app-loan-overview?from_date=${fromDate}&to_date=${toDate}`; 
+                break;
+            case "PIGMY": 
+                pathSegment = `/payment/agent/${userId}/pigme-overview?from_date=${fromDate}&to_date=${toDate}`; 
+                break;
+        }
+
+        try {
+            const fullUrl = `${baseUrl}${pathSegment}`;
+            const response = await axios.get(fullUrl);
+
+            if (response.data?.success && response.data?.summary) {
+                setCommissions(response.data);
+                Animated.parallel([
+                    Animated.spring(fadeAnim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 7 }),
+                    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 7 })
+                ]).start();
+            } else {
+                setCommissions({});
+            }
+        } catch (err) {
+            console.error("Fetch Error:", err);
+            setCommissions({});
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleGroups = () => {
-        navigation.navigate("EnrolledGroups", { user: currentUser });
-    };
-
-    // Card data now includes a 'schemeType' array for filtering
-    const scrollData = [
-        { title: "Customers", icon: "person", value: "total_customers", key: "#1", handlePress: null, schemeType: ["CHIT", "GOLD", "LOAN", "PIGMY"] },
-        { title: "Groups", icon: "group", value: "total_groups", key: "#2", handlePress: handleGroups, schemeType: ["CHIT", "GOLD"] }, 
-        { title: "My Business", icon: "query-stats", value: "actual_business", key: "#6", handlePress: handleMyCommission, schemeType: ["CHIT", "GOLD", "LOAN", "PIGMY"] },
-        { title: "Estimated Business", icon: "trending-up", value: "expected_business", key: "#5", handlePress: handleEstimatedCommission, schemeType: ["CHIT", "GOLD"] },
-        { title: "My Commission", icon: "payments", value: "total_actual", key: "#4", handlePress: handleMyCommission, schemeType: ["CHIT", "GOLD"] },
-        { title: "Estimated Commission", icon: "currency-rupee", value: "total_estimated", key: "#3", handlePress: handleEstimatedCommission, schemeType: ["CHIT", "GOLD"] },
-    ];
-
-    const hasData = commissions?.summary && Object.keys(commissions.summary).length > 0;
-
-    // Helper function to map data fields based on the active tab 
-    const getCommissionValue = (key) => {
-        const summary = commissions?.summary;
-        if (!summary) return 0;
-
-        // Custom mapping for LOAN and PIGMY data fields
-        if (activeTab === "LOAN" || activeTab === "PIGMY") {
-            switch (key) {
-                case "total_customers":
-                    return summary["number_of_customers"] || 0;
-                case "actual_business":
-                    return summary["total_paid_collection"] || 0;
-                default:
-                    return 0; 
+    const onDateChange = (event, selectedDate, type) => {
+        if (Platform.OS === 'android') {
+            setShowFromPicker(false);
+            setShowToPicker(false);
+        }
+        
+        if (selectedDate) {
+            if (type === 'from') {
+                setFromDateObj(selectedDate);
+                setFromDate(formatDate(selectedDate));
+            } else {
+                setToDateObj(selectedDate);
+                setToDate(formatDate(selectedDate));
             }
         }
-        // Use the original key for CHIT and GOLD
+    };
+
+    const getSummaryValue = (key) => {
+        const summary = commissions?.summary;
+        if (!summary) return 0;
+        
+        if (activeTab === "LOAN" || activeTab === "PIGMY") {
+            if (key === "total_customers") return summary["number_of_customers"] || 0;
+            if (key === "actual_business") return summary["total_paid_collection"] || 0;
+            return 0;
+        }
         return summary[key] || 0;
     };
 
-    // Helper to get current loading state
-    const getCurrentLoadingState = () => {
-        switch (activeTab) {
-            case "CHIT":
-                return isChitLoading;
-            case "GOLD":
-                return isGoldLoading;
-            case "LOAN":
-                return isLoanLoading;
-            case "PIGMY":
-                return isPigmyLoading;
-            default:
-                return false;
-        }
-    };
-
-    // Helper to set current loading state
-    const setCurrentLoadingState = (isLoading) => {
-        switch (activeTab) {
-            case "CHIT":
-                setIsChitLoading(isLoading);
-                break;
-            case "GOLD":
-                setIsGoldLoading(isLoading);
-                break;
-            case "LOAN":
-                setIsLoanLoading(isLoading);
-                break;
-            case "PIGMY":
-                setIsPigmyLoading(isLoading);
-                break;
-            default:
-                break;
-        }
-    };
-
-    /**
-     * MODIFIED useEffect: Fetches commissions with ALL console logging removed from try/catch.
-     */
-    useEffect(() => {
-        const fetchCommissions = async () => {
-            // Reset animations and clear old data before fetching
-            cardListOpacity.setValue(0);
-            dataContainerTranslateY.setValue(-height * 0.1);
-            setCommissions({});
-
-            setCurrentLoadingState(true);
-
-            if (!currentUser.userId) {
-                // Keep this warning as it indicates a user data issue, not a network error
-                console.warn("User ID is not available for fetching commissions.");
-                setCurrentLoadingState(false);
-                return;
-            }
-
-            let currentUrl = `${baseUrl}`;
-            let pathSegment = ""; 
-            const userId = currentUser.userId;
-
-            switch (activeTab) {
-                case "CHIT":
-                    pathSegment = `/enroll/get-detailed-commission/${userId}`;
-                    break;
-                case "GOLD":
-                    pathSegment = `/enroll/get-detailed-commission/${userId}`;
-                    break;
-                case "LOAN":
-                    pathSegment = `/payment/agent/${userId}/loan-overview`;
-                    break;
-                case "PIGMY":
-                    pathSegment = `/payment/agent/${userId}/pigme-overview`;
-                    break;
-                default:
-                    break;
-            }
-            
-            const apiPath = `${currentUrl}${pathSegment}`; 
-            
-            try {
-                // console.log(`--- Fetching ${activeTab} Commissions ---`); <--- REMOVED LOG
-                const response = await axios.get(apiPath);
-                
-                if (response.data?.success === true && response.data?.summary) {
-                    setCommissions(response.data);
-
-                    Animated.parallel([
-                        Animated.timing(cardListOpacity, {
-                            toValue: 1,
-                            duration: 700,
-                            delay: 500,
-                            useNativeDriver: true,
-                        }),
-                        Animated.spring(dataContainerTranslateY, {
-                            toValue: 0,
-                            speed: 4,
-                            bounciness: 6,
-                            delay: 500,
-                            useNativeDriver: true,
-                        })
-                    ]).start();
-                } else {
-                     setCommissions({});
-                }
-
-            } catch (err) {
-                // CATCH BLOCK IS NOW EMPTY - NO LOGGING FOR ERRORS
-                setCommissions({}); // Ensure UI displays 'No Data Found' on any error
-            } finally {
-                setCurrentLoadingState(false);
-            }
-        };
-        fetchCommissions();
-    }, [activeTab, currentUser]);
-
-    // MODIFIED renderCardList function (for custom No Data messages)
-    const renderCardList = (isLoading, dataAvailable, activeTabName) => {
-        if (isLoading) {
-            return (
-                <ActivityIndicator
-                    size="large"
-                    color={ACCENT_BLUE}
-                    style={{ marginTop: 20 }}
-                />
-            );
-        }
-
-        if (dataAvailable) {
-            const animatedStyle = {
-                opacity: cardListOpacity,
-                transform: [{ translateY: dataContainerTranslateY }],
-            };
-
-            const filteredData = scrollData.filter(card => 
-                card.schemeType.includes(activeTab)
-            );
-
-            return (
-                <Animated.View style={[{ gap: 20, width: '100%' }, animatedStyle]}>
-                    {filteredData.map(({ title, icon, value, key, handlePress }) => {
-                        
-                        let finalHandler = handlePress;
-                        let showArrow = true;
-                        let finalTitle = title;
-
-                        if (title === "Customers") {
-                            finalHandler = () => handleMyCustomers(activeTab);
-                            
-                        } else if (title === "My Business" && (activeTab === "LOAN" || activeTab === "PIGMY")) {
-                            finalTitle = "Total Collection"; 
-                            showArrow = false;
-                            finalHandler = null; 
-                        }
-
-                        return (
-                            <CustomCommissionCard
-                                key={key}
-                                title={finalTitle} 
-                                icon={icon}
-                                value={getCommissionValue(value)} 
-                                onPress={finalHandler} 
-                                showArrow={showArrow} 
-                            />
-                        );
-                    })}
-                </Animated.View>
-            );
-        }
-
-        // --- NO DATA FALLBACK ---
-        
-        let customNoDataMessage;
-        
-        // Customize the message for LOAN and PIGMY as requested
-        if (activeTab === "LOAN") {
-            customNoDataMessage = "No Loan Data Found";
-        } else if (activeTab === "PIGMY") {
-            customNoDataMessage = "No Pigmy Data Found";
-        } else {
-            // Default message for CHIT/GOLD (using the passed activeTabName)
-            customNoDataMessage = `No ${activeTabName} Commission Data Found`;
-        }
-
-        return (
-            <View style={styles.noDataContainer}>
-                <Ionicons name="alert-circle-outline" size={50} color={ACCENT_BLUE} />
-                <Text style={styles.noLeadsText}>
-                    {customNoDataMessage} {/* Use the new custom message */}
-                </Text>
-                <Image source={noImage} style={styles.noImage} />
-            </View>
-        );
-    };
+    const schemeData = [
+        { 
+            title: "My Customers", 
+            icon: "users", 
+            IconComponent: FontAwesome5,
+            value: "total_customers", 
+            tabs: ["CHIT", "GOLD", "LOAN", "PIGMY"], 
+            isCurrency: false,
+            colorTheme: COLORS.customers,
+            press: () => activeTab === "PIGMY" ? navigation.navigate("RouteCustomerPigme", { user }) : activeTab === "LOAN" ? navigation.navigate("RouteCustomerLoan", { user }) : navigation.navigate("ViewEnrollments", { user }) 
+        },
+        { 
+            title: "Assigned Groups", 
+            icon: "grid", 
+            IconComponent: Feather,
+            value: "total_groups", 
+            tabs: ["CHIT", "GOLD"], 
+            isCurrency: false,
+            colorTheme: COLORS.groups,
+            press: () => navigation.navigate("EnrolledGroups", { user }) 
+        },
+        { 
+            title: (activeTab === "CHIT" || activeTab === "GOLD") ? "My Business" : "Total Collection", 
+            icon: "account-balance-wallet", 
+            IconComponent: MaterialIcons,
+            value: "actual_business", 
+            tabs: ["CHIT", "GOLD", "LOAN", "PIGMY"], 
+            isCurrency: true,
+            colorTheme: COLORS.business,
+            press: (activeTab === "CHIT" || activeTab === "GOLD") ? () => navigation.navigate("MyCommission", { commissions }) : null 
+        },
+        { 
+            title: "Estimated Business", 
+            icon: "trending-up", 
+            IconComponent: Feather,
+            value: "expected_business", 
+            tabs: ["CHIT", "GOLD"], 
+            isCurrency: true,
+            colorTheme: COLORS.estimate,
+            press: () => navigation.navigate("ExpectedCommissions", { user }) 
+        },
+        { 
+            title: "Current Commission", 
+            icon: "hand-holding-usd", 
+            IconComponent: FontAwesome5,
+            value: "total_actual", 
+            tabs: ["CHIT", "GOLD"], 
+            isCurrency: true,
+            colorTheme: COLORS.commission,
+            press: () => navigation.navigate("MyCommission", { commissions }) 
+        },
+    ];
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-            >
-                {/* Top Header Section with Gradient */}
-                <LinearGradient
-                    colors={TOP_GRADIENT}
-                    style={styles.topContainer}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                >
-                    {/* Fixed Header Section */}
-                    <View style={styles.headerSpacer}>
-                        <Header />
-                    </View>
-
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>My Overview </Text>
-                        <Text style={styles.subtitle}>Select a scheme type to view your achievements</Text>
-                    </View>
-
-                    {/* Tab Container for 4 Tabs */}
-                    <View style={styles.tabContainer}>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
-                            onPress={() => setActiveTab("CHIT")}
-                        >
-                            <Text
-                                style={[
-                                    styles.tabText,
-                                    activeTab === "CHIT" && styles.activeTabText,
-                                ]}
-                            >
-                                Chits
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                            onPress={() => setActiveTab("GOLD")}
-                        >
-                            <Text
-                                style={[
-                                    styles.tabText,
-                                    activeTab === "GOLD" && styles.activeTabText,
-                                ]}
-                            >
-                                Gold
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === "LOAN" && styles.activeTab]}
-                            onPress={() => setActiveTab("LOAN")}
-                        >
-                            <Text
-                                style={[
-                                    styles.tabText,
-                                    activeTab === "LOAN" && styles.activeTabText,
-                                ]}
-                            >
-                                Loan
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === "PIGMY" && styles.activeTab]}
-                            onPress={() => setActiveTab("PIGMY")}
-                        >
-                            <Text
-                                style={[
-                                    styles.tabText,
-                                    activeTab === "PIGMY" && styles.activeTabText,
-                                ]}
-                            >
-                                Pigmy
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </LinearGradient>
-                <View style={styles.mainContentArea}>
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContainer}
-                    >
-                        <View style={styles.cardListContainer}>
-                            {activeTab === "CHIT" && renderCardList(isChitLoading, hasData, "Chit")}
-                            {activeTab === "GOLD" && renderCardList(isGoldLoading, hasData, "Gold ")}
-                            {activeTab === "LOAN" && renderCardList(isLoanLoading, hasData, "Loan")}
-                            {activeTab === "PIGMY" && renderCardList(isPigmyLoading, hasData, "Pigmy")}
-                        </View>
-                    </ScrollView>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar barStyle="light-content" />
+            <LinearGradient colors={COLORS.GRADIENT} style={styles.headerHero}>
+                <Header />
+                <View style={styles.heroTextContent}>
+                    <Text style={styles.heroTitle}>Performance</Text>
+                    <Text style={styles.heroSubtitle}>Real-time tracking of your earnings</Text>
                 </View>
 
-            </KeyboardAvoidingView>
+                <View style={styles.tabBar}>
+                    {["CHIT", "GOLD", "LOAN", "PIGMY"].map((tab) => (
+                        <TouchableOpacity 
+                            key={tab} 
+                            onPress={() => setActiveTab(tab)}
+                            style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
+                        >
+                            <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>{tab}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </LinearGradient>
+
+            <View style={styles.contentBody}>
+                {(activeTab === "CHIT" || activeTab === "LOAN" || activeTab === "PIGMY") && (
+                    <View style={styles.filterSection}>
+                        <TouchableOpacity style={styles.dateBtn} onPress={() => setShowFromPicker(true)}>
+                            <Feather name="calendar" size={16} color={COLORS.primary} />
+                            <Text style={styles.dateBtnText}>{fromDate}</Text>
+                        </TouchableOpacity>
+                        <View style={styles.dateSeparator} />
+                        <TouchableOpacity style={styles.dateBtn} onPress={() => setShowToPicker(true)}>
+                            <Feather name="calendar" size={16} color={COLORS.primary} />
+                            <Text style={styles.dateBtnText}>{toDate}</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {showFromPicker && (
+                    <DateTimePicker value={fromDateObj} mode="date" display="default" onChange={(e, d) => onDateChange(e, d, 'from')} />
+                )}
+                {showToPicker && (
+                    <DateTimePicker value={toDateObj} mode="date" display="default" onChange={(e, d) => onDateChange(e, d, 'to')} />
+                )}
+
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollInside}>
+                    {isLoading ? (
+                        <View style={styles.loaderCenter}>
+                            <ActivityIndicator size="large" color={COLORS.primary} />
+                            <Text style={styles.loadingText}>Updating insights...</Text>
+                        </View>
+                    ) : (commissions?.summary) ? (
+                        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+                            {schemeData
+                                .filter(item => item.tabs.includes(activeTab))
+                                .map((item, idx) => (
+                                    <CommissionCard 
+                                        key={idx}
+                                        title={item.title}
+                                        icon={item.icon}
+                                        IconComponent={item.IconComponent}
+                                        value={getSummaryValue(item.value)}
+                                        onPress={item.press}
+                                        showArrow={!!item.press}
+                                        isCurrency={item.isCurrency}
+                                        colorTheme={item.colorTheme}
+                                    />
+                                ))
+                            }
+                        </Animated.View>
+                    ) : (
+                        <View style={styles.emptyState}>
+                            <MaterialCommunityIcons name="database-off-outline" size={80} color="#cbd5e1" />
+                            <Text style={styles.emptyTitle}>No Data Found</Text>
+                            <Text style={styles.emptySub}>We couldn't find any records for {activeTab} in this period.</Text>
+                        </View>
+                    )}
+                </ScrollView>
+            </View>
         </SafeAreaView>
     );
 };
 
-// ------------------------------------------------------------------
-// --- STYLESHEET ---
-// ------------------------------------------------------------------
-
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: TOP_GRADIENT[0]
-    },
-    topContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 25,
-        zIndex: 1,
-    },
-    headerSpacer: {
-        paddingTop: 20,
-        paddingBottom: 5
-    },
-    mainContentArea: {
-        flex: 1,
-        backgroundColor: SUBTLE_BG_GREY,
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        paddingHorizontal: 16,
-        marginTop: -20, // Overlap the top container for the curved effect
-        paddingTop: 30, // Space inside the curve
-    },
-    scrollContainer: {
-        paddingBottom: 50,
-        paddingTop: 10,
-    },
-    cardListContainer: {
-        gap: 18,
-        alignItems: 'stretch', 
-        width: '100%',
-    },
+    container: { flex: 1, backgroundColor: "#1a62a4" },
+    headerHero: { paddingHorizontal: 20, paddingBottom: 40, borderBottomLeftRadius: 35, borderBottomRightRadius: 35 },
+    heroTextContent: { marginTop: 20, marginBottom: 25 },
+    heroTitle: { fontSize: 34, fontWeight: '800', color: '#FFF', letterSpacing: -1 },
+    heroSubtitle: { fontSize: 15, color: 'rgba(255,255,255,0.8)', fontWeight: '400' },
+    
+    tabBar: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 16, padding: 5 },
+    tabItem: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 12 },
+    tabItemActive: { backgroundColor: '#FFF', elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+    tabLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
+    tabLabelActive: { color: COLORS.primary },
 
-    // --- TITLE STYLES ---
-    titleContainer: {
-        marginBottom: 15,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: CARD_BG, 
-        marginBottom: 4,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: 'rgba(255, 255, 255, 0.85)',
-        marginTop: 5,
-        fontWeight: '500',
-        textAlign: 'center'
-    },
-
-    // --- CARD STYLES ---
-    card: {
-        backgroundColor: CARD_BG,
-        borderRadius: 18, 
-        padding: 20,
-        width: '100%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        // Modern shadow
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 4,
+    contentBody: { flex: 1, backgroundColor: COLORS.BG_LIGHT, marginTop: -25, borderTopLeftRadius: 35, borderTopRightRadius: 35, paddingHorizontal: 20 },
+    filterSection: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        backgroundColor: COLORS.white, 
+        marginTop: 20, 
+        padding: 15, 
+        borderRadius: 20, 
+        elevation: 8, 
+        shadowColor: '#2d5379', 
+        shadowOpacity: 0.1, 
+        shadowRadius: 15,
         borderWidth: 1,
-        borderColor: '#e0e0e0',
-        // Accent border on the left only
-        borderLeftWidth: 5,
-        borderLeftColor: ACCENT_BLUE,
-        borderTopWidth: 0,
-        borderRightWidth: 0,
-        borderBottomWidth: 0,
+        borderColor: '#e2e8f0'
     },
-    cardContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flexShrink: 1,
-    },
-    iconContainer: {
-        width: 45,
-        height: 45,
-        backgroundColor: `${ACCENT_BLUE}30`, 
-        borderRadius: 22.5,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    cardIcon: {
-        fontSize: 24,
-        color: ACCENT_BLUE, 
-    },
-    textContainer: {
-        marginLeft: 15,
-        flex: 1,
-    },
-    cardText: {
-        fontSize: 18,
-        fontWeight: '800', 
-        color: MODERN_PRIMARY, 
-    },
-    cardSubText: {
-        fontSize: 16,
-        color: ACCENT_BLUE, 
-        marginTop: 5,
-        fontWeight: '700',
-    },
-    arrowIcon: {
-        fontSize: 24,
-        color: TEXT_GREY, 
-        marginLeft: 10, 
-    },
+    dateBtn: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center', gap: 10 },
+    dateBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.TEXT_MAIN },
+    dateSeparator: { width: 1, height: 25, backgroundColor: '#cbd5e1', marginHorizontal: 5 },
 
-    // --- TAB STYLES ---
-    tabContainer: {
-        flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.9)", 
-        borderRadius: 15,
-        overflow: 'hidden',
-        marginTop: 15,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        padding: 5, 
+    scrollInside: { paddingTop: 25, paddingBottom: 40 },
+    enhancedCard: { 
+        backgroundColor: COLORS.cardBg, 
+        borderRadius: 24, 
+        padding: 20, 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        marginBottom: 16,
+        elevation: 4,
+        shadowColor: "#2d5379",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.05,
+        shadowRadius: 20,
     },
-    tab: {
-        flex: 1, 
-        paddingVertical: 12,
-        alignItems: "center",
-        flexDirection: 'row',
-        justifyContent: 'center',
-        borderRadius: 12, 
-        margin: 2,
-    },
-    activeTab: {
-        backgroundColor: ACCENT_BLUE, 
-        shadowColor: ACCENT_BLUE,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 6,
-        elevation: 6,
-    },
-    tabText: {
-        fontSize: 14, 
-        color: MODERN_PRIMARY, 
-        fontWeight: "500",
-        marginLeft: 5,
-    },
-    activeTabText: {
-        color: CARD_BG, 
-        fontWeight: 'bold',
-    },
+    cardContent: { flexDirection: 'row', alignItems: 'center' },
+    iconCircle: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+    textContainer: { marginLeft: 18 },
+    cardLabel: { fontSize: 13, color: COLORS.muted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+    cardValue: { fontSize: 22, fontWeight: '800', color: COLORS.TEXT_MAIN },
+    arrowCircle: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#f1f5f9' },
 
-    // --- NO DATA STYLES ---
-    noDataContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 50,
-        padding: 20,
-        backgroundColor: CARD_BG,
-        borderRadius: 20,
-        width: '100%',
-    },
-    noLeadsText: {
-        fontSize: 18,
-        color: MODERN_PRIMARY,
-        textAlign: 'center',
-        marginTop: 15,
-        fontWeight: 'bold',
-        lineHeight: 25,
-    },
-    noImage: {
-        width: 250,
-        height: 150,
-        resizeMode: 'contain',
-        marginTop: 20,
-    }
+    loaderCenter: { marginTop: 80, alignItems: 'center' },
+    loadingText: { marginTop: 15, color: COLORS.primary, fontWeight: '600', fontSize: 15 },
+    emptyState: { marginTop: 80, alignItems: 'center' },
+    emptyTitle: { fontSize: 22, fontWeight: '800', color: COLORS.primary, marginTop: 20 },
+    emptySub: { fontSize: 15, color: COLORS.muted, textAlign: 'center', marginTop: 8, paddingHorizontal: 40, lineHeight: 22 }
 });
 
 export default Commissions;

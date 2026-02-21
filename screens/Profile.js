@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import {
     View,
@@ -6,72 +7,72 @@ import {
     Image,
     TouchableOpacity,
     ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    Dimensions,
     SafeAreaView,
     StatusBar,
+    ActivityIndicator,
+    Dimensions,
+    Platform,
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons, Feather } from "@expo/vector-icons";
-import Header from "../components/Header";
-import COLORS from "../constants/color"; // Assuming this defines standard colors
 import axios from "axios";
-import baseUrl from "../constants/baseUrl"; // Assuming this is correct
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import baseUrl from "../constants/baseUrl";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 // --- DESIGN CONSTANTS ---
-const PRIMARY_GRADIENT_COLOR = "#1aa2ccff";
-const DARK_PRIMARY_TEXT = "#053B90"; // Dark blue for titles
-const ACCENT_GOLD = "#f8c009ff"; // Gold/Yellow for highlights (like avatar border)
-const ACCENT_BLUE = "#1796d1ff"; // Slightly richer blue for buttons/icons
-const CARD_RADIUS = 20;
+const COLORS = {
+    primary: "#183A5D",
+    accent: "#f8c009ff",
+    bgBlue: "#1aa2ccff",
+    success: "#27AE60",
+    cardBg: "rgba(255, 255, 255, 0.98)",
+    white: "#FFFFFF",
+    muted: "#8898AA",
+    background: "#0f2a44",
+    danger: "#FF6B6B",
+};
 
 const Profile = ({ route, navigation }) => {
-    // Safely destructure user from route.params
     const { user } = route.params || {};
-    const [form, setForm] = useState({
-        darkMode: false,
-        emailNotifications: true,
-        pushNotifications: false,
-    });
-    const [agent, setAgent] = useState({}); // Initialize as empty object
+    const [isLoading, setIsLoading] = useState(true);
+    const [agent, setAgent] = useState({});
 
     useEffect(() => {
-        const fetchAgent = async () => {
-            if (!user || !user.userId) return;
-
-            try {
-                const response = await axios.get(
-                    `${baseUrl}/agent/get-agent-by-id/${user.userId}`
-                );
-                if (response.data) {
-                    setAgent(response.data);
-                } else {
-                    console.error("Unexpected API response format:", response.data);
-                }
-            } catch (error) {
-                console.error("Error fetching agent data:", error);
-            }
-        };
-
         fetchAgent();
     }, [user]);
 
-    const removeUserLocalStorage = async () => {
+    const fetchAgent = async () => {
+        if (!user || !user.userId) {
+            setIsLoading(false);
+            return;
+        }
+
+        setIsLoading(true);
         try {
-            await AsyncStorage.clear();
-        } catch (err) {
-            console.log("failed to remove user from localstorage");
+            const response = await axios.get(
+                `${baseUrl}/agent/get-agent-by-id/${user.userId}`
+            );
+            if (response.data) {
+                setAgent(response.data);
+            } else {
+                console.error("Unexpected API response format:", response.data);
+            }
+        } catch (error) {
+            console.error("Error fetching agent data:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleLogout = () => {
-        removeUserLocalStorage();
-        // Navigating to Login and potentially resetting the stack (depending on your navigation structure)
-        navigation.navigate("Login", { user });
+    const handleLogout = async () => {
+        try {
+            await AsyncStorage.clear();
+            navigation.replace("Login");
+        } catch (err) {
+            console.log("failed to remove user from localstorage");
+        }
     };
 
     const menuItems = [
@@ -85,239 +86,294 @@ const Profile = ({ route, navigation }) => {
     ];
 
     return (
-        <View style={styles.fullContainer}>
-            <LinearGradient
-                colors={[PRIMARY_GRADIENT_COLOR, PRIMARY_GRADIENT_COLOR]}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+        <View style={styles.mainContainer}>
+            <StatusBar barStyle="light-content" />
+            <LinearGradient 
+                colors={[COLORS.bgBlue, COLORS.primary]} 
+                style={StyleSheet.absoluteFill} 
             />
-            <SafeAreaView style={styles.safeArea}>
-                <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-                <KeyboardAvoidingView
-                    style={{ flex: 1 }}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-                >
-                    {/* Spacer increased to 40 to push Header further down */}
-                    <View style={{ height: 40 }} /> 
-                    <Header title="Profile" navigation={navigation} userId={user?.userId} />
-                    
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollViewContent}
-                        style={styles.scrollViewStyle}
-                    >
-                        {/* Main White Content Card */}
-                        <View style={styles.mainContainer}>
-                            <View style={styles.profile}>
-                                <Image
-                                    alt="Profile Picture"
-                                    source={require('../assets/P.png')} // Make sure this asset exists
-                                    style={styles.profileAvatar}
-                                />
-                                <View style={styles.profileInfo}>
-                                    <Text style={styles.agentName}>{agent.name || 'Agent Name'}</Text>
-                                    <Text style={styles.agentPhone}>{agent.phone_number || 'N/A'}</Text>
-                                </View>
-                            </View>
 
-                            {/* Menu Section */}
-                            <View style={styles.section}>
-                                <View style={styles.sectionBody}>
-                                    {menuItems.map((item, index) => {
-                                        const IconComponent = item.component;
-                                        return (
-                                            <TouchableOpacity
-                                                key={index}
-                                                onPress={item.action}
-                                                style={styles.menuCard}
-                                            >
-                                                <View style={styles.rowIcon}>
-                                                    <IconComponent color="#fff" name={item.icon} size={20} />
-                                                </View>
-                                                <Text style={styles.rowLabel}>{item.name}</Text>
-                                                <View style={styles.rowSpacer} />
-                                                {item.value && <Text style={styles.rowValue}>{item.value}</Text>}
-                                                <MaterialCommunityIcons
-                                                    color="#C6C6C6"
-                                                    name="chevron-right"
-                                                    size={20}
-                                                />
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Logout Button (Outside main card for emphasis) */}
-                        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-                            <View style={styles.profileAction}>
-                                <Text style={styles.profileActionText}>Logout</Text>
-                            </View>
+            <SafeAreaView style={{ flex: 1 }}>
+                {/* Header Section - Reduced Padding */}
+                <View style={styles.header}>
+                    <View style={styles.headerTopRow}>
+                        <View style={{ width: 40 }} />
+                        <Text style={styles.headerTitle}>My Profile</Text>
+                        <TouchableOpacity onPress={handleLogout} style={styles.headerIconBtn}>
+                            <Feather name="log-out" size={18} color={COLORS.primary} />
                         </TouchableOpacity>
-                    </ScrollView>
-                </KeyboardAvoidingView>
+                    </View>
+                    <Text style={styles.headerSubTitle}>Manage your account settings</Text>
+                </View>
+
+                <View style={styles.contentContainer}>
+                    {isLoading ? (
+                        <View style={styles.loaderContainer}>
+                            <ActivityIndicator size="large" color={COLORS.accent} />
+                            <Text style={styles.loadingText}>Loading Profile...</Text>
+                        </View>
+                    ) : (
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 20 }}
+                        >
+                            {/* Profile Card - Reduced Padding & Size */}
+                            <View style={styles.profileCard}>
+                                <View style={styles.avatarWrapper}>
+                                    <Image
+                                        alt="Profile Picture"
+                                        source={require('../assets/P.png')} 
+                                        style={styles.avatar}
+                                    />
+                                    <View style={styles.verifiedBadge}>
+                                        <Feather name="check" size={10} color="#fff" />
+                                    </View>
+                                </View>
+                                <Text style={styles.agentName}>{agent.name || 'Agent Name'}</Text>
+                                
+                                <View style={styles.infoRow}>
+                                    <View style={styles.infoItem}>
+                                        <Feather name="phone" size={12} color={COLORS.primary} />
+                                        <Text style={styles.infoText}>{agent.phone_number || 'N/A'}</Text>
+                                    </View>
+                                    <View style={styles.infoDot} />
+                                    <View style={styles.infoItem}>
+                                        <Feather name="mail" size={12} color={COLORS.primary} />
+                                        <Text style={styles.infoText}>{agent.email || 'No Email'}</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Menu List - Reduced Margins */}
+                            <View style={styles.menuContainer}>
+                                {menuItems.map((item, index) => {
+                                    const IconComponent = item.component;
+                                    return (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={styles.menuCard}
+                                            onPress={item.action}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={styles.menuIconBox}>
+                                                <IconComponent name={item.icon} size={18} color={COLORS.bgBlue} />
+                                            </View>
+                                            <Text style={styles.menuLabel}>{item.name}</Text>
+                                            <View style={{ flex: 1 }} />
+                                            {item.value && <Text style={styles.menuValue}>{item.value}</Text>}
+                                            <MaterialCommunityIcons name="chevron-right" size={18} color={COLORS.muted} />
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+
+                            {/* Logout Button - Reduced Size */}
+                            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+                                <Feather name="log-out" size={16} color={COLORS.white} style={{marginRight: 8}} />
+                                <Text style={styles.logoutText}>Logout</Text>
+                            </TouchableOpacity>
+
+                        </ScrollView>
+                    )}
+                </View>
             </SafeAreaView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    fullContainer: {
-        flex: 1,
-        backgroundColor: PRIMARY_GRADIENT_COLOR, // Fallback/base
+    mainContainer: { 
+        flex: 1, 
+        backgroundColor: COLORS.primary 
     },
-    safeArea: {
-        flex: 1,
-        paddingTop: 0, // Handled by Header
-    },
-    gradientOverlay: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    scrollViewStyle: {
-        flex: 1,
-        // The Header will sit above this area
-    },
-    scrollViewContent: {
-        paddingTop: 10,
-        paddingBottom: height * 0.1, // Ensure space for the floating logout button
-        alignItems: 'center', // Center content horizontally
-    },
-
-    // --- MAIN CONTENT CARD ---
-    mainContainer: {
-        backgroundColor: "#fff",
-        borderRadius: CARD_RADIUS,
-        marginHorizontal: width * 0.05, // Responsive margin
-        width: width * 0.9, // Set a specific width to center it
-        marginTop: 10,
-        marginBottom: 20,
-        paddingVertical: 10,
-        shadowColor: "rgba(0, 0, 0, 0.15)", // Deeper shadow for card effect
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.25,
-        shadowRadius: 15,
-        elevation: 10,
-        borderWidth: 0.5,
-        borderColor: '#E8E8E8',
-    },
-
-    // --- PROFILE SECTION ---
-    profile: {
-        paddingVertical: 20,
-        paddingHorizontal: 20,
+    
+    // Header Styles - Tightened
+ header: { 
+    paddingHorizontal: 20, 
+    // INCREASE THESE VALUES:
+    paddingTop: Platform.OS === "android" ? 65 : 50, // Changed from 50/30
+    paddingBottom: 5, 
+    marginBottom: 5 
+},
+    headerTopRow: {
         flexDirection: "row",
+        justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 10,
+        marginBottom: 8 // Reduced margin
     },
-    profileAvatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 9999,
-        borderWidth: 4,
-        borderColor: ACCENT_GOLD, // Gold Accent Border
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 6,
+    headerTitle: { 
+        fontSize: 22, // Slightly smaller
+        fontWeight: "900", 
+        color: COLORS.white, 
+        textAlign: 'center',
+        flex: 1
     },
-    profileInfo: {
-        marginLeft: 15,
-        alignItems: 'flex-start',
+    headerSubTitle: { 
+        fontSize: 12, // Smaller
+        color: 'rgba(255,255,255,0.7)', 
+        textAlign: 'center', 
+        marginTop: 0 // Removed extra margin
+    },
+    headerIconBtn: {
+        backgroundColor: COLORS.white,
+        padding: 8, // Reduced padding
+        borderRadius: 10,
+        elevation: 4
+    },
+
+    contentContainer: { 
+        flex: 1, 
+        paddingHorizontal: 16 
+    },
+    
+    // Loader Styles
+    loaderContainer: { 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+    },
+    loadingText: { 
+        color: COLORS.white, 
+        marginTop: 10, 
+        fontWeight: '600', 
+        opacity: 0.8 
+    },
+
+    // Profile Card Styles - Compacted
+    profileCard: {
+        backgroundColor: COLORS.cardBg,
+        borderRadius: 20, // Slightly less rounded
+        padding: 16, // Reduced from 24
+        alignItems: 'center',
+        marginBottom: 15, // Reduced margin
+        elevation: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 }, // Smaller shadow
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+    },
+    avatarWrapper: {
+        position: 'relative',
+        marginBottom: 8 // Reduced margin
+    },
+    avatar: {
+        width: 70, // Reduced from 90
+        height: 70, // Reduced from 90
+        borderRadius: 35,
+        borderWidth: 2, // Thinner border
+        borderColor: COLORS.accent
+    },
+    verifiedBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: COLORS.success,
+        borderRadius: 8,
+        padding: 3,
+        borderWidth: 1.5,
+        borderColor: COLORS.white
     },
     agentName: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: DARK_PRIMARY_TEXT, // Dark Blue Text
-        marginBottom: -2,
+        fontSize: 18, // Reduced from 20
+        fontWeight: "900",
+        color: COLORS.primary,
+        marginBottom: 0
     },
-    agentPhone: {
-        fontSize: 16,
-        fontWeight: "500",
-        color: "#666666",
+    agentRole: {
+        fontSize: 12, // Reduced from 13
+        fontWeight: "600",
+        color: COLORS.muted,
+        marginBottom: 10, // Reduced from 15
+        textTransform: 'uppercase',
+        letterSpacing: 0.5
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F5F7FA',
+        paddingVertical: 8, // Reduced from 10
+        paddingHorizontal: 12, // Reduced from 16
+        borderRadius: 10,
+        width: '100%',
+        justifyContent: 'center'
+    },
+    infoItem: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    infoText: {
+        fontSize: 11, // Reduced from 12
+        fontWeight: '700',
+        color: COLORS.primary,
+        marginLeft: 4
+    },
+    infoDot: {
+        width: 3, // Smaller dot
+        height: 3,
+        borderRadius: 1.5,
+        backgroundColor: COLORS.muted,
+        marginHorizontal: 8
     },
 
-    // --- MENU ITEMS ---
-    section: {
-        paddingTop: 10,
-    },
-    sectionBody: {
-        paddingHorizontal: 12,
+    // Menu Styles - Compacted
+    menuContainer: {
+        marginBottom: 10 // Reduced margin
     },
     menuCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        marginBottom: 8,
-        shadowColor: 'rgba(0, 0, 0, 0.05)',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-        // Added a subtle border for definition
-        borderColor: '#f0f0f0',
-        borderWidth: 1, 
+        backgroundColor: COLORS.white,
+        borderRadius: 12, // Reduced from 16
+        padding: 10, // Reduced from 14
+        marginBottom: 6, // Reduced from 10
+        flexDirection: 'row',
+        alignItems: 'center',
+        elevation: 2, // Less shadow for flatter look
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
     },
-    rowIcon: {
-        width: 35,
-        height: 35,
-        borderRadius: 15,
-        backgroundColor: ACCENT_BLUE, // Rich Blue Icon background
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 16,
+    menuIconBox: {
+        width: 36, // Reduced from 42
+        height: 36, // Reduced from 42
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10, // Reduced from 12
+        backgroundColor: '#E3F2FD'
     },
-    rowLabel: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: "#333",
+    menuLabel: {
+        fontSize: 14, // Reduced from 15
+        fontWeight: "700",
+        color: COLORS.primary
     },
-    rowSpacer: {
-        flexGrow: 1,
-        flexShrink: 1,
-        flexBasis: 0,
-    },
-    rowValue: {
-        fontSize: 14,
-        fontWeight: "500",
-        color: "#8B8B8B",
-        marginRight: 8,
+    menuValue: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: COLORS.muted,
+        marginRight: 8
     },
 
-    // --- LOGOUT BUTTON ---
-    logoutButton: {
-        marginTop: 20,
-        marginBottom: 40, // Increased margin for bottom
-        width: width * 0.9, // Match main container width
-        alignSelf: 'center',
-    },
-    profileAction: {
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: DARK_PRIMARY_TEXT, // Use Dark Blue for Logout button
-        borderRadius: 15, // Slightly less rounded than main card, more rounded than menu card
-        elevation: 5,
-        shadowColor: 'rgba(0, 0, 0, 0.2)',
-        shadowOffset: { width: 0, height: 3 },
+    // Logout Button Styles - Compacted
+    logoutBtn: {
+        backgroundColor: COLORS.danger,
+        padding: 14, // Reduced from 16
+        borderRadius: 16,
+        marginTop: 5, // Reduced margin
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 4,
+        shadowColor: COLORS.danger,
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
-        shadowRadius: 5,
+        shadowRadius: 8,
     },
-    profileActionText: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#fff",
-        letterSpacing: 0.5,
-    },
+    logoutText: {
+        color: COLORS.white,
+        fontWeight: "900",
+        fontSize: 15, // Reduced from 16
+        letterSpacing: 1
+    }
 });
 
 export default Profile;

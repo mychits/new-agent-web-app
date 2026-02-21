@@ -20,6 +20,7 @@ import Rewards from "../screens/Rewards";
 import ResetPassword from "../screens/ResetPassword";
 import MyTaskListScreen from '../screens/MyTaskListScreen';
 import TaskDetailScreen from '../screens/TaskDetailScreen';
+import StarPoints from '../screens/StarPoints';
 import CompleteTaskScreen from '../screens/CompleteTaskScreen';
 import EnrolledGroups from '../screens/EnrolledGroups';
 import Becomeanagent from '../screens/Becomeanagent';
@@ -127,7 +128,11 @@ export default function AppNavigation() {
         options={{headerShown: false}}
         component={AddTaskScreen}
         />
-
+         <Stack.Screen
+        name= "StarPoints"
+        options={{headerShown: false}}
+        component={StarPoints}
+        />
         <Stack.Screen
         name= "CustomerPaymentLink"
         options={{headerShown: false}}

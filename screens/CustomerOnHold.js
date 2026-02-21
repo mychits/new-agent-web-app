@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +10,7 @@ import {
   Linking,
   Alert,
   Dimensions,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
@@ -29,7 +31,7 @@ const THEME = {
   primary: "#24C6DC",
   secondary: "#183A5D",
   accent: "#0f3460",
-  highlight: "#e94560", // Vibrant Red/Pink for actions
+  highlight: "#e94560",
   success: "#00d09c",
   warning: "#ffb347",
   white: "#ffffff",
@@ -37,80 +39,83 @@ const THEME = {
   textDark: "#1e1e1e",
   textMuted: "#7f8c8d",
   cardBg: "#ffffff",
+  danger: "#ff4757",
 };
 
 const CustomerOnHold = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [agent, setAgent] = useState(null);
 
-  // Fetch agent details
-  useEffect(() => {
-    const fetchAgentById = async () => {
-      try {
-        const storedAgentInfo = await AsyncStorage.getItem("agentInfo");
-        if (!storedAgentInfo) {
-          setError("No agent info found. Please login again.");
-          setLoading(false);
-          return;
-        }
+  const formatCurrency = (amount) => {
+    const numberAmount = Number(amount);
+    if (isNaN(numberAmount)) {
+      return '₹0';
+    }
+    return '₹' + numberAmount.toLocaleString('en-IN');
+  };
 
-        const parsedAgent = JSON.parse(storedAgentInfo);
-        const agentId = parsedAgent?._id;
+  const fetchData = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
 
-        if (!agentId) {
-          setError("Agent ID not found in stored info.");
-          setLoading(false);
-          return;
-        }
-
-        const response = await axios.get(
-          `${chitBaseUrl}/agent/get-agent-by-id/${agentId}`
-        );
-        setAgent(response.data);
-      } catch (error) {
-        console.error("Error fetching agent data:", error);
-        setError("Failed to load agent information.");
-        setLoading(false);
+    try {
+      const storedAgentInfo = await AsyncStorage.getItem("agentInfo");
+      if (!storedAgentInfo) {
+        throw new Error("No agent info found. Please login again.");
       }
-    };
 
-    fetchAgentById();
+      const parsedAgent = JSON.parse(storedAgentInfo);
+      const agentId = parsedAgent?._id;
+
+      if (!agentId) {
+        throw new Error("Agent ID not found in stored info.");
+      }
+
+      const agentResponse = await axios.get(
+        `${chitBaseUrl}/agent/get-agent-by-id/${agentId}`
+      );
+      setAgent(agentResponse.data);
+
+      const apiUrl = `${chitBaseUrl}/enroll/holded?agent=${agentId}`;
+      const response = await axios.get(apiUrl);
+
+      const formattedCustomers = response.data.map((item) => ({
+        id: item._id,
+        name: item.user_id?.full_name || "Unknown",
+        groupName: item.group_id?.group_name || "N/A",
+        phoneNumber: item.user_id?.phone_number,
+        email: item.user_id?.email ? item.user_id.email.trim() : null,
+        paid: parseFloat(item.paid_amount || item.paid || 0),
+        balance: parseFloat(item.balance_amount || item.balance || item.due_amount || 0),
+      }));
+
+      setCustomers(formattedCustomers);
+    } catch (err) {
+      console.error("Failed to fetch data:", err);
+      setError(
+        err.message || "Failed to load information. Please check your network."
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(false);
   }, []);
 
-  // Fetch customers on hold
-  useEffect(() => {
-    if (!agent || !agent._id) return;
+  const onRefresh = useCallback(() => {
+    fetchData(true);
+  }, []);
 
-    const fetchCustomersOnHold = async () => {
-      try {
-        const apiUrl = `${chitBaseUrl}/enroll/holded?agent=${agent._id}`;
-        const response = await axios.get(apiUrl);
-
-        const formattedCustomers = response.data.map((item) => ({
-          id: item._id,
-          name: item.user_id.full_name,
-          groupName: item.group_id.group_name,
-          phoneNumber: item.user_id.phone_number,
-          email: item.user_id.email ? item.user_id.email.trim() : null,
-        }));
-
-        setCustomers(formattedCustomers);
-      } catch (err) {
-        console.error("Failed to fetch customers:", err);
-        setError(
-          "Failed to load customer information. Please check your network and try again."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCustomersOnHold();
-  }, [agent]);
-
-  // -------- helper functions ----------
   const handleCall = async (phoneNumber) => {
     if (!phoneNumber) return;
     try {
@@ -158,7 +163,6 @@ const CustomerOnHold = () => {
     }
   };
 
-  // Helper to get initials
   const getInitials = (name) => {
     if (!name) return "?";
     const parts = name.split(' ');
@@ -175,7 +179,7 @@ const CustomerOnHold = () => {
     return (
       <View key={customer.id} style={styles.cardContainer}>
         <View style={styles.cardContent}>
-          {/* Header Row with Avatar and Info */}
+          {/* Header Row */}
           <View style={styles.cardHeaderRow}>
             <LinearGradient 
                 colors={['#667eea', '#764ba2']} 
@@ -188,24 +192,37 @@ const CustomerOnHold = () => {
               <View style={styles.nameRow}>
                 <Text style={styles.customerName} numberOfLines={1}>{customer.name}</Text>
                 <View style={styles.holdBadge}>
-                    <Text style={styles.holdBadgeText}>Holded Customers</Text>
+                    <Text style={styles.holdBadgeText}>Holded</Text>
                 </View>
               </View>
               <Text style={styles.groupNameText}>
-                <Ionicons name="people-circle-outline" size={14} color={THEME.textMuted} /> {customer.groupName}
+                <Ionicons name="people-circle-outline" size={12} color={THEME.textMuted} /> {customer.groupName}
               </Text>
             </View>
           </View>
 
-          {/* Contact Details Row */}
+          {/* Payment Info Row - Compact */}
+          <View style={styles.paymentRow}>
+             <View style={styles.paymentItem}>
+                <Text style={styles.paymentLabel}>Paid</Text>
+                <Text style={styles.paidAmountText}>{formatCurrency(customer.paid)}</Text>
+             </View>
+             <View style={styles.paymentDivider} />
+             <View style={styles.paymentItem}>
+                <Text style={styles.paymentLabel}>Balance</Text>
+                <Text style={styles.balanceAmountText}>{formatCurrency(customer.balance)}</Text>
+             </View>
+          </View>
+
+          {/* Contact Details Row - Inline & Small */}
           <View style={styles.contactRow}>
              <View style={styles.contactItem}>
-                <Ionicons name="call-outline" size={16} color={THEME.highlight} />
+                <Ionicons name="call-outline" size={13} color={THEME.highlight} />
                 <Text style={styles.contactText}>{customer.phoneNumber}</Text>
              </View>
              {hasEmail && (
                 <View style={styles.contactItem}>
-                    <Ionicons name="mail-outline" size={16} color={THEME.highlight} />
+                    <Ionicons name="mail-outline" size={13} color={THEME.highlight} />
                     <Text style={styles.contactText} numberOfLines={1}>{customer.email}</Text>
                 </View>
              )}
@@ -219,7 +236,7 @@ const CustomerOnHold = () => {
                 activeOpacity={0.7}
             >
                 <LinearGradient colors={['#00b09b', '#96c93d']} style={styles.btnGradient}>
-                    <Ionicons name="call" size={16} color="#fff" />
+                    <Ionicons name="call" size={14} color="#fff" />
                 </LinearGradient>
                 <Text style={styles.actionBtnText}>Call</Text>
             </TouchableOpacity>
@@ -230,7 +247,7 @@ const CustomerOnHold = () => {
                 activeOpacity={0.7}
             >
                 <LinearGradient colors={['#25D366', '#128C7E']} style={styles.btnGradient}>
-                    <FontAwesome5 name="whatsapp" size={16} color="#fff" />
+                    <FontAwesome5 name="whatsapp" size={14} color="#fff" />
                 </LinearGradient>
                 <Text style={styles.actionBtnText}>WhatsApp</Text>
             </TouchableOpacity>
@@ -242,7 +259,7 @@ const CustomerOnHold = () => {
                     activeOpacity={0.7}
                 >
                     <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.btnGradient}>
-                        <MaterialCommunityIcons name="email" size={16} color="#fff" />
+                        <MaterialCommunityIcons name="email" size={14} color="#fff" />
                     </LinearGradient>
                     <Text style={styles.actionBtnText}>Email</Text>
                 </TouchableOpacity>
@@ -255,7 +272,6 @@ const CustomerOnHold = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Header Section */}
         <LinearGradient 
             colors={[THEME.primary, THEME.secondary]} 
             style={styles.headerGradient}
@@ -270,7 +286,7 @@ const CustomerOnHold = () => {
         </LinearGradient>
 
         <View style={styles.mainContainer}>
-            {loading ? (
+            {loading && !refreshing ? (
                 <View style={styles.loader}>
                     <ActivityIndicator size="large" color={THEME.highlight} />
                     <Text style={styles.loadingText}>Fetching customers...</Text>
@@ -279,14 +295,23 @@ const CustomerOnHold = () => {
                 <View style={styles.errorContainer}>
                     <Ionicons name="cloud-offline-outline" size={50} color={THEME.textMuted} />
                     <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={() => fetchData(false)}>
+                        <Text style={styles.retryBtnText}>Try Again</Text>
+                    </TouchableOpacity>
                 </View>
             ) : (
                 <ScrollView 
                     showsVerticalScrollIndicator={false} 
                     contentContainerStyle={styles.scrollContent}
+                    refreshControl={
+                      <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[THEME.primary]}
+                        tintColor={THEME.primary}
+                      />
+                    }
                 >
-                    
-                    {/* --- UNIQUE STYLISH SUMMARY BOX --- */}
                     <LinearGradient
                         colors={['#232526', '#414345']}
                         style={styles.summaryBox}
@@ -299,7 +324,7 @@ const CustomerOnHold = () => {
                                 <Ionicons name="warning" size={24} color="#fff" />
                             </View>
                             <View style={styles.summaryTextCol}>
-                                <Text style={styles.summaryLabel}>Total Customers</Text>
+                                <Text style={styles.summaryLabel}>Total Holded Customers</Text>
                                 <Text style={styles.summaryBigNumber}>{customers.length}</Text>
                             </View>
                         </View>
@@ -314,7 +339,6 @@ const CustomerOnHold = () => {
                         </View>
                     </LinearGradient>
 
-                    {/* Customer List */}
                     {customers.length > 0 ? (
                         customers.map(renderCustomerCard)
                     ) : (
@@ -363,7 +387,7 @@ const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
         backgroundColor: THEME.background,
-        marginTop: -15, // overlap header
+        marginTop: -15,
         borderTopLeftRadius: 25,
         borderTopRightRadius: 25,
         overflow: 'hidden',
@@ -373,8 +397,6 @@ const styles = StyleSheet.create({
         paddingTop: 30,
         paddingBottom: 100,
     },
-
-    // --- SUMMARY BOX STYLES ---
     summaryBox: {
         borderRadius: 24,
         padding: 20,
@@ -382,7 +404,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
-        // Neumorphic shadow for depth
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
@@ -456,42 +477,41 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         flex: 1,
     },
-
-    // --- CARD STYLES ---
+    // --- SMALLER CARD STYLES ---
     cardContainer: {
-        marginBottom: 18,
-        borderRadius: 24,
+        marginBottom: 12, // Reduced margin
+        borderRadius: 16, // Slightly smaller radius
         backgroundColor: THEME.cardBg,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 8,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 4,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.03)',
+        borderColor: 'rgba(0,0,0,0.02)',
     },
     cardContent: {
-        padding: 18,
+        padding: 12, // Reduced padding
     },
     cardHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 10,
     },
     avatarContainer: {
-        width: 50,
-        height: 50,
-        borderRadius: 16,
+        width: 40, // Smaller avatar
+        height: 40,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 14,
+        marginRight: 10,
         shadowColor: "#764ba2",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
     },
     avatarText: {
-        fontSize: 20,
+        fontSize: 16, // Smaller text
         fontWeight: 'bold',
         color: '#fff',
     },
@@ -503,86 +523,115 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 3,
+        marginBottom: 2,
     },
     customerName: {
-        fontSize: 18,
-        fontWeight: '800',
+        fontSize: 15, // Smaller font
+        fontWeight: '700',
         color: THEME.textDark,
         flex: 1,
     },
     holdBadge: {
         backgroundColor: 'rgba(233, 69, 96, 0.1)',
-        paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingVertical: 3,
+        paddingHorizontal: 8,
         borderRadius: 20,
-        marginLeft: 10,
+        marginLeft: 8,
     },
     holdBadgeText: {
         color: THEME.highlight,
-        fontSize: 10,
+        fontSize: 9, // Smaller badge text
         fontWeight: 'bold',
         letterSpacing: 0.5,
     },
     groupNameText: {
-        fontSize: 13,
+        fontSize: 12, // Smaller font
         color: THEME.textMuted,
         fontWeight: '500',
-        marginTop: 2,
+        marginTop: 1,
     },
-    
-    // Contact Row
+    paymentRow: {
+        flexDirection: 'row',
+        backgroundColor: '#f8f9fa',
+        borderRadius: 10,
+        paddingVertical: 8, // Reduced padding
+        paddingHorizontal: 10,
+        marginBottom: 10,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    paymentItem: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    paymentDivider: {
+        width: 1,
+        height: 20, // Smaller divider
+        backgroundColor: '#e0e0e0',
+    },
+    paymentLabel: {
+        fontSize: 10, // Smaller font
+        color: THEME.textMuted,
+        marginBottom: 2,
+        fontWeight: '600',
+    },
+    paidAmountText: {
+        fontSize: 14, // Smaller font
+        fontWeight: '700',
+        color: THEME.success,
+    },
+    balanceAmountText: {
+        fontSize: 14, // Smaller font
+        fontWeight: '700',
+        color: THEME.danger,
+    },
+    // --- INLINE CONTACT ROW ---
     contactRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-        marginBottom: 15,
+        justifyContent: 'flex-start',
+        flexWrap: 'wrap',
+        marginBottom: 10,
+        marginTop: 2,
+        // Removed borders and padding for compact look
     },
     contactItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
+        marginRight: 12, // Space between phone and email
     },
     contactText: {
-        marginLeft: 8,
-        fontSize: 13,
+        marginLeft: 4,
+        fontSize: 11, // Smaller font
         color: THEME.textDark,
-        fontWeight: '600',
+        fontWeight: '500',
     },
-
-    // Action Footer
     actionFooter: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start', // Left align buttons
         marginTop: 5,
+        gap: 10, // Gap between buttons (RN 0.71+)
     },
     actionBtn: {
         alignItems: 'center',
         justifyContent: 'center',
     },
     btnGradient: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
+        width: 36, // Smaller buttons
+        height: 36,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: 2,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
     },
     actionBtnText: {
-        fontSize: 11,
+        fontSize: 9, // Smaller text
         color: THEME.textMuted,
         fontWeight: '600',
     },
-
-    // Misc
     loader: {
         flex: 1,
         justifyContent: 'center',
@@ -603,6 +652,17 @@ const styles = StyleSheet.create({
         marginTop: 10,
         color: THEME.textMuted,
         textAlign: 'center',
+    },
+    retryBtn: {
+        marginTop: 15,
+        backgroundColor: THEME.highlight,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+    },
+    retryBtnText: {
+        color: THEME.white,
+        fontWeight: 'bold',
     },
     emptyState: {
         alignItems: 'center',

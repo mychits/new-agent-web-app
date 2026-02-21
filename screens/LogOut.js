@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
     View, 
     Text, 
@@ -11,7 +11,10 @@ import {
     Dimensions, 
     Modal,
     RefreshControl,
-    Platform
+    Platform,
+    Animated, // Added Animated
+    LayoutAnimation, 
+    UIManager 
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,6 +26,11 @@ import baseUrl from "../constants/baseUrl";
 import moment from "moment";
 
 const { width } = Dimensions.get('window');
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const COLORS = {
     PRIMARY: "#0f7699",
@@ -82,6 +90,97 @@ const AttendanceMetric = ({ label, value, color, icon, onPress }) => (
     <Ionicons name="chevron-forward" size={18} color={COLORS.MUTED} />
   </TouchableOpacity>
 );
+
+// --- Animated Date Filter Component ---
+const AnimatedDateFilter = ({ month, year, onPress }) => {
+  // Animation Values
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  // Entrance Animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 8,
+        tension: 50,
+        useNativeDriver: true,
+      })
+    ]).start();
+
+    // Shimmer Loop
+    Animated.loop(
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  // Interaction Handlers
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, friction: 5, useNativeDriver: true }).start();
+  };
+
+  // Shimmer Interpolation
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-width, width]
+  });
+
+  return (
+    <Animated.View 
+      style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }]
+      }}
+    >
+      <TouchableOpacity 
+        activeOpacity={1} 
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress} 
+        style={{ borderRadius: 16 }}
+      >
+        <Animated.View style={[localStyles.dateFilterWrapper, { transform: [{ scale: scaleAnim }] }]}>
+            {/* Shimmer Effect Layer */}
+            <Animated.View style={[localStyles.shimmerOverlay, { transform: [{ translateX: shimmerTranslate }] }]}>
+                <LinearGradient 
+                  colors={['transparent', 'rgba(255,255,255,0.6)', 'transparent']} 
+                  start={{x: 0, y: 0.5}} 
+                  end={{x: 1, y: 0.5}}
+                  style={localStyles.shimmerGradient} 
+                />
+            </Animated.View>
+
+            <View style={localStyles.dateFilterIconBox}>
+                <Ionicons name="calendar-outline" size={20} color={COLORS.WHITE} />
+            </View>
+            <View style={localStyles.dateFilterTextContainer}>
+                <Text style={localStyles.dateFilterStaticLabel}>Viewing Period</Text>
+                <Text style={localStyles.dateFilterDynamicText}>{moment([year, month]).format("MMMM YYYY")}</Text>
+            </View>
+            <View style={localStyles.dateFilterAction}>
+                <Text style={localStyles.dateFilterChangeText}>Change</Text>
+                <Ionicons name="chevron-forward" size={18} color={COLORS.PRIMARY} />
+            </View>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
 // --- Main Component ---
 
@@ -204,7 +303,6 @@ const LogOut = ({ navigation }) => {
     return ledgerArray.find(item => item.period === currentPeriod) || null;
   }, [ledgerArray, month, year]);
 
-  // Determine if we are viewing the current month/year
   const isCurrentMonth = year === currentYear && month === currentMonth;
 
   // --- Render ---
@@ -334,22 +432,20 @@ const LogOut = ({ navigation }) => {
                   <RefreshControl refreshing={loading} onRefresh={fetchDailyAttendance} color={COLORS.PRIMARY} tintColor={COLORS.WHITE} />
               }
           >
-            {/* Controls: Tabs & Filter */}
+            {/* Controls: Tabs */}
             <View style={localStyles.controlRow}>
                 <TabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} />
-                <TouchableOpacity style={localStyles.filterBtn} onPress={() => setShowPicker(true)}>
-                    <Ionicons name="calendar" size={16} color={COLORS.WHITE} />
-                    <Text style={localStyles.filterBtnText}>{moment([year, month]).format("MMM YYYY")}</Text>
-                </TouchableOpacity>
             </View>
+
+            {/* REPLACED: Animated Date Filter */}
+            <AnimatedDateFilter 
+                month={month} 
+                year={year} 
+                onPress={() => setShowPicker(true)} 
+            />
 
             {activeTab === 'attendance' && (
               <View>
-                {/* 
-                   CONDITIONAL RENDERING:
-                   Only show Punch In/Out section if viewing the CURRENT month/year 
-                   AND attendanceData exists.
-                */}
                 {isCurrentMonth && attendanceData && (
                   <>
                     {/* Profile Summary */}
@@ -372,9 +468,8 @@ const LogOut = ({ navigation }) => {
                       </View>
                     </View>
 
-                    {/* Time Stats (Gradient Cards) */}
+                    {/* Time Stats */}
                     <View style={localStyles.timeRow}>
-                        {/* Punch In */}
                         <LinearGradient colors={COLORS.SUCCESS_GRADIENT} style={localStyles.timeCard}>
                             <View style={localStyles.timeIconBg}>
                               <Ionicons name="log-in" size={20} color={COLORS.SUCCESS} />
@@ -383,7 +478,6 @@ const LogOut = ({ navigation }) => {
                             <Text style={localStyles.timeValue}>{attendanceData.time || '--:--'}</Text>
                         </LinearGradient>
 
-                        {/* Punch Out */}
                         <LinearGradient 
                           colors={attendanceData.logout_time ? COLORS.DANGER : ['#e2e8f0', '#cbd5e1']} 
                           style={localStyles.timeCard}
@@ -420,7 +514,7 @@ const LogOut = ({ navigation }) => {
                   </>
                 )}
 
-                {/* Monthly Overview - Shows for any selected month */}
+                {/* Monthly Overview */}
                 {monthlyData && (
                   <>
                     <View style={localStyles.sectionHeader}>
@@ -542,15 +636,11 @@ const styles = StyleSheet.create({
 
 // --- Local Stylish Styles ---
 const localStyles = StyleSheet.create({
-    // Tabs & Controls
+    // Tabs
     controlRow: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        marginBottom: 20, 
-        gap: 10 
+        marginBottom: 15
     },
     tabContainer: { 
-        flex: 1, 
         flexDirection: 'row', 
         backgroundColor: '#fff', 
         borderRadius: 16, 
@@ -561,16 +651,81 @@ const localStyles = StyleSheet.create({
     activeTabButton: { backgroundColor: COLORS.PRIMARY },
     tabText: { color: COLORS.SLATE, fontWeight: '700', fontSize: 13 },
     activeTabText: { color: COLORS.WHITE },
-    filterBtn: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        backgroundColor: COLORS.DARK, 
-        padding: 10, 
-        borderRadius: 16, 
-        gap: 6, 
-        paddingHorizontal: 14 
+
+    // Animated Date Filter Styles
+    dateFilterWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        marginBottom: 20,
+        padding: 4, 
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+        overflow: 'hidden' // Important for shimmer clipping
     },
-    filterBtnText: { color: COLORS.WHITE, fontWeight: '700', fontSize: 12 },
+    // Shimmer Styles
+    shimmerOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        height: '100%',
+        width: '50%', // Width of the shimmer bar
+        zIndex: 1
+    },
+    shimmerGradient: {
+        flex: 1,
+        width: width // Ensures the gradient covers the area fully during translate
+    },
+    // Content Styles
+    dateFilterIconBox: {
+        backgroundColor: COLORS.PRIMARY,
+        padding: 12,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 2
+    },
+    dateFilterTextContainer: {
+        flex: 1,
+        paddingLeft: 12,
+        justifyContent: 'center',
+        zIndex: 2
+    },
+    dateFilterStaticLabel: {
+        fontSize: 10,
+        color: COLORS.SLATE,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5
+    },
+    dateFilterDynamicText: {
+        fontSize: 16,
+        color: COLORS.DARK,
+        fontWeight: '800',
+        marginTop: 1
+    },
+    dateFilterAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: COLORS.BG,
+        borderRadius: 10,
+        marginRight: 4,
+        zIndex: 2
+    },
+    dateFilterChangeText: {
+        color: COLORS.PRIMARY,
+        fontWeight: '700',
+        fontSize: 12,
+        marginRight: 2
+    },
 
     // Profile Card
     profileCard: {

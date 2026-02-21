@@ -28,7 +28,7 @@ import baseUrl from "../constants/baseUrl";
 
 const { width, height } = Dimensions.get('window');
 
-// --- THEME CONSTANTS ---
+// --- THEME CONSTANTS (Preserved) ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#0d0d0eff"; 
 const ACCENT_BLUE = "#24C6DC";     
@@ -131,8 +131,13 @@ const MonthlyTurnover = () => {
         setTurnoverData(response.data.agentData);
         
         const customersWithStatus = response.data.agentData.payingCustomers.map((c) => {
-          const totalPaid = parseFloat(c.totalPaid || 0);
+          const monthlyPaid = parseFloat(c.totalPaid || 0); 
           const monthlyInstallment = parseFloat(c.monthly_installment || 0);
+          
+          const overallPaid = parseFloat(c.paid_amount || 0); 
+          const totalTicketValue = parseFloat(c.total_amount || 0);
+          const totalBalance = totalTicketValue - overallPaid;
+
           let lastPaymentDate = 'N/A';
 
           if (c.payments && c.payments.length > 0) {
@@ -142,8 +147,11 @@ const MonthlyTurnover = () => {
 
           return {
             ...c,
-            paymentStatus: totalPaid >= monthlyInstallment ? "PAID" : "UNPAID",
+            paymentStatus: monthlyPaid >= monthlyInstallment ? "PAID" : "UNPAID",
             lastPaymentDate: lastPaymentDate,
+            monthlyPaid: monthlyPaid,
+            overallPaid: overallPaid,
+            totalBalance: totalBalance
           };
         });
         
@@ -172,24 +180,21 @@ const MonthlyTurnover = () => {
   // --- SKELETON UI FOR LOADING STATE ---
   const renderSkeleton = () => (
     <View style={{ paddingHorizontal: 16, paddingTop: 20 }}>
-      {/* Header Skeleton */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-        <ShimmerLoader style={{ width: '60%', height: 25, borderRadius: 8, backgroundColor: '#e0e0e0' }} />
-        <ShimmerLoader style={{ width: 80, height: 25, borderRadius: 8, backgroundColor: '#e0e0e0' }} />
+        <ShimmerLoader style={{ width: '60%', height: 28, borderRadius: 12, backgroundColor: '#e0e0e0' }} />
+        <ShimmerLoader style={{ width: 80, height: 28, borderRadius: 12, backgroundColor: '#e0e0e0' }} />
       </View>
-      {/* Summary Skeleton */}
-      <ShimmerLoader style={{ width: '100%', height: 160, borderRadius: 20, backgroundColor: '#e0e0e0', marginBottom: 20 }} />
-      {/* List Skeleton */}
+      <ShimmerLoader style={{ width: '100%', height: 180, borderRadius: 24, backgroundColor: '#e0e0e0', marginBottom: 25 }} />
       {[1,2,3].map(i => (
-        <View key={i} style={{ backgroundColor: CARD_BG, borderRadius: 16, padding: 15, marginBottom: 15, elevation: 2 }}>
+        <View key={i} style={{ backgroundColor: CARD_BG, borderRadius: 20, padding: 20, marginBottom: 15, elevation: 2 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 }}>
-                <ShimmerLoader style={{ width: '40%', height: 18, borderRadius: 6, backgroundColor: '#f0f0f0' }} />
-                <ShimmerLoader style={{ width: 60, height: 22, borderRadius: 10, backgroundColor: '#f0f0f0' }} />
+                <ShimmerLoader style={{ width: '40%', height: 18, borderRadius: 8, backgroundColor: '#f0f0f0' }} />
+                <ShimmerLoader style={{ width: 60, height: 24, borderRadius: 12, backgroundColor: '#f0f0f0' }} />
             </View>
-            <ShimmerLoader style={{ width: '70%', height: 14, borderRadius: 6, backgroundColor: '#f0f0f0', marginBottom: 10 }} />
+            <ShimmerLoader style={{ width: '70%', height: 16, borderRadius: 8, backgroundColor: '#f0f0f0', marginBottom: 20 }} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <ShimmerLoader style={{ width: '45%', height: 40, borderRadius: 8, backgroundColor: '#f0f0f0' }} />
-                <ShimmerLoader style={{ width: '45%', height: 40, borderRadius: 8, backgroundColor: '#f0f0f0' }} />
+                <ShimmerLoader style={{ width: '48%', height: 60, borderRadius: 12, backgroundColor: '#f0f0f0' }} />
+                <ShimmerLoader style={{ width: '48%', height: 60, borderRadius: 12, backgroundColor: '#f0f0f0' }} />
             </View>
         </View>
       ))}
@@ -207,14 +212,14 @@ const MonthlyTurnover = () => {
       {/* Modern Date Selector Card */}
       <TouchableOpacity style={styles.dateSelectorCard} onPress={() => setShowPicker(true)} activeOpacity={0.8}>
           <View style={styles.dateIconBox}>
-              <Ionicons name="calendar-outline" size={22} color={ACCENT_BLUE} />
+              <Ionicons name="calendar" size={22} color={ACCENT_BLUE} />
           </View>
           <View style={styles.dateTextContainer}>
               <Text style={styles.dateSelectorLabel}>Selected Period</Text>
               <Text style={styles.dateSelectorValue}>{formattedDate}</Text>
           </View>
           <View style={styles.dateArrowBox}>
-              <Ionicons name="chevron-down-sharp" size={20} color={NEUTRAL_GREY} />
+              <Ionicons name="chevron-down" size={20} color={NEUTRAL_GREY} />
           </View>
       </TouchableOpacity>
 
@@ -222,24 +227,28 @@ const MonthlyTurnover = () => {
       <View style={styles.heroCard}>
         <LinearGradient colors={['#183A5D', '#24C6DC']} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.heroGradient}>
             <View style={styles.heroTop}>
-                <View>
-                    <Text style={styles.heroLabel}>EXPECTED</Text>
+                <View style={{flex:1}}>
+                    <Text style={styles.heroLabel}>EXPECTED TURNOVER</Text>
                     <Text style={styles.heroAmountText}>{formatCurrency(turnoverData?.expectedTurnover)}</Text>
                 </View>
                 <View style={styles.heroDivider} />
-                <View>
-                    <Text style={styles.heroLabel}>ACTUAL</Text>
-                    <Text style={[styles.heroAmountText, { color: ACCENT_GREEN }]}>{formatCurrency(turnoverData?.totalTurnover)}</Text>
+                <View style={{flex:1, alignItems:'flex-end'}}>
+                    <Text style={styles.heroLabel}>COLLECTED</Text>
+                    <Text style={[styles.heroAmountText, { color: '#34D399' }]}>{formatCurrency(turnoverData?.totalTurnover)}</Text>
                 </View>
             </View>
             
             <View style={styles.heroBottom}>
                 <View style={styles.statItem}>
-                    <Ionicons name="people" size={14} color="rgba(255,255,255,0.7)" />
+                    <View style={styles.iconBgLight}>
+                       <Ionicons name="people" size={14} color="#fff" />
+                    </View>
                     <Text style={styles.statText}> {turnoverData?.totalCustomers} Customers</Text>
                 </View>
                 <View style={styles.statItem}>
-                    <FontAwesome5 name="user-tie" size={12} color="rgba(255,255,255,0.7)" />
+                    <View style={styles.iconBgLight}>
+                       <FontAwesome5 name="user-tie" size={12} color="#fff" />
+                    </View>
                     <Text style={styles.statText}> {turnoverData?.agentName}</Text>
                 </View>
             </View>
@@ -257,6 +266,11 @@ const MonthlyTurnover = () => {
                 value={searchText}
                 onChangeText={setSearchText}
             />
+            {searchText.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchText('')}>
+                 <Ionicons name="close-circle" size={20} color={NEUTRAL_GREY} />
+              </TouchableOpacity>
+            )}
         </View>
       )}
     </FadeInView>
@@ -269,44 +283,71 @@ const MonthlyTurnover = () => {
 
     return (
       <FadeInView delay={index * 100}>
-        <View style={[styles.customerCard, { borderLeftColor: statusColor }]}>
-            {/* Row 1: Group & Status */}
-            <View style={styles.cardRowTop}>
-                <Text style={styles.groupNameText} numberOfLines={1}>{item.group_id?.group_name || 'Group'}</Text>
-                <View style={[styles.pillTag, { backgroundColor: isPaid ? '#D1FAE5' : '#FEE2E2' }]}>
-                    <Text style={[styles.pillText, { color: statusColor }]}>{item.paymentStatus}</Text>
-                </View>
-            </View>
+        <View style={styles.customerCard}>
+            {/* Decorative Top Strip */}
+            <View style={[styles.cardTopStrip, { backgroundColor: statusColor }]} />
 
-            {/* Row 2: Customer Info */}
-            <View style={styles.cardRowMiddle}>
-                <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarText}>{item.user_id?.full_name?.charAt(0) || 'U'}</Text>
+            <View style={styles.cardContent}>
+                {/* Row 1: Group & Status */}
+                <View style={styles.cardRowTop}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={styles.groupIconBox}>
+                           <Ionicons name="layers-outline" size={16} color={ACCENT_BLUE} />
+                        </View>
+                        <Text style={styles.groupNameText} numberOfLines={1}>{item.group_id?.group_name || 'Group'}</Text>
+                    </View>
+                    <View style={[styles.pillTag, { backgroundColor: isPaid ? 'rgba(12, 112, 79, 0.1)' : 'rgba(239, 68, 68, 0.1)' }]}>
+                        <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.pillText, { color: statusColor }]}>{item.paymentStatus}</Text>
+                    </View>
                 </View>
-                <View style={styles.customerInfoWrapper}>
-                    <Text style={styles.customerNameText}>{item.user_id?.full_name || 'Unknown'}</Text>
-                    {customerPhone && (
-                        <TouchableOpacity onPress={() => handleCall(customerPhone)} style={styles.callRow}>
-                            <Ionicons name="call-outline" size={14} color={ACCENT_BLUE} />
-                            <Text style={styles.phoneText}>{customerPhone}</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.subLabel}>Ticket</Text>
-                    <Text style={styles.subValue}>{item.ticket}</Text>
-                </View>
-            </View>
 
-            {/* Row 3: Financial Grid */}
-            <View style={styles.cardGrid}>
-                <View style={styles.gridItem}>
-                    <Text style={styles.gridLabel}>Installment</Text>
-                    <Text style={styles.gridValue}>{formatCurrency(item.monthly_installment)}</Text>
+                {/* Row 2: Customer Info */}
+                <View style={styles.cardRowMiddle}>
+                    <View style={styles.avatarPlaceholder}>
+                        <Text style={styles.avatarText}>{item.user_id?.full_name?.charAt(0) || 'U'}</Text>
+                    </View>
+                    <View style={styles.customerInfoWrapper}>
+                        <Text style={styles.customerNameText}>{item.user_id?.full_name || 'Unknown'}</Text>
+                        {customerPhone && (
+                            <TouchableOpacity onPress={() => handleCall(customerPhone)} style={styles.callRow}>
+                                <Ionicons name="call-outline" size={14} color={ACCENT_BLUE} />
+                                <Text style={styles.phoneText}>{customerPhone}</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    
+                    <View style={styles.ticketBox}>
+                        <Text style={styles.ticketLabel}>Ticket</Text>
+                        <Text style={styles.ticketValue}>#{item.ticket}</Text>
+                    </View>
                 </View>
-                <View style={[styles.gridItem, { borderLeftWidth: 1, borderLeftColor: '#f0f0f0' }]}>
-                    <Text style={styles.gridLabel}>Total Paid</Text>
-                    <Text style={[styles.gridValue, { color: ACCENT_GREEN }]}>{formatCurrency(item.totalPaid)}</Text>
+
+                {/* Row 3: Financial Stats Grid */}
+                <View style={styles.statsGrid}>
+                    {/* Item 1: Installment */}
+                    <View style={styles.statsGridItem}>
+                        <Text style={styles.gridLabel}>Installment</Text>
+                        <Text style={styles.gridValuePrimary}>{formatCurrency(item.monthly_installment)}</Text>
+                    </View>
+                    
+                    {/* Item 2: Paid This Month */}
+                    <View style={styles.statsGridItem}>
+                        <Text style={styles.gridLabel}>Paid (Month)</Text>
+                        <Text style={styles.gridValueGreen}>{formatCurrency(item.monthlyPaid)}</Text>
+                    </View>
+                    
+                    {/* Item 3: Total Paid Overall */}
+                    <View style={[styles.statsGridItem, { borderRightWidth: 0 }]}>
+                        <Text style={styles.gridLabel}>Total Paid</Text>
+                        <Text style={styles.gridValueBlue}>{formatCurrency(item.overallPaid)}</Text>
+                    </View>
+
+                    {/* Item 4: Balance */}
+                    <View style={[styles.statsGridItem, { borderRightWidth: 0 }]}>
+                        <Text style={styles.gridLabel}>Balance</Text>
+                        <Text style={styles.gridValueRed}>{formatCurrency(item.totalBalance)}</Text>
+                    </View>
                 </View>
             </View>
         </View>
@@ -378,9 +419,9 @@ const styles = StyleSheet.create({
         backgroundColor: TOP_GRADIENT[1] 
     },
     headerBg: {
-        paddingBottom: 10,
-        borderBottomLeftRadius: 25,
-        borderBottomRightRadius: 25,
+        paddingBottom: 15,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
         overflow: 'hidden'
     },
     contentContainer: {
@@ -391,15 +432,15 @@ const styles = StyleSheet.create({
     listContent: {
         paddingHorizontal: 16,
         paddingBottom: 100,
-        paddingTop: 20
+        paddingTop: 24
     },
 
     // --- HEADER & DATE SECTION ---
     headerSection: {
-        marginBottom: 15,
+        marginBottom: 20,
     },
     screenTitle: {
-        fontSize: 26,
+        fontSize: 28,
         fontWeight: '800',
         color: MODERN_PRIMARY,
         letterSpacing: -0.5
@@ -419,25 +460,23 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 12,
         marginBottom: 20,
-        elevation: 3,
+        elevation: 4,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
-        shadowRadius: 5,
-        borderWidth: 1,
-        borderColor: '#f0f0f0'
+        shadowRadius: 8,
     },
     dateIconBox: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: '#E0F2FE',
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        backgroundColor: 'rgba(36, 198, 220, 0.1)', // Light Blue Tint
         justifyContent: 'center',
         alignItems: 'center'
     },
     dateTextContainer: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: 14,
         justifyContent: 'center'
     },
     dateSelectorLabel: {
@@ -448,15 +487,15 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5
     },
     dateSelectorValue: {
-        fontSize: 17,
+        fontSize: 18,
         color: MODERN_PRIMARY,
         fontWeight: '700',
         marginTop: 2
     },
     dateArrowBox: {
-        width: 32,
-        height: 32,
-        borderRadius: 10,
+        width: 36,
+        height: 36,
+        borderRadius: 12,
         backgroundColor: SUBTLE_BG_GREY,
         justifyContent: 'center',
         alignItems: 'center'
@@ -464,17 +503,17 @@ const styles = StyleSheet.create({
 
     // Hero Card (Turnover)
     heroCard: {
-        marginBottom: 20,
-        borderRadius: 20,
+        marginBottom: 24,
+        borderRadius: 24,
         overflow: 'hidden',
-        elevation: 8,
+        elevation: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
     },
     heroGradient: {
-        padding: 20,
+        padding: 22,
     },
     heroTop: {
         flexDirection: 'row',
@@ -483,37 +522,44 @@ const styles = StyleSheet.create({
     },
     heroDivider: {
         width: 1,
-        height: 40,
-        backgroundColor: 'rgba(255,255,255,0.2)'
+        height: 50,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        marginHorizontal: 15
     },
     heroLabel: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(255,255,255,0.8)',
         fontSize: 12,
         fontWeight: '700',
         letterSpacing: 1,
-        marginBottom: 5
+        marginBottom: 8
     },
     heroAmountText: {
         color: '#fff',
-        fontSize: 22,
-        fontWeight: '900'
+        fontSize: 24,
+        fontWeight: '800'
     },
     heroBottom: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 20,
-        paddingTop: 15,
+        marginTop: 25,
+        paddingTop: 18,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.1)'
+        borderTopColor: 'rgba(255,255,255,0.15)'
     },
     statItem: {
         flexDirection: 'row',
         alignItems: 'center',
     },
+    iconBgLight: {
+        backgroundColor: 'rgba(255,255,255,0.2)', 
+        padding: 6, 
+        borderRadius: 8, 
+        marginRight: 8
+    },
     statText: {
         color: '#fff',
         fontWeight: '600',
-        fontSize: 12
+        fontSize: 13
     },
 
     // Search
@@ -522,19 +568,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: CARD_BG,
         borderRadius: 16,
-        paddingHorizontal: 15,
-        height: 50,
-        marginBottom: 20,
-        elevation: 2,
+        paddingHorizontal: 16,
+        height: 54,
+        marginBottom: 24,
+        elevation: 4,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
-        shadowRadius: 3,
+        shadowRadius: 4,
     },
     searchInput: {
         flex: 1,
-        marginLeft: 10,
-        fontSize: 15,
+        marginLeft: 12,
+        fontSize: 16,
         color: MODERN_PRIMARY,
         fontWeight: '500'
     },
@@ -542,23 +588,38 @@ const styles = StyleSheet.create({
     // Customer Card
     customerCard: {
         backgroundColor: CARD_BG,
-        borderRadius: 16,
-        marginBottom: 12,
-        borderLeftWidth: 5,
-        elevation: 3,
+        borderRadius: 20,
+        marginBottom: 16,
+        elevation: 5,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        overflow: 'hidden'
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        overflow: 'hidden',
+    },
+    cardTopStrip: {
+        height: 4,
+        width: '100%'
+    },
+    cardContent: {
+        paddingTop: 12,
+        paddingBottom: 8
     },
     cardRowTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f5f5f5'
+        paddingHorizontal: 16,
+        marginBottom: 12,
+    },
+    groupIconBox: {
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        backgroundColor: '#F0F9FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10
     },
     groupNameText: {
         fontSize: 14,
@@ -568,9 +629,17 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5
     },
     pillTag: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        marginRight: 6
     },
     pillText: {
         fontWeight: '800',
@@ -580,12 +649,15 @@ const styles = StyleSheet.create({
     cardRowMiddle: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f5f5f5'
     },
     avatarPlaceholder: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
         backgroundColor: '#E0F2FE',
         justifyContent: 'center',
         alignItems: 'center'
@@ -593,61 +665,88 @@ const styles = StyleSheet.create({
     avatarText: {
         color: ACCENT_BLUE,
         fontWeight: '800',
-        fontSize: 18
+        fontSize: 20
     },
     customerInfoWrapper: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: 14,
         justifyContent: 'center'
     },
     customerNameText: {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: '800',
         color: MODERN_PRIMARY,
-        marginBottom: 2
+        marginBottom: 3
     },
     callRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 2
+        marginTop: 3,
+        alignSelf: 'flex-start'
     },
     phoneText: {
-        marginLeft: 5,
+        marginLeft: 6,
         color: ACCENT_BLUE,
         fontSize: 13,
-        fontWeight: '600'
+        fontWeight: '700'
     },
-    subLabel: {
-        fontSize: 10,
+    ticketBox: {
+        alignItems: 'flex-end',
+        backgroundColor: SUBTLE_BG_GREY,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8
+    },
+    ticketLabel: {
+        fontSize: 9,
         color: NEUTRAL_GREY,
-        textTransform: 'uppercase'
+        textTransform: 'uppercase',
+        fontWeight: '700'
     },
-    subValue: {
-        fontSize: 14,
+    ticketValue: {
+        fontSize: 16,
         fontWeight: '800',
         color: MODERN_PRIMARY
     },
 
-    cardGrid: {
+    // Financial Grid
+    statsGrid: {
         flexDirection: 'row',
-        backgroundColor: '#FAFAFA',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0'
+        flexWrap: 'wrap',
+        paddingTop: 12,
     },
-    gridItem: {
-        flex: 1
+    statsGridItem: {
+        width: '50%',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRightWidth: 1,
+        borderRightColor: '#f5f5f5'
     },
     gridLabel: {
         fontSize: 11,
         color: NEUTRAL_GREY,
-        marginBottom: 2
+        marginBottom: 4,
+        fontWeight: '600'
     },
-    gridValue: {
-        fontSize: 15,
+    gridValuePrimary: {
+        fontSize: 16,
         fontWeight: '800',
         color: MODERN_PRIMARY
+    },
+    gridValueGreen: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: ACCENT_GREEN
+    },
+    gridValueBlue: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: ACCENT_BLUE
+    },
+    gridValueRed: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: WARNING_RED
     },
 
     // Empty & Error
