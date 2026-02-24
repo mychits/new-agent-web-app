@@ -17,6 +17,7 @@ import ViewCustomer from "../screens/ViewCustomer";
 import CustomerNavigation from "./CustomerNavigation";
 import ForgotPassword from "../screens/ForgotPassword";
 import Rewards from "../screens/Rewards";
+import Profile from "../screens/Profile";
 import ResetPassword from "../screens/ResetPassword";
 import MyTaskListScreen from '../screens/MyTaskListScreen';
 import TaskDetailScreen from '../screens/TaskDetailScreen';
@@ -211,6 +212,7 @@ export default function AppNavigation() {
         <Stack.Screen name="Target" component={Target} options={{ headerShown: false }} />
         <Stack.Screen name="EditLead" component={EditLead} options={{ headerShown: false }} />
         <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
+        <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false }} />
         <Stack.Screen name="Enrollment" component={Enrollment} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
