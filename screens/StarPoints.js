@@ -8,23 +8,27 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  Platform,
+  Share,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Header from "../components/Header"; // Assuming same header path
-import baseUrl from "../constants/baseUrl";
+import Header from "../components/Header";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import baseUrl from "../constants/baseUrl";
 
 const { width } = Dimensions.get("window");
 
-// --- DESIGN CONSTANTS (Matching Home.js) ---
+// Design Constants
 const TOP_GRADIENT = ["#24C6DC", "#183A5D"];
-const MODERN_PRIMARY = "#0d0d0eff";
-const ACCENT_BLUE = "#1796d1ff";
+const MODERN_PRIMARY = "#0d0d0d";
+const ACCENT_BLUE = "#1796d1";
 const BORDER_COLOR = "#e0e0e0";
 const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
-const HIGHLIGHT_GOLD = "#f5be6dff";
+const HIGHLIGHT_GOLD = "#f5be6d";
+const EXPAND_BG = "#f8fafc";
 
 const StarPoints = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -32,21 +36,15 @@ const StarPoints = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [pointsData, setPointsData] = useState([]);
   const [totals, setTotals] = useState({});
+  const [expandedId, setExpandedId] = useState(null);
+  const [activeTab, setActiveTab] = useState(null);
 
-  // Format date for API (YYYY-MM-DD)
-  const formatDateForApi = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+  const formatDateForApi = (date) => date.toISOString().split("T")[0];
 
-  // Format date for Display (DD-MM-YYYY)
   const formatDateDisplay = (date) => {
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day} - ${month} - ${year}`;
+    return `${day} - ${month} - ${date.getFullYear()}`;
   };
 
   useEffect(() => {
@@ -56,138 +54,217 @@ const StarPoints = ({ navigation }) => {
   const fetchStarPoints = async () => {
     setLoading(true);
     try {
-      // Replace with your actual API endpoint
-      const response = await axios.get(
-        `${baseUrl}/star-points?date=${formatDateForApi(selectedDate)}`
-      );
-      
-      if (response.data) {
-        // Assuming response.data has structure: { rows: [], totals: {} }
-        // Adjust keys based on your actual API response
-        setPointsData(response.data.rows || []);
-        setTotals(response.data.totals || {});
+      const storedAgentInfo = await AsyncStorage.getItem("agentInfo");
+      if (!storedAgentInfo) throw new Error("Please login again.");
+      const parsedAgent = JSON.parse(storedAgentInfo);
+      const agentId = parsedAgent?._id;
+
+      const formattedDate = formatDateForApi(selectedDate);
+      const requestUrl = `${baseUrl}/agent/points?agentId=${agentId}&fromDate=${formattedDate}&endDate=${formattedDate}`;
+
+      const response = await axios.get(requestUrl, { timeout: 10000 });
+
+      if (response.data && response.data.status === true) {
+        const apiData = response.data.data || [];
+        setPointsData(apiData);
+        calculateTotals(apiData);
+      } else {
+        setPointsData([]);
+        setTotals({});
       }
     } catch (error) {
-      console.error("Error fetching star points:", error);
-      Alert.alert("Error", "Could not fetch star points data.");
+      Alert.alert("Error", "Could not fetch data.");
     } finally {
       setLoading(false);
     }
   };
 
-  const onDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || new Date();
-    setShowDatePicker(false);
-    setSelectedDate(currentDate);
+  const calculateTotals = (data) => {
+    const newTotals = { app: 0, leads: 0, loans: 0, enr: 0 };
+    data.forEach((item) => {
+      newTotals.app += Number(item.referral_customer_app_count || 0);
+      newTotals.leads += Number(item.leads_count || 0);
+      newTotals.loans += Number(item.loans_count || 0);
+      newTotals.enr += Number(item.enrollments_count || 0);
+    });
+    setTotals(newTotals);
   };
 
-  // Helper to render table header
-  const renderTableHeader = () => (
-    <View style={styles.tableRowHeader}>
-      <Text style={[styles.tableCell, styles.cellSl, styles.headerText]}>SL</Text>
-      <Text style={[styles.tableCell, styles.cellName, styles.headerText]}>Name</Text>
-      <Text style={[styles.tableCell, styles.cellSmall, styles.headerText]}>APP</Text>
-      <Text style={[styles.tableCell, styles.cellSmall, styles.headerText]}>LEADS</Text>
-      <Text style={[styles.tableCell, styles.cellSmall, styles.headerText]}>LOAN</Text>
-      <Text style={[styles.tableCell, styles.cellSmall, styles.headerText]}>TOTAL</Text>
-    </View>
-  );
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+    setActiveTab(null);
+  };
 
-  // Helper to render table rows
-  const renderTableRows = () => {
-    if (pointsData.length === 0) {
-      return (
-        <View style={styles.noDataContainer}>
-          <Text style={styles.noDataText}>No records found for this date.</Text>
-        </View>
-      );
+  // --- Helper: Generate WhatsApp Text & Share ---
+  const shareToWhatsApp = async (item) => {
+    const totalPoints = 
+      Number(item.referral_customer_app_count || 0) +
+      Number(item.leads_count || 0) +
+      Number(item.loans_count || 0) +
+      Number(item.enrollments_count || 0);
+
+    const message = `*${item.name}*\nAPP: ${item.referral_customer_app_count || 0}\nLEADS: ${item.leads_count || 0}\n*LOAN: ${item.loans_count || 0}*\nPIGME: 0\nENROLLMENTS: ${item.enrollments_count || 0}\n*TOTAL POINTS: ${totalPoints}*`;
+
+    try {
+      await Share.share({ message });
+    } catch (error) {
+      console.log(error.message);
     }
-
-    return pointsData.map((item, index) => (
-      <View key={item.id || index} style={styles.tableRow}>
-        <Text style={[styles.tableCell, styles.cellSl]}>{index + 1}</Text>
-        <Text style={[styles.tableCell, styles.cellName, styles.nameText]}>
-          {item.employeeName || "N/A"}
-        </Text>
-        <Text style={[styles.tableCell, styles.cellSmall]}>{item.app || 0}</Text>
-        <Text style={[styles.tableCell, styles.cellSmall]}>{item.leads || 0}</Text>
-        <Text style={[styles.tableCell, styles.cellSmall]}>{item.loan || 0}</Text>
-        <Text style={[styles.tableCell, styles.cellSmall, styles.totalHighlight]}>
-          {item.totalPoints || 0}
-        </Text>
-      </View>
-    ));
   };
 
-  // Helper to render totals row
-  const renderTotals = () => (
-    <View style={styles.tableRowTotal}>
-      <Text style={[styles.tableCell, styles.cellSl, styles.totalText]}>-</Text>
-      <Text style={[styles.tableCell, styles.cellName, styles.totalText]}>TOTAL</Text>
-      <Text style={[styles.tableCell, styles.cellSmall, styles.totalText]}>{totals.app || 0}</Text>
-      <Text style={[styles.tableCell, styles.cellSmall, styles.totalText]}>{totals.leads || 0}</Text>
-      <Text style={[styles.tableCell, styles.cellSmall, styles.totalText]}>{totals.loan || 0}</Text>
-      <Text style={[styles.tableCell, styles.cellSmall, styles.grandTotalText]}>
-        {totals.totalPoints || 0}
-      </Text>
-    </View>
+  // --- Sub-Components ---
+  const DetailItem = ({ label, value }) => (
+    <Text style={styles.detailText}>
+      <Text style={styles.detailLabel}>{label}: </Text>
+      {value || "N/A"}
+    </Text>
   );
+
+  const renderDetailsPanel = (item) => {
+    if (expandedId !== item._id) return null;
+
+    const totalPoints = 
+      Number(item.referral_customer_app_count || 0) +
+      Number(item.leads_count || 0) +
+      Number(item.loans_count || 0) +
+      Number(item.enrollments_count || 0);
+
+    return (
+      <View style={styles.detailsPanel}>
+        {/* WhatsApp Style Summary Box */}
+        <View style={styles.whatsappCard}>
+          <Text style={styles.waTextBold}>*{item.name}*</Text>
+          <Text style={styles.waText}>APP: {item.referral_customer_app_count || 0}</Text>
+          <Text style={styles.waText}>LEADS: {item.leads_count || 0}</Text>
+          <Text style={styles.waTextBold}>*LOAN: {item.loans_count || 0}*</Text>
+          <Text style={styles.waText}>PIGME: 0</Text>
+          <Text style={styles.waText}>ENROLLMENTS: {item.enrollments_count || 0}</Text>
+          <Text style={styles.waTextBold}>*TOTAL POINTS: {totalPoints}*</Text>
+          
+          <TouchableOpacity 
+            style={styles.shareBtn} 
+            onPress={() => shareToWhatsApp(item)}
+          >
+            <Text style={styles.shareBtnText}>Share Summary 📲</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.viewActionRow}>
+          <TouchableOpacity 
+            style={[styles.viewBtn, activeTab === 'leads' && styles.activeBtn]} 
+            onPress={() => setActiveTab(activeTab === 'leads' ? null : 'leads')}
+          >
+            <Text style={styles.viewBtnText}>View Leads ({item.leads_count})</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.viewBtn, activeTab === 'enr' && styles.activeBtn]} 
+            onPress={() => setActiveTab(activeTab === 'enr' ? null : 'enr')}
+          >
+            <Text style={styles.viewBtnText}>View Enrollments ({item.enrollments_count})</Text>
+          </TouchableOpacity>
+        </View>
+
+        {activeTab === 'leads' && (
+          <View style={styles.listWrapper}>
+            {item.leads?.length > 0 ? item.leads.map((lead, i) => (
+              <View key={i} style={styles.infoCard}>
+                <DetailItem label="Lead Name" value={lead.lead_name} />
+                <DetailItem label="Phone" value={lead.lead_phone} />
+                <DetailItem label="Group" value={lead.group_id?.group_name} />
+                <DetailItem label="Value" value={`₹${lead.group_id?.group_value}`} />
+              </View>
+            )) : <Text style={styles.emptyText}>No Lead Details Available</Text>}
+          </View>
+        )}
+
+        {activeTab === 'enr' && (
+          <View style={styles.listWrapper}>
+            {item.enrollments?.length > 0 ? item.enrollments.map((enr, i) => (
+              <View key={i} style={styles.infoCard}>
+                <DetailItem label="Enrollment ID" value={enr._id} />
+                <DetailItem label="Status" value="Active" />
+              </View>
+            )) : <Text style={styles.emptyText}>No Enrollment Details Available</Text>}
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <LinearGradient colors={TOP_GRADIENT} style={{ flex: 1 }}>
       <View style={styles.mainContentArea}>
         <Header />
-        
-        {/* Title Section */}
         <View style={styles.introSection}>
           <Text style={styles.pageTitle}>Star Points</Text>
-          <Text style={styles.pageSubtitle}>Agent Performance Overview</Text>
+          <Text style={styles.pageSubtitle}>Daily Agent Tracking</Text>
         </View>
 
-        {/* Date Filter Card */}
-        <View style={styles.filterContainer}>
-          <TouchableOpacity 
-            style={styles.datePickerButton} 
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={styles.datePickerIcon}>📅</Text>
-            <Text style={styles.datePickerText}>{formatDateDisplay(selectedDate)}</Text>
-            <Text style={styles.datePickerAction}>Change</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowDatePicker(true)}>
+          <Text style={styles.datePickerText}>📅   {formatDateDisplay(selectedDate)}</Text>
+          <Text style={styles.datePickerAction}>Change</Text>
+        </TouchableOpacity>
 
-        {/* Main Table Card */}
-        <ScrollView 
-          style={styles.scrollViewStyle} 
-          contentContainerStyle={{ paddingBottom: 30 }}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView style={styles.scrollViewStyle} showsVerticalScrollIndicator={false}>
           <View style={styles.tableCard}>
             {loading ? (
-              <ActivityIndicator size="large" color={ACCENT_BLUE} style={{ marginTop: 50 }} />
+              <ActivityIndicator size="large" color={ACCENT_BLUE} style={{ marginVertical: 40 }} />
             ) : (
-              <>
-                {/* Horizontal Scroll for Table Data if needed */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.tableContainer}>
-                    {renderTableHeader()}
-                    {renderTableRows()}
-                    {pointsData.length > 0 && renderTotals()}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.tableContainer}>
+                  {/* Header */}
+                  <View style={styles.tableRowHeader}>
+                    <Text style={[styles.tableCell, styles.cellSl, styles.headerText]}>SL</Text>
+                    <Text style={[styles.tableCell, styles.cellName, styles.headerText]}>NAME</Text>
+                    <Text style={[styles.tableCell, styles.cellSmall, styles.headerText]}>APP</Text>
+                    <Text style={[styles.tableCell, styles.cellSmall, styles.headerText]}>LEAD</Text>
+                    <Text style={[styles.tableCell, styles.cellSmall, styles.headerText]}>LOAN</Text>
+                    <Text style={[styles.tableCell, styles.cellSmall, styles.headerText]}>ENR</Text>
+                    <Text style={[styles.tableCell, styles.cellAction, styles.headerText]}>VIEW</Text>
                   </View>
-                </ScrollView>
-              </>
+
+                  {/* Body */}
+                  {pointsData.map((item, index) => (
+                    <View key={item._id || index}>
+                      <View style={styles.tableRow}>
+                        <Text style={[styles.tableCell, styles.cellSl]}>{index + 1}</Text>
+                        <Text style={[styles.tableCell, styles.cellName]}>{item.name}</Text>
+                        <Text style={[styles.tableCell, styles.cellSmall]}>{item.referral_customer_app_count}</Text>
+                        <Text style={[styles.tableCell, styles.cellSmall]}>{item.leads_count}</Text>
+                        <Text style={[styles.tableCell, styles.cellSmall]}>{item.loans_count}</Text>
+                        <Text style={[styles.tableCell, styles.cellSmall]}>{item.enrollments_count}</Text>
+                        <TouchableOpacity style={styles.eyeBtn} onPress={() => toggleExpand(item._id)}>
+                          <Text style={{fontSize: 18}}>{expandedId === item._id ? "🔼" : "👁️"}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      {renderDetailsPanel(item)}
+                    </View>
+                  ))}
+
+                  {/* Total Footer */}
+                  {pointsData.length > 0 && (
+                    <View style={styles.tableRowTotal}>
+                      <Text style={[styles.tableCell, styles.cellSl]}>Σ</Text>
+                      <Text style={[styles.tableCell, styles.cellName, styles.totalText]}>TOTAL</Text>
+                      <Text style={[styles.tableCell, styles.cellSmall, styles.totalText]}>{totals.app}</Text>
+                      <Text style={[styles.tableCell, styles.cellSmall, styles.totalText]}>{totals.leads}</Text>
+                      <Text style={[styles.tableCell, styles.cellSmall, styles.totalText]}>{totals.loans}</Text>
+                      <Text style={[styles.tableCell, styles.cellSmall, styles.totalText]}>{totals.enr}</Text>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
             )}
           </View>
         </ScrollView>
 
         {showDatePicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={selectedDate}
-            mode="date"
-            is24Hour={true}
-            display="default"
-            onChange={onDateChange}
+          <DateTimePicker 
+            value={selectedDate} 
+            mode="date" 
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'} 
+            onChange={(e, d) => { setShowDatePicker(false); if(d) setSelectedDate(d); }} 
           />
         )}
       </View>
@@ -196,161 +273,71 @@ const StarPoints = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  mainContentArea: {
-    flex: 1,
-    marginHorizontal: 22,
-    marginTop: 40,
-  },
-  introSection: {
-    marginTop: 20,
-    marginBottom: 15,
-    paddingHorizontal: 5,
-  },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#fff",
-    marginBottom: 5,
-  },
-  pageSubtitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.8)",
-  },
-  
-  // Date Filter Styles
-  filterContainer: {
-    marginBottom: 20,
-  },
+  mainContentArea: { flex: 1, marginHorizontal: 15, marginTop: 40 },
+  introSection: { marginVertical: 10 },
+  pageTitle: { fontSize: 28, fontWeight: "900", color: "#fff" },
+  pageSubtitle: { fontSize: 14, color: "rgba(255,255,255,0.7)" },
   datePickerButton: {
-    flexDirection: "row",
-    backgroundColor: CARD_BG,
-    borderRadius: 15,
-    padding: 18,
-    alignItems: "center",
-    justifyContent: "space-between",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    flexDirection: "row", backgroundColor: CARD_BG, borderRadius: 12,
+    padding: 15, alignItems: "center", marginBottom: 15, elevation: 4,
   },
-  datePickerIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  datePickerText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "bold",
-    color: MODERN_PRIMARY,
-  },
-  datePickerAction: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: ACCENT_BLUE,
-    textTransform: "uppercase",
-  },
-
-  // Table Card Styles
-  scrollViewStyle: {
-    flex: 1,
-  },
-  tableCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 20,
-    padding: 10,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    paddingBottom: 20,
-  },
+  datePickerText: { flex: 1, fontWeight: "bold", color: MODERN_PRIMARY },
+  datePickerAction: { color: ACCENT_BLUE, fontWeight: "bold" },
+  tableCard: { backgroundColor: CARD_BG, borderRadius: 15, padding: 5, elevation: 5, marginBottom: 20 },
+  tableContainer: { width: 520 }, 
+  tableRowHeader: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 12 },
+  tableRow: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#f0f0f0", paddingVertical: 15, alignItems: 'center' },
+  tableRowTotal: { flexDirection: "row", paddingVertical: 15, backgroundColor: HIGHLIGHT_GOLD, borderRadius: 8, marginTop: 5 },
+  tableCell: { textAlign: "center", fontSize: 12, color: TEXT_GREY },
+  cellSl: { width: 35 },
+  cellName: { width: 120, textAlign: 'left', fontWeight: '500', color: '#000' },
+  cellSmall: { width: 60 },
+  cellAction: { width: 60 },
+  headerText: { fontWeight: "bold", color: MODERN_PRIMARY, fontSize: 11 },
+  totalText: { fontWeight: "900", color: '#000' },
+  eyeBtn: { width: 60, alignItems: 'center' },
   
-  // Table Layout
-  tableContainer: {
-    minWidth: width - 64, // Ensure it fits screen or expands
-    paddingBottom: 10,
+  // WhatsApp Style Box
+  whatsappCard: { 
+    backgroundColor: '#DCF8C6', 
+    padding: 15, 
+    borderRadius: 10, 
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#ced4da'
   },
-  tableRowHeader: {
-    flexDirection: "row",
-    borderBottomWidth: 2,
-    borderBottomColor: BORDER_COLOR,
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    marginBottom: 5,
+  waText: { 
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', 
+    fontSize: 14, 
+    color: '#333',
+    lineHeight: 20
   },
-  tableRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+  waTextBold: { 
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    color: '#000',
+    lineHeight: 20
   },
-  tableRowTotal: {
-    flexDirection: "row",
-    paddingVertical: 16,
-    paddingHorizontal: 10,
+  shareBtn: {
     marginTop: 10,
-    backgroundColor: HIGHLIGHT_GOLD,
-    borderRadius: 10,
+    backgroundColor: '#25D366',
+    padding: 8,
+    borderRadius: 5,
+    alignItems: 'center'
   },
-  
-  // Cell Widths
-  tableCell: {
-    fontSize: 13,
-    textAlign: "center",
-    justifyContent: "center",
-  },
-  cellSl: {
-    width: 40,
-    textAlign: "left",
-  },
-  cellName: {
-    width: 120,
-    textAlign: "left",
-  },
-  cellSmall: {
-    width: 60,
-  },
-  
-  // Text Styles
-  headerText: {
-    fontWeight: "900",
-    color: MODERN_PRIMARY,
-    fontSize: 12,
-    textTransform: "uppercase",
-  },
-  nameText: {
-    fontWeight: "700",
-    color: TEXT_GREY,
-  },
-  totalHighlight: {
-    fontWeight: "bold",
-    color: ACCENT_BLUE,
-  },
-  
-  // Total Row Styles
-  totalText: {
-    fontWeight: "900",
-    color: MODERN_PRIMARY,
-  },
-  grandTotalText: {
-    fontWeight: "900",
-    color: MODERN_PRIMARY,
-    fontSize: 15,
-  },
-  
-  noDataContainer: {
-    padding: 40,
-    alignItems: "center",
-  },
-  noDataText: {
-    color: TEXT_GREY,
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  shareBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 12 },
+
+  detailsPanel: { backgroundColor: EXPAND_BG, padding: 12, borderBottomWidth: 1, borderBottomColor: '#ddd' },
+  viewActionRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, marginTop: 10 },
+  viewBtn: { flex: 0.48, backgroundColor: ACCENT_BLUE, padding: 8, borderRadius: 6, alignItems: 'center' },
+  activeBtn: { backgroundColor: MODERN_PRIMARY },
+  viewBtnText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
+  listWrapper: { marginTop: 5 },
+  infoCard: { backgroundColor: '#fff', padding: 10, borderRadius: 8, marginBottom: 8, elevation: 1, borderLeftWidth: 3, borderLeftColor: ACCENT_BLUE },
+  detailText: { fontSize: 12, marginBottom: 2, color: '#333' },
+  detailLabel: { fontWeight: 'bold', color: TEXT_GREY },
+  emptyText: { textAlign: 'center', color: '#999', fontSize: 12, marginVertical: 10 }
 });
 
 export default StarPoints;

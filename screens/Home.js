@@ -427,7 +427,7 @@ const Home = ({ route, navigation }) => {
     },
     {
       id: "attendanceBtn", name: "Attendance",
-      onPress: () => setShowAttendanceModal(true),
+      onPress: () => navigation.navigate("LogOut", { user }),
     },
     {
       id: "monthlyTurnover", name: "MIT",
