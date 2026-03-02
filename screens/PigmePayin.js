@@ -1,3 +1,4 @@
+
 import {
     View,
     Text,
@@ -11,6 +12,7 @@ import {
     TouchableOpacity,
     Dimensions,
     Animated,
+    Modal,
 } from "react-native";
 
 import React, { useState, useEffect } from "react";
@@ -18,6 +20,7 @@ import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import moment from "moment";
 import { LinearGradient } from "expo-linear-gradient";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import Header from "../components/Header";
 import Button from "../components/Button";
@@ -28,6 +31,7 @@ const { width } = Dimensions.get("window");
 // --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
 const MODERN_PRIMARY = "#0d0d0d";
+const ACCENT_BLUE = "#1796d1ff"; // Added for Modal styling
 const BORDER_COLOR = "#e0e0e0";
 const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
@@ -71,6 +75,9 @@ const PigmePayin = ({ route, navigation }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingData, setIsFetchingData] = useState(true);
     const [pigmeAmt, setPigmeAmt] = useState("");
+
+    // Confirmation Modal State
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const [customerInfo, setCustomerInfo] = useState("");
     const [pigmeData, setPigmeData] = useState([]);
@@ -213,20 +220,24 @@ const PigmePayin = ({ route, navigation }) => {
         setAmount(filteredText);
     };
 
-    const handleAddPayment = async () => {
+    // --- LOGIC REFACTORING ---
+
+    const validateAndShowModal = () => {
         if (parseFloat(amount) <= 0 || isNaN(parseFloat(amount))) {
             Alert.alert("Invalid Amount", "Please enter a valid amount greater than 0.");
             return;
         }
+        if (!selectedPigme || !paymentDetails || !amount || (paymentDetails !== "cash" && !transactionId)) {
+            Alert.alert("Validation Error", "Please fill all mandatory fields.");
+            return;
+        }
+        setShowConfirmModal(true);
+    };
 
+    const executePayment = async () => {
+        setShowConfirmModal(false);
         setIsLoading(true);
         try {
-            if (!selectedPigme || !paymentDetails || !amount || (paymentDetails !== "cash" && !transactionId)) {
-                Alert.alert("Validation Error", "Please fill all mandatory fields.");
-                setIsLoading(false);
-                return;
-            }
-
             const PigmeId = selectedPigme?._id;
             const data = {
                 user_id: customer,
@@ -476,7 +487,8 @@ const PigmePayin = ({ route, navigation }) => {
                         filled
                         disabled={isLoading || !selectedPigme || isFetchingData}
                         style={styles.stylishButton}
-                        onPress={handleAddPayment}
+                        // Changed to validateAndShowModal
+                        onPress={validateAndShowModal}
                     />
                 </View>
             </View>
@@ -493,6 +505,77 @@ const PigmePayin = ({ route, navigation }) => {
 
     return (
         <LinearGradient colors={TOP_GRADIENT} style={styles.gradientOverlay}>
+            
+            {/* Stylish Confirmation Modal */}
+            <Modal animationType="fade" transparent={true} visible={showConfirmModal}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.stylishModalCard}>
+                        {/* Gradient Header */}
+                        <LinearGradient colors={TOP_GRADIENT} style={styles.stylishHeader}>
+                            <View style={styles.iconCircle}>
+                                <MaterialIcons name="check-circle" size={32} color={CARD_BG} />
+                            </View>
+                            <Text style={styles.stylishHeaderTitle}>Confirm Payment</Text>
+                            <Text style={styles.stylishHeaderSubtitle}>Please verify the details</Text>
+                        </LinearGradient>
+
+                        {/* Receipt Body */}
+                        <View style={styles.stylishBody}>
+                            <View style={styles.stylishRow}>
+                                <Text style={styles.stylishLabel}>Borrower</Text>
+                                <Text style={styles.stylishValue}>{customerInfo}</Text>
+                            </View>
+                            
+                            <View style={styles.divider} />
+                            
+                            <View style={styles.stylishRow}>
+                                <Text style={styles.stylishLabel}>Pigme ID</Text>
+                                <Text style={styles.stylishValue}>{selectedPigme?.pigme_id}</Text>
+                            </View>
+
+                            <View style={styles.stylishRow}>
+                                <Text style={styles.stylishLabel}>Date</Text>
+                                <Text style={styles.stylishValue}>{currentDate}</Text>
+                            </View>
+
+                            <View style={styles.stylishRow}>
+                                <Text style={styles.stylishLabel}>Method</Text>
+                                <View style={styles.methodBadge}>
+                                    <Text style={styles.methodText}>{paymentDetails.toUpperCase()}</Text>
+                                </View>
+                            </View>
+
+                            {/* Total Amount Box */}
+                            <View style={styles.totalBox}>
+                                <Text style={styles.totalLabel}>Total Amount</Text>
+                                <Text style={styles.totalAmount}>₹ {amount}</Text>
+                            </View>
+                        </View>
+
+                        {/* Footer Buttons */}
+                        <View style={styles.stylishFooter}>
+                            <TouchableOpacity 
+                                onPress={() => setShowConfirmModal(false)} 
+                                style={styles.stylishCancelButton}
+                            >
+                                <Text style={styles.stylishCancelText}>Edit</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                onPress={executePayment} 
+                                style={styles.stylishConfirmButton}
+                            >
+                                 {isLoading ? (
+                                   <ActivityIndicator size="small" color={MODERN_PRIMARY} />
+                                ) : (
+                                   <Text style={styles.stylishConfirmText}>CONFIRM</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -694,7 +777,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
         height: 52, 
         borderRadius: 14,
-        backgroundColor: "#111827",
+        backgroundColor: "#f8c009",
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#000",
@@ -703,6 +786,146 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 5,
     },
+
+    // --- Stylish Modal Styles ---
+    modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)" },
+    stylishModalCard: {
+        width: '85%',
+        backgroundColor: CARD_BG,
+        borderRadius: 24,
+        overflow: 'hidden', 
+        elevation: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+    },
+    stylishHeader: {
+        paddingTop: 24,
+        paddingBottom: 30,
+        paddingHorizontal: 20,
+        alignItems: 'center',
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+    },
+    iconCircle: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 50,
+        padding: 10,
+        marginBottom: 10,
+    },
+    stylishHeaderTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: CARD_BG,
+        letterSpacing: 0.5,
+    },
+    stylishHeaderSubtitle: {
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.8)',
+        marginTop: 4,
+    },
+    stylishBody: {
+        padding: 24,
+    },
+    stylishRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    stylishLabel: {
+        fontSize: 15,
+        color: TEXT_GREY,
+        fontWeight: '500',
+    },
+    stylishValue: {
+        fontSize: 16,
+        color: MODERN_PRIMARY,
+        fontWeight: '700',
+    },
+    methodBadge: {
+        backgroundColor: SUBTLE_BG_GREY,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: BORDER_COLOR
+    },
+    methodText: {
+        fontSize: 12,
+        color: ACCENT_BLUE,
+        fontWeight: '700',
+        letterSpacing: 1,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#f0f0f0',
+        marginVertical: 8,
+        marginBottom: 16,
+    },
+    totalBox: {
+        backgroundColor: 'rgba(23, 150, 209, 0.08)',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginTop: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(23, 150, 209, 0.2)',
+    },
+    totalLabel: {
+        fontSize: 14,
+        color: ACCENT_BLUE,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    totalAmount: {
+        fontSize: 28,
+        color: MODERN_PRIMARY,
+        fontWeight: '900',
+        marginTop: 4,
+    },
+    stylishFooter: {
+        flexDirection: 'row',
+        padding: 20,
+        backgroundColor: CARD_BG,
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+    },
+    stylishCancelButton: {
+        flex: 1,
+        paddingVertical: 14,
+        marginRight: 10,
+        borderRadius: 12,
+        alignItems: 'center',
+        backgroundColor: SUBTLE_BG_GREY,
+    },
+    stylishCancelText: {
+        color: TEXT_GREY,
+        fontWeight: '700',
+        fontSize: 15,
+    },
+    stylishConfirmButton: {
+        flex: 1.5,
+        paddingVertical: 14,
+        marginLeft: 10,
+        borderRadius: 12,
+        alignItems: 'center',
+        backgroundColor: PRIMARY_BUTTON_COLOR,
+        shadowColor: "#f8c009",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    stylishConfirmText: {
+        color: MODERN_PRIMARY,
+        fontWeight: '800',
+        fontSize: 16,
+        letterSpacing: 0.5,
+    }
 });
 
 export default PigmePayin;

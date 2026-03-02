@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
 import {
   View,
@@ -42,10 +41,15 @@ const COLORS = {
   helpBlue: "#053B90",
 };
 
+// --- COLORS FOR ATTENDANCE MODAL (From Working Code 1) ---
+const ATTENDANCE_PRIMARY_COLOR = "#00BCD4";
+const ATTENDANCE_GRADIENT_START = "#00E5FF";
+const ATTENDANCE_GRADIENT_END = "#0097A7";
+
 const { width } = Dimensions.get('window');
 
 const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
-const EMPLOYEE_DETAILS_URL = `${baseUrl}/employee`;
+const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
 
 // --- ICON & COLOR MAPPING ---
 const ICON_CONFIG = {
@@ -138,44 +142,119 @@ const HelpModal = ({ visible, onClose }) => {
   );
 };
 
-// --- COMPONENT: ATTENDANCE MODAL ---
-const AttendanceModal = ({ visible, onClose, handleSubmitAttendance, note, setNote, loading }) => {
-  const slideAnim = useRef(new Animated.Value(width)).current;
+// --- COMPONENT: ATTENDANCE MODAL (From Working Code 1) ---
+const AttendanceModal = ({
+  attendanceLoading,
+  selectedStatus,
+  visible,
+  message,
+  onClose,
+  handleSubmitAttendance,
+  note,
+  setNote,
+}) => {
+  const [isNoteOpen, setIsNoteOpen] = useState(false);
+  const scaleAnim = useState(new Animated.Value(0.5))[0];
+
   useEffect(() => {
-    if (visible) Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
-    else Animated.timing(slideAnim, { toValue: width, duration: 300, useNativeDriver: true }).start();
+    if (visible) {
+      scaleAnim.setValue(0.5);
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.out(Easing.back(1.7)),
+        useNativeDriver: true,
+      }).start();
+      setIsNoteOpen(false);
+      setNote("");
+    }
   }, [visible]);
 
-  return (
-    <Modal animationType="none" transparent={true} visible={visible}>
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPressOut={onClose}>
-        <Animated.View style={[styles.modalContent, { transform: [{ translateX: slideAnim }] }]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Mark Attendance</Text>
-            <TouchableOpacity onPress={onClose}><MaterialIcons name="close" size={24} color="#585858" /></TouchableOpacity>
-          </View>
-          <View style={styles.modalBody}>
-            <LinearGradient colors={[COLORS.bgBlue, COLORS.primary]} style={styles.modalIconContainer}>
-              <MaterialCommunityIcons name="calendar-check" size={40} color="#fff" />
-            </LinearGradient>
-            <Text style={styles.modalSubText}>Are you present today?</Text>
-            <TextInput style={styles.inputField} placeholder="Add a note..." value={note} onChangeText={setNote} multiline />
+  const animatedImageStyle = {
+    transform: [{ scale: scaleAnim }],
+  };
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity onPress={() => handleSubmitAttendance("Present")} activeOpacity={0.8} style={styles.halfButton}>
-                <LinearGradient colors={[COLORS.primary, COLORS.bgBlue]} style={styles.submitButton}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>PRESENT</Text>}
-                </LinearGradient>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleSubmitAttendance("Absent")} activeOpacity={0.8} style={styles.halfButton}>
-                <LinearGradient colors={['#D32F2F', '#B71C1C']} style={styles.submitButton}>
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>ABSENT</Text>}
-                </LinearGradient>
-              </TouchableOpacity>
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={modalStyles.centeredView}>
+        <View style={modalStyles.modalView}>
+          <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
+            <Text style={modalStyles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+
+          <LinearGradient
+            colors={[ATTENDANCE_GRADIENT_START, ATTENDANCE_GRADIENT_END]}
+            style={modalStyles.iconHeader}
+          >
+            <Animated.Image
+              source={require("../assets/ab.png")} // Ensure this path is correct
+              style={[modalStyles.modalImage, animatedImageStyle]}
+              resizeMode="contain"
+            />
+          </LinearGradient>
+
+          <Text style={modalStyles.modalHeading}>Daily Status Check</Text>
+          <Text style={modalStyles.modalText}>{message}</Text>
+
+          {/* ACCORDION HEADER */}
+          <TouchableOpacity
+            style={modalStyles.accordionHeader}
+            onPress={() => setIsNoteOpen(!isNoteOpen)}
+            activeOpacity={0.8}
+          >
+            <Text style={modalStyles.noteLabel}>
+              {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'}
+            </Text>
+            <Text style={modalStyles.arrowIcon}>
+              {isNoteOpen ? '▲' : '▼'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* ACCORDION CONTENT */}
+          {isNoteOpen && (
+            <View style={modalStyles.accordionContent}>
+              <TextInput
+                style={modalStyles.inputField}
+                placeholder="e.g., Working remotely today..."
+                placeholderTextColor="#a0a0a0"
+                value={note}
+                onChangeText={setNote}
+                multiline
+              />
             </View>
-          </View>
-        </Animated.View>
-      </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            disabled={!selectedStatus || attendanceLoading}
+            onPress={handleSubmitAttendance}
+            style={modalStyles.markAttendanceButtonWrapper}
+          >
+            <LinearGradient
+              colors={
+                !selectedStatus
+                  ? ["#B0B0B0", "#909090"]
+                  : [ATTENDANCE_GRADIENT_START, ATTENDANCE_GRADIENT_END]
+              }
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={modalStyles.markAttendanceButton}
+            >
+              {attendanceLoading ? (
+                <ActivityIndicator size={"small"} color={"#fff"} />
+              ) : (
+                <Text style={modalStyles.markAttendanceButtonText}>
+                  PRESENT
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 };
@@ -216,7 +295,6 @@ const GridCard = ({ item, onPress, index }) => {
 const WideCard = ({ item, onPress, index }) => {
   const translateX = useRef(new Animated.Value(50)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -229,9 +307,7 @@ const WideCard = ({ item, onPress, index }) => {
 
   useEffect(() => {
     if (item.variant === 'overview') {
-      Animated.loop(
-        Animated.timing(shimmerAnim, { toValue: 1, duration: 2500, useNativeDriver: true })
-      ).start();
+      Animated.loop(Animated.timing(shimmerAnim, { toValue: 1, duration: 2500, useNativeDriver: true })).start();
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 1.1, duration: 1000, useNativeDriver: true }),
@@ -274,7 +350,6 @@ const WideCard = ({ item, onPress, index }) => {
           {item.variant === 'overview' && (
             <Animated.View style={[styles.shimmerOverlay, { transform: [{ translateX: shimmerTranslate }] }]} />
           )}
-
           {item.variant === 'overview' ? (
             <>
               <Animated.View style={[styles.wideIconCircle, styles.overviewIcon, { transform: [{ scale: pulseAnim }] }]}>
@@ -318,6 +393,10 @@ const Home = ({ route, navigation }) => {
   const [isSideMenuVisible, setSideMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
+  // Attendance specific states
+  const [selectedStatus, setSelectedStatus] = useState("Present");
+  const [attendanceMessage, setAttendanceMessage] = useState("");
+
   const netInfo = useNetInfo();
   const insets = useSafeAreaInsets();
 
@@ -328,18 +407,23 @@ const Home = ({ route, navigation }) => {
     else setGreeting('Good Evening');
   }, []);
 
+  // --- CORRECTED FETCH LOGIC ---
   useEffect(() => {
     const fetchAgentDetails = async () => {
       if (user?.userId && netInfo.isConnected) {
         try {
-          const response = await axios.get(`${EMPLOYEE_DETAILS_URL}/get-employee/${user.userId}`);
+          // FIXED: Using the correct endpoint from Code 1
+          const response = await axios.get(`${baseUrl}/agent/get-agent-by-id/${user.userId}`);
+          
           if (response.data) {
             setAgent(response.data);
             if (response.data?.designation_id?.permission) {
               setModifyPayment(response.data.designation_id.permission.modify_payments === "true");
             }
           }
-        } catch (error) { console.log("Error fetching agent details."); }
+        } catch (error) { 
+          console.log("Error fetching agent details."); 
+        }
       }
     };
     fetchAgentDetails();
@@ -349,9 +433,28 @@ const Home = ({ route, navigation }) => {
     const checkAttendance = async () => {
       if (user.userId && netInfo.isConnected) {
         try {
-          const response = await axios.post(`${baseUrl}/employee-attendance/modal`, { employee_id: user.userId });
-          if (response.data?.showModal === true) setShowAttendanceModal(true);
-        } catch (error) { console.log("Attendance check failed"); }
+          const response = await axios.post(ATTENDANCE_MODAL_URL, { employee_id: user.userId });
+          const data = response.data;
+          console.log("Attendance API Response:", data);
+
+          if (data?.showModal === true) {
+            setAttendanceMessage(data.message || "Eligible to mark attendance");
+            setShowAttendanceModal(true);
+          } else if (data?.message) {
+             setShowAttendanceModal(false);
+          } else {
+            setShowAttendanceModal(false);
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || error.message;
+          // FIXED: Log as Info if it's just "Already Marked"
+          if (errorMessage !== "Attendance Already Marked") {
+            console.error("Error checking attendance status:", errorMessage);
+          } else {
+            console.info("✅ Attendance check complete:", errorMessage);
+          }
+          setShowAttendanceModal(false);
+        }
       }
     };
     checkAttendance();
@@ -368,6 +471,32 @@ const Home = ({ route, navigation }) => {
 
   const openSideMenu = () => { setSideMenuVisible(true); Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(); };
   const closeSideMenu = () => { Animated.timing(slideAnim, { toValue: -width, duration: 300, useNativeDriver: true }).start(() => setSideMenuVisible(false)); };
+
+  const handleSubmitAttendance = async () => {
+    try {
+      setAttendanceLoading(true);
+
+      const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
+        employee_id: user?.userId,
+        status: selectedStatus, // "Present"
+        method: "No Auth", // Included from Code 1
+        type: "in",
+        note: note,
+      });
+      const responseMessage = response?.data?.message;
+      ToastAndroid.show(
+        responseMessage ? responseMessage : "Attendance Marked Successfully",
+        ToastAndroid.SHORT
+      );
+      setShowAttendanceModal(false);
+      setNote("");
+    } catch (error) {
+      console.log(error, "error");
+      ToastAndroid.show("Failed to Mark Attendance", ToastAndroid.SHORT);
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
 
   const cardsData = [
     {
@@ -438,36 +567,16 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("PayNavigation", { screen: "Due", params: { user } }),
     },
     {
-      id: "customerOnHold", name: "On Hold   Customers",
+      id: "customerOnHold", name: "On Hold Customers",
       onPress: () => navigation.navigate("CustomerOnHold"),
     },
     {
-      id: "SalesReport", name: "Sales              Report",
+      id: "SalesReport", name: "Sales Report",
       onPress: () => navigation.navigate("SalesReport", { employeeId: user.userId, agentName: agent.name }),
     },
   ].filter(Boolean);
 
   const copyToClipboard = (text) => { Clipboard.setString(text); ToastAndroid.show("UPI ID Copied!", ToastAndroid.SHORT); };
-
-  const handleSubmitAttendance = async (status) => {
-    console.log("Attendance Route Triggered with Status:", status);
-    setAttendanceLoading(true);
-    try {
-      await axios.post(ATTENDANCE_SUBMIT_URL, {
-        employee_id: user?.userId,
-        status: status,
-        type: "in",
-        note
-      });
-      ToastAndroid.show(`Attendance Marked: ${status}`, ToastAndroid.SHORT);
-      setShowAttendanceModal(false);
-    }
-    catch (e) {
-      console.error(e);
-      ToastAndroid.show("Failed to mark attendance", ToastAndroid.SHORT);
-    }
-    setAttendanceLoading(false);
-  };
 
   const topWideCards = cardsData.filter(item => item.isFullWidth && item.id !== 'rewards' && item.id !== 'starPoints');
   const rewardsStarPointsCards = cardsData.filter(item => item.id === 'rewards' || item.id === 'starPoints');
@@ -560,7 +669,7 @@ const Home = ({ route, navigation }) => {
         </View>
       </ScrollView>
 
-      {/* SIDE MENU WITH FIXED NAVIGATION */}
+      {/* SIDE MENU */}
       {isSideMenuVisible && (
         <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={closeSideMenu}>
           <Animated.View style={[styles.sideMenu, { transform: [{ translateX: slideAnim }] }]} {...panResponder.panHandlers}>
@@ -574,17 +683,11 @@ const Home = ({ route, navigation }) => {
                 />
               </View>
               <Text style={styles.menuAgentName}>{agent.name || "Agent"}</Text>
-
             </LinearGradient>
             <ScrollView style={styles.menuScroll}>
               <MenuItem icon="home-outline" text="Dashboard" onPress={() => { navigation.navigate("Dashboard"); closeSideMenu(); }} />
-
-              {/* --- FIXED: Passing { user } --- */}
               <MenuItem icon="person-outline" text="My Profile" onPress={() => { navigation.navigate("Profile", { user }); closeSideMenu(); }} />
-
-              {/* --- FIXED: Passing { user } --- */}
               <MenuItem icon="settings-outline" text="Settings" onPress={() => { navigation.navigate("Profile", { user }); closeSideMenu(); }} />
-
               <View style={styles.menuDivider} />
               <MenuItem icon="log-out-outline" text="Logout" color="red" onPress={() => { closeSideMenu(); navigation.replace("Login"); }} />
             </ScrollView>
@@ -592,7 +695,16 @@ const Home = ({ route, navigation }) => {
         </TouchableOpacity>
       )}
 
-      <AttendanceModal visible={showAttendanceModal} onClose={() => setShowAttendanceModal(false)} handleSubmitAttendance={handleSubmitAttendance} note={note} setNote={setNote} loading={attendanceLoading} />
+      <AttendanceModal
+        attendanceLoading={attendanceLoading}
+        selectedStatus={selectedStatus}
+        visible={showAttendanceModal}
+        message={attendanceMessage}
+        onClose={() => setShowAttendanceModal(false)}
+        handleSubmitAttendance={handleSubmitAttendance}
+        note={note}
+        setNote={setNote}
+      />
       <HelpModal visible={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </SafeAreaView>
   );
@@ -611,16 +723,8 @@ const styles = StyleSheet.create({
   hamburgerContainer: { padding: 5 }, hamburgerLine: { width: 24, height: 2.5, backgroundColor: '#fff', borderRadius: 2, marginVertical: 2.5 },
   logoContainer: { flexDirection: 'row', alignItems: 'center', flex: 1, marginLeft: 50 },
   headerTitle: { color: '#fff', fontSize: 25, fontWeight: 'bold', marginLeft: 10 },
-  headerContainer: {
-    flex: 1,                // Takes up available space
-    justifyContent: 'center', // Centers vertically
-    alignItems: 'center',     // Centers horizontally
-    width: '100%',          // Ensures it spans the screen width
-  },
-  headerLogo: {
-    width: 50,              // Increased from 30
-    height: 40              // Increased from 30
-  },
+  headerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' },
+  headerLogo: { width: 50, height: 40 },
   helpButton: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
   scrollView: { flex: 1 },
   greetingCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 15, marginTop: 15, marginBottom: 20, padding: 20, borderRadius: 30, backgroundColor: '#FFFFFF', elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
@@ -628,8 +732,6 @@ const styles = StyleSheet.create({
   agentName: { fontSize: 22, color: COLORS.primary, fontWeight: '900', marginTop: 2 },
   statusBadge: { backgroundColor: COLORS.accent, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   statusText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 12 },
-
-  // Wide Cards
   wideCardsSection: { paddingHorizontal: 15, marginBottom: 25 },
   wideCardWrapper: { marginBottom: 15 },
   wideCard: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 30, elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, overflow: 'hidden' },
@@ -640,8 +742,6 @@ const styles = StyleSheet.create({
   wideTextContainer: { flex: 1 }, overviewTextContainer: { alignItems: 'center' },
   wideTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' }, overviewTitleText: { fontSize: 20, textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
   wideSubTitle: { color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 2 },
-
-  // Grid
   servicesSection: { paddingHorizontal: 15, marginBottom: 20 },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: '#fff', marginBottom: 15, marginLeft: 5 },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
@@ -649,23 +749,17 @@ const styles = StyleSheet.create({
   gridItemBox: { backgroundColor: '#FFFFFF', borderRadius: 25, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 5, height: 110 },
   iconContainer: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   gridTitle: { fontSize: 11, fontWeight: 'bold', color: COLORS.primary, textAlign: 'center' },
-
-  // QR
   qrSection: { paddingHorizontal: 15, marginBottom: 30 },
   qrCard: { borderRadius: 30, padding: 25, alignItems: 'center', elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
   qrHeader: { width: '100%', marginBottom: 20 }, qrTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   qrBox: { backgroundColor: '#fff', padding: 15, borderRadius: 20, marginBottom: 15 }, qrImage: { width: 180, height: 180 },
   upiButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25 },
   upiText: { color: '#fff', fontWeight: 'bold' },
-
-  // Footer
   footerSection: { alignItems: 'center', paddingVertical: 20, marginHorizontal: 15, backgroundColor: '#fff', borderRadius: 30, marginBottom: 20, elevation: 10 },
   footerTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary, marginBottom: 15 },
   supportRow: { flexDirection: 'row' }, supportItem: { alignItems: 'center', marginHorizontal: 25 },
   callBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.glass, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.bgBlue },
   supportLabel: { fontSize: 12, color: COLORS.muted, marginTop: 5, fontWeight: '600' }, versionText: { marginTop: 20, fontSize: 12, color: COLORS.muted },
-
-  // Modals
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '60%', width: '100%', position: 'absolute', bottom: 0 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
@@ -677,7 +771,6 @@ const styles = StyleSheet.create({
   halfButton: { width: '48%' },
   submitButton: { width: '100%', padding: 15, borderRadius: 12, alignItems: 'center' },
   submitButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-
   helpModalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '38%', width: '100%', position: 'absolute', bottom: 0, elevation: 5 },
   helpScroll: { flex: 1, paddingHorizontal: 25 }, modalMenuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', backgroundColor: 'transparent' },
   modalMenuItemLeft: { flexDirection: 'row', alignItems: 'center' }, modalMenuText: { fontSize: 17, color: '#424242', marginLeft: 20, fontWeight: '500' },
@@ -685,15 +778,145 @@ const styles = StyleSheet.create({
   modalCallText: { fontSize: 16, color: '#616161', marginBottom: 15, textAlign: 'center' },
   modalCallButton: { flexDirection: 'row', backgroundColor: '#4CAF50', paddingVertical: 12, paddingHorizontal: 26, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
   modalCallIcon: { marginRight: 12 }, modalCallButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
-
-  // Side Menu
   menuOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 },
   sideMenu: { width: '80%', height: '100%', backgroundColor: '#fff', position: 'absolute', left: 0, top: 0 },
   menuHeader: { padding: 30, paddingTop: 70, borderBottomLeftRadius: 30 }, closeMenuBtn: { position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 15, padding: 5 },
   menuAgentName: { fontSize: 20, color: '#fff', fontWeight: 'bold', marginTop: 45, textAlign: 'center' },
-   menuAgentId: { fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 5 },
+  menuAgentId: { fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 5 },
   menuScroll: { flex: 1, paddingTop: 20 }, menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 25 },
   menuIcon: { marginRight: 15, width: 25 }, menuText: { fontSize: 16, color: '#333' }, menuDivider: { height: 1, backgroundColor: '#eee', marginVertical: 10, marginHorizontal: 20 },
+});
+
+// --- STYLES FOR ATTENDANCE MODAL (From Code 1) ---
+const modalStyles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+  },
+  modalView: {
+    backgroundColor: "white",
+    borderRadius: 15,
+    padding: 30,
+    alignItems: "center",
+    width: "90%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
+    marginTop: 50,
+    borderWidth: 2,
+    borderColor: '#108da3ff',
+  },
+  iconHeader: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    marginTop: -80,
+    shadowColor: ATTENDANCE_PRIMARY_COLOR,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalImage: {
+    width: 85,
+    height: 65,
+  },
+  modalHeading: {
+    fontSize: 26,
+    fontWeight: "900",
+    color: "#2c3e50",
+    marginBottom: 5,
+  },
+  modalText: {
+    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#7f8c8d",
+    lineHeight: 22,
+    marginBottom: 25,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 15,
+    right: 15,
+    padding: 5,
+    zIndex: 10,
+  },
+  closeButtonText: { fontSize: 28, fontWeight: "300", color: "#95a5a6" },
+  accordionHeader: {
+    width: "100%",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 5,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#dcdcdc',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  noteLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#34495e',
+  },
+  arrowIcon: {
+    fontSize: 15,
+    color: '#c2c3c4ff',
+    fontWeight: '900',
+  },
+  accordionContent: {
+    width: "100%",
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  inputField: {
+    width: "100%",
+    minHeight: 90,
+    borderColor: '#dcdcdc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    color: '#34495e',
+    backgroundColor: '#fff',
+    textAlignVertical: 'top',
+  },
+  markAttendanceButtonWrapper: {
+    width: "100%",
+    marginTop: 30,
+    borderRadius: 10,
+    overflow: "hidden",
+    shadowColor: ATTENDANCE_PRIMARY_COLOR,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  markAttendanceButton: {
+    paddingVertical: 18,
+    alignItems: "center",
+  },
+  markAttendanceButtonText: {
+    color: "Green",
+    fontWeight: "bold",
+    textAlign: "center",
+    fontSize: 19,
+    letterSpacing: 1,
+  },
 });
 
 export default Home;

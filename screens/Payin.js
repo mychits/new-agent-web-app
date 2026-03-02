@@ -1,3 +1,4 @@
+
 import {
   View,
   Text,
@@ -48,6 +49,9 @@ const Payin = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // New state for Confirmation Modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [customerInfo, setCustomerInfo] = useState({});
   const [groups, setGroups] = useState([]);
@@ -191,24 +195,24 @@ const Payin = ({ route, navigation }) => {
     }
   };
 
-  // Logic to prevent dots, dashes, commas, AND starting with zero
   const handleAmountChange = (text) => {
-    // 1. Remove any non-numeric characters
     let numericValue = text.replace(/[^0-9]/g, "");
-    
-    // 2. Prevent leading zero: if length > 0 and first char is 0, remove it
     if (numericValue.length > 0 && numericValue.startsWith("0")) {
       numericValue = numericValue.replace(/^0+/, "");
     }
-    
     setAmount(numericValue);
   };
 
-  const handleAddPayment = async () => {
+  const validateAndShowModal = () => {
     if (!customerInfo.full_name || !selectedGroup || !selectedTicket || !amount) {
       Alert.alert("Validation Error", "Please fill all mandatory fields.");
       return;
     }
+    setShowConfirmModal(true);
+  };
+
+  const executePayment = async () => {
+    setShowConfirmModal(false);
     setIsLoading(true);
     try {
       const data = {
@@ -227,8 +231,12 @@ const Payin = ({ route, navigation }) => {
         Alert.alert("Success", "Payment added successfully!");
         navigation.navigate("Print", { store_id: response.data._id });
       }
-    } catch (error) { Alert.alert("Payment Error", "Failed to add payment."); }
-    finally { setIsLoading(false); }
+    } catch (error) { 
+      Alert.alert("Payment Error", "Failed to add payment."); 
+    }
+    finally { 
+      setIsLoading(false); 
+    }
   };
 
   const generateQrCode = async () => {
@@ -250,8 +258,14 @@ const Payin = ({ route, navigation }) => {
     );
   }
 
+  const getGroupName = () => {
+    const g = groups.find(g => g.group_id._id === selectedGroup);
+    return g ? g.group_id.group_name : "N/A";
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* QR Code Modal */}
       <Modal animationType="slide" transparent={true} visible={modalVisible}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -263,6 +277,81 @@ const Payin = ({ route, navigation }) => {
             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Stylish Confirmation Modal */}
+      <Modal animationType="fade" transparent={true} visible={showConfirmModal}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.stylishModalCard}>
+            {/* Gradient Header */}
+            <LinearGradient colors={TOP_GRADIENT} style={styles.stylishHeader}>
+              <View style={styles.iconCircle}>
+                <MaterialIcons name="check-circle" size={32} color={CARD_BG} />
+              </View>
+              <Text style={styles.stylishHeaderTitle}>Confirm Payment</Text>
+              <Text style={styles.stylishHeaderSubtitle}>Please verify the details</Text>
+            </LinearGradient>
+
+            {/* Receipt Body */}
+            <View style={styles.stylishBody}>
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Customer</Text>
+                <Text style={styles.stylishValue}>{customerInfo.full_name}</Text>
+              </View>
+              
+              <View style={styles.divider} />
+              
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Group</Text>
+                <Text style={styles.stylishValue}>{getGroupName()}</Text>
+              </View>
+
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Ticket No.</Text>
+                <Text style={styles.stylishValue}>{selectedTicket}</Text>
+              </View>
+
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Date</Text>
+                <Text style={styles.stylishValue}>{moment(currentDate).format("DD-MM-YYYY")}</Text>
+              </View>
+
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Method</Text>
+                <View style={styles.methodBadge}>
+                  <Text style={styles.methodText}>{paymentDetails.toUpperCase()}</Text>
+                </View>
+              </View>
+
+              {/* Total Amount Box */}
+              <View style={styles.totalBox}>
+                <Text style={styles.totalLabel}>Total Amount</Text>
+                <Text style={styles.totalAmount}>₹ {amount}</Text>
+              </View>
+            </View>
+
+            {/* Footer Buttons */}
+            <View style={styles.stylishFooter}>
+              <TouchableOpacity 
+                onPress={() => setShowConfirmModal(false)} 
+                style={styles.stylishCancelButton}
+              >
+                <Text style={styles.stylishCancelText}>Edit</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={executePayment} 
+                style={styles.stylishConfirmButton}
+              >
+                 {isLoading ? (
+                   <ActivityIndicator size="small" color={MODERN_PRIMARY} />
+                ) : (
+                   <Text style={styles.stylishConfirmText}>CONFIRM</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -367,7 +456,7 @@ const Payin = ({ route, navigation }) => {
                     {qrLoading ? <ActivityIndicator size="small" color={MODERN_PRIMARY} /> : <MaterialIcons name="qr-code-2" size={30} color={MODERN_PRIMARY} />}
                   </TouchableOpacity>
                 )}
-                <Button title={isLoading ? "Please wait..." : "Add Payment"} filled style={styles.button} onPress={handleAddPayment} />
+                <Button title={isLoading ? "Please wait..." : "Add Payment"} filled style={styles.button} onPress={validateAndShowModal} />
               </View>
             </View>
           </ScrollView>
@@ -412,11 +501,150 @@ const styles = StyleSheet.create({
   button: { flex: 5, backgroundColor: PRIMARY_BUTTON_COLOR, height: 55, borderRadius: 12 },
   modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)" },
   modalContent: { width: 320, padding: 24, backgroundColor: CARD_BG, borderRadius: 16, alignItems: "center" },
-  modalTitle: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY },
+  modalTitle: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 5 },
   modalSubtitle: { fontSize: 16, color: TEXT_GREY, marginBottom: 16 },
   qrContainer: { padding: 12, backgroundColor: SUBTLE_BG_GREY, borderRadius: 12, marginBottom: 20 },
   closeButton: { width: "100%", paddingVertical: 12, backgroundColor: ACCENT_BLUE, borderRadius: 8 },
-  closeButtonText: { color: CARD_BG, fontWeight: "bold", textAlign: "center" }
+  closeButtonText: { color: CARD_BG, fontWeight: "bold", textAlign: "center" },
+  
+  // --- Stylish Modal Styles ---
+  stylishModalCard: {
+    width: '85%',
+    backgroundColor: CARD_BG,
+    borderRadius: 24,
+    overflow: 'hidden', // Important for header gradient radius
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+  },
+  stylishHeader: {
+    paddingTop: 24,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  iconCircle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 50,
+    padding: 10,
+    marginBottom: 10,
+  },
+  stylishHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: CARD_BG,
+    letterSpacing: 0.5,
+  },
+  stylishHeaderSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 4,
+  },
+  stylishBody: {
+    padding: 24,
+  },
+  stylishRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  stylishLabel: {
+    fontSize: 15,
+    color: TEXT_GREY,
+    fontWeight: '500',
+  },
+  stylishValue: {
+    fontSize: 16,
+    color: MODERN_PRIMARY,
+    fontWeight: '700',
+  },
+  methodBadge: {
+    backgroundColor: SUBTLE_BG_GREY,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR
+  },
+  methodText: {
+    fontSize: 12,
+    color: ACCENT_BLUE,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 8,
+    marginBottom: 16,
+  },
+  totalBox: {
+    backgroundColor: 'rgba(23, 150, 209, 0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 150, 209, 0.2)',
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: ACCENT_BLUE,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  totalAmount: {
+    fontSize: 28,
+    color: MODERN_PRIMARY,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  stylishFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    backgroundColor: CARD_BG,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  stylishCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    marginRight: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: SUBTLE_BG_GREY,
+  },
+  stylishCancelText: {
+    color: TEXT_GREY,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  stylishConfirmButton: {
+    flex: 1.5,
+    paddingVertical: 14,
+    marginLeft: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: PRIMARY_BUTTON_COLOR,
+    shadowColor: "#f8c009ff",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  stylishConfirmText: {
+    color: MODERN_PRIMARY,
+    fontWeight: '800',
+    fontSize: 16,
+    letterSpacing: 0.5,
+  }
 });
 
 export default Payin;

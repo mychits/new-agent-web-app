@@ -1,3 +1,4 @@
+
 import {
   View,
   Text,
@@ -10,6 +11,8 @@ import {
   ActivityIndicator,
   Dimensions,
   Animated,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 
 import React, { useState, useEffect } from "react";
@@ -22,14 +25,25 @@ import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
 import url from "../constants/baseUrl";
+import { MaterialIcons } from "@expo/vector-icons"; // Import for icons
 
 const { width } = Dimensions.get("window");
+
+// Using the same gradients as the previous stylish modal
+const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
+const MODERN_PRIMARY = "#0d0d0eff"; 
+const ACCENT_BLUE = "#1796d1ff"; 
+const BORDER_COLOR = "#e0e0e0"; 
+const TEXT_GREY = "#4b5563"; 
+const CARD_BG = "#ffffff";
+const SUBTLE_BG_GREY = "#f9fafb"; 
+const PRIMARY_BUTTON_COLOR = "#f8c009ff"; 
 
 const LoanPayin = ({ route, navigation }) => {
   const { user, customer, loan_id, custom_loan_id } = route.params;
   
   // State for Data
-  const [currentDate, setCurrentDate] = useState("");
+  const [currentDate, setCurrentDate] = useState(moment().format("DD-MM-YYYY")); // Initialized immediately
   const [receipt, setReceipt] = useState({});
   const [paymentDetails, setPaymentDetails] = useState("");
   const [amount, setAmount] = useState("");
@@ -37,6 +51,9 @@ const LoanPayin = ({ route, navigation }) => {
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
+
+  // State for Confirmation Modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [customerInfo, setCustomerInfo] = useState({});
   const [loanData, setLoanData] = useState([]);
@@ -137,11 +154,6 @@ const LoanPayin = ({ route, navigation }) => {
   }, [loanOverview]);
 
   useEffect(() => {
-    const today = moment().format("DD-MM-YYYY");
-    setCurrentDate(today);
-  }, []);
-
-  useEffect(() => {
     const fetchReceipt = async () => {
       try {
         const response = await axios.get(`${baseUrl}/payment/get-latest-receipt`);
@@ -175,15 +187,20 @@ const LoanPayin = ({ route, navigation }) => {
     setAmount(numericValue);
   };
 
-  const handleAddPayment = async () => {
+  // --- Logic Refactoring ---
+
+  const validateAndShowModal = () => {
+    if (!selectedLoan || !paymentDetails || !amount || (paymentDetails !== "cash" && !transactionId)) {
+      Alert.alert("Validation Error", "Please fill all mandatory fields.");
+      return;
+    }
+    setShowConfirmModal(true);
+  };
+
+  const executePayment = async () => {
+    setShowConfirmModal(false); // Close modal
     setIsLoading(true);
     try {
-      if (!selectedLoan || !paymentDetails || !amount || (paymentDetails !== "cash" && !transactionId)) {
-        Alert.alert("Validation Error", "Please fill all mandatory fields.");
-        setIsLoading(false);
-        return;
-      }
-
       const data = {
         user_id: customer,
         pay_date: new Date().toISOString().split("T")[0],
@@ -338,8 +355,8 @@ const LoanPayin = ({ route, navigation }) => {
               "Loan ID", 
               loanOverview.loan_id || "--", 
               anim1, 
-              "#30cfd0", // Start
-              "#330867"  // End (Deep Purple/Blue)
+              "#30cfd0", 
+              "#330867"
             )}
             
             {/* Box 2: Total Amount - Emerald/Teal */}
@@ -395,7 +412,6 @@ const LoanPayin = ({ route, navigation }) => {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Payment Method</Text>
-            {/* FIXED: Picker now looks like a standard Input Field */}
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={paymentDetails}
@@ -443,7 +459,8 @@ const LoanPayin = ({ route, navigation }) => {
             disabled={isLoading || !selectedLoan}
             style={styles.stylishButton}
             textStyle={styles.buttonText}
-            onPress={handleAddPayment}
+            // Changed onPress to validateAndShowModal
+            onPress={validateAndShowModal}
           />
         </View>
       </View>
@@ -451,7 +468,78 @@ const LoanPayin = ({ route, navigation }) => {
   };
 
   return (
-    <LinearGradient colors={['#24C6DC', '#183A5D']} style={styles.gradientOverlay}>
+    <LinearGradient colors={TOP_GRADIENT} style={styles.gradientOverlay}>
+      
+      {/* Stylish Confirmation Modal */}
+      <Modal animationType="fade" transparent={true} visible={showConfirmModal}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.stylishModalCard}>
+            {/* Gradient Header */}
+            <LinearGradient colors={TOP_GRADIENT} style={styles.stylishHeader}>
+              <View style={styles.iconCircle}>
+                <MaterialIcons name="check-circle" size={32} color={CARD_BG} />
+              </View>
+              <Text style={styles.stylishHeaderTitle}>Confirm Payment</Text>
+              <Text style={styles.stylishHeaderSubtitle}>Please verify the details</Text>
+            </LinearGradient>
+
+            {/* Receipt Body */}
+            <View style={styles.stylishBody}>
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Borrower</Text>
+                <Text style={styles.stylishValue}>{customerInfo.full_name}</Text>
+              </View>
+              
+              <View style={styles.divider} />
+              
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Loan ID</Text>
+                <Text style={styles.stylishValue}>{selectedLoan?.loan_id}</Text>
+              </View>
+
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Date</Text>
+                <Text style={styles.stylishValue}>{currentDate}</Text>
+              </View>
+
+              <View style={styles.stylishRow}>
+                <Text style={styles.stylishLabel}>Method</Text>
+                <View style={styles.methodBadge}>
+                  <Text style={styles.methodText}>{paymentDetails.toUpperCase()}</Text>
+                </View>
+              </View>
+
+              {/* Total Amount Box */}
+              <View style={styles.totalBox}>
+                <Text style={styles.totalLabel}>Total Amount</Text>
+                <Text style={styles.totalAmount}>₹ {amount}</Text>
+              </View>
+            </View>
+
+            {/* Footer Buttons */}
+            <View style={styles.stylishFooter}>
+              <TouchableOpacity 
+                onPress={() => setShowConfirmModal(false)} 
+                style={styles.stylishCancelButton}
+              >
+                <Text style={styles.stylishCancelText}>Edit</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={executePayment} 
+                style={styles.stylishConfirmButton}
+              >
+                 {isLoading ? (
+                   <ActivityIndicator size="small" color={MODERN_PRIMARY} />
+                ) : (
+                   <Text style={styles.stylishConfirmText}>CONFIRM</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -537,7 +625,7 @@ const styles = StyleSheet.create({
   boxGradient: {
     flex: 1,
     padding: 15,
-    justifyContent: "space-between", // Space out title and value
+    justifyContent: "space-between", 
   },
   glassShine: {
     position: 'absolute',
@@ -559,7 +647,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     fontWeight: "800",
-    textAlign: "left", // Align left for card feel
+    textAlign: "left", 
     textShadowColor: 'rgba(0,0,0,0.15)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
@@ -587,7 +675,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   textInput: {
-    height: 52, // slightly taller
+    height: 52, 
     backgroundColor: "#F9FAFB",
     borderRadius: 12, 
     paddingHorizontal: 16,
@@ -617,7 +705,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // --- PICKER STYLES (MATCH INPUTS) ---
   pickerContainer: {
     height: 52,
     backgroundColor: "#FFFFFF", 
@@ -633,15 +720,14 @@ const styles = StyleSheet.create({
     color: "#111827", 
     backgroundColor: "#FFFFFF",
     fontSize: 16,
-    marginLeft: -4, // Adjust alignment if needed
+    marginLeft: -4, 
   },
-  // -----------------------------
-
+  
   stylishButton: {
     marginTop: 10,
     height: 52, 
     borderRadius: 14,
-    backgroundColor: "#111827", // Dark button for contrast
+    backgroundColor: "#f8c009ff", 
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -659,6 +745,146 @@ const styles = StyleSheet.create({
 
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 20 },
   errorText: { marginTop: 10, fontSize: 15, color: '#fff', fontWeight: '600', textAlign: 'center' },
+
+  // --- Stylish Modal Styles (Copied from previous solution) ---
+  modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)" },
+  stylishModalCard: {
+    width: '85%',
+    backgroundColor: CARD_BG,
+    borderRadius: 24,
+    overflow: 'hidden', 
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+  },
+  stylishHeader: {
+    paddingTop: 24,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  iconCircle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 50,
+    padding: 10,
+    marginBottom: 10,
+  },
+  stylishHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: CARD_BG,
+    letterSpacing: 0.5,
+  },
+  stylishHeaderSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 4,
+  },
+  stylishBody: {
+    padding: 24,
+  },
+  stylishRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  stylishLabel: {
+    fontSize: 15,
+    color: TEXT_GREY,
+    fontWeight: '500',
+  },
+  stylishValue: {
+    fontSize: 16,
+    color: MODERN_PRIMARY,
+    fontWeight: '700',
+  },
+  methodBadge: {
+    backgroundColor: SUBTLE_BG_GREY,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR
+  },
+  methodText: {
+    fontSize: 12,
+    color: ACCENT_BLUE,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 8,
+    marginBottom: 16,
+  },
+  totalBox: {
+    backgroundColor: 'rgba(23, 150, 209, 0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(23, 150, 209, 0.2)',
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: ACCENT_BLUE,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  totalAmount: {
+    fontSize: 28,
+    color: MODERN_PRIMARY,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  stylishFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    backgroundColor: CARD_BG,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  stylishCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    marginRight: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: SUBTLE_BG_GREY,
+  },
+  stylishCancelText: {
+    color: TEXT_GREY,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  stylishConfirmButton: {
+    flex: 1.5,
+    paddingVertical: 14,
+    marginLeft: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: PRIMARY_BUTTON_COLOR,
+    shadowColor: "#f8c009ff",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  stylishConfirmText: {
+    color: MODERN_PRIMARY,
+    fontWeight: '800',
+    fontSize: 16,
+    letterSpacing: 0.5,
+  }
 });
 
 export default LoanPayin;
