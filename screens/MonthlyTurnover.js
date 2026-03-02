@@ -84,36 +84,6 @@ const formatCurrency = (amount) => {
   return num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 };
 
-// ─── KEY FIX: fetch balance for one enrollment ───────────────────────────────
-const fetchEnrollmentBalance = async (enrollmentId) => {
-  const balanceUrl =
-    "https://mychits.online/api/enroll/" + enrollmentId + "/amount-to-be-paid";
-  try {
-    console.log("BALANCE_CALL => " + balanceUrl);
-    const res = await axios.get(balanceUrl);
-    const raw = res.data;
-    console.log(
-      "BALANCE_RAW [" + enrollmentId + "] => " + JSON.stringify(raw)
-    );
-    // Handle all possible response shapes
-    let balance = null;
-    if (raw?.data?.[0]?.balance !== undefined)      balance = raw.data[0].balance;
-    else if (raw?.data?.balance !== undefined)       balance = raw.data.balance;
-    else if (raw?.balance !== undefined)             balance = raw.balance;
-    else if (Array.isArray(raw) && raw[0]?.balance !== undefined) balance = raw[0].balance;
-    console.log("BALANCE_PARSED [" + enrollmentId + "] => " + balance);
-    return balance;
-  } catch (err) {
-    const status = err?.response?.status;
-    const body   = JSON.stringify(err?.response?.data);
-    console.error(
-      "BALANCE_ERROR [" + enrollmentId + "] status=" + status + " msg=" + err.message + " body=" + body
-    );
-    return null;
-  }
-};
-// ─────────────────────────────────────────────────────────────────────────────
-
 const MonthlyTurnover = () => {
   const [turnoverData, setTurnoverData]   = useState(null);
   const [customersData, setCustomersData] = useState([]);
@@ -123,8 +93,6 @@ const MonthlyTurnover = () => {
   const [showPicker, setShowPicker]       = useState(false);
   const [formattedDate, setFormattedDate] = useState(moment().format("MMMM YYYY"));
   const [searchText, setSearchText]       = useState("");
-  // enrollmentId -> balance  (null = fetch failed, undefined key = not yet fetched)
-  const [balanceMap, setBalanceMap]       = useState({});
 
   useEffect(() => {
     fetchMonthlyData();
@@ -134,7 +102,6 @@ const MonthlyTurnover = () => {
     try {
       setLoading(true);
       setError(null);
-      setBalanceMap({});
 
       const userJson = await AsyncStorage.getItem("user");
       if (!userJson) { setError("Session expired."); setLoading(false); return; }
@@ -155,17 +122,7 @@ const MonthlyTurnover = () => {
         const payingCustomers = response.data.agentData?.payingCustomers || [];
 
         console.log("TURNOVER total customers => " + payingCustomers.length);
-        // Log _id (enrollmentId) of every customer so we can verify
-        payingCustomers.forEach((c, i) => {
-          console.log(
-            "[" + (i + 1) + "] " + (c.user_id?.full_name || "Unknown") +
-            " | _id(enrollmentId)=" + c._id +
-            " | monthlyPaid=" + c.monthlyPaid +
-            " | totalPaid=" + c.totalPaid +
-            " | installment=" + c.monthly_installment
-          );
-        });
-
+        
         setTurnoverData(response.data.agentData);
 
         const customersWithStatus = payingCustomers.map((c) => {
@@ -174,6 +131,9 @@ const MonthlyTurnover = () => {
           const monthlyInstallment = parseFloat(c.monthly_installment || 0);
           const overallPaid        = parseFloat(c.paid_amount       || 0);
           const totalTicketValue   = parseFloat(c.total_amount      || 0);
+          
+          // FIX: Fetch balance directly from the main API response object 'c.balance'
+          const balance = parseFloat(c.balance || 0);
 
           let lastPaymentDate = "N/A";
           if (c.payments && c.payments.length > 0) {
@@ -186,7 +146,8 @@ const MonthlyTurnover = () => {
 
           return {
             ...c,
-            enrollmentId:  c._id,   // <── the field used for the balance API
+            enrollmentId:  c._id,
+            balance:       balance, // Stored directly
             paymentStatus: monthlyPaid >= monthlyInstallment ? "PAID" : "UNPAID",
             lastPaymentDate,
             monthlyPaid,
@@ -198,9 +159,7 @@ const MonthlyTurnover = () => {
 
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setCustomersData(customersWithStatus);
-
-        // Fire balance fetches AFTER customers are set — do NOT await so UI shows immediately
-        fetchAllBalances(customersWithStatus);
+        
       } else {
         setError(response.data?.message || "Failed to fetch data");
       }
@@ -211,42 +170,6 @@ const MonthlyTurnover = () => {
       setLoading(false);
     }
   };
-
-  // ─── KEY FIX: fetch all balances in parallel, set state ONCE ────────────────
-  const fetchAllBalances = async (customers) => {
-    const valid = customers.filter((c) => !!c.enrollmentId);
-    console.log(
-      "BALANCE_BATCH => total=" + customers.length + " valid=" + valid.length
-    );
-    if (valid.length === 0) {
-      console.warn("BALANCE_BATCH => 0 valid enrollmentIds! Check c._id field.");
-      return;
-    }
-
-    // Run all fetches in parallel
-    const settled = await Promise.allSettled(
-      valid.map(async (c) => {
-        const bal = await fetchEnrollmentBalance(c.enrollmentId);
-        return { enrollmentId: c.enrollmentId, balance: bal };
-      })
-    );
-
-    // Collect into a single plain object then do ONE setState call
-    const map = {};
-    settled.forEach((result) => {
-      if (result.status === "fulfilled" && result.value) {
-        const { enrollmentId, balance } = result.value;
-        map[enrollmentId] = balance;
-      }
-    });
-
-    console.log(
-      "BALANCE_BATCH DONE => fetched=" + Object.keys(map).length +
-      " map=" + JSON.stringify(map)
-    );
-    setBalanceMap(map); // single atomic update — no stale closure issues
-  };
-  // ─────────────────────────────────────────────────────────────────────────────
 
   const onDateChange = (_event, newDate) => {
     setShowPicker(false);
@@ -363,10 +286,8 @@ const MonthlyTurnover = () => {
     const customerName  = item.user_id?.full_name || "Unknown";
     const groupName     = item.group_id?.group_name || "Group";
 
-    const enrollmentId  = item.enrollmentId;
-    // undefined key  => still loading  |  null => fetch failed  |  number => got it
-    const balanceVal    = balanceMap[enrollmentId];
-    const balanceReady  = enrollmentId !== undefined && balanceVal !== undefined;
+    // Directly use item.balance since we removed balanceMap
+    const balanceVal    = item.balance || 0;
 
     return (
       <FadeInView delay={index * 50}>
@@ -423,18 +344,12 @@ const MonthlyTurnover = () => {
               </Text>
             </View>
 
-            {/* Balance from new route */}
+            {/* Balance from main response */}
             <View style={[styles.statBlock, { borderRightWidth: 0 }]}>
               <Text style={styles.statLabel}>Balance</Text>
-              {!balanceReady ? (
-                <ActivityIndicator size="small" color={ACCENT_BLUE} style={{ marginTop: 4 }} />
-              ) : balanceVal === null ? (
-                <Text style={[styles.statValue, { color: NEUTRAL_GREY, fontSize: 11 }]}>—</Text>
-              ) : (
-                <Text style={[styles.statValue, { color: WARNING_RED }]}>
-                  {"₹" + formatCurrency(balanceVal)}
-                </Text>
-              )}
+              <Text style={[styles.statValue, { color: WARNING_RED }]}>
+                {"₹" + formatCurrency(balanceVal)}
+              </Text>
             </View>
           </View>
         </View>
