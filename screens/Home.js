@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
 import {
   View,
@@ -67,7 +68,8 @@ const ICON_CONFIG = {
   groups: { name: 'layers', color: COLORS.bgBlue },
   customerOnHold: { name: 'pause-circle-outline', type: 'MaterialCommunityIcons', color: '#795548' },
   monthlyTurnover: { name: 'swap-horiz', color: '#E91E63' },
-  DueReportImage: { name: 'receipt-long', color: '#FF5722' },
+  // UPDATED: Changed key to match data ID and updated icon to 'assignment-late'
+  DueReport: { name: 'assignment-late', color: '#eb7aa0' },
   attendanceBtn: { name: 'calendar-clock', type: 'MaterialCommunityIcons', color: COLORS.accent },
   rewards: { name: 'card-giftcard', color: COLORS.accent },
   starPoints: { name: 'star-face', type: 'MaterialCommunityIcons', color: COLORS.accent },
@@ -393,6 +395,9 @@ const Home = ({ route, navigation }) => {
   const [isSideMenuVisible, setSideMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
+  // --- NEW: SEARCH STATE ---
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Attendance specific states
   const [selectedStatus, setSelectedStatus] = useState("Present");
   const [attendanceMessage, setAttendanceMessage] = useState("");
@@ -582,6 +587,11 @@ const Home = ({ route, navigation }) => {
   const rewardsStarPointsCards = cardsData.filter(item => item.id === 'rewards' || item.id === 'starPoints');
   const gridCards = cardsData.filter(item => !item.isFullWidth);
 
+  // --- NEW: SEARCH FILTER LOGIC ---
+  const filteredGridCards = gridCards.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -609,6 +619,25 @@ const Home = ({ route, navigation }) => {
           <View style={styles.statusBadge}><Text style={styles.statusText}>Active</Text></View>
         </View>
 
+        {/* --- NEW: SEARCH BAR SECTION --- */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={20} color={COLORS.muted} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search Quick Access..."
+              placeholderTextColor={COLORS.muted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
+                <Ionicons name="close-circle" size={20} color={COLORS.muted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
         {topWideCards.length > 0 && (
           <View style={styles.wideCardsSection}>
             {topWideCards.map((item, index) => (
@@ -620,9 +649,16 @@ const Home = ({ route, navigation }) => {
         <View style={styles.servicesSection}>
           <Text style={styles.sectionTitle}>Quick Access</Text>
           <View style={styles.gridContainer}>
-            {gridCards.map((item, index) => (
-              <GridCard key={item.id} item={item} index={index} onPress={item.onPress} />
-            ))}
+            {/* --- UPDATED: Use filteredGridCards --- */}
+            {filteredGridCards.length > 0 ? (
+              filteredGridCards.map((item, index) => (
+                <GridCard key={item.id} item={item} index={index} onPress={item.onPress} />
+              ))
+            ) : (
+              <View style={styles.noResultContainer}>
+                <Text style={styles.noResultText}>No services found</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -732,6 +768,34 @@ const styles = StyleSheet.create({
   agentName: { fontSize: 22, color: COLORS.primary, fontWeight: '900', marginTop: 2 },
   statusBadge: { backgroundColor: COLORS.accent, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   statusText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 12 },
+  
+  // --- SEARCH STYLES ---
+  searchContainer: { paddingHorizontal: 15, marginBottom: 15 },
+  searchBar: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+    borderRadius: 25, 
+    paddingHorizontal: 15, 
+    paddingVertical: 5, 
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  searchIcon: { marginRight: 10 },
+  searchInput: { 
+    flex: 1, 
+    height: 45, 
+    fontSize: 15, 
+    color: COLORS.primary, 
+    fontWeight: '600' 
+  },
+  clearButton: { padding: 5 },
+  noResultContainer: { width: '100%', paddingVertical: 20, alignItems: 'center' },
+  noResultText: { color: '#fff', fontSize: 16, opacity: 0.8 },
+
   wideCardsSection: { paddingHorizontal: 15, marginBottom: 25 },
   wideCardWrapper: { marginBottom: 15 },
   wideCard: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 30, elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, overflow: 'hidden' },
