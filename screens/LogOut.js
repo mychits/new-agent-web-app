@@ -12,17 +12,17 @@ import {
     Modal,
     RefreshControl,
     Platform,
-    Animated, // Added Animated
+    Animated, 
     LayoutAnimation, 
     UIManager 
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons"; 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import Header from "../components/Header"; 
+import Header from "../components/Header"; // Assuming path is correct
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import baseUrl from "../constants/baseUrl";
+import baseUrl from "../constants/baseUrl"; // Assuming path is correct
 import moment from "moment";
 
 const { width } = Dimensions.get('window');
@@ -93,13 +93,11 @@ const AttendanceMetric = ({ label, value, color, icon, onPress }) => (
 
 // --- Animated Date Filter Component ---
 const AnimatedDateFilter = ({ month, year, onPress }) => {
-  // Animation Values
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
-  // Entrance Animation
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -115,7 +113,6 @@ const AnimatedDateFilter = ({ month, year, onPress }) => {
       })
     ]).start();
 
-    // Shimmer Loop
     Animated.loop(
       Animated.timing(shimmerAnim, {
         toValue: 1,
@@ -125,7 +122,6 @@ const AnimatedDateFilter = ({ month, year, onPress }) => {
     ).start();
   }, []);
 
-  // Interaction Handlers
   const handlePressIn = () => {
     Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
   };
@@ -134,7 +130,6 @@ const AnimatedDateFilter = ({ month, year, onPress }) => {
     Animated.spring(scaleAnim, { toValue: 1, friction: 5, useNativeDriver: true }).start();
   };
 
-  // Shimmer Interpolation
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-width, width]
@@ -155,7 +150,6 @@ const AnimatedDateFilter = ({ month, year, onPress }) => {
         style={{ borderRadius: 16 }}
       >
         <Animated.View style={[localStyles.dateFilterWrapper, { transform: [{ scale: scaleAnim }] }]}>
-            {/* Shimmer Effect Layer */}
             <Animated.View style={[localStyles.shimmerOverlay, { transform: [{ translateX: shimmerTranslate }] }]}>
                 <LinearGradient 
                   colors={['transparent', 'rgba(255,255,255,0.6)', 'transparent']} 
@@ -432,88 +426,120 @@ const LogOut = ({ navigation }) => {
                   <RefreshControl refreshing={loading} onRefresh={fetchDailyAttendance} color={COLORS.PRIMARY} tintColor={COLORS.WHITE} />
               }
           >
-            {/* Controls: Tabs */}
-            <View style={localStyles.controlRow}>
-                <TabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} />
-            </View>
-
-            {/* REPLACED: Animated Date Filter */}
-            <AnimatedDateFilter 
-                month={month} 
-                year={year} 
-                onPress={() => setShowPicker(true)} 
-            />
-
-            {activeTab === 'attendance' && (
-              <View>
-                {isCurrentMonth && attendanceData && (
-                  <>
-                    {/* Profile Summary */}
+            
+            {/* --- 1. STYLISH DAILY STATUS BOX --- */}
+            {isCurrentMonth && attendanceData && (
+              <View style={localStyles.dailyStatusBox}>
+                
+                {/* Profile Section */}
+                <View style={localStyles.innerSection}>
                     <View style={localStyles.profileCard}>
                       <View style={localStyles.profileRow}>
-                          <View style={localStyles.avatarContainer}>
-                              <LinearGradient colors={[COLORS.PRIMARY_LIGHT, COLORS.PRIMARY]} style={localStyles.avatar}>
-                                  <Ionicons name="person" size={26} color={COLORS.WHITE} />
-                              </LinearGradient>
+                          {/* Avatar with Ring Effect */}
+                          <View style={localStyles.avatarRing}>
+                              <View style={localStyles.avatarContainer}>
+                                  <LinearGradient colors={[COLORS.PRIMARY_LIGHT, COLORS.PRIMARY]} style={localStyles.avatar}>
+                                      <Ionicons name="person" size={26} color={COLORS.WHITE} />
+                                  </LinearGradient>
+                              </View>
                           </View>
+                          
                           <View style={localStyles.nameCol}>
+                              <Text style={localStyles.welcomeText}>Welcome back,</Text>
                               <Text style={localStyles.nameText}>{attendanceData.employee_id?.name || 'User'}</Text>
                               <View style={localStyles.roleBadge}>
                                   <Text style={localStyles.roleText}>{attendanceData.employee_id?.designation || 'Employee'}</Text>
                               </View>
                           </View>
-                          <View style={localStyles.datePill}>
+                          
+                          {/* Gradient Date Chip */}
+                          <LinearGradient colors={[COLORS.PRIMARY, COLORS.PRIMARY_LIGHT]} style={localStyles.datePill}>
                               <Text style={localStyles.datePillText}>{moment(attendanceData.date).format("DD MMM")}</Text>
-                          </View>
+                          </LinearGradient>
                       </View>
                     </View>
+                </View>
 
-                    {/* Time Stats */}
+                {/* Time Stats Section */}
+                <View style={[localStyles.innerSection, { paddingBottom: 0 }]}>
                     <View style={localStyles.timeRow}>
-                        <LinearGradient colors={COLORS.SUCCESS_GRADIENT} style={localStyles.timeCard}>
+                        {/* Punch In Card with Decorative Blob */}
+                        <View style={[localStyles.timeCard, { backgroundColor: COLORS.SUCCESS }]}>
+                            <View style={[localStyles.decorativeCircle, { backgroundColor: '#fff', opacity: 0.1, top: -10, right: -10 }]} />
+                            <View style={[localStyles.decorativeCircle, { backgroundColor: '#fff', opacity: 0.1, bottom: -10, left: -10, width: 40, height: 40 }]} />
+                            
                             <View style={localStyles.timeIconBg}>
                               <Ionicons name="log-in" size={20} color={COLORS.SUCCESS} />
                             </View>
                             <Text style={localStyles.timeLabel}>PUNCH IN</Text>
                             <Text style={localStyles.timeValue}>{attendanceData.time || '--:--'}</Text>
-                        </LinearGradient>
+                        </View>
 
-                        <LinearGradient 
-                          colors={attendanceData.logout_time ? COLORS.DANGER : ['#e2e8f0', '#cbd5e1']} 
-                          style={localStyles.timeCard}
-                        >
-                            <View style={localStyles.timeIconBg}>
+                        {/* Punch Out Card with Decorative Blob */}
+                        <View style={[localStyles.timeCard, { backgroundColor: attendanceData.logout_time ? COLORS.DANGER[0] : '#f1f5f9' }]}>
+                            <View style={[localStyles.decorativeCircle, { backgroundColor: attendanceData.logout_time ? '#fff' : COLORS.DANGER[0], opacity: 0.1, top: -10, right: -10 }]} />
+                            
+                            <View style={[localStyles.timeIconBg, { backgroundColor: '#fff' }]}>
                               <Ionicons name="log-out" size={20} color={attendanceData.logout_time ? COLORS.DANGER[0] : COLORS.SLATE} />
                             </View>
                             <Text style={[localStyles.timeLabel, !attendanceData.logout_time && {color: COLORS.SLATE}]}>PUNCH OUT</Text>
                             <Text style={[localStyles.timeValue, !attendanceData.logout_time && {color: COLORS.DARK}]}>
                                 {attendanceData.logout_time || 'Pending'}
                             </Text>
-                        </LinearGradient>
-                    </View>
-
-                    {/* Work Duration */}
-                    {attendanceData.logout_time && (
-                      <View style={localStyles.durationCard}>
-                        <MaterialCommunityIcons name="timer-sand" size={22} color={COLORS.PRIMARY} />
-                        <View style={localStyles.durationContent}>
-                            <Text style={localStyles.durationLabel}>Total Duration</Text>
-                            <Text style={localStyles.durationValue}>{formatWorkingHours(attendanceData.working_hours)}</Text>
                         </View>
-                      </View>
-                    )}
+                    </View>
+                </View>
 
-                    {!attendanceData.logout_time && (
-                      <TouchableOpacity activeOpacity={0.8} onPress={() => setShowConfirmModal(true)} style={localStyles.actionBtnContainer}>
+                {/* Duration or Action Section */}
+                <View style={localStyles.innerSection}>
+                    {attendanceData.logout_time ? (
+                      <View style={localStyles.durationCard}>
+                        <LinearGradient colors={[COLORS.PRIMARY + '10', COLORS.PRIMARY + '05']} style={localStyles.durationGlow}>
+                            <MaterialCommunityIcons name="timer-sand" size={24} color={COLORS.PRIMARY} />
+                            <View style={localStyles.durationContent}>
+                                <Text style={localStyles.durationLabel}>Total Duration</Text>
+                                <Text style={localStyles.durationValue}>{formatWorkingHours(attendanceData.working_hours)}</Text>
+                            </View>
+                        </LinearGradient>
+                      </View>
+                    ) : (
+                      <TouchableOpacity activeOpacity={0.9} onPress={() => setShowConfirmModal(true)} style={localStyles.actionBtnContainer}>
                           <LinearGradient colors={COLORS.DANGER} style={localStyles.actionBtnGradient}>
                               <Ionicons name="exit" size={24} color="#fff" />
                               <Text style={localStyles.actionBtnText}>END MY SHIFT</Text>
                           </LinearGradient>
+                          {/* Button Glow */}
+                          <View style={localStyles.actionBtnGlow} />
                       </TouchableOpacity>
                     )}
-                  </>
-                )}
+                </View>
+              </View>
+            )}
 
+            {/* --- 2. CONTROLS: TOGGLE & DATE FILTER --- */}
+            
+            {/* ADDED TITLE */}
+            <View style={localStyles.sectionHeader}>
+                <Text style={localStyles.sectionTitle}>Records</Text>
+                <View style={localStyles.divider} />
+            </View>
+
+            {/* Controls: Tabs */}
+            <View style={localStyles.controlRow}>
+                <TabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} />
+            </View>
+
+            {/* Animated Date Filter */}
+            <AnimatedDateFilter 
+                month={month} 
+                year={year} 
+                onPress={() => setShowPicker(true)} 
+            />
+
+            {/* --- 3. TAB CONTENT --- */}
+            
+            {activeTab === 'attendance' && (
+              <View>
                 {/* Monthly Overview */}
                 {monthlyData && (
                   <>
@@ -608,7 +634,7 @@ const styles = StyleSheet.create({
       paddingBottom: 40, 
       paddingTop: 10 
   },
-  headerTitleContainer: { marginTop: 15, alignItems: 'center' },
+  headerTitleContainer: { marginTop: -2, alignItems: 'center' },
   headerTitle: { fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
   headerSubTitle: { fontSize: 13, color: 'rgba(255, 255, 255, 0.85)', marginTop: 5, fontWeight:'500' },
   
@@ -637,9 +663,7 @@ const styles = StyleSheet.create({
 // --- Local Stylish Styles ---
 const localStyles = StyleSheet.create({
     // Tabs
-    controlRow: { 
-        marginBottom: 15
-    },
+    controlRow: { marginBottom: 15 },
     tabContainer: { 
         flexDirection: 'row', 
         backgroundColor: '#fff', 
@@ -667,22 +691,20 @@ const localStyles = StyleSheet.create({
         elevation: 3,
         borderWidth: 1,
         borderColor: '#f1f5f9',
-        overflow: 'hidden' // Important for shimmer clipping
+        overflow: 'hidden' 
     },
-    // Shimmer Styles
     shimmerOverlay: {
         position: 'absolute',
         top: 0,
         left: 0,
         height: '100%',
-        width: '50%', // Width of the shimmer bar
+        width: '50%', 
         zIndex: 1
     },
     shimmerGradient: {
         flex: 1,
-        width: width // Ensures the gradient covers the area fully during translate
+        width: width 
     },
-    // Content Styles
     dateFilterIconBox: {
         backgroundColor: COLORS.PRIMARY,
         padding: 12,
@@ -727,119 +749,220 @@ const localStyles = StyleSheet.create({
         marginRight: 2
     },
 
-    // Profile Card
-    profileCard: {
+    // --- STYLISH DAILY STATUS BOX ---
+    dailyStatusBox: {
         backgroundColor: '#fff',
-        borderRadius: 24,
-        padding: 16,
+        borderRadius: 28,
+        paddingTop: 20, 
+        marginBottom: 24,
+        // Deep, soft shadow
+        shadowColor: COLORS.PRIMARY,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 8,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(15, 118, 153, 0.1)'
+    },
+    innerSection: {
+        paddingHorizontal: 24,
         marginBottom: 20,
-        shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.08, shadowRadius: 10, elevation: 5,
+    },
+
+    // Profile Card Styles
+    profileCard: {
+        backgroundColor: 'transparent', 
+        borderRadius: 0, 
+        padding: 0, 
+        marginBottom: 0, 
+        shadowOpacity: 0, 
+        elevation: 0, 
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+        paddingBottom: 20
     },
     profileRow: { flexDirection: 'row', alignItems: 'center' },
-    avatarContainer: { shadowColor: COLORS.PRIMARY, shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 6 },
-    avatar: { width: 52, height: 52, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-    nameCol: { marginLeft: 14, flex: 1 },
-    nameText: { fontSize: 18, fontWeight: '800', color: COLORS.DARK },
-    roleBadge: { 
-        backgroundColor: COLORS.PRIMARY_LIGHT + '20', 
-        paddingHorizontal: 8, 
-        paddingVertical: 2, 
-        borderRadius: 6, 
-        alignSelf: 'flex-start', 
-        marginTop: 4 
+    
+    // Ring Effect for Avatar
+    avatarRing: {
+        padding: 3,
+        borderRadius: 24,
+        borderWidth: 2,
+        borderColor: '#e0f2fe', // Very light blue ring
     },
-    roleText: { fontSize: 11, color: COLORS.PRIMARY, fontWeight: '700', textTransform: 'uppercase' },
-    datePill: { backgroundColor: COLORS.BG, padding: 8, borderRadius: 12 },
-    datePillText: { fontSize: 12, fontWeight: '700', color: COLORS.DARK },
+    avatarContainer: { 
+        shadowColor: COLORS.PRIMARY, 
+        shadowOffset: {width: 0, height: 4}, 
+        shadowOpacity: 0.3, 
+        shadowRadius: 8,
+        elevation: 5,
+        borderRadius: 20
+    },
+    avatar: { width: 56, height: 56, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+    
+    nameCol: { marginLeft: 16, flex: 1 },
+    welcomeText: { fontSize: 11, color: COLORS.MUTED, fontWeight: '600', letterSpacing: 0.5, marginBottom: 2 },
+    nameText: { fontSize: 20, fontWeight: '900', color: COLORS.DARK, lineHeight: 24 },
+    roleBadge: { 
+        backgroundColor: COLORS.PRIMARY + '15', 
+        paddingHorizontal: 10, 
+        paddingVertical: 3, 
+        borderRadius: 8, 
+        alignSelf: 'flex-start', 
+        marginTop: 8 
+    },
+    roleText: { fontSize: 10, color: COLORS.PRIMARY, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+    
+    // Gradient Date Pill
+    datePill: { 
+        paddingHorizontal: 14, 
+        paddingVertical: 8, 
+        borderRadius: 14, 
+        shadowColor: COLORS.PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4
+    },
+    datePillText: { fontSize: 12, fontWeight: '800', color: '#fff' },
 
-    // Time Cards
-    timeRow: { flexDirection: 'row', gap: 12, marginBottom: 15 },
+    // Time Cards Styles
+    timeRow: { 
+        flexDirection: 'row', 
+        gap: 16, 
+        marginBottom: 0, 
+        paddingHorizontal: 0 
+    },
     timeCard: {
         flex: 1,
-        padding: 16,
-        borderRadius: 24,
+        padding: 20,
+        borderRadius: 20,
         alignItems: 'center',
-        shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.15, shadowRadius: 8, elevation: 6
+        position: 'relative',
+        overflow: 'hidden',
+        // Removed shadow to make it flat inside the box, using color contrast instead
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)'
     },
-    timeIconBg: { backgroundColor: 'rgba(255,255,255,0.9)', padding: 6, borderRadius: 10, marginBottom: 8 },
-    timeLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.9)', letterSpacing: 1 },
-    timeValue: { fontSize: 22, fontWeight: '900', color: '#fff', marginTop: 4 },
+    // Decorative Background Blobs
+    decorativeCircle: {
+        position: 'absolute',
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+    },
+    timeIconBg: { backgroundColor: '#fff', padding: 8, borderRadius: 12, marginBottom: 10, zIndex: 1 },
+    timeLabel: { fontSize: 8, fontWeight: '800', color: 'rgba(255,255,255,0.9)', letterSpacing: 1.5, zIndex: 1 },
+    timeValue: { fontSize: 18, fontWeight: '900', color: '#fff', marginTop: 4, zIndex: 1 },
 
     // Duration Card
     durationCard: {
-        backgroundColor: '#fff',
         borderRadius: 20,
-        padding: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 25,
+        overflow: 'hidden',
+        marginBottom: 0,
         borderWidth: 1,
         borderColor: '#e2e8f0'
     },
-    durationContent: { marginLeft: 12 },
-    durationLabel: { fontSize: 12, color: COLORS.SLATE, fontWeight: '600' },
-    durationValue: { fontSize: 18, color: COLORS.DARK, fontWeight: '800' },
+    durationGlow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 18
+    },
+    durationContent: { marginLeft: 16 },
+    durationLabel: { fontSize: 12, color: COLORS.SLATE, fontWeight: '700', letterSpacing: 0.5 },
+    durationValue: { fontSize: 20, color: COLORS.DARK, fontWeight: '900', marginTop: 2 },
 
-    // Action Button
-    actionBtnContainer: { marginTop: 10, marginBottom: 30, borderRadius: 20, overflow: 'hidden' },
-    actionBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 18, gap: 10 },
-    actionBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
+    // Action Button (Stylish)
+    actionBtnContainer: { 
+        position: 'relative',
+        marginTop: 0, 
+        marginBottom: 0, 
+        borderRadius: 20, 
+        overflow: 'visible' // Allow glow to overflow
+    },
+    actionBtnGradient: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        padding: 20, 
+        gap: 12,
+        borderRadius: 20,
+        zIndex: 2
+    },
+    actionBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 1 },
+    // Glow effect for button
+    actionBtnGlow: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 20,
+        backgroundColor: COLORS.DANGER[0],
+        opacity: 0.4,
+        blurRadius: 20,
+        zIndex: 1
+    },
 
     // Section Header
-    sectionHeader: { marginBottom: 15 },
-    sectionTitle: { fontSize: 16, fontWeight: '800', color: COLORS.DARK },
-    divider: { height: 3, width: 40, backgroundColor: COLORS.PRIMARY, marginTop: 6, borderRadius: 2 },
+    sectionHeader: { marginBottom: 20, marginTop: 10 },
+    sectionTitle: { fontSize: 18, fontWeight: '900', color: COLORS.DARK, letterSpacing: -0.5 },
+    divider: { height: 4, width: 40, backgroundColor: COLORS.PRIMARY, marginTop: 8, borderRadius: 3 },
 
     // Heatmap
-    heatmapCard: { backgroundColor: '#fff', borderRadius: 24, padding: 16, marginBottom: 15, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, elevation: 3 },
-    cardSmallTitle: { color: COLORS.SLATE, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12 },
-    dotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    heatDot: { width: (width - 70) / 8, height: 10, borderRadius: 3 },
-    legendRow: { flexDirection: 'row', marginTop: 15, justifyContent: 'space-between' },
+    heatmapCard: { backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 15, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 3, borderWidth: 1, borderColor: '#f8fafc' },
+    cardSmallTitle: { color: COLORS.SLATE, fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 15 },
+    dotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+    heatDot: { width: (width - 80) / 8, height: 12, borderRadius: 4 },
+    legendRow: { flexDirection: 'row', marginTop: 20, justifyContent: 'space-between', paddingHorizontal: 10 },
     legendItem: { flexDirection: 'row', alignItems: 'center' },
-    legendDot: { width: 8, height: 8, borderRadius: 2, marginRight: 5 },
-    legendText: { color: COLORS.SLATE, fontSize: 10, fontWeight: '600' },
+    legendDot: { width: 8, height: 8, borderRadius: 3, marginRight: 6 },
+    legendText: { color: COLORS.SLATE, fontSize: 10, fontWeight: '700' },
 
     // Metrics
-    metricsContainer: { gap: 10 },
+    metricsContainer: { gap: 12 },
     metricCard: { 
         flexDirection: 'row', 
         alignItems: 'center', 
         backgroundColor: '#fff', 
-        padding: 14, 
-        borderRadius: 18,
-        shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 
+        padding: 16, 
+        borderRadius: 20,
+        shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 3,
+        borderWidth: 1,
+        borderColor: '#f8fafc'
     },
-    metricIconBg: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    metricContent: { flex: 1, marginLeft: 12 },
-    metricValue: { fontSize: 18, fontWeight: '800', color: COLORS.DARK },
-    metricLabel: { fontSize: 11, color: COLORS.SLATE, fontWeight: '600', marginTop: 1 },
+    metricIconBg: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    metricContent: { flex: 1, marginLeft: 14 },
+    metricValue: { fontSize: 20, fontWeight: '900', color: COLORS.DARK },
+    metricLabel: { fontSize: 12, color: COLORS.SLATE, fontWeight: '700', marginTop: 2 },
 
     // Salary
-    salaryHeroCard: { borderRadius: 24, overflow: 'hidden', marginBottom: 20, elevation: 8 },
-    salaryHeroGradient: { padding: 25, alignItems: 'center' },
-    salaryHeroLabel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 1 },
-    salaryHeroAmount: { fontSize: 34, fontWeight: '900', color: '#fff', marginVertical: 4 },
-    salaryHeroSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
+    salaryContainer: { minHeight: 200 },
+    salaryHeroCard: { borderRadius: 28, overflow: 'hidden', marginBottom: 25, elevation: 10, shadowColor: COLORS.PRIMARY, shadowOpacity: 0.2, shadowRadius: 15 },
+    salaryHeroGradient: { padding: 30, alignItems: 'center' },
+    salaryHeroLabel: { fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.8)', letterSpacing: 1.5, marginBottom: 5 },
+    salaryHeroAmount: { fontSize: 38, fontWeight: '900', color: '#fff', marginVertical: 5 },
+    salaryHeroSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
     
-    salaryList: { gap: 10 },
+    salaryList: { gap: 12 },
     salaryRow: { 
         flexDirection: 'row', 
         alignItems: 'center', 
         backgroundColor: '#fff', 
-        padding: 16, 
-        borderRadius: 16,
+        padding: 18, 
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: '#f1f5f9'
     },
-    salaryRowLabel: { flex: 1, marginLeft: 12, fontSize: 13, fontWeight: '600', color: COLORS.DARK },
-    salaryRowValue: { fontSize: 15, fontWeight: '800' },
+    salaryRowLabel: { flex: 1, marginLeft: 14, fontSize: 14, fontWeight: '700', color: COLORS.DARK },
+    salaryRowValue: { fontSize: 16, fontWeight: '900' },
 
     // Error Box
     errorBox: { alignItems: 'center', marginTop: 60, padding: 20 },
-    errorText: { color: COLORS.SLATE, fontSize: 14, marginTop: 10, textAlign: 'center', fontWeight: '600' },
-    retryBtn: { backgroundColor: COLORS.DARK, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, marginTop: 15 },
-    retryBtnText: { color: COLORS.WHITE, fontWeight: '700' },
+    errorText: { color: COLORS.SLATE, fontSize: 15, marginTop: 12, textAlign: 'center', fontWeight: '600' },
+    retryBtn: { backgroundColor: COLORS.DARK, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16, marginTop: 20 },
+    retryBtnText: { color: COLORS.WHITE, fontWeight: '800', letterSpacing: 1 },
 
     // Modals
     successCard: { 
@@ -849,60 +972,60 @@ const localStyles = StyleSheet.create({
         padding: 30, 
         alignItems: 'center' 
     },
-    successIconWrapper: { marginBottom: 15 },
-    successIconInner: { width: 70, height: 70, borderRadius: 35, justifyContent: 'center', alignItems: 'center' },
-    successTitle: { fontSize: 22, fontWeight: '800', color: COLORS.DARK },
-    successSub: { fontSize: 14, color: COLORS.SLATE, textAlign: 'center', marginTop: 8, lineHeight: 22 },
-    successBtn: { backgroundColor: COLORS.BG, padding: 14, borderRadius: 14, marginTop: 25, width: '100%', alignItems: 'center' },
-    successBtnText: { color: COLORS.PRIMARY, fontWeight: '700', fontSize: 15 },
+    successIconWrapper: { marginBottom: 20 },
+    successIconInner: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center' },
+    successTitle: { fontSize: 24, fontWeight: '900', color: COLORS.DARK },
+    successSub: { fontSize: 14, color: COLORS.SLATE, textAlign: 'center', marginTop: 10, lineHeight: 24 },
+    successBtn: { backgroundColor: COLORS.BG, padding: 16, borderRadius: 16, marginTop: 30, width: '100%', alignItems: 'center' },
+    successBtnText: { color: COLORS.PRIMARY, fontWeight: '800', fontSize: 16 },
 
-    confirmCard: { backgroundColor: '#fff', width: '100%', borderRadius: 30, padding: 25, alignItems: 'center' },
-    confirmIconBg: { backgroundColor: COLORS.DANGER[0], width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-    confirmTitle: { fontSize: 20, fontWeight: '800', color: COLORS.DARK },
-    confirmSub: { fontSize: 13, color: COLORS.SLATE, textAlign: 'center', marginTop: 6 },
-    confirmActions: { flexDirection: 'row', gap: 10, marginTop: 25, width: '100%' },
-    confirmCancelBtn: { flex: 1, backgroundColor: COLORS.BG, padding: 14, borderRadius: 14, alignItems: 'center' },
-    confirmCancelText: { fontWeight: '600', color: COLORS.DARK },
-    confirmActionBtn: { flex: 1.2, borderRadius: 14, overflow: 'hidden' },
-    confirmActionGradient: { padding: 14, alignItems: 'center' },
-    confirmActionText: { color: '#fff', fontWeight: '700' },
+    confirmCard: { backgroundColor: '#fff', width: '100%', borderRadius: 30, padding: 30, alignItems: 'center' },
+    confirmIconBg: { backgroundColor: COLORS.DANGER[0], width: 70, height: 70, borderRadius: 35, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+    confirmTitle: { fontSize: 22, fontWeight: '900', color: COLORS.DARK },
+    confirmSub: { fontSize: 14, color: COLORS.SLATE, textAlign: 'center', marginTop: 8, lineHeight: 22 },
+    confirmActions: { flexDirection: 'row', gap: 12, marginTop: 30, width: '100%' },
+    confirmCancelBtn: { flex: 1, backgroundColor: COLORS.BG, padding: 16, borderRadius: 16, alignItems: 'center' },
+    confirmCancelText: { fontWeight: '700', color: COLORS.DARK, fontSize: 15 },
+    confirmActionBtn: { flex: 1.2, borderRadius: 16, overflow: 'hidden' },
+    confirmActionGradient: { padding: 16, alignItems: 'center' },
+    confirmActionText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 
     pickerSheet: { 
         width: '100%', 
         backgroundColor: '#fff', 
         borderRadius: 30, 
-        padding: 25 
+        padding: 30 
     },
-    pickerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.DARK, marginBottom: 20, textAlign: 'center' },
-    yearSwitcher: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, backgroundColor: COLORS.BG, padding: 10, borderRadius: 12 },
-    yearLabel: { color: COLORS.DARK, fontSize: 18, fontWeight: '900' },
+    pickerTitle: { fontSize: 20, fontWeight: '900', color: COLORS.DARK, marginBottom: 25, textAlign: 'center' },
+    yearSwitcher: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, backgroundColor: COLORS.BG, padding: 12, borderRadius: 16 },
+    yearLabel: { color: COLORS.DARK, fontSize: 20, fontWeight: '900' },
     monthGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-    monthItem: { width: '30%', paddingVertical: 12, alignItems: 'center', borderRadius: 12, marginBottom: 8, backgroundColor: COLORS.BG },
+    monthItem: { width: '30%', paddingVertical: 14, alignItems: 'center', borderRadius: 14, marginBottom: 10, backgroundColor: COLORS.BG },
     activeMonthItem: { backgroundColor: COLORS.PRIMARY },
-    monthItemText: { color: COLORS.SLATE, fontSize: 11, fontWeight: '700' },
+    monthItemText: { color: COLORS.SLATE, fontSize: 12, fontWeight: '700' },
     activeMonthItemText: { color: COLORS.WHITE },
-    cancelPickerBtn: { marginTop: 10, alignSelf: 'center' },
-    cancelPickerText: { color: COLORS.DANGER[0], fontWeight: '700', fontSize: 13 },
+    cancelPickerBtn: { marginTop: 15, alignSelf: 'center' },
+    cancelPickerText: { color: COLORS.DANGER[0], fontWeight: '800', fontSize: 14 },
 
     detailSheet: { 
         width: '100%', 
         backgroundColor: '#fff', 
         borderTopLeftRadius: 30, 
         borderTopRightRadius: 30, 
-        padding: 25, 
+        padding: 30, 
         maxHeight: '70%', 
         position: 'absolute', 
         bottom: 0 
     },
-    detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    detailTitle: { fontSize: 18, fontWeight: '800', color: COLORS.DARK },
-    detailRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.BG, padding: 12, borderRadius: 16, marginBottom: 8 },
-    detailDateBox: { width: 48, height: 48, backgroundColor: COLORS.PRIMARY, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    detailDateNum: { fontSize: 16, fontWeight: '900', color: '#fff' },
-    detailDateMon: { fontSize: 9, fontWeight: '700', color: '#fff' },
-    detailDayText: { marginLeft: 12, fontSize: 14, fontWeight: '700', color: COLORS.DARK },
-    detailStatusText: { marginLeft: 12, fontSize: 12, color: COLORS.SLATE, marginTop: 2 },
-    emptyText: { textAlign: 'center', color: COLORS.SLATE, marginTop: 30 }
+    detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+    detailTitle: { fontSize: 20, fontWeight: '900', color: COLORS.DARK },
+    detailRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.BG, padding: 14, borderRadius: 18, marginBottom: 10 },
+    detailDateBox: { width: 50, height: 50, backgroundColor: COLORS.PRIMARY, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    detailDateNum: { fontSize: 18, fontWeight: '900', color: '#fff' },
+    detailDateMon: { fontSize: 10, fontWeight: '800', color: '#fff' },
+    detailDayText: { marginLeft: 14, fontSize: 15, fontWeight: '800', color: COLORS.DARK },
+    detailStatusText: { marginLeft: 14, fontSize: 13, color: COLORS.SLATE, marginTop: 2 },
+    emptyText: { textAlign: 'center', color: COLORS.SLATE, marginTop: 40, fontSize: 15, fontWeight: '600' }
 });
 
 export default LogOut;
