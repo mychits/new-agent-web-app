@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
 import {
   View,
@@ -18,7 +19,8 @@ import {
   PanResponder,
   Image,
   Alert,
-  Easing
+  Easing,
+  Platform
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -37,16 +39,16 @@ const COLORS = {
   success: "#27AE60",
   white: "#FFFFFF",
   muted: "#8898AA",
-  glass: "rgba(255, 255, 255, 0.15)",
+  glass: "rgba(255, 255, 255, 0.25)",
+  glassBorder: "rgba(255, 255, 255, 0.4)",
   helpBlue: "#053B90",
 };
 
-// --- COLORS FOR ATTENDANCE MODAL (From Working Code 1) ---
 const ATTENDANCE_PRIMARY_COLOR = "#00BCD4";
 const ATTENDANCE_GRADIENT_START = "#00E5FF";
 const ATTENDANCE_GRADIENT_END = "#0097A7";
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
 const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
@@ -67,7 +69,7 @@ const ICON_CONFIG = {
   groups: { name: 'layers', color: COLORS.bgBlue },
   customerOnHold: { name: 'pause-circle-outline', type: 'MaterialCommunityIcons', color: '#795548' },
   monthlyTurnover: { name: 'swap-horiz', color: '#E91E63' },
-  DueReportImage: { name: 'receipt-long', color: '#FF5722' },
+  DueReport: { name: 'assignment-late', color: '#eb7aa0' },
   attendanceBtn: { name: 'calendar-clock', type: 'MaterialCommunityIcons', color: COLORS.accent },
   rewards: { name: 'card-giftcard', color: COLORS.accent },
   starPoints: { name: 'star-face', type: 'MaterialCommunityIcons', color: COLORS.accent },
@@ -81,9 +83,9 @@ const HelpModal = ({ visible, onClose }) => {
 
   useEffect(() => {
     if (visible) {
-      Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+      Animated.spring(slideAnim, { toValue: 0, tension: 50, friction: 7, useNativeDriver: true }).start();
     } else {
-      Animated.timing(slideAnim, { toValue: width, duration: 300, useNativeDriver: true }).start();
+      Animated.timing(slideAnim, { toValue: width, duration: 250, useNativeDriver: true }).start();
     }
   }, [visible]);
 
@@ -114,25 +116,28 @@ const HelpModal = ({ visible, onClose }) => {
     <Modal animationType="none" transparent={true} visible={visible}>
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPressOut={onClose}>
         <Animated.View style={[styles.helpModalContent, { transform: [{ translateX: slideAnim }] }]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>How can we help?</Text>
-            <TouchableOpacity onPress={onClose}><MaterialIcons name="close" size={24} color="#585858" /></TouchableOpacity>
-          </View>
+          {/* Glass Header for Modal */}
+          <LinearGradient colors={[COLORS.bgBlue, COLORS.primary]} style={styles.helpModalHeader}>
+             <Text style={styles.modalTitle}>How can we help?</Text>
+             <TouchableOpacity onPress={onClose} style={styles.closeCircleBtn}>
+                <Ionicons name="close" size={22} color="#fff" />
+             </TouchableOpacity>
+          </LinearGradient>
+          
           <ScrollView showsVerticalScrollIndicator={false} style={styles.helpScroll}>
             {menuItems.map((item, index) => (
               <TouchableOpacity key={index} style={styles.modalMenuItem} onPress={() => handleMenuItemPress(item)}>
                 <View style={styles.modalMenuItemLeft}>
-                  {item.icon === "whatsapp" ? <Ionicons name="logo-whatsapp" size={24} color={COLORS.helpBlue} /> : <MaterialIcons name={item.icon} size={24} color={COLORS.helpBlue} />}
+                  {item.icon === "whatsapp" ? <Ionicons name="logo-whatsapp" size={24} color={COLORS.success} /> : <MaterialIcons name={item.icon} size={24} color={COLORS.helpBlue} />}
                   <Text style={styles.modalMenuText}>{item.title}</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color="#585858" />
+                <MaterialIcons name="chevron-right" size={24} color="#ccc" />
               </TouchableOpacity>
             ))}
           </ScrollView>
           <View style={styles.modalCallSection}>
-            <Text style={styles.modalCallText}>Still need help? Give us a call.</Text>
             <TouchableOpacity style={styles.modalCallButton} onPress={handleCallUs}>
-              <MaterialIcons name="phone" size={20} color="#fff" style={styles.modalCallIcon} />
+              <MaterialIcons name="phone-in-talk" size={20} color="#fff" style={{marginRight: 8}} />
               <Text style={styles.modalCallButtonText}>Call Us Now</Text>
             </TouchableOpacity>
           </View>
@@ -142,7 +147,7 @@ const HelpModal = ({ visible, onClose }) => {
   );
 };
 
-// --- COMPONENT: ATTENDANCE MODAL (From Working Code 1) ---
+// --- COMPONENT: ATTENDANCE MODAL ---
 const AttendanceModal = ({
   attendanceLoading,
   selectedStatus,
@@ -154,25 +159,22 @@ const AttendanceModal = ({
   setNote,
 }) => {
   const [isNoteOpen, setIsNoteOpen] = useState(false);
-  const scaleAnim = useState(new Animated.Value(0.5))[0];
+  // FIXED: Changed [0] to .current
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      scaleAnim.setValue(0.5);
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.out(Easing.back(1.7)),
-        useNativeDriver: true,
-      }).start();
+      scaleAnim.setValue(0);
+      rotateAnim.setValue(-10);
+      Animated.parallel([
+        Animated.spring(scaleAnim, { toValue: 1, tension: 40, friction: 7, useNativeDriver: true }),
+        Animated.timing(rotateAnim, { toValue: 0, duration: 400, easing: Easing.elastic(1.5), useNativeDriver: true })
+      ]).start();
       setIsNoteOpen(false);
       setNote("");
     }
   }, [visible]);
-
-  const animatedImageStyle = {
-    transform: [{ scale: scaleAnim }],
-  };
 
   return (
     <Modal
@@ -182,18 +184,18 @@ const AttendanceModal = ({
       onRequestClose={onClose}
     >
       <View style={modalStyles.centeredView}>
-        <View style={modalStyles.modalView}>
+        <Animated.View style={[modalStyles.modalView, { transform: [{ scale: scaleAnim }, { rotate: rotateAnim.interpolate({inputRange: [-10, 0], outputRange: ['-10deg', '0deg']}) }] }]}>
           <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
-            <Text style={modalStyles.closeButtonText}>✕</Text>
+            <Ionicons name="close-circle" size={32} color="#bdc3c7" />
           </TouchableOpacity>
 
           <LinearGradient
             colors={[ATTENDANCE_GRADIENT_START, ATTENDANCE_GRADIENT_END]}
             style={modalStyles.iconHeader}
           >
-            <Animated.Image
-              source={require("../assets/ab.png")} // Ensure this path is correct
-              style={[modalStyles.modalImage, animatedImageStyle]}
+            <Image
+              source={require("../assets/ab.png")} 
+              style={modalStyles.modalImage}
               resizeMode="contain"
             />
           </LinearGradient>
@@ -201,23 +203,21 @@ const AttendanceModal = ({
           <Text style={modalStyles.modalHeading}>Daily Status Check</Text>
           <Text style={modalStyles.modalText}>{message}</Text>
 
-          {/* ACCORDION HEADER */}
           <TouchableOpacity
             style={modalStyles.accordionHeader}
             onPress={() => setIsNoteOpen(!isNoteOpen)}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
             <Text style={modalStyles.noteLabel}>
               {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'}
             </Text>
-            <Text style={modalStyles.arrowIcon}>
-              {isNoteOpen ? '▲' : '▼'}
-            </Text>
+            <Animated.View style={{transform: [{rotate: isNoteOpen ? '180deg' : '0deg'}]}}>
+               <Ionicons name="chevron-down" size={20} color={COLORS.muted} />
+            </Animated.View>
           </TouchableOpacity>
 
-          {/* ACCORDION CONTENT */}
           {isNoteOpen && (
-            <View style={modalStyles.accordionContent}>
+            <Animated.View style={modalStyles.accordionContent}>
               <TextInput
                 style={modalStyles.inputField}
                 placeholder="e.g., Working remotely today..."
@@ -226,12 +226,13 @@ const AttendanceModal = ({
                 onChangeText={setNote}
                 multiline
               />
-            </View>
+            </Animated.View>
           )}
 
           <TouchableOpacity
             disabled={!selectedStatus || attendanceLoading}
             onPress={handleSubmitAttendance}
+            activeOpacity={0.8}
             style={modalStyles.markAttendanceButtonWrapper}
           >
             <LinearGradient
@@ -253,7 +254,7 @@ const AttendanceModal = ({
               )}
             </LinearGradient>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -267,22 +268,36 @@ const IconRenderer = ({ iconName, iconType, size, color }) => {
 
 // --- COMPONENT: CLEAN GRID CARD ---
 const GridCard = ({ item, onPress, index }) => {
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const [isPressed, setIsPressed] = useState(false);
 
+  // Staggered Entrance Animation
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, friction: 8, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true, delay: index * 50 })
-    ]).start();
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 50,
+      friction: 6,
+      delay: index * 50,
+      useNativeDriver: true
+    }).start();
   }, []);
 
   const config = ICON_CONFIG[item.id] || { name: 'help', color: COLORS.primary };
 
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }, styles.gridItemWrapper]}>
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.gridItemBox}>
-        <View style={[styles.iconContainer, { backgroundColor: `${config.color}15` }]}>
+    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, styles.gridItemWrapper]}>
+      <TouchableOpacity 
+        onPress={onPress} 
+        activeOpacity={1}
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        style={[
+          styles.gridItemBox,
+          isPressed && styles.gridItemPressed,
+          { shadowColor: config.color } // Dynamic shadow color based on icon
+        ]}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: `${config.color}20` }]}>
           <IconRenderer iconName={config.name} iconType={config.type} size={26} color={config.color} />
         </View>
         <Text style={styles.gridTitle}>{item.name}</Text>
@@ -293,67 +308,86 @@ const GridCard = ({ item, onPress, index }) => {
 
 // --- COMPONENT: WIDE CARD ---
 const WideCard = ({ item, onPress, index }) => {
-  const translateX = useRef(new Animated.Value(50)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  
+  // Shimmer effect for overview card
+  const shimmerAnim = useRef(new Animated.Value(-200)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    // Entrance animation
     Animated.parallel([
-      Animated.timing(translateX, { toValue: 0, duration: 400, delay: index * 100, useNativeDriver: true }),
-      Animated.timing(opacity, { toValue: 1, duration: 400, delay: index * 100, useNativeDriver: true })
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, delay: index * 100, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 500, delay: index * 100, useNativeDriver: true })
     ]).start();
   }, []);
 
   useEffect(() => {
     if (item.variant === 'overview') {
-      Animated.loop(Animated.timing(shimmerAnim, { toValue: 1, duration: 2500, useNativeDriver: true })).start();
+      // Shimmer Loop
+      Animated.loop(
+        Animated.timing(shimmerAnim, {
+          toValue: 400,
+          duration: 2000,
+          useNativeDriver: true,
+          easing: Easing.linear
+        })
+      ).start();
+
+      // Pulse Loop
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.1, duration: 1000, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true })
+          Animated.timing(pulseAnim, { toValue: 1.05, duration: 1500, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true })
         ])
       ).start();
     }
   }, [item.variant]);
-
-  const shimmerTranslate = shimmerAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-200, 200],
-  });
 
   let gradientColors = [COLORS.primary, '#102a45'];
   let iconName = 'trending-up';
   let iconType = 'MaterialIcons';
 
   if (item.variant === 'reward') {
-    gradientColors = ['#f8c009ff', '#d4a006'];
+    gradientColors = ['#ffd700', '#ffb900']; // Gold gradient
     iconName = 'card-giftcard';
   }
   if (item.variant === 'star') {
-    gradientColors = ['#f8c009ff', '#d4a006'];
+    gradientColors = ['#ffd700', '#ffb900'];
     iconName = 'star-face';
     iconType = 'MaterialCommunityIcons';
   }
   if (item.variant === 'overview') {
-    gradientColors = ['#f8c009ff', '#d4a006'];
+    gradientColors = ['#183A5D', '#1aa2ccff']; // Deep Navy to Blue
     iconName = 'assessment';
   }
 
   return (
-    <Animated.View style={[{ transform: [{ translateX }], opacity }, styles.wideCardWrapper]}>
+    <Animated.View style={[{ transform: [{ translateX: slideAnim }], opacity }, styles.wideCardWrapper]}>
       <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
         <LinearGradient
           colors={gradientColors}
           style={[styles.wideCard, item.variant === 'overview' && styles.overviewLayout]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
         >
+          {/* Shimmer Effect Overlay for Overview */}
           {item.variant === 'overview' && (
-            <Animated.View style={[styles.shimmerOverlay, { transform: [{ translateX: shimmerTranslate }] }]} />
+            <Animated.View 
+              style={[
+                styles.shimmerOverlay, 
+                { 
+                  transform: [{ translateX: shimmerAnim }] 
+                }
+              ]} 
+            />
           )}
+
           {item.variant === 'overview' ? (
             <>
               <Animated.View style={[styles.wideIconCircle, styles.overviewIcon, { transform: [{ scale: pulseAnim }] }]}>
-                <IconRenderer iconName={iconName} iconType={iconType} size={32} />
+                <IconRenderer iconName={iconName} iconType={iconType} size={32}  />
               </Animated.View>
               <View style={styles.overviewTextContainer}>
                 <Text style={[styles.wideTitle, styles.overviewTitleText]}>My Overview</Text>
@@ -392,13 +426,26 @@ const Home = ({ route, navigation }) => {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [isSideMenuVisible, setSideMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
+  
+  // QR Scanner Animation State
+  const scanLineY = useRef(new Animated.Value(0)).current;
 
-  // Attendance specific states
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Present");
   const [attendanceMessage, setAttendanceMessage] = useState("");
 
   const netInfo = useNetInfo();
   const insets = useSafeAreaInsets();
+
+  // QR Scanner Animation Loop
+  useEffect(() => {
+     Animated.loop(
+       Animated.sequence([
+         Animated.timing(scanLineY, { toValue: 1, duration: 2000, useNativeDriver: true }),
+         Animated.timing(scanLineY, { toValue: 0, duration: 2000, useNativeDriver: true })
+       ])
+     ).start();
+  }, []);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -407,23 +454,18 @@ const Home = ({ route, navigation }) => {
     else setGreeting('Good Evening');
   }, []);
 
-  // --- CORRECTED FETCH LOGIC ---
   useEffect(() => {
     const fetchAgentDetails = async () => {
       if (user?.userId && netInfo.isConnected) {
         try {
-          // FIXED: Using the correct endpoint from Code 1
           const response = await axios.get(`${baseUrl}/agent/get-agent-by-id/${user.userId}`);
-          
           if (response.data) {
             setAgent(response.data);
             if (response.data?.designation_id?.permission) {
               setModifyPayment(response.data.designation_id.permission.modify_payments === "true");
             }
           }
-        } catch (error) { 
-          console.log("Error fetching agent details."); 
-        }
+        } catch (error) { console.log("Error fetching agent details."); }
       }
     };
     fetchAgentDetails();
@@ -435,19 +477,14 @@ const Home = ({ route, navigation }) => {
         try {
           const response = await axios.post(ATTENDANCE_MODAL_URL, { employee_id: user.userId });
           const data = response.data;
-          console.log("Attendance API Response:", data);
-
           if (data?.showModal === true) {
             setAttendanceMessage(data.message || "Eligible to mark attendance");
             setShowAttendanceModal(true);
-          } else if (data?.message) {
-             setShowAttendanceModal(false);
           } else {
             setShowAttendanceModal(false);
           }
         } catch (error) {
           const errorMessage = error.response?.data?.message || error.message;
-          // FIXED: Log as Info if it's just "Already Marked"
           if (errorMessage !== "Attendance Already Marked") {
             console.error("Error checking attendance status:", errorMessage);
           } else {
@@ -475,11 +512,10 @@ const Home = ({ route, navigation }) => {
   const handleSubmitAttendance = async () => {
     try {
       setAttendanceLoading(true);
-
       const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
         employee_id: user?.userId,
-        status: selectedStatus, // "Present"
-        method: "No Auth", // Included from Code 1
+        status: selectedStatus,
+        method: "No Auth",
         type: "in",
         note: note,
       });
@@ -582,33 +618,45 @@ const Home = ({ route, navigation }) => {
   const rewardsStarPointsCards = cardsData.filter(item => item.id === 'rewards' || item.id === 'starPoints');
   const gridCards = cardsData.filter(item => !item.isFullWidth);
 
+  const filteredGridCards = gridCards.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      {/* Background Gradient */}
       <LinearGradient colors={[COLORS.bgBlue, COLORS.primary]} style={StyleSheet.absoluteFill} />
 
-      <View style={[styles.header, { paddingTop: insets.top, marginTop: 15 }]}>
-        <TouchableOpacity onPress={openSideMenu} style={styles.hamburgerContainer}>
-          <View style={styles.hamburgerLine} /><View style={styles.hamburgerLine} /><View style={styles.hamburgerLine} />
+      {/* Header */}
+   <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <TouchableOpacity onPress={openSideMenu} style={styles.iconBtn}>
+          <Ionicons name="menu" size={28} color="#fff" />
         </TouchableOpacity>
         <View style={styles.logoContainer}>
           <Image source={require("../assets/Group400.png")} style={styles.headerLogo} resizeMode="contain" />
-          <Text style={styles.headerTitle}>My Chits </Text>
+          <Text style={styles.headerTitle}>My Chits</Text>
         </View>
-        <TouchableOpacity style={styles.helpButton} onPress={() => setShowHelpModal(true)}>
-          <Ionicons name="help-circle-outline" size={20} color="#fff" />
+        <TouchableOpacity style={styles.iconBtn} onPress={() => setShowHelpModal(true)}>
+          <Ionicons name="help-buoy" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Greeting Section */}
         <View style={styles.greetingCard}>
           <View style={styles.greetingTextContainer}>
             <Text style={styles.greetingLabel}>{greeting},</Text>
             <Text style={styles.agentName}>{agent.name || "Agent"}</Text>
           </View>
-          <View style={styles.statusBadge}><Text style={styles.statusText}>Active</Text></View>
+          <View style={styles.statusBadgeContainer}>
+             <LinearGradient colors={[COLORS.success, '#219150']} style={styles.statusBadge}>
+                <Text style={styles.statusText}>Active</Text>
+             </LinearGradient>
+          </View>
         </View>
 
+        {/* Wide Cards (Overview) */}
         {topWideCards.length > 0 && (
           <View style={styles.wideCardsSection}>
             {topWideCards.map((item, index) => (
@@ -617,15 +665,50 @@ const Home = ({ route, navigation }) => {
           </View>
         )}
 
+        {/* Grid Section */}
         <View style={styles.servicesSection}>
           <Text style={styles.sectionTitle}>Quick Access</Text>
+          
+          {/* MOVED SEARCH BAR HERE */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={20} color={COLORS.muted} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search Quick Access..."
+                placeholderTextColor={COLORS.muted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearButton}>
+                  <Ionicons name="close-circle" size={20} color={COLORS.muted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* SEARCHING FOR TEXT */}
+          {searchQuery.length > 0 && (
+            <Text style={styles.searchingText}>
+              Searching for "{searchQuery}"
+            </Text>
+          )}
+
           <View style={styles.gridContainer}>
-            {gridCards.map((item, index) => (
-              <GridCard key={item.id} item={item} index={index} onPress={item.onPress} />
-            ))}
+            {filteredGridCards.length > 0 ? (
+              filteredGridCards.map((item, index) => (
+                <GridCard key={item.id} item={item} index={index} onPress={item.onPress} />
+              ))
+            ) : (
+              <View style={styles.noResultContainer}>
+                <Text style={styles.noResultText}>No services found</Text>
+              </View>
+            )}
           </View>
         </View>
 
+        {/* Rewards/Stars Wide Cards */}
         {rewardsStarPointsCards.length > 0 && (
           <View style={styles.wideCardsSection}>
             {rewardsStarPointsCards.map((item, index) => (
@@ -634,15 +717,32 @@ const Home = ({ route, navigation }) => {
           </View>
         )}
 
+        {/* QR Section with Scanner Animation */}
         <View style={styles.qrSection}>
-          <LinearGradient colors={[COLORS.bgBlue, COLORS.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.qrCard}>
+          <LinearGradient 
+            colors={[COLORS.primary, '#0f2b47']} 
+            start={{x:0, y:0}} end={{x:1, y:1}}
+            style={styles.qrCard}
+          >
             <View style={styles.qrHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialIcons name="qr-code-scanner" size={24} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.qrTitle}>Business QR</Text>
-              </View>
+              <MaterialIcons name="qr-code-scanner" size={24} color={COLORS.accent} style={{ marginRight: 8 }} />
+              <Text style={styles.qrTitle}>Business QR</Text>
             </View>
-            <View style={styles.qrBox}><Image source={require("../assets/upi_qr (1).png")} style={styles.qrImage} /></View>
+            
+            <View style={styles.qrBox}>
+              <Image source={require("../assets/upi_qr (1).png")} style={styles.qrImage} />
+              {/* Animated Scanner Line */}
+              <Animated.View 
+                style={[
+                  styles.scanLine, 
+                  { 
+                    opacity: 0.7,
+                    transform: [{ translateY: scanLineY.interpolate({inputRange: [0, 1], outputRange: [0, 150]}) }] 
+                  }
+                ]} 
+              />
+            </View>
+
             <TouchableOpacity onPress={() => copyToClipboard("mychits@kotak")} style={styles.upiButton}>
               <Text style={styles.upiText}>mychits@kotak</Text>
               <MaterialIcons name="content-copy" size={16} color="#fff" style={{ marginLeft: 5 }} />
@@ -650,23 +750,25 @@ const Home = ({ route, navigation }) => {
           </LinearGradient>
         </View>
 
+        {/* Footer */}
         <View style={styles.footerSection}>
           <Text style={styles.footerTitle}>Agent Support</Text>
           <View style={styles.supportRow}>
-            <View style={styles.supportItem}>
-              <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL('tel:9483900777')}>
-                <MaterialIcons name="phone" size={20} color={COLORS.primary} />
-              </TouchableOpacity>
+            <TouchableOpacity style={styles.supportBtn} onPress={() => Linking.openURL('tel:9483900777')}>
+              <View style={styles.supportCircle}>
+                <MaterialIcons name="phone" size={22} color={COLORS.primary} />
+              </View>
               <Text style={styles.supportLabel}>Call Us</Text>
-            </View>
-            <View style={styles.supportItem}>
-              <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL('whatsapp://send?phone=919483900777')}>
-                <Ionicons name="logo-whatsapp" size={20} color={COLORS.success} />
-              </TouchableOpacity>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.supportBtn} onPress={() => Linking.openURL('whatsapp://send?phone=919483900777')}>
+              <View style={styles.supportCircle}>
+                <Ionicons name="logo-whatsapp" size={22} color={COLORS.success} />
+              </View>
               <Text style={styles.supportLabel}>WhatsApp</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
+        <View style={{height: 30}} />
       </ScrollView>
 
       {/* SIDE MENU */}
@@ -676,11 +778,7 @@ const Home = ({ route, navigation }) => {
             <LinearGradient colors={[COLORS.bgBlue, COLORS.primary]} style={styles.menuHeader}>
               <TouchableOpacity onPress={closeSideMenu} style={styles.closeMenuBtn}><MaterialIcons name="close" size={28} color="#fff" /></TouchableOpacity>
               <View style={styles.headerContainer}>
-                <Image
-                  source={require("../assets/Group400.png")}
-                  style={styles.headerLogo}
-                  resizeMode="contain"
-                />
+                <Image source={require("../assets/Group400.png")} style={styles.headerLogo} resizeMode="contain" />
               </View>
               <Text style={styles.menuAgentName}>{agent.name || "Agent"}</Text>
             </LinearGradient>
@@ -689,7 +787,7 @@ const Home = ({ route, navigation }) => {
               <MenuItem icon="person-outline" text="My Profile" onPress={() => { navigation.navigate("Profile", { user }); closeSideMenu(); }} />
               <MenuItem icon="settings-outline" text="Settings" onPress={() => { navigation.navigate("Profile", { user }); closeSideMenu(); }} />
               <View style={styles.menuDivider} />
-              <MenuItem icon="log-out-outline" text="Logout" color="red" onPress={() => { closeSideMenu(); navigation.replace("Login"); }} />
+              <MenuItem icon="log-out-outline" text="Logout" color="#e74c3c" onPress={() => { closeSideMenu(); navigation.replace("Login"); }} />
             </ScrollView>
           </Animated.View>
         </TouchableOpacity>
@@ -718,205 +816,110 @@ const MenuItem = ({ icon, text, onPress, color }) => (
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingBottom: 10, paddingHorizontal: 15, paddingTop: 24, justifyContent: 'space-between', zIndex: 10 },
-  hamburgerContainer: { padding: 5 }, hamburgerLine: { width: 24, height: 2.5, backgroundColor: '#fff', borderRadius: 2, marginVertical: 2.5 },
-  logoContainer: { flexDirection: 'row', alignItems: 'center', flex: 1, marginLeft: 50 },
-  headerTitle: { color: '#fff', fontSize: 25, fontWeight: 'bold', marginLeft: 10 },
-  headerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' },
-  headerLogo: { width: 50, height: 40 },
-  helpButton: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
-  scrollView: { flex: 1 },
-  greetingCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 15, marginTop: 15, marginBottom: 20, padding: 20, borderRadius: 30, backgroundColor: '#FFFFFF', elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
-  greetingTextContainer: { flex: 1 }, greetingLabel: { fontSize: 14, color: COLORS.muted, fontWeight: '700' },
-  agentName: { fontSize: 22, color: COLORS.primary, fontWeight: '900', marginTop: 2 },
-  statusBadge: { backgroundColor: COLORS.accent, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  statusText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 12 },
+  container: { flex: 1, backgroundColor: '#f0f4f8' },
+  
+  // HEADER
+  header: { flexDirection: 'row', alignItems: 'center', paddingBottom: 15, paddingHorizontal: 15, justifyContent: 'space-between', zIndex: 10 },
+  iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', flex: 1, marginLeft: 15 },
+  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginLeft: 10, letterSpacing: 0.5 },
+  headerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  headerLogo: { width: 45, height: 35 },
+
+  // GREETING
+  scrollView: { flex: 1, marginTop: 10 },
+  greetingCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 15, marginTop: 10, marginBottom: 25, padding: 20, borderRadius: 24, backgroundColor: '#FFFFFF', elevation: 12, shadowColor: COLORS.primary, shadowOpacity: 0.15, shadowRadius: 15, shadowOffset: { width: 0, height: 8 } },
+  greetingTextContainer: { flex: 1 }, greetingLabel: { fontSize: 14, color: COLORS.muted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
+  agentName: { fontSize: 24, color: COLORS.primary, fontWeight: '900', marginTop: 4 },
+  statusBadgeContainer: { shadowColor: COLORS.success, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
+  statusBadge: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center' },
+  statusText: { color: '#fff', fontWeight: 'bold', fontSize: 12, letterSpacing: 0.5 },
+  
+  // SEARCH
+  servicesSection: { paddingHorizontal: 15, marginBottom: 20 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 18, marginLeft: 5, letterSpacing: 0.5 },
+  searchContainer: { paddingHorizontal: 0, marginBottom: 15 }, // Adjusted padding for new location
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 8, elevation: 8, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  searchIcon: { marginRight: 12 }, searchInput: { flex: 1, height: 45, fontSize: 15, color: COLORS.primary, fontWeight: '500' },
+  clearButton: { padding: 5 },
+  searchingText: { fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 15, marginLeft: 5, fontStyle: 'italic' },
+  noResultContainer: { width: '100%', paddingVertical: 30, alignItems: 'center' },
+  noResultText: { color: 'rgba(255,255,255,0.8)', fontSize: 16, fontWeight: '500' },
+
+  // WIDE CARDS
   wideCardsSection: { paddingHorizontal: 15, marginBottom: 25 },
   wideCardWrapper: { marginBottom: 15 },
-  wideCard: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 30, elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, overflow: 'hidden' },
-  shimmerOverlay: { position: 'absolute', top: 0, left: 0, width: '50%', height: '100%', backgroundColor: 'rgba(255,255,255,0.25)', transform: [{ skewX: '-20deg' }] },
-  overviewLayout: { flexDirection: 'column', alignItems: 'center', paddingVertical: 25, justifyContent: 'center' },
-  wideIconCircle: { width: 55, height: 55, borderRadius: 27.5, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 15, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 5 },
-  overviewIcon: { marginRight: 0, marginBottom: 12, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 6 }, shadowRadius: 10, elevation: 8 },
+  wideCard: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 28, elevation: 12, shadowColor: COLORS.primary, shadowOpacity: 0.25, shadowRadius: 15, shadowOffset: { width: 0, height: 8 }, overflow: 'hidden', position: 'relative' },
+  shimmerOverlay: { position: 'absolute', top: 0, left: 0, width: '60%', height: '100%', backgroundColor: 'rgba(255,255,255,0.15)', transform: [{ skewX: '-15deg' }] },
+  overviewLayout: { flexDirection: 'column', alignItems: 'center', paddingVertical: 30, justifyContent: 'center' },
+  wideIconCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 18, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 5 },
+  overviewIcon: { marginRight: 0, marginBottom: 15, backgroundColor: '#fff', shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 6 }, shadowRadius: 15, elevation: 8 },
   wideTextContainer: { flex: 1 }, overviewTextContainer: { alignItems: 'center' },
-  wideTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' }, overviewTitleText: { fontSize: 20, textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 },
-  wideSubTitle: { color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 2 },
-  servicesSection: { paddingHorizontal: 15, marginBottom: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: '#fff', marginBottom: 15, marginLeft: 5 },
+  wideTitle: { color: '#fff', fontSize: 19, fontWeight: 'bold' }, overviewTitleText: { fontSize: 22, textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 },
+  wideSubTitle: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 4, fontWeight: '500' },
+
+  // GRID CARDS
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  gridItemWrapper: { width: '31%', marginBottom: 12 },
-  gridItemBox: { backgroundColor: '#FFFFFF', borderRadius: 25, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 5, height: 110 },
-  iconContainer: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  gridTitle: { fontSize: 11, fontWeight: 'bold', color: COLORS.primary, textAlign: 'center' },
+  gridItemWrapper: { width: '31.5%', marginBottom: 12 },
+  gridItemBox: { backgroundColor: '#FFFFFF', borderRadius: 22, paddingVertical: 18, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 4 }, height: 115 },
+  gridItemPressed: { transform: [{ scale: 0.95 }] }, // Active state
+  iconContainer: { width: 50, height: 50, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  gridTitle: { fontSize: 11, fontWeight: '700', color: COLORS.primary, textAlign: 'center' },
+
+  // QR SECTION
   qrSection: { paddingHorizontal: 15, marginBottom: 30 },
-  qrCard: { borderRadius: 30, padding: 25, alignItems: 'center', elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 },
-  qrHeader: { width: '100%', marginBottom: 20 }, qrTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  qrBox: { backgroundColor: '#fff', padding: 15, borderRadius: 20, marginBottom: 15 }, qrImage: { width: 180, height: 180 },
-  upiButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25 },
-  upiText: { color: '#fff', fontWeight: 'bold' },
-  footerSection: { alignItems: 'center', paddingVertical: 20, marginHorizontal: 15, backgroundColor: '#fff', borderRadius: 30, marginBottom: 20, elevation: 10 },
-  footerTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary, marginBottom: 15 },
-  supportRow: { flexDirection: 'row' }, supportItem: { alignItems: 'center', marginHorizontal: 25 },
-  callBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.glass, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.bgBlue },
-  supportLabel: { fontSize: 12, color: COLORS.muted, marginTop: 5, fontWeight: '600' }, versionText: { marginTop: 20, fontSize: 12, color: COLORS.muted },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '60%', width: '100%', position: 'absolute', bottom: 0 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.primary }, modalBody: { flex: 1, padding: 25, alignItems: 'center' },
-  modalIconContainer: { width: 70, height: 70, borderRadius: 35, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  modalSubText: { fontSize: 16, color: COLORS.muted, marginBottom: 20 },
-  inputField: { width: '100%', height: 80, borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 10, padding: 10, textAlignVertical: 'top', marginBottom: 20, backgroundColor: '#F9F9F9' },
-  buttonRow: { flexDirection: 'row', width: '100%', marginTop: 10, justifyContent: 'space-between' },
-  halfButton: { width: '48%' },
-  submitButton: { width: '100%', padding: 15, borderRadius: 12, alignItems: 'center' },
-  submitButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  helpModalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '38%', width: '100%', position: 'absolute', bottom: 0, elevation: 5 },
-  helpScroll: { flex: 1, paddingHorizontal: 25 }, modalMenuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', backgroundColor: 'transparent' },
-  modalMenuItemLeft: { flexDirection: 'row', alignItems: 'center' }, modalMenuText: { fontSize: 17, color: '#424242', marginLeft: 20, fontWeight: '500' },
-  modalCallSection: { marginTop: 20, alignItems: 'center', paddingTop: 15, borderTopColor: '#f0f0f0', marginBottom: 20, paddingHorizontal: 25 },
-  modalCallText: { fontSize: 16, color: '#616161', marginBottom: 15, textAlign: 'center' },
-  modalCallButton: { flexDirection: 'row', backgroundColor: '#4CAF50', paddingVertical: 12, paddingHorizontal: 26, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
-  modalCallIcon: { marginRight: 12 }, modalCallButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
-  menuOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 },
-  sideMenu: { width: '80%', height: '100%', backgroundColor: '#fff', position: 'absolute', left: 0, top: 0 },
-  menuHeader: { padding: 30, paddingTop: 70, borderBottomLeftRadius: 30 }, closeMenuBtn: { position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 15, padding: 5 },
-  menuAgentName: { fontSize: 20, color: '#fff', fontWeight: 'bold', marginTop: 45, textAlign: 'center' },
-  menuAgentId: { fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 5 },
-  menuScroll: { flex: 1, paddingTop: 20 }, menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 25 },
-  menuIcon: { marginRight: 15, width: 25 }, menuText: { fontSize: 16, color: '#333' }, menuDivider: { height: 1, backgroundColor: '#eee', marginVertical: 10, marginHorizontal: 20 },
+  qrCard: { borderRadius: 28, padding: 25, alignItems: 'center', elevation: 15, shadowColor: COLORS.bgBlue, shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: 10 } },
+  qrHeader: { width: '100%', marginBottom: 20, flexDirection: 'row', alignItems: 'center' }, qrTitle: { color: '#fff', fontSize: 19, fontWeight: 'bold' },
+  qrBox: { backgroundColor: '#fff', padding: 12, borderRadius: 20, marginBottom: 18, position: 'relative', overflow: 'hidden' }, 
+  qrImage: { width: 180, height: 180 },
+  scanLine: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: COLORS.accent, shadowColor: COLORS.accent, shadowRadius: 10, shadowOpacity: 1 },
+  upiButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 25, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  upiText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+
+  // FOOTER
+  footerSection: { alignItems: 'center', paddingVertical: 25, marginHorizontal: 15, backgroundColor: '#fff', borderRadius: 28, marginBottom: 20, elevation: 10, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 },
+  footerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.primary, marginBottom: 20 },
+  supportRow: { flexDirection: 'row', width: '60%', justifyContent: 'space-between' },
+  supportBtn: { alignItems: 'center' },
+  supportCircle: { width: 55, height: 55, borderRadius: 27.5, backgroundColor: '#f4f7fa', justifyContent: 'center', alignItems: 'center', marginBottom: 8, borderWidth: 1, borderColor: '#eef2f5' },
+  supportLabel: { fontSize: 13, color: COLORS.muted, fontWeight: '600' },
+
+  // MODALS
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  helpModalContent: { backgroundColor: '#fff', borderTopLeftRadius: 35, borderTopRightRadius: 35, height: '55%', width: '100%', position: 'absolute', bottom: 0, elevation: 20 },
+  helpModalHeader: { padding: 25, paddingTop: 35, borderTopLeftRadius: 35, borderTopRightRadius: 35, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  closeCircleBtn: { backgroundColor: 'rgba(255,255,255,0.2)', padding: 5, borderRadius: 15 },
+  modalTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  helpScroll: { flex: 1, paddingHorizontal: 25 }, modalMenuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  modalMenuItemLeft: { flexDirection: 'row', alignItems: 'center' }, modalMenuText: { fontSize: 17, color: '#333', marginLeft: 15, fontWeight: '600' },
+  modalCallSection: { marginTop: 10, alignItems: 'center', paddingTop: 20, borderTopColor: '#f0f0f0', marginBottom: 25 },
+  modalCallButton: { flexDirection: 'row', backgroundColor: COLORS.success, paddingVertical: 14, paddingHorizontal: 40, borderRadius: 30, alignItems: 'center', elevation: 5, shadowColor: COLORS.success, shadowOpacity: 0.4, shadowRadius: 10 },
+  modalCallButtonText: { color: "#FFFFFF", fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
+
+  // SIDE MENU
+  menuOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 10 },
+  sideMenu: { width: '80%', height: '100%', backgroundColor: '#fff', position: 'absolute', left: 0, top: 0, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 20 },
+  menuHeader: { padding: 30, paddingTop: 80, borderBottomLeftRadius: 35 }, closeMenuBtn: { position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: 8 },
+  menuAgentName: { fontSize: 22, color: '#fff', fontWeight: 'bold', marginTop: 50, textAlign: 'center' },
+  menuScroll: { flex: 1, paddingTop: 30 }, menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 30 },
+  menuIcon: { marginRight: 20, width: 26 }, menuText: { fontSize: 17, color: '#444', fontWeight: '600' }, menuDivider: { height: 1, backgroundColor: '#eee', marginVertical: 15, marginHorizontal: 25 },
 });
 
-// --- STYLES FOR ATTENDANCE MODAL (From Code 1) ---
 const modalStyles = StyleSheet.create({
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-  },
-  modalView: {
-    backgroundColor: "white",
-    borderRadius: 15,
-    padding: 30,
-    alignItems: "center",
-    width: "90%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
-    marginTop: 50,
-    borderWidth: 2,
-    borderColor: '#108da3ff',
-  },
-  iconHeader: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-    marginTop: -80,
-    shadowColor: ATTENDANCE_PRIMARY_COLOR,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  modalImage: {
-    width: 85,
-    height: 65,
-  },
-  modalHeading: {
-    fontSize: 26,
-    fontWeight: "900",
-    color: "#2c3e50",
-    marginBottom: 5,
-  },
-  modalText: {
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#7f8c8d",
-    lineHeight: 22,
-    marginBottom: 25,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 15,
-    right: 15,
-    padding: 5,
-    zIndex: 10,
-  },
-  closeButtonText: { fontSize: 28, fontWeight: "300", color: "#95a5a6" },
-  accordionHeader: {
-    width: "100%",
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginTop: 5,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#dcdcdc',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  noteLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#34495e',
-  },
-  arrowIcon: {
-    fontSize: 15,
-    color: '#c2c3c4ff',
-    fontWeight: '900',
-  },
-  accordionContent: {
-    width: "100%",
-    marginTop: 8,
-    marginBottom: 10,
-  },
-  inputField: {
-    width: "100%",
-    minHeight: 90,
-    borderColor: '#dcdcdc',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 15,
-    fontSize: 16,
-    color: '#34495e',
-    backgroundColor: '#fff',
-    textAlignVertical: 'top',
-  },
-  markAttendanceButtonWrapper: {
-    width: "100%",
-    marginTop: 30,
-    borderRadius: 10,
-    overflow: "hidden",
-    shadowColor: ATTENDANCE_PRIMARY_COLOR,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  markAttendanceButton: {
-    paddingVertical: 18,
-    alignItems: "center",
-  },
-  markAttendanceButtonText: {
-    color: "Green",
-    fontWeight: "bold",
-    textAlign: "center",
-    fontSize: 19,
-    letterSpacing: 1,
-  },
+  centeredView: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.6)" },
+  modalView: { backgroundColor: "white", borderRadius: 25, padding: 30, alignItems: "center", width: "90%", shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 20 },
+  iconHeader: { width: 110, height: 110, borderRadius: 55, justifyContent: "center", alignItems: "center", marginBottom: 20, marginTop: -90, shadowColor: ATTENDANCE_PRIMARY_COLOR, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10, borderWidth: 4, borderColor: '#fff' },
+  modalImage: { width: 70, height: 55, tintColor: '#fff' },
+  modalHeading: { fontSize: 24, fontWeight: "900", color: COLORS.primary, marginBottom: 5 },
+  modalText: { textAlign: "center", fontSize: 15, fontWeight: "500", color: "#7f8c8d", lineHeight: 22, marginBottom: 25 },
+  closeButton: { position: "absolute", top: 15, right: 15, padding: 5, zIndex: 10 },
+  accordionHeader: { width: "100%", flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 15, marginTop: 5, backgroundColor: '#f8f9fa', borderRadius: 12 },
+  noteLabel: { fontSize: 14, fontWeight: '600', color: '#333' },
+  accordionContent: { width: "100%", marginTop: 10, marginBottom: 10 },
+  inputField: { width: "100%", minHeight: 80, borderColor: '#ddd', borderWidth: 1.5, borderRadius: 12, padding: 12, fontSize: 15, color: '#333', backgroundColor: '#fff', textAlignVertical: 'top' },
+  markAttendanceButtonWrapper: { width: "100%", marginTop: 30, borderRadius: 15, overflow: "hidden", shadowColor: ATTENDANCE_PRIMARY_COLOR, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 8 },
+  markAttendanceButton: { paddingVertical: 16, alignItems: "center" },
+  markAttendanceButtonText: { color: "#fff", fontWeight: "bold", textAlign: "center", fontSize: 18, letterSpacing: 1 },
 });
 
 export default Home;

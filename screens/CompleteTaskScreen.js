@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
     View,
@@ -119,7 +120,8 @@ export default function CompleteTaskScreen({ route, navigation }) {
                         <Text style={styles.screenTitle}>Complete Task</Text>
                         <View style={styles.screenTitleSeparator} />
 
-                        <Ionicons name="checkmark-done-circle-outline" size={80} color={COLOR_PALETTE.softBlue} style={styles.cardIcon} />
+                        {/* Reduced Icon Size */}
+                        <Ionicons name="checkmark-done-circle-outline" size={60} color={COLOR_PALETTE.softBlue} style={styles.cardIcon} />
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>Status</Text>
@@ -236,33 +238,33 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         paddingHorizontal: 20,
-        marginTop: 100,
+        marginTop: 10,
         flex: 1,
         justifyContent: 'center',
     },
     screenTitle: {
-        fontSize: 28,
+        fontSize: 24, // Reduced from 28
         fontWeight: '800',
         color: COLOR_PALETTE.primary,
         textAlign: 'center',
         marginBottom: 4,
-        lineHeight: 32,
+        lineHeight: 28, // Adjusted
         letterSpacing: 0.5,
     },
     screenTitleSeparator: {
         width: '40%',
         height: 2,
         backgroundColor: COLOR_PALETTE.primary,
-        marginBottom: 20,
+        marginBottom: 15, // Reduced from 20
         borderRadius: 1,
     },
     card: {
         backgroundColor: COLOR_PALETTE.glassBackground,
         width: '100%',
         maxWidth: 400,
-        paddingHorizontal: 30,
-        paddingVertical: 40,
-        borderRadius: 25,
+        paddingHorizontal: 20, // Reduced from 30
+        paddingVertical: 25, // Reduced from 40
+        borderRadius: 20, // Reduced from 25
         alignItems: 'center',
         elevation: 12,
         borderColor: COLOR_PALETTE.cardBorder,
@@ -274,18 +276,18 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     cardIcon: {
-        marginBottom: 20,
+        marginBottom: 15, // Reduced from 20
         opacity: 0.7,
         textShadowColor: 'rgba(0,0,0,0.1)',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 2,
     },
-    inputGroup: { width: '100%', marginBottom: 20 },
+    inputGroup: { width: '100%', marginBottom: 15 }, // Reduced from 20
     inputLabel: {
-        fontSize: 16,
+        fontSize: 15, // Reduced from 16
         fontWeight: '600',
         color: COLOR_PALETTE.primary,
-        marginBottom: 8,
+        marginBottom: 6, // Reduced from 8
         marginLeft: 10,
     },
     statusDropdown: {
@@ -293,10 +295,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        height: 60,
+        height: 50, // Reduced from 60
         backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        paddingHorizontal: 20,
+        borderRadius: 14, // Reduced from 16
+        paddingHorizontal: 15, // Reduced from 20
         shadowColor: COLOR_PALETTE.shadowColor,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.1,
@@ -305,16 +307,16 @@ const styles = StyleSheet.create({
         borderColor: COLOR_PALETTE.cardBorder,
         borderWidth: 1,
     },
-    statusDropdownText: { fontSize: 16, color: COLOR_PALETTE.primary },
+    statusDropdownText: { fontSize: 15, color: COLOR_PALETTE.primary }, // Reduced from 16
     textInputMultiline: {
         width: "100%",
-        minHeight: 120,
-        maxHeight: 200,
+        minHeight: 90, // Reduced from 120
+        maxHeight: 150, // Reduced from 200
         backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        fontSize: 16,
+        borderRadius: 14, // Reduced from 16
+        paddingHorizontal: 15, // Reduced from 20
+        paddingVertical: 12, // Reduced from 15
+        fontSize: 15, // Reduced from 16
         color: COLOR_PALETTE.primary,
         shadowColor: COLOR_PALETTE.shadowColor,
         shadowOffset: { width: 0, height: 3 },
@@ -327,8 +329,8 @@ const styles = StyleSheet.create({
     },
     submitButtonWrapper: {
         width: '100%',
-        marginTop: 30,
-        marginBottom: 20,
+        marginTop: 20, // Reduced from 30
+        marginBottom: 10, // Reduced from 20
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -336,9 +338,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        width: width * 0.7,
-        height: 60,
-        borderRadius: 30,
+        width: width * 0.65, // Slightly reduced from 0.7
+        height: 50, // Reduced from 60
+        borderRadius: 25, // Reduced from 30
         shadowColor: COLOR_PALETTE.buttonGradientEnd,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.4,
@@ -348,7 +350,7 @@ const styles = StyleSheet.create({
     submitButtonContent: { flexDirection: 'row', alignItems: 'center' },
     submitButtonText: {
         color: COLOR_PALETTE.lightText,
-        fontSize: 20,
+        fontSize: 18, // Reduced from 20
         fontWeight: '700',
         letterSpacing: 1,
     },

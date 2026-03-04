@@ -221,16 +221,17 @@ const StarPoints = ({ navigation, route }) => {
 
     return { name, sub, val1, val2, val3, label1, label2, label3 };
   };
-
   const getMetricsConfig = (item) => [
     { label: "Referral App Count", value: item.referral_customer_app_count || 0, icon: "smartphone", color: "#4CAF50" },
     { label: "Referral Customer Count", value: item.referral_customer_count || 0, icon: "group-add", color: "#2196F3" },
     { label: "Leads Count", value: item.leads_count || 0, icon: "person-add", color: "#FF9800" },
     { label: "Loans Count", value: item.loans_count || 0, icon: "account-balance-wallet", color: "#795548" },
     { label: "Total Loan Amounts", value: formatCurrency(item.total_loan_amounts), icon: "payments", color: "#E91E63" },
-    { label: "Pigmes Count", value: item.pigmes_count || 0, icon: "pets", color: "#9C27B0" },
+    // UPDATED: Changed icon from "pets" to "savings"
+    { label: "Pigmes Count", value: item.pigmes_count || 0, icon: "savings", color: "#9C27B0" },
     { label: "Enrollments Count", value: item.enrollments_count || 0, icon: "how-to-reg", color: "#00BCD4" },
-    { label: "Enrollments Chit Value", value: formatCurrency(item.enrollments_chit_value), icon: "monetization-on", color: "#FFC107" },
+    // UPDATED: Changed icon from "monetization-on" to "currency-rupee"
+    { label: "Enrollments Chit Value", value: formatCurrency(item.enrollments_chit_value), icon: "currency-rupee", color: "#FFC107" },
   ];
 
   return (
