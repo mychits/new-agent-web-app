@@ -1,3 +1,4 @@
+
 import { View, Text, StyleSheet, Alert, Linking } from "react-native";
 import React from "react";
 import { TouchableOpacity } from "react-native";
@@ -30,6 +31,39 @@ const PaymentChitList = ({
     const options = { day: "2-digit", month: "short", year: "numeric" };
     return date.toLocaleDateString("en-US", options);
   };
+
+  // --- HELPER FUNCTION FOR DYNAMIC COLORS ---
+  const getPaymentTypeStyle = (paymentType) => {
+    const type = paymentType?.toLowerCase();
+
+    if (type === 'cash') {
+      return {
+        bg: '#D1FAE5', // Light Green background
+        text: '#065F46', // Dark Green text
+        border: '#A7F3D0'
+      };
+    } else if (type === 'online') {
+      return {
+        bg: '#DBEAFE', // Light Blue background
+        text: '#1E40AF', // Dark Blue text
+        border: '#BFDBFE'
+      };
+    } else if (type === 'check' || type === 'cheque') {
+      return {
+        bg: '#FEF3C7', // Light Amber/Yellow background
+        text: '#92400E', // Dark Amber text
+        border: '#FDE68A'
+      };
+    } else {
+      return {
+        bg: '#F3F4F6', // Default Grey background
+        text: '#374151', // Default Grey text
+        border: '#E5E7EB'
+      };
+    }
+  };
+
+  const currentTypeStyle = getPaymentTypeStyle(type);
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
@@ -87,11 +121,13 @@ const PaymentChitList = ({
         </View>
 
         <View style={styles.footer}>
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeText}>
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+          {/* UPDATED: Dynamic styles applied here */}
+          <View style={[styles.typeBadge, { backgroundColor: currentTypeStyle.bg, borderColor: currentTypeStyle.border }]}>
+            <Text style={[styles.typeText, { color: currentTypeStyle.text }]}>
+              {type ? type.charAt(0).toUpperCase() + type.slice(1) : 'N/A'}
             </Text>
           </View>
+          
           <TouchableOpacity
             style={styles.reprintButton}
             onPress={() =>
@@ -220,17 +256,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   typeBadge: {
-    backgroundColor: "#F3F4F6",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
+    // backgroundColor and borderColor are now handled dynamically in the component
+    borderWidth: 1,
   },
   typeText: {
     fontSize: 12,
-    color: "#374151",
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    // color is now handled dynamically in the component
   },
   reprintButton: {
     flexDirection: "row",

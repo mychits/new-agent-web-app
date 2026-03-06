@@ -25,12 +25,13 @@ import Header from "../components/Header";
 import Button from "../components/Button";
 import baseUrl from "../constants/baseUrl";
 import url from "../constants/baseUrl";
-import { MaterialIcons } from "@expo/vector-icons"; // Import for icons
+import { MaterialIcons } from "@expo/vector-icons"; 
 
 const { width } = Dimensions.get("window");
 
-// Using the same gradients as the previous stylish modal
+// Gradients
 const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
+const ERROR_GRADIENT = ['#FF512F', '#DD2476']; // Red/Orange for errors
 const MODERN_PRIMARY = "#0d0d0eff"; 
 const ACCENT_BLUE = "#1796d1ff"; 
 const BORDER_COLOR = "#e0e0e0"; 
@@ -43,7 +44,7 @@ const LoanPayin = ({ route, navigation }) => {
   const { user, customer, loan_id, custom_loan_id } = route.params;
   
   // State for Data
-  const [currentDate, setCurrentDate] = useState(moment().format("DD-MM-YYYY")); // Initialized immediately
+  const [currentDate, setCurrentDate] = useState(moment().format("DD-MM-YYYY"));
   const [receipt, setReceipt] = useState({});
   const [paymentDetails, setPaymentDetails] = useState("");
   const [amount, setAmount] = useState("");
@@ -52,8 +53,10 @@ const LoanPayin = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
-  // State for Confirmation Modal
+  // State for Modals
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false); // NEW: Error Modal State
+  const [errorMessage, setErrorMessage] = useState(""); // NEW: Error Message State
 
   const [customerInfo, setCustomerInfo] = useState({});
   const [loanData, setLoanData] = useState([]);
@@ -187,13 +190,30 @@ const LoanPayin = ({ route, navigation }) => {
     setAmount(numericValue);
   };
 
-  // --- Logic Refactoring ---
-
+  // --- Updated Validation Logic ---
   const validateAndShowModal = () => {
+    // Basic field validation
     if (!selectedLoan || !paymentDetails || !amount || (paymentDetails !== "cash" && !transactionId)) {
-      Alert.alert("Validation Error", "Please fill all mandatory fields.");
+      setErrorMessage("Please fill all mandatory fields.");
+      setShowErrorModal(true);
       return;
     }
+
+    // Condition 1: Check for single digit amount
+    if (amount.length === 1) {
+      setErrorMessage("Amount cannot be a single digit.");
+      setShowErrorModal(true);
+      return;
+    }
+
+    // Additional check: Ensure Transaction ID is present for online payments
+    if (paymentDetails === "online" && !transactionId.trim()) {
+      setErrorMessage("Please enter a valid Transaction ID.");
+      setShowErrorModal(true);
+      return;
+    }
+
+    // If all checks pass
     setShowConfirmModal(true);
   };
 
@@ -459,7 +479,6 @@ const LoanPayin = ({ route, navigation }) => {
             disabled={isLoading || !selectedLoan}
             style={styles.stylishButton}
             textStyle={styles.buttonText}
-            // Changed onPress to validateAndShowModal
             onPress={validateAndShowModal}
           />
         </View>
@@ -470,6 +489,37 @@ const LoanPayin = ({ route, navigation }) => {
   return (
     <LinearGradient colors={TOP_GRADIENT} style={styles.gradientOverlay}>
       
+      {/* Stylish Error Modal */}
+      <Modal animationType="fade" transparent={true} visible={showErrorModal}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.stylishModalCard}>
+            {/* Error Gradient Header */}
+            <LinearGradient colors={ERROR_GRADIENT} style={styles.errorHeader}>
+              <View style={styles.iconCircle}>
+                <MaterialIcons name="error-outline" size={40} color={CARD_BG} />
+              </View>
+              <Text style={styles.errorTitle}>Validation Error</Text>
+            </LinearGradient>
+
+            {/* Error Body */}
+            <View style={[styles.stylishBody, { alignItems: 'center', paddingTop: 30 }]}>
+               <MaterialIcons name="info" size={24} color={ERROR_GRADIENT[0]} style={{marginBottom: 10}} />
+               <Text style={styles.errorMessageText}>{errorMessage}</Text>
+            </View>
+
+            {/* Error Footer */}
+            <View style={styles.stylishFooter}>
+              <TouchableOpacity 
+                onPress={() => setShowErrorModal(false)} 
+                style={[styles.stylishCancelButton, { flex: 1, backgroundColor: '#fee2e2', marginLeft: 0, marginRight: 0 }]}
+              >
+                <Text style={[styles.stylishCancelText, { color: ERROR_GRADIENT[0] }]}>OKAY</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Stylish Confirmation Modal */}
       <Modal animationType="fade" transparent={true} visible={showConfirmModal}>
         <View style={styles.modalOverlay}>
@@ -508,6 +558,14 @@ const LoanPayin = ({ route, navigation }) => {
                   <Text style={styles.methodText}>{paymentDetails.toUpperCase()}</Text>
                 </View>
               </View>
+
+              {/* Condition 2: Show Transaction ID if payment is online */}
+              {paymentDetails === "online" && (
+                <View style={styles.stylishRow}>
+                  <Text style={styles.stylishLabel}>Trans. ID</Text>
+                  <Text style={[styles.stylishValue, { fontSize: 14 }]}>{transactionId}</Text>
+                </View>
+              )}
 
               {/* Total Amount Box */}
               <View style={styles.totalBox}>
@@ -746,7 +804,7 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 20 },
   errorText: { marginTop: 10, fontSize: 15, color: '#fff', fontWeight: '600', textAlign: 'center' },
 
-  // --- Stylish Modal Styles (Copied from previous solution) ---
+  // --- Stylish Modal Styles ---
   modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)" },
   stylishModalCard: {
     width: '85%',
@@ -767,6 +825,29 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
+  // Error Header Specifics
+  errorHeader: {
+    paddingTop: 24,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: CARD_BG,
+    letterSpacing: 0.5,
+    marginTop: 8,
+  },
+  errorMessageText: {
+    fontSize: 16,
+    color: TEXT_GREY,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+
   iconCircle: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 50,

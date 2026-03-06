@@ -803,7 +803,7 @@ const localStyles = StyleSheet.create({
     
     nameCol: { marginLeft: 16, flex: 1 },
     welcomeText: { fontSize: 11, color: COLORS.MUTED, fontWeight: '600', letterSpacing: 0.5, marginBottom: 2 },
-    nameText: { fontSize: 20, fontWeight: '900', color: COLORS.DARK, lineHeight: 24 },
+    nameText: { fontSize: 15, fontWeight: '900', color: COLORS.DARK, lineHeight: 24 },
     roleBadge: { 
         backgroundColor: COLORS.PRIMARY + '15', 
         paddingHorizontal: 10, 
@@ -854,7 +854,7 @@ const localStyles = StyleSheet.create({
     },
     timeIconBg: { backgroundColor: '#fff', padding: 8, borderRadius: 12, marginBottom: 10, zIndex: 1 },
     timeLabel: { fontSize: 8, fontWeight: '800', color: 'rgba(255,255,255,0.9)', letterSpacing: 1.5, zIndex: 1 },
-    timeValue: { fontSize: 18, fontWeight: '900', color: '#fff', marginTop: 4, zIndex: 1 },
+    timeValue: { fontSize: 14, fontWeight: '900', color: '#fff', marginTop: 4, zIndex: 1 },
 
     // Duration Card
     durationCard: {
@@ -885,12 +885,12 @@ const localStyles = StyleSheet.create({
         flexDirection: 'row', 
         alignItems: 'center', 
         justifyContent: 'center', 
-        padding: 20, 
+        padding: 15, 
         gap: 12,
         borderRadius: 20,
         zIndex: 2
     },
-    actionBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 1 },
+    actionBtnText: { color: '#fff', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
     // Glow effect for button
     actionBtnGlow: {
         position: 'absolute',

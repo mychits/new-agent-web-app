@@ -1,3 +1,4 @@
+
 import { 
   View, 
   Text, 
@@ -10,17 +11,15 @@ import {
   ActivityIndicator, 
   Image, 
   Dimensions, 
-  Platform // Added Platform for conditional padding
+  Platform 
 } from "react-native";
 import React, { useState, useEffect } from "react";
-// Swapped to Ionicons for consistency, but kept FontAwesome Icon for filter display
 import Icon from "react-native-vector-icons/FontAwesome";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import RNPrint from 'react-native-print';
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons"; // Added Ionicons for modern icons
-
+import { Ionicons } from "@expo/vector-icons"; 
 
 import COLORS from "../constants/color";
 import Header from "../components/Header";
@@ -31,26 +30,24 @@ import PigmePaymentList from "../components/PigmePaymentList";
 
 const noImage = require('../assets/no.png');
 
-// --- DESIGN CONSTANTS COPIED FROM CHITPAYMENTS ---
+// --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent 
-const BORDER_COLOR = "#e0e0e0"; // Lighter border
-const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const MODERN_PRIMARY = "#0d0d0dff"; 
+const ACCENT_BLUE = "#1796d1ff"; 
+const BORDER_COLOR = "#e0e0e0"; 
+const TEXT_GREY = "#4b5563"; 
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+const SUBTLE_BG_GREY = '#f9fafb'; 
 const SUCCESS_GREEN = '#3ed160ff';
 // ---------------------------------------------
 
-
-// NOTE: Component name is assumed to be ChitPayments as per the original file structure
 const PigmePayments = ({ route, navigation }) => { 
   const { user, areaId } = route.params;
 
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState([]);
   const [cus, setCus] = useState([]);
-  const [groups, setGroups] = useState([]); // Will be used for Pigme ID list
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [agent, setAgent] = useState({})
 
@@ -59,14 +56,12 @@ const PigmePayments = ({ route, navigation }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCustomer, setSelectedCustomer] = useState('');
   
-  // CORRECTION: State for Pigme ID
   const [selectedPigmyId, setSelectedPigmyId] = useState(''); 
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('');
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
   const [selectedPigmyName, setSelectedPigmyName] = useState(''); 
   const [activeChitId, setActiveChitId] = useState(null);
   const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false);
-
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-GB', {
@@ -88,9 +83,9 @@ const PigmePayments = ({ route, navigation }) => {
   const [filters, setFilters] = useState([
     { id: 'date', title: 'Date', value: formatDate(selectedDate), icon: 'calendar' },
     { id: 'customer', title: 'Customer', value: 'All', icon: 'user' },
-    { id: 'pigmy', title: 'Pigme ID', value: 'All', icon: 'money' }, 
-    { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'credit-card' }, // Changed icon to better fit payment mode
-    { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'dollar' }, // Changed icon to dollar/money for consistency
+    { id: 'pigme', title: 'Pigme ID', value: 'All', icon: 'money' }, 
+    { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'credit-card' }, 
+    { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'dollar' }, 
   ]);
 
   const paymentModes = ['cash', 'online'];
@@ -116,7 +111,6 @@ const PigmePayments = ({ route, navigation }) => {
   const handleChitPress = (chitId) => {
     setActiveChitId(chitId);
   };
-
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -239,10 +233,9 @@ const PigmePayments = ({ route, navigation }) => {
           <Picker
             selectedValue={selectedPigmyId}
             onValueChange={(value) => {
-              // The "name" will just be the Pigme ID itself
               setSelectedPigmyId(value);
               setSelectedPigmyName(value || ''); 
-              updateFilterValue('pigmy', value ? `ID: ${value}` : 'All'); // Update display value
+              updateFilterValue('pigme', value ? `ID: ${value}` : 'All'); 
               setShowPicker(false);
             }}
           >
@@ -285,7 +278,7 @@ const PigmePayments = ({ route, navigation }) => {
             selectedValue={selectedPaymentMode}
             onValueChange={(value) => {
               setSelectedPaymentMode(value);
-              updateFilterValue('paymentMode', value ? value.charAt(0).toUpperCase() + value.slice(1) : 'All'); // Capitalize for display
+              updateFilterValue('paymentMode', value ? value.charAt(0).toUpperCase() + value.slice(1) : 'All'); 
               setShowPicker(false);
             }}>
              <Picker.Item label="All Modes" value="" />
@@ -312,7 +305,6 @@ const PigmePayments = ({ route, navigation }) => {
         const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
         const dateMatch = isSameDate(customer.pay_date, selectedDate);
         const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-        // CORRECTION: Filtering by 'pigme_id'
         const pigmyMatch = !selectedPigmyId || customer?.pigme?.pigme_id === selectedPigmyId; 
         const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
         return nameMatch && dateMatch && customerMatch && pigmyMatch && paymentModeMatch;
@@ -425,7 +417,7 @@ const PigmePayments = ({ route, navigation }) => {
       <head>
         <style>
           @page {
-            size: A6; /* Smaller size suitable for a summary */
+            size: A6; 
             margin: 10mm;
           }
           body {
@@ -493,8 +485,19 @@ const PigmePayments = ({ route, navigation }) => {
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={CARD_BG} />
-            <Text style={styles.loadingText}>Loading Payments...</Text>
+            {/* --- BACK BUTTON ADDED --- */}
+            <TouchableOpacity
+              style={styles.loadingBackButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="chevron-back-outline" size={30} color={"Black"} />
+            </TouchableOpacity>
+            
+            {/* Wrapper for centering content */}
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color={CARD_BG} />
+              <Text style={styles.loadingText}>Loading Payments...</Text>
+            </View>
           </View>
         ) : (
           <View style={styles.screenContainer}> 
@@ -704,7 +707,7 @@ const PigmePayments = ({ route, navigation }) => {
   );
 };
 const styles = StyleSheet.create({
-    // --- LAYOUT STYLES (Modernized) ---
+    // --- LAYOUT STYLES ---
     gradientOverlay: {
         flex: 1,
     },
@@ -718,22 +721,34 @@ const styles = StyleSheet.create({
     },
     mainContentArea: {
         flex: 1,
-        backgroundColor: SUBTLE_BG_GREY, // Use light grey for content area background
+        backgroundColor: SUBTLE_BG_GREY, 
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
-        marginTop: -20, // Creates the curved overlap effect
+        marginTop: -20, 
         zIndex: 2, 
-        paddingTop: 20, // Pushes content down from the curve
+        paddingTop: 20, 
     },
     listScrollView: {
         flex: 1,
         marginHorizontal: 22,
     },
+    
+    // --- LOADING STYLES ---
     loadingContainer: {
+        flex: 1,
+        // Centering moved to loadingContent
+    },
+    loadingBackButton: {
+        position: 'absolute',
+        top: Platform.OS === 'android' ? 40 : 80, 
+        left: 15,
+        zIndex: 10,
+        padding: 5,
+    },
+    loadingContent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: TOP_GRADIENT[0],
     },
     loadingText: {
         marginTop: 10,
@@ -747,7 +762,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 10,
-        marginTop: 15,
+        marginTop: 1,
         marginBottom: 10,
     },
     title: {
@@ -848,7 +863,7 @@ const styles = StyleSheet.create({
     totalCollectionCard: {
         borderLeftWidth: 5,
         borderLeftColor: SUCCESS_GREEN,
-        backgroundColor: '#E6F7E9', // Very light green background
+        backgroundColor: '#E6F7E9', 
     },
     totalCollectionValue: {
         color: SUCCESS_GREEN,
@@ -861,7 +876,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         padding: 12,
-        backgroundColor: '#f8c009ff', // Use existing yellow color
+        backgroundColor: '#f8c009ff', 
         borderRadius: 15,
         shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 2 },
@@ -908,7 +923,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         padding: 20,
-        paddingTop: 60, // Match the safe area/status bar compensation
+        paddingTop: 60, 
     },
     modalCloseButton: {
         position: 'absolute',

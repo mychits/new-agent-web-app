@@ -1,3 +1,4 @@
+
 import { View, Text, StyleSheet, Alert, Linking } from "react-native";
 import React from "react";
 import { TouchableOpacity } from "react-native";
@@ -33,6 +34,48 @@ const LoanPaymentList = ({
     const options = { day: "2-digit", month: "short", year: "numeric" };
     return date.toLocaleDateString("en-US", options);
   };
+
+  // --- LOGIC FOR DYNAMIC COLORS ---
+  const getPaymentTypeStyle = (payType) => {
+    // Normalize string to lowercase for comparison
+    const type = payType?.toLowerCase();
+
+    switch (type) {
+      case "cash":
+        return {
+          bg: "#DCFCE7", // Light Green
+          text: "#166534", // Dark Green
+          border: "#86EFAC"
+        };
+      case "online":
+        return {
+          bg: "#DBEAFE", // Light Blue
+          text: "#1E40AF", // Dark Blue
+          border: "#93C5FD"
+        };
+      case "cheque":
+      case "check":
+        return {
+          bg: "#FEF3C7", // Light Orange/Yellow
+          text: "#92400E", // Dark Orange
+          border: "#FDE68A"
+        };
+      case "card":
+        return {
+          bg: "#F3E8FF", // Light Purple
+          text: "#6B21A8", // Dark Purple
+          border: "#D8B4FE"
+        };
+      default:
+        return {
+          bg: "#F3F4F6", // Default Grey
+          text: "#374151",
+          border: "#E5E7EB"
+        };
+    }
+  };
+
+  const badgeStyle = getPaymentTypeStyle(type);
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
@@ -102,11 +145,19 @@ const LoanPaymentList = ({
 
         {/* Footer */}
         <View style={styles.footer}>
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeText}>
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+          {/* Dynamic Badge Styling Applied Here */}
+          <View style={[
+            styles.typeBadge, 
+            { 
+              backgroundColor: badgeStyle.bg,
+              borderColor: badgeStyle.border
+            }
+          ]}>
+            <Text style={[styles.typeText, { color: badgeStyle.text }]}>
+              {type ? type.charAt(0).toUpperCase() + type.slice(1) : "N/A"}
             </Text>
           </View>
+
           <TouchableOpacity
             style={styles.reprintButton}
             onPress={() => {
@@ -250,15 +301,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   typeBadge: {
-    backgroundColor: "#F3F4F6",
+    // backgroundColor removed to apply dynamically
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
+    borderWidth: 1, // Added border for better definition with light colors
+    // borderColor added dynamically
   },
   typeText: {
     fontSize: 12,
-    color: "#374151",
-    fontWeight: "600",
+    fontWeight: "700", // Made font slightly bolder
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },

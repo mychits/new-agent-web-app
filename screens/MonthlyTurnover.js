@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, memo } from "react"; // Added memo
 import {
   View,
   Text,
@@ -13,11 +13,10 @@ import {
   Animated,
   StatusBar,
   ImageBackground,
-  ScrollView,
   Dimensions,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../components/Header"; // Assuming you still use this for the top bar inside the gradient, or we can replace it with the manual design.
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -26,12 +25,11 @@ import { FontAwesome5, Ionicons, MaterialCommunityIcons, Feather } from "@expo/v
 import DateTimePicker from "@react-native-community/datetimepicker";
 import baseUrl from "../constants/baseUrl";
 
-// Use the same asset path as your reference
 const backgroundImage = require("../assets/hero1.jpg");
 
 const { width } = Dimensions.get("window");
 
-// --- COLORS (From your Target Reference) ---
+// --- COLORS ---
 const COLORS = {
   primary: "#183A5D",
   accent: "#f8c009ff",
@@ -41,16 +39,15 @@ const COLORS = {
   white: "#FFFFFF",
   muted: "#8898AA",
   background: "#0f2a44",
-  // 5 Box Colors
-  box1: "#E0E7FF", // Indigo Tint
+  box1: "#E0E7FF",
   box1Text: "#4338ca",
-  box2: "#D1FAE5", // Green Tint
+  box2: "#D1FAE5",
   box2Text: "#059669",
-  box3: "#FEF3C7", // Amber Tint
+  box3: "#FEF3C7",
   box3Text: "#D97706",
-  box4: "#E0F2FE", // Blue Tint
+  box4: "#E0F2FE",
   box4Text: "#0284c7",
-  box5: "#FFE4E6", // Rose Tint
+  box5: "#FFE4E6",
   box5Text: "#e11d48",
 };
 
@@ -78,6 +75,72 @@ const formatCurrency = (amount) => {
   return num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 };
 
+// --- EXTRACTED HEADER COMPONENT TO PREVENT REMOUNTING ---
+const TurnoverHeader = memo(({ 
+  selectedDate, formattedDate, setShowPicker, 
+  searchQuery, setSearchQuery, turnoverData 
+}) => {
+  return (
+    <FadeInView>
+      {/* DATE CARD */}
+      <TouchableOpacity style={styles.dateCard} onPress={() => setShowPicker(true)} activeOpacity={0.9}>
+        <View style={styles.dateInfo}>
+          <View style={styles.calendarIconBg}>
+            <Ionicons name="calendar" size={18} color={COLORS.white} />
+          </View>
+          <View>
+            <Text style={styles.dateLabel}>SELECTED PERIOD</Text>
+            <Text style={styles.dateText}>{formattedDate}</Text>
+          </View>
+        </View>
+        <View style={styles.editIconBg}>
+           <Feather name="edit-3" size={14} color={COLORS.primary} />
+        </View>
+      </TouchableOpacity>
+
+      {/* SEARCH BAR */}
+      <View style={styles.searchBarContainer}>
+        <Feather name="search" size={18} color={COLORS.muted} style={{ marginRight: 10 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search name, phone or group..."
+          placeholderTextColor={COLORS.muted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Feather name="x" size={18} color={COLORS.muted} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* SUMMARY HERO CARD */}
+      <View style={styles.mainCard}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardLabel}>Monthly Summary</Text>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(39, 174, 96, 0.15)' }]}>
+            <Text style={styles.statusText}>Active</Text>
+          </View>
+        </View>
+
+        <View style={styles.heroStatsRow}>
+          <View style={styles.heroStatBox}>
+             <Text style={styles.heroStatLabel}>EXPECTED</Text>
+             <Text style={styles.heroStatValue}>₹{formatCurrency(turnoverData?.expectedTurnover)}</Text>
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStatBox}>
+             <Text style={styles.heroStatLabel}>COLLECTED</Text>
+             <Text style={[styles.heroStatValue, { color: COLORS.success }]}>₹{formatCurrency(turnoverData?.totalTurnover)}</Text>
+          </View>
+        </View>
+      </View>
+    </FadeInView>
+  );
+});
+
 const MonthlyTurnover = ({ navigation }) => {
   const [turnoverData, setTurnoverData]   = useState(null);
   const [customersData, setCustomersData] = useState([]);
@@ -86,6 +149,9 @@ const MonthlyTurnover = ({ navigation }) => {
   const [selectedDate, setSelectedDate]   = useState(new Date());
   const [showPicker, setShowPicker]       = useState(false);
   const [formattedDate, setFormattedDate] = useState(moment().format("MMMM YYYY"));
+  
+  // Search State
+  const [searchQuery, setSearchQuery]     = useState("");
 
   useEffect(() => {
     fetchMonthlyData();
@@ -155,6 +221,17 @@ const MonthlyTurnover = ({ navigation }) => {
     }
   };
 
+  // Filter logic for Search
+  const filteredCustomers = customersData.filter((item) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    const name  = (item.user_id?.full_name || "").toLowerCase();
+    const phone = (item.user_id?.phone_number || "").toLowerCase();
+    const group = (item.group_id?.group_name || "").toLowerCase();
+    
+    return name.includes(query) || phone.includes(query) || group.includes(query);
+  });
+
   const onDateChange = (_event, newDate) => {
     setShowPicker(false);
     if (newDate) {
@@ -170,48 +247,6 @@ const MonthlyTurnover = ({ navigation }) => {
       <ActivityIndicator size="large" color={COLORS.accent} />
       <Text style={styles.loadingText}>Loading collection data...</Text>
     </View>
-  );
-
-  const renderTurnoverCard = () => (
-    <FadeInView>
-      {/* DATE CARD */}
-      <TouchableOpacity style={styles.dateCard} onPress={() => setShowPicker(true)} activeOpacity={0.9}>
-        <View style={styles.dateInfo}>
-          <View style={styles.calendarIconBg}>
-            <Ionicons name="calendar" size={18} color={COLORS.white} />
-          </View>
-          <View>
-            <Text style={styles.dateLabel}>SELECTED PERIOD</Text>
-            <Text style={styles.dateText}>{formattedDate}</Text>
-          </View>
-        </View>
-        <View style={styles.editIconBg}>
-           <Feather name="edit-3" size={14} color={COLORS.primary} />
-        </View>
-      </TouchableOpacity>
-
-      {/* SUMMARY HERO CARD */}
-      <View style={styles.mainCard}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardLabel}>Monthly Summary</Text>
-          <View style={[styles.statusBadge, { backgroundColor: 'rgba(39, 174, 96, 0.15)' }]}>
-            <Text style={styles.statusText}>Active</Text>
-          </View>
-        </View>
-
-        <View style={styles.heroStatsRow}>
-          <View style={styles.heroStatBox}>
-             <Text style={styles.heroStatLabel}>EXPECTED</Text>
-             <Text style={styles.heroStatValue}>₹{formatCurrency(turnoverData?.expectedTurnover)}</Text>
-          </View>
-          <View style={styles.heroStatDivider} />
-          <View style={styles.heroStatBox}>
-             <Text style={styles.heroStatLabel}>COLLECTED</Text>
-             <Text style={[styles.heroStatValue, { color: COLORS.success }]}>₹{formatCurrency(turnoverData?.totalTurnover)}</Text>
-          </View>
-        </View>
-      </View>
-    </FadeInView>
   );
 
   const renderCustomerCard = ({ item, index }) => {
@@ -302,7 +337,7 @@ const MonthlyTurnover = ({ navigation }) => {
       <LinearGradient colors={["rgba(26, 162, 204, 0.9)", COLORS.primary]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={{ flex: 1 }}>
-        {/* HEADER (From Target Reference) */}
+        {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconCircle} activeOpacity={0.7}>
@@ -328,16 +363,29 @@ const MonthlyTurnover = ({ navigation }) => {
             </View>
           ) : (
             <FlatList
-              data={customersData}
+              data={filteredCustomers}
               renderItem={renderCustomerCard}
               keyExtractor={(_, i) => i.toString()}
-              ListHeaderComponent={renderTurnoverCard}
+              // USE THE EXTRACTED COMPONENT HERE
+              ListHeaderComponent={
+                <TurnoverHeader 
+                  selectedDate={selectedDate}
+                  formattedDate={formattedDate}
+                  setShowPicker={setShowPicker}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  turnoverData={turnoverData}
+                />
+              }
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
               ListEmptyComponent={() => (
                 <View style={styles.emptyContainer}>
                    <MaterialCommunityIcons name="database-off-outline" size={48} color="rgba(255,255,255,0.3)" />
-                   <Text style={styles.noDataText}>No customers found for this period.</Text>
+                   <Text style={styles.noDataText}>
+                     {searchQuery ? "No matching customers found." : "No customers found for this period."}
+                   </Text>
                 </View>
               )}
             />
@@ -363,7 +411,6 @@ const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: COLORS.primary },
   bgOverlay: { ...StyleSheet.absoluteFillObject, opacity: 0.15 },
   
-  // --- HEADER (Target Reference) ---
   header: { 
     paddingHorizontal: 20, 
     paddingTop: Platform.OS === "android" ? 20 : 20,
@@ -375,7 +422,7 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 15
   },
-  headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: 5 },
+  headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: 1 },
   headerSubTitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2 },
   iconCircle: { backgroundColor: "#fff", padding: 8, borderRadius: 12, elevation: 4 },
   refreshBtn: { backgroundColor: COLORS.accent, padding: 10, borderRadius: 12, elevation: 4 },
@@ -383,11 +430,9 @@ const styles = StyleSheet.create({
   contentContainer: { paddingHorizontal: 16, flex: 1 },
   listContent: { paddingBottom: 40 },
 
-  // --- LOADER ---
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: COLORS.white, marginTop: 10, fontWeight: '600', opacity: 0.8 },
 
-  // --- DATE CARD ---
   dateCard: { 
     backgroundColor: COLORS.white, 
     borderRadius: 16, 
@@ -408,7 +453,28 @@ const styles = StyleSheet.create({
   dateText: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
   editIconBg: { backgroundColor: '#F5F7FA', padding: 8, borderRadius: 10 },
 
-  // --- HERO SUMMARY CARD ---
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.primary,
+    padding: 0,
+    height: 20,
+  },
+
   mainCard: { 
     backgroundColor: COLORS.cardBg, 
     borderRadius: 20, 
@@ -423,11 +489,10 @@ const styles = StyleSheet.create({
   
   heroStatsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroStatBox: { flex: 1, alignItems: 'center' },
-  heroStatLabel: { fontSize: 12, color: COLORS.muted, fontWeight: '700', marginBottom: 4 },
-  heroStatValue: { fontSize: 20, fontWeight: "900", color: COLORS.primary },
+  heroStatLabel: { fontSize: 10, color: COLORS.muted, fontWeight: '700', marginBottom: 4 },
+  heroStatValue: { fontSize: 16, fontWeight: "900", color: COLORS.primary },
   heroStatDivider: { width: 1, height: 30, backgroundColor: '#E9ECEF' },
 
-  // --- CUSTOMER CARD (Target Reference Style) ---
   listCard: { 
     backgroundColor: COLORS.white, 
     borderRadius: 20, 
@@ -448,20 +513,19 @@ const styles = StyleSheet.create({
   ticketText: { fontSize: 12, color: COLORS.muted, fontWeight: '600', marginRight: 10 },
   callBtn: { padding: 4 },
 
-  // --- 5 BOXES GRID ---
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
   gridBox: {
-    width: '31%', // For 3 items in top row
+    width: '31%', 
     backgroundColor: '#F5F7FA',
     borderRadius: 12,
     padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8, // Gap for rows
+    marginBottom: 8, 
   },
   gridVal: {
     fontSize: 13,
@@ -476,7 +540,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  // --- ERROR / EMPTY ---
   errorBox:   { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
   errorText:  { color: COLORS.white, fontSize: 16, textAlign: "center", marginBottom: 20, fontWeight: '500' },
   retryBtn:   { backgroundColor: COLORS.accent, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },

@@ -1,3 +1,4 @@
+
 import { 
     View, 
     Text, 
@@ -9,41 +10,36 @@ import {
     Alert, 
     ActivityIndicator, 
     Image, 
-    Platform // Added Platform for conditional padding
+    Platform 
 } from "react-native";
 import React, { useState, useEffect } from "react";
-// Swapped to Ionicons for consistency, but kept FontAwesome Icon for filter display
 import Icon from "react-native-vector-icons/FontAwesome";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import RNPrint from 'react-native-print';
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons"; // Added Ionicons for modern icons
-
+import { Ionicons } from "@expo/vector-icons"; 
 
 import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 
 import axios from "axios";
-// Removed unused PaymentChitList
-// import PaymentChitList from "../components/PaymentChitList"; 
 import LoanPaymentList from "../components/LoanPaymentList";
 
 const noImage = require('../assets/no.png');
 
-// --- DESIGN CONSTANTS COPIED FOR CONSISTENCY from ChitPayments.js ---
+// --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent 
-const BORDER_COLOR = "#e0e0e0"; // Lighter border
-const TEXT_GREY = "#4b5563"; // Grey text for subtitles/subtext
+const MODERN_PRIMARY = "#0d0d0dff"; 
+const ACCENT_BLUE = "#1796d1ff"; 
+const BORDER_COLOR = "#e0e0e0"; 
+const TEXT_GREY = "#4b5563"; 
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
+const SUBTLE_BG_GREY = '#f9fafb'; 
 const DANGER_RED = '#f04e6c';
 const SUCCESS_GREEN = '#3ed160ff';
 // ---------------------------------------------
-
 
 const LoanPayments = ({ route, navigation }) => { 
   const { user, areaId } = route.params;
@@ -68,7 +64,6 @@ const LoanPayments = ({ route, navigation }) => {
   const [activeChitId, setActiveChitId] = useState(null);
   const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false);
 
-
   const formatDate = (date) => {
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -89,7 +84,6 @@ const LoanPayments = ({ route, navigation }) => {
   const [filters, setFilters] = useState([
     { id: 'date', title: 'Date', value: formatDate(selectedDate), icon: 'calendar' },
     { id: 'customer', title: 'Customer', value: 'All', icon: 'user' },
-    
     { id: 'loan', title: 'Loan ID', value: 'All', icon: 'money' }, 
     { id: 'paymentMode', title: 'Payment Mode', value: 'All', icon: 'money' },
     { id: 'totalCollection', title: 'Total Collection', value: '...', icon: 'money' },
@@ -118,7 +112,6 @@ const LoanPayments = ({ route, navigation }) => {
   const handleChitPress = (chitId) => {
     setActiveChitId(chitId);
   };
-
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -203,7 +196,6 @@ const LoanPayments = ({ route, navigation }) => {
       const nameMatch = customer?.user_id?.full_name?.toLowerCase().includes(search.toLowerCase());
       const dateMatch = isSameDate(customer.pay_date, selectedDate);
       const customerMatch = !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-      // CORRECTION: Filtering by 'loan_id' from the nested 'loan' object
       const loanMatch = !selectedloanId || customer?.loan?.loan_id === selectedloanId; 
       const paymentModeMatch = !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
       return nameMatch && dateMatch && customerMatch && loanMatch && paymentModeMatch;
@@ -429,7 +421,7 @@ const LoanPayments = ({ route, navigation }) => {
             <head>
                 <style>
                     @page {
-                        size: A6; /* Smaller size suitable for a summary */
+                        size: A6; 
                         margin: 10mm;
                     }
                     body {
@@ -497,12 +489,23 @@ const LoanPayments = ({ route, navigation }) => {
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={CARD_BG} />
-            <Text style={styles.loadingText}>Loading Payments...</Text>
+            {/* --- BACK BUTTON ADDED --- */}
+            <TouchableOpacity
+              style={styles.loadingBackButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="chevron-back-outline" size={30} color={"Black"} />
+            </TouchableOpacity>
+            
+            {/* Wrapper for centering content */}
+            <View style={styles.loadingContent}>
+              <ActivityIndicator size="large" color={CARD_BG} />
+              <Text style={styles.loadingText}>Loading Payments...</Text>
+            </View>
           </View>
         ) : (
           <View style={styles.screenContainer}> 
-                        
+            
             {/* Fixed Blue Header Content */}
             <View style={styles.fixedHeaderArea}>
                 <View style={{ marginHorizontal: 22, marginTop: Platform.OS === 'android' ? 0 : 32 }}>
@@ -514,7 +517,7 @@ const LoanPayments = ({ route, navigation }) => {
                         </View>
                     </View>
 
-                    {/* Search Input (Kept in the blue area for easy access) */}
+                    {/* Search Input */}
                     <View style={styles.searchContainer}>
                         <Icon
                             name="search"
@@ -553,7 +556,6 @@ const LoanPayments = ({ route, navigation }) => {
                                 onPress={() => handleFilterPress(filter.id)}
                             >
                                 <View style={styles.cardContent}>
-                                    {/* Replaced old radio circles with a checkmark or modern style */}
                                     <View style={styles.cardIconContainer}>
                                         <Icon name={filter.icon} size={20} color={filter.id === 'totalCollection' ? SUCCESS_GREEN : ACCENT_BLUE} />
                                     </View>
@@ -613,7 +615,7 @@ const LoanPayments = ({ route, navigation }) => {
                     )}
                 </ScrollView>
             </View>
-                        
+            
             {/* Modals for Pickers and Total Collection */}
             <Modal
                 visible={showPicker}
@@ -712,7 +714,7 @@ const LoanPayments = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    // --- LAYOUT STYLES (Modernized) ---
+    // --- LAYOUT STYLES ---
     gradientOverlay: {
         flex: 1,
     },
@@ -726,22 +728,35 @@ const styles = StyleSheet.create({
     },
     mainContentArea: {
         flex: 1,
-        backgroundColor: SUBTLE_BG_GREY, // Use light grey for content area background
+        backgroundColor: SUBTLE_BG_GREY, 
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
-        marginTop: -20, // Creates the curved overlap effect
+        marginTop: -20, 
         zIndex: 2, 
-        paddingTop: 20, // Pushes content down from the curve
+        paddingTop: 20, 
     },
     listScrollView: {
         flex: 1,
         marginHorizontal: 22,
     },
+
+    // --- LOADING STYLES ---
     loadingContainer: {
+        flex: 1,
+        // Centering moved to loadingContent to allow absolute positioning for back button
+    },
+    loadingBackButton: {
+        position: 'absolute',
+        // INCREASED these numbers to move the button down
+        top: Platform.OS === 'android' ? 40 : 80, 
+        left: 15,
+        zIndex: 10,
+        padding: 5,
+    },
+    loadingContent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: TOP_GRADIENT[0],
     },
     loadingText: {
         marginTop: 10,
@@ -755,7 +770,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 10,
-        marginTop: 15,
+        marginTop: 1,
         marginBottom: 10,
     },
     title: {
@@ -790,7 +805,7 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
         elevation: 1,
         height: 50,
-        marginHorizontal: 0, // Keep in the blue area but not in main content area style
+        marginHorizontal: 0, 
     },
     searchIcon: {
         marginLeft: 15,
@@ -856,7 +871,7 @@ const styles = StyleSheet.create({
     totalCollectionCard: {
         borderLeftWidth: 5,
         borderLeftColor: SUCCESS_GREEN,
-        backgroundColor: '#E6F7E9', // Very light green background
+        backgroundColor: '#E6F7E9', 
     },
     totalCollectionValue: {
         color: SUCCESS_GREEN,
@@ -869,7 +884,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         padding: 12,
-        backgroundColor: '#f8c009ff', // Use existing yellow color
+        backgroundColor: '#f8c009ff', 
         borderRadius: 15,
         shadowColor: MODERN_PRIMARY,
         shadowOffset: { width: 0, height: 2 },
@@ -916,7 +931,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         padding: 20,
-        paddingTop: 60, // Match the safe area/status bar compensation
+        paddingTop: 60, 
     },
     modalCloseButton: {
         position: 'absolute',

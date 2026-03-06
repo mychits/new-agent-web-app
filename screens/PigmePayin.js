@@ -30,8 +30,9 @@ const { width } = Dimensions.get("window");
 
 // --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
+const ERROR_GRADIENT = ['#eb3349', '#f45c43']; // Red/Orange for Error Modal
 const MODERN_PRIMARY = "#0d0d0d";
-const ACCENT_BLUE = "#1796d1ff"; // Added for Modal styling
+const ACCENT_BLUE = "#1796d1ff";
 const BORDER_COLOR = "#e0e0e0";
 const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
@@ -78,6 +79,10 @@ const PigmePayin = ({ route, navigation }) => {
 
     // Confirmation Modal State
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+    // NEW: Error Modal State
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     const [customerInfo, setCustomerInfo] = useState("");
     const [pigmeData, setPigmeData] = useState([]);
@@ -223,14 +228,33 @@ const PigmePayin = ({ route, navigation }) => {
     // --- LOGIC REFACTORING ---
 
     const validateAndShowModal = () => {
+        // Basic validation
         if (parseFloat(amount) <= 0 || isNaN(parseFloat(amount))) {
-            Alert.alert("Invalid Amount", "Please enter a valid amount greater than 0.");
+            setErrorMessage("Please enter a valid amount greater than 0.");
+            setShowErrorModal(true);
             return;
         }
+        
+        // Condition 1: Single Digit Check
+        if (amount.length === 1) {
+            setErrorMessage("Amount cannot be a single digit.");
+            setShowErrorModal(true);
+            return;
+        }
+
         if (!selectedPigme || !paymentDetails || !amount || (paymentDetails !== "cash" && !transactionId)) {
-            Alert.alert("Validation Error", "Please fill all mandatory fields.");
+            setErrorMessage("Please fill all mandatory fields.");
+            setShowErrorModal(true);
             return;
         }
+
+        // Additional Check: Ensure Transaction ID is present for online payments
+        if (paymentDetails === "online" && !transactionId.trim()) {
+            setErrorMessage("Please enter a valid Transaction ID.");
+            setShowErrorModal(true);
+            return;
+        }
+
         setShowConfirmModal(true);
     };
 
@@ -506,6 +530,37 @@ const PigmePayin = ({ route, navigation }) => {
     return (
         <LinearGradient colors={TOP_GRADIENT} style={styles.gradientOverlay}>
             
+            {/* --- NEW: Stylish Error Modal --- */}
+            <Modal animationType="fade" transparent={true} visible={showErrorModal}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.stylishModalCard}>
+                        {/* Error Gradient Header */}
+                        <LinearGradient colors={ERROR_GRADIENT} style={styles.errorHeader}>
+                            <View style={styles.iconCircle}>
+                                <MaterialIcons name="error-outline" size={40} color={CARD_BG} />
+                            </View>
+                            <Text style={styles.errorTitle}>Validation Error</Text>
+                        </LinearGradient>
+
+                        {/* Error Body */}
+                        <View style={[styles.stylishBody, { alignItems: 'center', paddingTop: 30 }]}>
+                           <MaterialIcons name="info" size={24} color={ERROR_GRADIENT[0]} style={{marginBottom: 10}} />
+                           <Text style={styles.errorMessageText}>{errorMessage}</Text>
+                        </View>
+
+                        {/* Error Footer */}
+                        <View style={styles.stylishFooter}>
+                            <TouchableOpacity 
+                                onPress={() => setShowErrorModal(false)} 
+                                style={[styles.stylishCancelButton, { flex: 1, backgroundColor: '#fee2e2', marginLeft: 0, marginRight: 0 }]}
+                            >
+                                <Text style={[styles.stylishCancelText, { color: ERROR_GRADIENT[0] }]}>OKAY</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Stylish Confirmation Modal */}
             <Modal animationType="fade" transparent={true} visible={showConfirmModal}>
                 <View style={styles.modalOverlay}>
@@ -544,6 +599,14 @@ const PigmePayin = ({ route, navigation }) => {
                                     <Text style={styles.methodText}>{paymentDetails.toUpperCase()}</Text>
                                 </View>
                             </View>
+
+                            {/* Condition 2: Show Transaction ID if payment is online */}
+                            {paymentDetails === "online" && (
+                                <View style={styles.stylishRow}>
+                                    <Text style={styles.stylishLabel}>Trans. ID</Text>
+                                    <Text style={[styles.stylishValue, { fontSize: 14 }]}>{transactionId}</Text>
+                                </View>
+                            )}
 
                             {/* Total Amount Box */}
                             <View style={styles.totalBox}>
@@ -808,6 +871,30 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
     },
+    // --- Error Modal Specific Styles ---
+    errorHeader: {
+        paddingTop: 24,
+        paddingBottom: 30,
+        paddingHorizontal: 20,
+        alignItems: 'center',
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+    },
+    errorTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: CARD_BG,
+        letterSpacing: 0.5,
+        marginTop: 8,
+    },
+    errorMessageText: {
+        fontSize: 16,
+        color: TEXT_GREY,
+        textAlign: 'center',
+        lineHeight: 24,
+    },
+    // ------------------------------------
+
     iconCircle: {
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderRadius: 50,
