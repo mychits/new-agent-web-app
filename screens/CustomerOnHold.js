@@ -12,6 +12,7 @@ import {
   Dimensions,
   RefreshControl,
   Animated,
+  TextInput, // <--- ADDED IMPORT
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
@@ -45,6 +46,7 @@ const THEME = {
 
 const CustomerOnHold = () => {
   const [customers, setCustomers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState(""); // <--- ADDED STATE
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -151,6 +153,16 @@ const CustomerOnHold = () => {
     fetchData(true);
   }, []);
 
+  // --- SEARCH LOGIC ---
+  const filteredCustomers = customers.filter((item) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(query) ||
+      item.groupName.toLowerCase().includes(query) ||
+      (item.phoneNumber && item.phoneNumber.includes(query))
+    );
+  });
+
   const handleCall = async (phoneNumber) => {
     if (!phoneNumber) return;
     try {
@@ -217,7 +229,6 @@ const CustomerOnHold = () => {
             <View style={styles.cardContainer}>
                 {/* Top Section: Avatar & Name */}
                 <View style={styles.cardHeader}>
-                    {/* RESTORED ORIGINAL AVATAR GRADIENT */}
                     <LinearGradient 
                         colors={['#667eea', '#764ba2']} 
                         style={styles.avatarBox}
@@ -273,14 +284,12 @@ const CustomerOnHold = () => {
                     </View>
 
                     <View style={styles.actionsRow}>
-                        {/* RESTORED ORIGINAL CALL GRADIENT */}
                         <TouchableOpacity style={styles.iconBtn} onPress={() => handleCall(item.phoneNumber)}>
                             <LinearGradient colors={['#00b09b', '#96c93d']} style={styles.iconGradient}>
                                 <Ionicons name="call" size={14} color="#fff" />
                             </LinearGradient>
                         </TouchableOpacity>
                         
-                        {/* RESTORED ORIGINAL WHATSAPP GRADIENT */}
                         <TouchableOpacity style={styles.iconBtn} onPress={() => handleWhatsApp(item.phoneNumber)}>
                             <LinearGradient colors={['#25D366', '#128C7E']} style={styles.iconGradient}>
                                 <FontAwesome5 name="whatsapp" size={14} color="#fff" />
@@ -288,7 +297,6 @@ const CustomerOnHold = () => {
                         </TouchableOpacity>
                         
                         {item.email && (
-                            // RESTORED ORIGINAL EMAIL GRADIENT
                             <TouchableOpacity style={styles.iconBtn} onPress={() => handleEmail(item.email, item.name)}>
                                 <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.iconGradient}>
                                     <MaterialCommunityIcons name="email" size={14} color="#fff" />
@@ -304,7 +312,6 @@ const CustomerOnHold = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* RESTORED ORIGINAL HEADER GRADIENT */}
         <LinearGradient 
             colors={[THEME.primary, THEME.secondary]} 
             style={styles.headerGradient}
@@ -345,12 +352,11 @@ const CustomerOnHold = () => {
                       />
                     }
                 >
-                    {/* Premium Summary Card with RESTORED ORIGINAL GRADIENT */}
+                    {/* Premium Summary Card */}
                     <Animated.View style={{ 
                         transform: [{ scale: pulseAnim }], 
                     }}>
                         <LinearGradient
-                            // RESTORED ORIGINAL SUMMARY BOX GRADIENT
                             colors={['#232526', '#414345']}
                             style={styles.summaryCard}
                         >
@@ -371,15 +377,40 @@ const CustomerOnHold = () => {
                         </LinearGradient>
                     </Animated.View>
 
-                    {customers.length > 0 ? (
-                        customers.map((item, index) => (
+                    {/* --- SEARCH BAR SECTION --- */}
+                    <View style={styles.searchContainer}>
+                        <View style={styles.searchBar}>
+                            <Ionicons name="search" size={20} color={THEME.textMuted} style={styles.searchIcon} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search name, group or phone..."
+                                placeholderTextColor={THEME.textMuted}
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                            />
+                            {searchQuery.length > 0 && (
+                                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                                    <Ionicons name="close-circle" size={20} color={THEME.textMuted} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    {filteredCustomers.length > 0 ? (
+                        filteredCustomers.map((item, index) => (
                             <AnimatedCustomerCard key={item.id} item={item} index={index} />
                         ))
                     ) : (
                         <View style={styles.emptyState}>
-                            <Ionicons name="checkmark-circle" size={80} color={THEME.success} />
-                            <Text style={styles.emptyTitle}>All Good!</Text>
-                            <Text style={styles.emptyDesc}>No customers are currently on hold.</Text>
+                            <Ionicons name={searchQuery.length > 0 ? "search-circle" : "checkmark-circle"} size={80} color={searchQuery.length > 0 ? THEME.textMuted : THEME.success} />
+                            <Text style={styles.emptyTitle}>
+                                {searchQuery.length > 0 ? "No Results Found" : "All Good!"}
+                            </Text>
+                            <Text style={styles.emptyDesc}>
+                                {searchQuery.length > 0 
+                                    ? `No customers match "${searchQuery}"` 
+                                    : "No customers are currently on hold."}
+                            </Text>
                         </View>
                     )}
                 </Animated.ScrollView>
@@ -441,9 +472,9 @@ const styles = StyleSheet.create({
     
     // --- Summary Card Styles ---
     summaryCard: {
-        borderRadius: 24, // Kept slightly rounded like original
+        borderRadius: 24,
         padding: 20,
-        marginBottom: 30,
+        marginBottom: 25, // Adjusted spacing for search bar
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
@@ -508,6 +539,36 @@ const styles = StyleSheet.create({
         fontSize: 11,
         marginLeft: 8,
         fontWeight: '600',
+    },
+
+    // --- Search Bar Styles (NEW) ---
+    searchContainer: {
+        marginBottom: 20,
+    },
+    searchBar: {
+        flexDirection: 'row',
+        backgroundColor: THEME.cardBg,
+        borderRadius: 15,
+        paddingHorizontal: 15,
+        paddingVertical: 12,
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.03)',
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: THEME.textDark,
+        padding: 0,
+        height: 20,
     },
 
     // --- Customer Card Styles ---

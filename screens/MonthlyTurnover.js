@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -6,70 +7,63 @@ import {
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
-  TextInput,
   Platform,
-  Dimensions,
-  LayoutAnimation,
   UIManager,
   Linking,
   Animated,
   StatusBar,
+  ImageBackground,
+  ScrollView,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "../components/Header";
+import Header from "../components/Header"; // Assuming you still use this for the top bar inside the gradient, or we can replace it with the manual design.
 import { LinearGradient } from "expo-linear-gradient";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import baseUrl from "../constants/baseUrl";
 
-const { width, height } = Dimensions.get("window");
+// Use the same asset path as your reference
+const backgroundImage = require("../assets/hero1.jpg");
 
-// --- THEME CONSTANTS ---
-const TOP_GRADIENT = ["#24C6DC", "#183A5D"];
-const MODERN_PRIMARY = "#0d0d0dff";
-const ACCENT_BLUE = "#24C6DC";
-const ACCENT_GREEN = "#0c704f";
-const WARNING_RED = "#EF4444";
-const NEUTRAL_GREY = "#8e95a4";
-const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = "#f7f9fc";
+const { width } = Dimensions.get("window");
+
+// --- COLORS (From your Target Reference) ---
+const COLORS = {
+  primary: "#183A5D",
+  accent: "#f8c009ff",
+  bgBlue: "#1aa2ccff",
+  success: "#27AE60",
+  cardBg: "rgba(255, 255, 255, 0.98)",
+  white: "#FFFFFF",
+  muted: "#8898AA",
+  background: "#0f2a44",
+  // 5 Box Colors
+  box1: "#E0E7FF", // Indigo Tint
+  box1Text: "#4338ca",
+  box2: "#D1FAE5", // Green Tint
+  box2Text: "#059669",
+  box3: "#FEF3C7", // Amber Tint
+  box3Text: "#D97706",
+  box4: "#E0F2FE", // Blue Tint
+  box4Text: "#0284c7",
+  box5: "#FFE4E6", // Rose Tint
+  box5Text: "#e11d48",
+};
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// --- ANIMATION COMPONENTS ---
 const FadeInView = ({ children, delay = 0 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, delay, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, delay, useNativeDriver: true }),
-    ]).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 500, delay, useNativeDriver: true }).start();
   }, []);
-  return (
-    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-      {children}
-    </Animated.View>
-  );
-};
-
-const ShimmerLoader = ({ style }) => {
-  const shimmerValue = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerValue, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.timing(shimmerValue, { toValue: 0, duration: 1000, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-  const opacity = shimmerValue.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.7] });
-  return <Animated.View style={[style, { opacity }]} />;
+  return <Animated.View style={{ opacity: fadeAnim }}>{children}</Animated.View>;
 };
 
 const handleCall = (phoneNumber) => {
@@ -84,7 +78,7 @@ const formatCurrency = (amount) => {
   return num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 };
 
-const MonthlyTurnover = () => {
+const MonthlyTurnover = ({ navigation }) => {
   const [turnoverData, setTurnoverData]   = useState(null);
   const [customersData, setCustomersData] = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -92,7 +86,6 @@ const MonthlyTurnover = () => {
   const [selectedDate, setSelectedDate]   = useState(new Date());
   const [showPicker, setShowPicker]       = useState(false);
   const [formattedDate, setFormattedDate] = useState(moment().format("MMMM YYYY"));
-  const [searchText, setSearchText]       = useState("");
 
   useEffect(() => {
     fetchMonthlyData();
@@ -115,25 +108,18 @@ const MonthlyTurnover = () => {
         baseUrl + "/user/agent-monthly-turnover-by-id/" + agentId +
         "?year=" + year + "&month=" + month;
 
-      console.log("TURNOVER_CALL => " + apiUrl);
       const response = await axios.get(apiUrl);
 
       if (response.data?.success) {
         const payingCustomers = response.data.agentData?.payingCustomers || [];
-
-        console.log("TURNOVER total customers => " + payingCustomers.length);
-        
         setTurnoverData(response.data.agentData);
 
         const customersWithStatus = payingCustomers.map((c) => {
           const monthlyPaid        = parseFloat(c.monthlyPaid       || 0);
           const totalPaid          = parseFloat(c.totalPaid         || 0);
           const monthlyInstallment = parseFloat(c.monthly_installment || 0);
-          const overallPaid        = parseFloat(c.paid_amount       || 0);
-          const totalTicketValue   = parseFloat(c.total_amount      || 0);
-          
-          // FIX: Fetch balance directly from the main API response object 'c.balance'
-          const balance = parseFloat(c.balance || 0);
+          const balance            = parseFloat(c.balance           || 0);
+          const differenceAmount   = monthlyInstallment - monthlyPaid;
 
           let lastPaymentDate = "N/A";
           if (c.payments && c.payments.length > 0) {
@@ -147,17 +133,15 @@ const MonthlyTurnover = () => {
           return {
             ...c,
             enrollmentId:  c._id,
-            balance:       balance, // Stored directly
+            balance:       balance,
             paymentStatus: monthlyPaid >= monthlyInstallment ? "PAID" : "UNPAID",
             lastPaymentDate,
             monthlyPaid,
-            overallPaid,
             totalPaid,
-            totalBalance: totalTicketValue - overallPaid,
+            differenceAmount,
           };
         });
 
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setCustomersData(customersWithStatus);
         
       } else {
@@ -180,176 +164,130 @@ const MonthlyTurnover = () => {
     }
   };
 
-  // --- SKELETON ---
-  const renderSkeleton = () => (
-    <View style={{ paddingHorizontal: 16, paddingTop: 20 }}>
-      <ShimmerLoader style={{ width: "60%", height: 28, borderRadius: 12, backgroundColor: "#e0e0e0", marginBottom: 20 }} />
-      <ShimmerLoader style={{ width: "100%", height: 180, borderRadius: 24, backgroundColor: "#e0e0e0", marginBottom: 25 }} />
-      {[1, 2, 3].map((i) => (
-        <View key={i} style={styles.skeletonCard}>
-          <View style={styles.cardHeader}>
-            <ShimmerLoader style={{ width: 80, height: 16, borderRadius: 6, backgroundColor: "#e0e0e0" }} />
-            <ShimmerLoader style={{ width: 60, height: 22, borderRadius: 12, backgroundColor: "#e0e0e0" }} />
-          </View>
-          <View style={styles.cardInfo}>
-            <ShimmerLoader style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#e0e0e0" }} />
-            <View style={{ marginLeft: 12, flex: 1 }}>
-              <ShimmerLoader style={{ width: "60%", height: 18, borderRadius: 6, marginBottom: 6, backgroundColor: "#e0e0e0" }} />
-              <ShimmerLoader style={{ width: "40%", height: 14, borderRadius: 6, backgroundColor: "#e0e0e0" }} />
-            </View>
-          </View>
-          <View style={styles.statsRow}>
-            {[1, 2, 3, 4].map((j) => (
-              <ShimmerLoader key={j} style={{ flex: 1, height: 50, borderRadius: 12, marginRight: j < 4 ? 8 : 0, backgroundColor: "#e0e0e0" }} />
-            ))}
-          </View>
-        </View>
-      ))}
+  // --- NORMAL LOADER ---
+  const renderNormalLoader = () => (
+    <View style={styles.loaderContainer}>
+      <ActivityIndicator size="large" color={COLORS.accent} />
+      <Text style={styles.loadingText}>Loading collection data...</Text>
     </View>
   );
 
   const renderTurnoverCard = () => (
     <FadeInView>
-      <View style={styles.headerSection}>
-        <Text style={styles.screenTitle}>Monthly Turnover</Text>
-        <Text style={styles.screenSubtitle}>Track your monthly collection progress</Text>
-      </View>
-
-      <TouchableOpacity style={styles.dateSelectorCard} onPress={() => setShowPicker(true)} activeOpacity={0.8}>
-        <View style={styles.dateIconBox}>
-          <Ionicons name="calendar" size={22} color={ACCENT_BLUE} />
+      {/* DATE CARD */}
+      <TouchableOpacity style={styles.dateCard} onPress={() => setShowPicker(true)} activeOpacity={0.9}>
+        <View style={styles.dateInfo}>
+          <View style={styles.calendarIconBg}>
+            <Ionicons name="calendar" size={18} color={COLORS.white} />
+          </View>
+          <View>
+            <Text style={styles.dateLabel}>SELECTED PERIOD</Text>
+            <Text style={styles.dateText}>{formattedDate}</Text>
+          </View>
         </View>
-        <View style={styles.dateTextContainer}>
-          <Text style={styles.dateSelectorLabel}>Selected Period</Text>
-          <Text style={styles.dateSelectorValue}>{formattedDate}</Text>
-        </View>
-        <View style={styles.dateArrowBox}>
-          <Ionicons name="chevron-down" size={20} color={NEUTRAL_GREY} />
+        <View style={styles.editIconBg}>
+           <Feather name="edit-3" size={14} color={COLORS.primary} />
         </View>
       </TouchableOpacity>
 
-      <View style={styles.heroCard}>
-        <LinearGradient colors={["#183A5D", "#24C6DC"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroGradient}>
-          <View style={styles.heroTop}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.heroLabel}>EXPECTED</Text>
-              <Text style={styles.heroAmountText}>{"₹ " + formatCurrency(turnoverData?.expectedTurnover)}</Text>
-            </View>
-            <View style={styles.heroDivider} />
-            <View style={{ flex: 1, alignItems: "flex-end" }}>
-              <Text style={styles.heroLabel}>COLLECTED</Text>
-              <Text style={[styles.heroAmountText, { color: "#34D399" }]}>{"₹ " + formatCurrency(turnoverData?.totalTurnover)}</Text>
-            </View>
+      {/* SUMMARY HERO CARD */}
+      <View style={styles.mainCard}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardLabel}>Monthly Summary</Text>
+          <View style={[styles.statusBadge, { backgroundColor: 'rgba(39, 174, 96, 0.15)' }]}>
+            <Text style={styles.statusText}>Active</Text>
           </View>
-          <View style={styles.heroBottom}>
-            <View style={styles.statItem}>
-              <View style={styles.iconBgLight}>
-                <Ionicons name="people" size={14} color="#fff" />
-              </View>
-              <Text style={styles.statText}>{turnoverData?.totalCustomers} Customers</Text>
-            </View>
-            <View style={styles.statItem}>
-              <View style={styles.iconBgLight}>
-                <FontAwesome5 name="user-tie" size={12} color="#fff" />
-              </View>
-              <Text style={styles.statText}>{turnoverData?.agentName}</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
-
-      {customersData.length > 0 && (
-        <View style={styles.searchWrapper}>
-          <Ionicons name="search" size={20} color={NEUTRAL_GREY} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search customer or group..."
-            placeholderTextColor={NEUTRAL_GREY}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-          {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchText("")}>
-              <Ionicons name="close-circle" size={20} color={NEUTRAL_GREY} />
-            </TouchableOpacity>
-          )}
         </View>
-      )}
+
+        <View style={styles.heroStatsRow}>
+          <View style={styles.heroStatBox}>
+             <Text style={styles.heroStatLabel}>EXPECTED</Text>
+             <Text style={styles.heroStatValue}>₹{formatCurrency(turnoverData?.expectedTurnover)}</Text>
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStatBox}>
+             <Text style={styles.heroStatLabel}>COLLECTED</Text>
+             <Text style={[styles.heroStatValue, { color: COLORS.success }]}>₹{formatCurrency(turnoverData?.totalTurnover)}</Text>
+          </View>
+        </View>
+      </View>
     </FadeInView>
   );
 
   const renderCustomerCard = ({ item, index }) => {
     const isPaid        = item.paymentStatus === "PAID";
-    const statusColor   = isPaid ? ACCENT_GREEN : WARNING_RED;
-    const statusBg      = isPaid ? "rgba(12,112,79,0.1)" : "rgba(239,68,68,0.1)";
+    const statusColor   = isPaid ? COLORS.success : COLORS.box5Text;
+    const statusBg      = isPaid ? "rgba(39, 174, 96, 0.15)" : "rgba(225, 29, 72, 0.1)";
+    
     const customerPhone = item.user_id?.phone_number;
     const customerName  = item.user_id?.full_name || "Unknown";
     const groupName     = item.group_id?.group_name || "Group";
-
-    // Directly use item.balance since we removed balanceMap
     const balanceVal    = item.balance || 0;
+    const diffVal       = item.differenceAmount || 0;
+    const diffColor     = diffVal > 0 ? COLORS.box3Text : COLORS.success;
 
     return (
-      <FadeInView delay={index * 50}>
-        <View style={styles.customerCard}>
-          {/* ── Header ── */}
-          <View style={styles.cardHeader}>
-            <View style={styles.groupRow}>
-              <Ionicons name="pricetag-outline" size={14} color={ACCENT_BLUE} />
-              <Text style={styles.groupNameText}>{groupName}</Text>
-            </View>
-            <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
-              <Ionicons name={isPaid ? "checkmark-circle" : "alert-circle"} size={14} color={statusColor} />
-              <Text style={[styles.statusBadgeText, { color: statusColor }]}>{item.paymentStatus}</Text>
-            </View>
-          </View>
-
-          {/* ── Body ── */}
-          <View style={styles.cardBody}>
-            <LinearGradient colors={TOP_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarGradient}>
+      <FadeInView delay={index * 30}>
+        <View style={styles.listCard}>
+          {/* Header: Avatar + Info */}
+          <View style={styles.listHeader}>
+            <View style={styles.avatar}>
               <Text style={styles.avatarText}>{customerName.charAt(0).toUpperCase()}</Text>
-            </LinearGradient>
-            <View style={styles.nameSection}>
-              <Text style={styles.customerName}>{customerName}</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.clientName} numberOfLines={1}>{customerName}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+                   <Text style={[styles.statusText, { color: statusColor }]}>{item.paymentStatus}</Text>
+                </View>
+              </View>
+              
               <View style={styles.metaRow}>
-                <Text style={styles.ticketText}>Ticket  {item.ticket}</Text>
+                <Text style={styles.ticketText}>{groupName}</Text>
                 {customerPhone && (
                   <TouchableOpacity onPress={() => handleCall(customerPhone)} style={styles.callBtn}>
-                    <Ionicons name="call" size={12} color={ACCENT_BLUE} />
-                    <Text style={styles.callText}>Call</Text>
+                    <Feather name="phone" size={12} color={COLORS.bgBlue} />
                   </TouchableOpacity>
                 )}
               </View>
             </View>
           </View>
 
-          {/* ── Stats Footer: Installment | Paid(Month) | Total Paid | Balance ── */}
-          <View style={styles.statsFooter}>
-            <View style={[styles.statBlock, { borderRightColor: "#f0f0f0" }]}>
-              <Text style={styles.statLabel}>Installment</Text>
-              <Text style={styles.statValue}>{"₹" + formatCurrency(item.monthly_installment)}</Text>
+          {/* 5 DIFFERENT BOXES GRID */}
+          <View style={styles.statsGrid}>
+            {/* 1. Installment */}
+            <View style={[styles.gridBox, { backgroundColor: COLORS.box1 }]}>
+              <MaterialCommunityIcons name="calendar-clock" size={16} color={COLORS.box1Text} />
+              <Text style={[styles.gridVal, { color: COLORS.box1Text }]}>{formatCurrency(item.monthly_installment)}</Text>
+              <Text style={styles.gridLabel}>Installment</Text>
             </View>
 
-            <View style={[styles.statBlock, { borderRightColor: "#f0f0f0" }]}>
-              <Text style={styles.statLabel}>Paid (Month)</Text>
-              <Text style={[styles.statValue, { color: isPaid ? ACCENT_GREEN : WARNING_RED }]}>
-                {"₹" + formatCurrency(item.monthlyPaid)}
-              </Text>
+            {/* 2. Paid */}
+            <View style={[styles.gridBox, { backgroundColor: COLORS.box2 }]}>
+              <Ionicons name="wallet" size={16} color={COLORS.box2Text} />
+              <Text style={[styles.gridVal, { color: COLORS.box2Text }]}>{formatCurrency(item.monthlyPaid)}</Text>
+              <Text style={styles.gridLabel}>Paid</Text>
             </View>
 
-            <View style={[styles.statBlock, { borderRightColor: "#f0f0f0" }]}>
-              <Text style={styles.statLabel}>Total Paid</Text>
-              <Text style={[styles.statValue, { color: MODERN_PRIMARY }]}>
-                {"₹" + formatCurrency(item.totalPaid)}
-              </Text>
+            {/* 3. Difference */}
+            <View style={[styles.gridBox, { backgroundColor: COLORS.box3 }]}>
+              <Ionicons name="calculator" size={16} color={COLORS.box3Text} />
+              <Text style={[styles.gridVal, { color: COLORS.box3Text, fontWeight: '900' }]}>{formatCurrency(diffVal)}</Text>
+              <Text style={styles.gridLabel}>Diff</Text>
             </View>
 
-            {/* Balance from main response */}
-            <View style={[styles.statBlock, { borderRightWidth: 0 }]}>
-              <Text style={styles.statLabel}>Balance</Text>
-              <Text style={[styles.statValue, { color: WARNING_RED }]}>
-                {"₹" + formatCurrency(balanceVal)}
-              </Text>
+            {/* 4. Total Paid */}
+            <View style={[styles.gridBox, { backgroundColor: COLORS.box4, width: '48%' }]}>
+              <FontAwesome5 name="hand-holding-usd" size={16} color={COLORS.box4Text} />
+              <Text style={[styles.gridVal, { color: COLORS.box4Text }]}>{formatCurrency(item.totalPaid)}</Text>
+              <Text style={styles.gridLabel}>Total Paid</Text>
+            </View>
+
+            {/* 5. Balance */}
+            <View style={[styles.gridBox, { backgroundColor: COLORS.box5, width: '48%' }]}>
+              <MaterialCommunityIcons name="scale-balance" size={16} color={COLORS.box5Text} />
+              <Text style={[styles.gridVal, { color: COLORS.box5Text }]}>{formatCurrency(balanceVal)}</Text>
+              <Text style={styles.gridLabel}>Balance</Text>
             </View>
           </View>
         </View>
@@ -357,49 +295,55 @@ const MonthlyTurnover = () => {
     );
   };
 
-  const filteredCustomers = customersData.filter((c) => {
-    const term      = searchText.toLowerCase();
-    const fullName  = c.user_id?.full_name?.toLowerCase() || "";
-    const groupName = c.group_id?.group_name?.toLowerCase() || "";
-    return fullName.includes(term) || groupName.includes(term);
-  });
-
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={TOP_GRADIENT} style={styles.headerBg}>
-        <Header />
-      </LinearGradient>
+      <ImageBackground source={backgroundImage} style={styles.bgOverlay} blurRadius={12} />
+      <LinearGradient colors={["rgba(26, 162, 204, 0.9)", COLORS.primary]} style={StyleSheet.absoluteFill} />
 
-      <View style={styles.contentContainer}>
-        {loading ? (
-          renderSkeleton()
-        ) : error ? (
-          <View style={styles.errorBox}>
-            <Ionicons name="cloud-offline-outline" size={40} color={NEUTRAL_GREY} />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={fetchMonthlyData}>
-              <Text style={styles.retryText}>Retry</Text>
+      <SafeAreaView style={{ flex: 1 }}>
+        {/* HEADER (From Target Reference) */}
+        <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconCircle} activeOpacity={0.7}>
+              <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={fetchMonthlyData} style={styles.refreshBtn} activeOpacity={0.7}>
+              <Feather name="refresh-cw" size={20} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
-        ) : (
-          <FlatList
-            data={filteredCustomers}
-            renderItem={renderCustomerCard}
-            keyExtractor={(_, i) => i.toString()}
-            ListHeaderComponent={renderTurnoverCard}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={() => (
-              <View style={styles.emptyBox}>
-                <Ionicons name="file-tray-outline" size={50} color="#ccc" />
-                <Text style={styles.emptyTitle}>No Customers Found</Text>
-                <Text style={styles.emptySub}>Try adjusting your month filter.</Text>
-              </View>
-            )}
-          />
-        )}
-      </View>
+          <Text style={styles.headerTitle}>Monthly Turnover</Text>
+          <Text style={styles.headerSubTitle}>Track your monthly collection</Text>
+        </View>
+
+        <View style={styles.contentContainer}>
+          {loading ? (
+            renderNormalLoader()
+          ) : error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={fetchMonthlyData}>
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={customersData}
+              renderItem={renderCustomerCard}
+              keyExtractor={(_, i) => i.toString()}
+              ListHeaderComponent={renderTurnoverCard}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyContainer}>
+                   <MaterialCommunityIcons name="database-off-outline" size={48} color="rgba(255,255,255,0.3)" />
+                   <Text style={styles.noDataText}>No customers found for this period.</Text>
+                </View>
+              )}
+            />
+          )}
+        </View>
+      </SafeAreaView>
 
       {showPicker && (
         <DateTimePicker
@@ -409,98 +353,134 @@ const MonthlyTurnover = () => {
           onChange={onDateChange}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
 export default MonthlyTurnover;
 
 const styles = StyleSheet.create({
-  safeArea:         { flex: 1, backgroundColor: TOP_GRADIENT[1] },
-  headerBg:         { paddingBottom: 15, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, overflow: "hidden" },
-  contentContainer: { flex: 1, backgroundColor: SUBTLE_BG_GREY, marginTop: 5 },
-  listContent:      { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 24 },
-
-  headerSection:      { marginBottom: 20 },
-  screenTitle:        { fontSize: 28, fontWeight: "800", color: MODERN_PRIMARY, letterSpacing: -0.5 },
-  screenSubtitle:     { fontSize: 14, color: NEUTRAL_GREY, marginTop: 4, fontWeight: "500" },
-
-  dateSelectorCard: {
-    flexDirection: "row", alignItems: "center", backgroundColor: CARD_BG,
-    borderRadius: 16, padding: 12, marginBottom: 20, elevation: 2,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4,
+  mainContainer: { flex: 1, backgroundColor: COLORS.primary },
+  bgOverlay: { ...StyleSheet.absoluteFillObject, opacity: 0.15 },
+  
+  // --- HEADER (Target Reference) ---
+  header: { 
+    paddingHorizontal: 20, 
+    paddingTop: Platform.OS === "android" ? 20 : 20,
+    paddingBottom: 10,
   },
-  dateIconBox:       { width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(36,198,220,0.1)", justifyContent: "center", alignItems: "center" },
-  dateTextContainer: { flex: 1, marginLeft: 14, justifyContent: "center" },
-  dateSelectorLabel: { fontSize: 11, color: NEUTRAL_GREY, textTransform: "uppercase", fontWeight: "700", letterSpacing: 0.5 },
-  dateSelectorValue: { fontSize: 18, color: MODERN_PRIMARY, fontWeight: "700", marginTop: 2 },
-  dateArrowBox:      { width: 36, height: 36, borderRadius: 12, backgroundColor: SUBTLE_BG_GREY, justifyContent: "center", alignItems: "center" },
-
-  heroCard:       { marginBottom: 24, borderRadius: 24, overflow: "hidden", elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
-  heroGradient:   { padding: 22 },
-  heroTop:        { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  heroDivider:    { width: 1, height: 50, backgroundColor: "rgba(255,255,255,0.2)", marginHorizontal: 15 },
-  heroLabel:      { color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: "700", letterSpacing: 1, marginBottom: 8 },
-  heroAmountText: { color: "#fff", fontSize: 24, fontWeight: "800" },
-  heroBottom:     { flexDirection: "row", justifyContent: "space-between", marginTop: 25, paddingTop: 18, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.15)" },
-  statItem:       { flexDirection: "row", alignItems: "center" },
-  iconBgLight:    { backgroundColor: "rgba(255,255,255,0.2)", padding: 6, borderRadius: 8, marginRight: 8 },
-  statText:       { color: "#fff", fontWeight: "600", fontSize: 13 },
-
-  searchWrapper: {
-    flexDirection: "row", alignItems: "center", backgroundColor: CARD_BG,
-    borderRadius: 16, paddingHorizontal: 16, height: 54, marginBottom: 24,
-    elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4,
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 15
   },
-  searchInput: { flex: 1, marginLeft: 12, fontSize: 16, color: MODERN_PRIMARY, fontWeight: "500" },
+  headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: 5 },
+  headerSubTitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2 },
+  iconCircle: { backgroundColor: "#fff", padding: 8, borderRadius: 12, elevation: 4 },
+  refreshBtn: { backgroundColor: COLORS.accent, padding: 10, borderRadius: 12, elevation: 4 },
+  
+  contentContainer: { paddingHorizontal: 16, flex: 1 },
+  listContent: { paddingBottom: 40 },
 
-  skeletonCard: {
-    backgroundColor: CARD_BG, borderRadius: 20, padding: 16, marginBottom: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 5,
+  // --- LOADER ---
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: COLORS.white, marginTop: 10, fontWeight: '600', opacity: 0.8 },
+
+  // --- DATE CARD ---
+  dateCard: { 
+    backgroundColor: COLORS.white, 
+    borderRadius: 16, 
+    padding: 14, 
+    marginBottom: 16, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  cardInfo:   { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  statsRow:   { flexDirection: "row", justifyContent: "space-between" },
+  dateInfo: { flexDirection: 'row', alignItems: 'center' },
+  calendarIconBg: { backgroundColor: COLORS.bgBlue, padding: 8, borderRadius: 10, marginRight: 12 },
+  dateLabel: { fontSize: 10, color: COLORS.muted, fontWeight: '800', letterSpacing: 1 },
+  dateText: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
+  editIconBg: { backgroundColor: '#F5F7FA', padding: 8, borderRadius: 10 },
 
-  customerCard: {
-    backgroundColor: CARD_BG, borderRadius: 20, marginBottom: 16, padding: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12,
-    elevation: 3, borderWidth: 1, borderColor: "rgba(0,0,0,0.02)",
+  // --- HERO SUMMARY CARD ---
+  mainCard: { 
+    backgroundColor: COLORS.cardBg, 
+    borderRadius: 20, 
+    padding: 16, 
+    marginBottom: 20, 
+    elevation: 6,
+  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  cardLabel: { fontSize: 11, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusText: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
+  
+  heroStatsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroStatBox: { flex: 1, alignItems: 'center' },
+  heroStatLabel: { fontSize: 12, color: COLORS.muted, fontWeight: '700', marginBottom: 4 },
+  heroStatValue: { fontSize: 20, fontWeight: "900", color: COLORS.primary },
+  heroStatDivider: { width: 1, height: 30, backgroundColor: '#E9ECEF' },
+
+  // --- CUSTOMER CARD (Target Reference Style) ---
+  listCard: { 
+    backgroundColor: COLORS.white, 
+    borderRadius: 20, 
+    padding: 16, 
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  listHeader: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  avatar: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
+  avatarText: { color: "#fff", fontSize: 18, fontWeight: "900" },
+  
+  clientName: { fontSize: 16, fontWeight: "800", color: COLORS.primary, marginBottom: 4, flex: 1 },
+  metaRow: { flexDirection: 'row', alignItems: 'center' },
+  ticketText: { fontSize: 12, color: COLORS.muted, fontWeight: '600', marginRight: 10 },
+  callBtn: { padding: 4 },
+
+  // --- 5 BOXES GRID ---
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  gridBox: {
+    width: '31%', // For 3 items in top row
+    backgroundColor: '#F5F7FA',
+    borderRadius: 12,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8, // Gap for rows
+  },
+  gridVal: {
+    fontSize: 13,
+    fontWeight: "800",
+    marginTop: 4,
+  },
+  gridLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: COLORS.muted,
+    marginTop: 2,
+    textTransform: 'uppercase',
   },
 
-  groupRow:       { flexDirection: "row", alignItems: "center" },
-  groupNameText:  { marginLeft: 6, fontSize: 12, fontWeight: "700", color: ACCENT_BLUE, textTransform: "uppercase", letterSpacing: 0.5 },
-  statusBadge:    { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  statusBadgeText:{ marginLeft: 4, fontSize: 11, fontWeight: "800" },
-
-  cardBody: {
-    flexDirection: "row", alignItems: "center",
-    marginVertical: 16, paddingBottom: 16,
-    borderBottomWidth: 1, borderBottomColor: "#f3f4f6",
-  },
-  avatarGradient: {
-    width: 52, height: 52, borderRadius: 26, justifyContent: "center", alignItems: "center",
-    marginRight: 14, elevation: 3, shadowColor: ACCENT_BLUE,
-    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4,
-  },
-  avatarText:   { color: "#fff", fontSize: 22, fontWeight: "800" },
-  nameSection:  { flex: 1, justifyContent: "center" },
-  customerName: { fontSize: 18, fontWeight: "700", color: MODERN_PRIMARY, marginBottom: 6, letterSpacing: -0.3 },
-  metaRow:      { flexDirection: "row", alignItems: "center" },
-  ticketText:   { fontSize: 12, color: NEUTRAL_GREY, fontWeight: "600", marginRight: 12 },
-  callBtn:      { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(36,198,220,0.1)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  callText:     { marginLeft: 4, fontSize: 11, color: ACCENT_BLUE, fontWeight: "700" },
-
-  statsFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
-  statBlock:   { flex: 1, alignItems: "center", borderRightWidth: 1, paddingVertical: 4 },
-  statLabel:   { fontSize: 10, color: NEUTRAL_GREY, marginBottom: 4, textTransform: "uppercase", fontWeight: "600", letterSpacing: 0.2 },
-  statValue:   { fontSize: 12, fontWeight: "800", color: MODERN_PRIMARY },
-
+  // --- ERROR / EMPTY ---
   errorBox:   { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  errorText:  { marginTop: 10, color: NEUTRAL_GREY, fontSize: 16, textAlign: "center" },
-  retryBtn:   { marginTop: 15, backgroundColor: ACCENT_BLUE, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  retryText:  { color: "#fff", fontWeight: "700" },
-  emptyBox:   { alignItems: "center", marginTop: 50, padding: 20 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: MODERN_PRIMARY, marginTop: 10 },
-  emptySub:   { color: NEUTRAL_GREY, marginTop: 5 },
+  errorText:  { color: COLORS.white, fontSize: 16, textAlign: "center", marginBottom: 20, fontWeight: '500' },
+  retryBtn:   { backgroundColor: COLORS.accent, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  retryText:  { color: COLORS.primary, fontWeight: "800", fontSize: 15 },
+  emptyContainer: { alignItems: 'center', marginTop: 50, opacity: 0.7 },
+  noDataText: { color: "#fff", textAlign: "center", marginTop: 12, fontSize: 15, fontWeight: '600' },
 });

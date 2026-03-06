@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import {
     View,
@@ -21,7 +22,7 @@ import url from "../constants/baseUrl";
 
 const { width, height } = Dimensions.get("window");
 
-// --- THEME CONSTANTS (Matching OutstandingReports.js) ---
+// --- THEME CONSTANTS ---
 const COLORS = {
     primary: "#183A5D",
     accent: "#f8c009ff", // Gold
@@ -31,10 +32,10 @@ const COLORS = {
     cardBg: "rgba(255, 255, 255, 0.97)",
     white: "#FFFFFF",
     muted: "#8898AA",
-    background: "#0f172a", // Dark fallback
+    background: "#0f172a",
 };
 
-// Asset for background (Ensure this path exists or use a fallback)
+// Asset for background
 const backgroundImage = require("../assets/hero1.jpg"); 
 
 // =================================================================
@@ -48,7 +49,7 @@ const ReferredReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 400,
-            delay: index * 100, // Stagger effect
+            delay: index * 100,
             useNativeDriver: true,
         }).start();
     }, []);
@@ -60,13 +61,10 @@ const ReferredReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
     
     const isCalling = activeCallId === item?._id;
 
-    // Financials
-    const getFinancialValue = (value) =>
-        Array.isArray(value) && value.length > 0 ? value[0] : value || 0;
-
-    const totalPayable = getFinancialValue(item.total_payable_amount);
-    const totalToBePaid = item?.total_to_be_paid || 0;
-    const balance = item?.balance || item?.Balance || 0;
+    // Financials - Mapped directly from API response
+    const paidAmount = item?.paid_amount || 0;
+    const totalPayable = item?.total_to_be_paid || 0;
+    const balance = item?.balance || 0;
 
     const statusColor = balance > 0 ? COLORS.danger : COLORS.success;
     const statusText = balance > 0 ? "Outstanding" : "Paid Off";
@@ -119,7 +117,7 @@ const ReferredReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
             <View style={styles.detailsGrid}>
                 <View style={styles.detailItem}>
                     <Text style={styles.detailLabel}>Total Paid</Text>
-                    <Text style={styles.detailValue}>₹{Number(totalToBePaid).toLocaleString("en-IN")}</Text>
+                    <Text style={styles.detailValue}>₹{Number(paidAmount).toLocaleString("en-IN")}</Text>
                 </View>
                 <View style={styles.detailDivider} />
                 <View style={styles.detailItem}>
@@ -180,13 +178,14 @@ const ReferredReport = ({ route, navigation }) => {
         try {
             setLoading(true);
             const groupRes = await fetch(`${url}/group/get-group`);
-            // Note: Using the updated DUE_API from your provided code
+            // Updated API endpoint as per your requirement
             const dueRes = await fetch(`${url}/enroll/due/referral-agent/${user.userId}`);
             
             const groupJson = await groupRes.json();
             const dueJson = await dueRes.json();
 
             const allGroups = Array.isArray(groupJson?.data) ? groupJson.data : Array.isArray(groupJson) ? groupJson : [];
+            // Accessing 'enrollments' array from the JSON response
             const allDues = dueJson?.enrollments || [];
 
             setGroups([{ _id: "all", group_name: "All Groups" }, ...allGroups]);
@@ -213,7 +212,7 @@ const ReferredReport = ({ route, navigation }) => {
         setShowPicker(false);
     };
 
-    const totalPending = filteredData.reduce((sum, item) => sum + (item?.balance || item?.Balance || 0), 0);
+    const totalPending = filteredData.reduce((sum, item) => sum + (item?.balance || 0), 0);
 
     return (
         <View style={styles.mainContainer}>
@@ -234,7 +233,7 @@ const ReferredReport = ({ route, navigation }) => {
                             <Feather name="refresh-cw" size={18} color={COLORS.primary} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.headerTitle}>Referred Report</Text>
+                    <Text style={styles.headerTitle}>Referral Customer Outstanding Report</Text>
                     <Text style={styles.headerSub}>Track your referral dues</Text>
                 </View>
 
@@ -340,8 +339,8 @@ const styles = StyleSheet.create({
         alignItems: "center"
     },
     headerTopRow: { flexDirection: "row", justifyContent: "space-between", width: "100%", marginBottom: 15 },
-    headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", letterSpacing: 0.5 },
-    headerSub: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+    headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", letterSpacing: 0.5, textAlign:'center' },
+    headerSub: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4, textAlign:'center' },
     iconCircle: { backgroundColor: "#fff", padding: 6, borderRadius: 12 },
     refreshBtn: { backgroundColor: COLORS.accent, padding: 8, borderRadius: 12 },
     
@@ -368,7 +367,7 @@ const styles = StyleSheet.create({
         marginRight: 15 
     },
     summaryLabel: { fontSize: 13, color: COLORS.muted, fontWeight: '700', textTransform: 'uppercase' },
-    summaryValue: { fontSize: 26, fontWeight: '900', color: COLORS.primary, marginTop: 2 },
+    summaryValue: { fontSize: 26, fontWeight: '900', color:'red', marginTop: 2 },
 
     // Filter
     filterBtn: {

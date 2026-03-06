@@ -1,3 +1,4 @@
+
 import {
     View,
     Text,
@@ -29,23 +30,22 @@ import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 const noImage = require("../assets/no.png");
 
 // Get dimensions for dynamic styling
-const { height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 
-// --- CONSTANTS MATCHING MODERN DESIGN ---
+// --- MODERN COLOR PALETTE ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
-const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
-const ACCENT_BLUE = "#1796d1ff"; // Blue accent (General/Edit)
-const ACCENT_GREEN = "#059669";   // Vibrant green for FRESH leads
-const WARNING_ORANGE = "#f8c009ff"; // Orange/Yellow for NEW leads
-const NEUTRAL_GREY = "#6b7280";   // Neutral grey for subtler text
+const MODERN_PRIMARY = "#1e293b"; // Dark Slate
+const ACCENT_BLUE = "#3b82f6"; 
+const ACCENT_GREEN = "#10b981";
+const WARNING_ORANGE = "#f59e0b";
+const NEUTRAL_GREY = "#94a3b8";
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; 
+const SUBTLE_BG_GREY = '#f1f5f9'; 
 
-// Keeping original action colors for consistency
-const CALL_BUTTON_COLOR = "#f8c009ff"; 
-const WHATSAPP_BUTTON_COLOR = "#25D366";
-const EDIT_BUTTON_COLOR = ACCENT_BLUE; // Using the main accent color for consistency
-
+// --- BUTTON GRADIENTS ---
+const CALL_GRADIENT = ['#fbbf24', '#d97706']; // Gold to Orange
+const WHATSAPP_GRADIENT = ['#34d399', '#059669']; // Emerald to Green
+const EDIT_GRADIENT = ['#60a5fa', '#2563eb']; // Blue to Dark Blue
 
 const ViewLeads = ({ route, navigation }) => {
     const { user } = route.params;
@@ -80,12 +80,7 @@ const ViewLeads = ({ route, navigation }) => {
         try {
             const response = await axios.get(
                 `${baseUrl}/lead/agent/${user.userId}/records`,
-                {
-                    params: {
-                        start_date: startDate,
-                        end_date: endDate
-                    }
-                }
+                { params: { start_date: startDate, end_date: endDate } }
             );
             setChitLeads(response.data);
         } catch (error) {
@@ -103,12 +98,7 @@ const ViewLeads = ({ route, navigation }) => {
         try {
             const response = await axios.get(
                 `${goldBaseUrl}/lead/agent/${user.userId}/records`,
-                {
-                    params: {
-                        start_date: startDate,
-                        end_date: endDate
-                    }
-                }
+                { params: { start_date: startDate, end_date: endDate } }
             );
             setGoldLeads(response.data);
         } catch (error) {
@@ -120,12 +110,10 @@ const ViewLeads = ({ route, navigation }) => {
         }
     };
 
-    // Use an effect to fetch data whenever startDate or endDate changes
     useEffect(() => {
         fetchData(startDate, endDate);
     }, [startDate, endDate, fetchData]);
 
-    // Use focus effect to refresh data when the screen comes into focus
     useFocusEffect(
         useCallback(() => {
             fetchData(startDate, endDate);
@@ -162,44 +150,16 @@ const ViewLeads = ({ route, navigation }) => {
     const handleDateRangeSelect = (range) => {
         let newStartDate, newEndDate;
         switch (range) {
-            case "All":
-                newStartDate = "";
-                newEndDate = "";
-                break;
-            case "Today":
-                newStartDate = moment().format('YYYY-MM-DD');
-                newEndDate = moment().format('YYYY-MM-DD');
-                break;
-            case "Yesterday":
-                newStartDate = moment().subtract(1, 'day').format('YYYY-MM-DD');
-                newEndDate = moment().subtract(1, 'day').format('YYYY-MM-DD');
-                break;
-            case "This Week":
-                newStartDate = moment().startOf('isoWeek').format('YYYY-MM-DD');
-                newEndDate = moment().endOf('isoWeek').format('YYYY-MM-DD');
-                break;
-            case "Last Week":
-                newStartDate = moment().subtract(1, 'week').startOf('isoWeek').format('YYYY-MM-DD');
-                newEndDate = moment().subtract(1, 'week').endOf('isoWeek').format('YYYY-MM-DD');
-                break;
-            case "This Month":
-                newStartDate = moment().startOf('month').format('YYYY-MM-DD');
-                newEndDate = moment().endOf('month').format('YYYY-MM-DD');
-                break;
-            case "Last Month":
-                newStartDate = moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
-                newEndDate = moment().subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
-                break;
-            case "This Year":
-                newStartDate = moment().startOf('year').format('YYYY-MM-DD');
-                newEndDate = moment().endOf('year').format('YYYY-MM-DD');
-                break;
-            case "Last Year":
-                newStartDate = moment().subtract(1, 'year').startOf('year').format('YYYY-MM-DD');
-                newEndDate = moment().subtract(1, 'year').endOf('year').format('YYYY-MM-DD');
-                break;
-            default:
-                break;
+            case "All": newStartDate = ""; newEndDate = ""; break;
+            case "Today": newStartDate = moment().format('YYYY-MM-DD'); newEndDate = moment().format('YYYY-MM-DD'); break;
+            case "Yesterday": newStartDate = moment().subtract(1, 'day').format('YYYY-MM-DD'); newEndDate = moment().subtract(1, 'day').format('YYYY-MM-DD'); break;
+            case "This Week": newStartDate = moment().startOf('isoWeek').format('YYYY-MM-DD'); newEndDate = moment().endOf('isoWeek').format('YYYY-MM-DD'); break;
+            case "Last Week": newStartDate = moment().subtract(1, 'week').startOf('isoWeek').format('YYYY-MM-DD'); newEndDate = moment().subtract(1, 'week').endOf('isoWeek').format('YYYY-MM-DD'); break;
+            case "This Month": newStartDate = moment().startOf('month').format('YYYY-MM-DD'); newEndDate = moment().endOf('month').format('YYYY-MM-DD'); break;
+            case "Last Month": newStartDate = moment().subtract(1, 'month').startOf('month').format('YYYY-MM-DD'); newEndDate = moment().subtract(1, 'month').endOf('month').format('YYYY-MM-DD'); break;
+            case "This Year": newStartDate = moment().startOf('year').format('YYYY-MM-DD'); newEndDate = moment().endOf('year').format('YYYY-MM-DD'); break;
+            case "Last Year": newStartDate = moment().subtract(1, 'year').startOf('year').format('YYYY-MM-DD'); newEndDate = moment().subtract(1, 'year').endOf('year').format('YYYY-MM-DD'); break;
+            default: break;
         }
         setStartDate(newStartDate);
         setEndDate(newEndDate);
@@ -216,112 +176,129 @@ const ViewLeads = ({ route, navigation }) => {
         const freshLead = isFreshLead(item.createdAt);
         const newLead = isNewLead(item.createdAt);
         
-        // Determine Status Color and Border
-        let borderColor = ACCENT_BLUE + '20';
         let statusColor = ACCENT_BLUE;
         let badgeText = "LEAD";
+        let gradientColor = ['#cbd5e1', '#94a3b8']; // Grey default
 
         if (freshLead) {
-            borderColor = ACCENT_GREEN;
             statusColor = ACCENT_GREEN;
-            badgeText = "FRESH LEAD";
+            badgeText = "FRESH";
+            gradientColor = ['#6ee7b7', '#059669'];
         } else if (newLead) {
-            borderColor = WARNING_ORANGE;
             statusColor = WARNING_ORANGE;
-            badgeText = "NEW LEAD";
+            badgeText = "NEW";
+            gradientColor = ['#fcd34d', '#f59e0b'];
         }
 
         const createdDate = moment(item.createdAt).format("DD-MM-YYYY");
         const createdTime = moment(item.createdAt).format("HH:mm");
-
-        const schemeTypeDisplay = item.scheme_type ?
-            item.scheme_type.charAt(0).toUpperCase() + item.scheme_type.slice(1) :
-            "N/A";
-
-        const groupName = item.group_id?.group_name ? item.group_id?.group_name : "N/A";
+        const schemeTypeDisplay = item.scheme_type ? item.scheme_type.charAt(0).toUpperCase() + item.scheme_type.slice(1) : "N/A";
+        const groupName = item.group_id?.group_name ? item.group_id.group_name : "N/A";
 
         return (
-            <TouchableOpacity 
-                onPress={() => toggleExpand(item._id)} 
-                style={[
-                    styles.customerCardStyle, 
-                    { borderLeftColor: borderColor }
-                ]}
-                activeOpacity={0.9}
-            >
-                <View style={styles.cardHeader}>
-                    <Text style={styles.customerName} numberOfLines={1}>
-                        {item.lead_name || 'No Name'}
-                    </Text>
-                    {/* Status Tag */}
-                    <View style={[styles.statusTag, { backgroundColor: statusColor + '20' }]}> 
-                        <Text style={[styles.statusTagText, { color: statusColor }]}>
-                            {badgeText} ({activeTab})
-                        </Text>
+            <View style={styles.cardContainer}>
+                <TouchableOpacity 
+                    onPress={() => toggleExpand(item._id)} 
+                    activeOpacity={0.95}
+                >
+                    {/* CARD HEADER: Name & Badge */}
+                    <View style={styles.cardHeader}>
+                        <View style={styles.headerLeft}>
+                            <View style={styles.avatarPlaceholder}>
+                                <Text style={styles.avatarText}>
+                                    {item.lead_name ? item.lead_name.charAt(0).toUpperCase() : "?"}
+                                </Text>
+                            </View>
+                            <View style={styles.titleBlock}>
+                                <Text style={styles.customerName}>{item.lead_name || 'No Name'}</Text>
+                                <View style={[styles.statusBadge, { backgroundColor: statusColor + '20', borderColor: statusColor }]}>
+                                    <Text style={[styles.statusText, { color: statusColor }]}>{badgeText} LEAD</Text>
+                                </View>
+                            </View>
+                        </View>
+                        <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={NEUTRAL_GREY} />
                     </View>
-                </View>
 
-                {/* Card Body - Static Info */}
-                <View style={styles.cardBody}>
-                    <Text style={styles.groupInfoText}>
-                        <Ionicons name="people-outline" size={16} color={ACCENT_BLUE} /> Group: <Text style={styles.groupInfoValue}>{groupName}</Text>
-                    </Text>
-                    <Text style={styles.groupInfoText}>
-                        <MaterialCommunityIcons name="star-outline" size={16} color={ACCENT_BLUE} /> Scheme: <Text style={styles.groupInfoValue}>{schemeTypeDisplay}</Text>
-                    </Text>
-                </View>
+                    {/* CARD BODY: Info & Actions Grid */}
+                    <View style={styles.cardBody}>
+                        <View style={styles.infoColumn}>
+                            {/* Row 1: Group */}
+                            <View style={styles.infoRow}>
+                                <View style={styles.iconBox}>
+                                    <Ionicons name="people" size={16} color={ACCENT_BLUE} />
+                                </View>
+                                <View style={styles.textGroup}>
+                                    <Text style={styles.labelText}>Group</Text>
+                                    <Text style={styles.valueText}>{groupName}</Text>
+                                </View>
+                            </View>
+                            
+                            {/* Row 2: Scheme */}
+                            <View style={styles.infoRow}>
+                                <View style={styles.iconBox}>
+                                    <MaterialCommunityIcons name="star-four-points" size={16} color={WARNING_ORANGE} />
+                                </View>
+                                <View style={styles.textGroup}>
+                                    <Text style={styles.labelText}>Scheme</Text>
+                                    <Text style={styles.valueText}>{schemeTypeDisplay}</Text>
+                                </View>
+                            </View>
+                        </View>
 
-                {/* Card Footer - Phone and Expand Icon */}
-                <View style={styles.cardFooter}>
-                    <Text style={styles.groupInfoText}>
-                        <Ionicons name="call-outline" size={16} color={NEUTRAL_GREY} /> Phone: <Text style={styles.groupInfoValue}>{item.lead_phone || 'N/A'}</Text>
-                    </Text>
-                    <Icon
-                        name={isExpanded ? "chevron-up" : "chevron-down"}
-                        size={18}
-                        color={NEUTRAL_GREY}
-                    />
-                </View>
+                        <View style={styles.actionsColumn}>
+                            {/* Action 1: Call (Aligned with Group) */}
+                            <TouchableOpacity 
+                                onPress={() => handleCall(item.lead_phone)} 
+                                style={styles.fabButton}
+                                activeOpacity={0.8}
+                            >
+                                <LinearGradient colors={CALL_GRADIENT} style={styles.fabGradient} start={{x:0, y:0}} end={{x:1, y:1}}>
+                                    <Ionicons name="call" size={18} color="white" />
+                                </LinearGradient>
+                            </TouchableOpacity>
+                            
+                            {/* Action 2: WhatsApp (Aligned with Scheme) */}
+                            <TouchableOpacity 
+                                onPress={() => handleWhatsApp(item.lead_phone)} 
+                                style={[styles.fabButton, { marginTop: 20 }]}
+                                activeOpacity={0.8}
+                            >
+                                <LinearGradient colors={WHATSAPP_GRADIENT} style={styles.fabGradient} start={{x:0, y:0}} end={{x:1, y:1}}>
+                                    <Icon name="whatsapp" size={20} color="white" />
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableOpacity>
 
+                {/* EXPANDED CONTENT */}
                 {isExpanded && (
-                    <View style={styles.expandedContent}>
-                        <Text style={styles.createdAt}>
-                            <Ionicons name="time-outline" size={14} color={NEUTRAL_GREY} /> Created: {createdDate} at {createdTime}
-                        </Text>
+                    <View style={styles.expandedContainer}>
+                        <View style={styles.expandedInner}>
+                            <Text style={styles.expandedText}>
+                                Created on {createdDate} at {createdTime}
+                            </Text>
+                            
+                            {item.lead_image && (
+                                <Image source={{ uri: item.lead_image }} style={styles.leadImage} />
+                            )}
 
-                        {item.lead_image && (
-                            <Image source={{ uri: item.lead_image }} style={styles.leadImage} />
-                        )}
-
-                        <View style={styles.contactButtons}>
-                            <TouchableOpacity
-                                onPress={() => handleCall(item.lead_phone)}
-                                style={[styles.contactButton, { backgroundColor: CALL_BUTTON_COLOR }]}
-                            >
-                                <Ionicons name="call" size={15} color={CARD_BG} />
-                                <Text style={styles.buttonText}>Call</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => handleWhatsApp(item.lead_phone)}
-                                style={[styles.contactButton, { backgroundColor: WHATSAPP_BUTTON_COLOR }]}
-                            >
-                                <Icon name="whatsapp" size={15} color={CARD_BG} />
-                                <Text style={styles.buttonText}>WhatsApp</Text>
-                            </TouchableOpacity>
-                            {/* Edit Button only for Fresh Leads, using ACCENT_BLUE */}
                             {freshLead && (
                                 <TouchableOpacity
                                     onPress={() => handleEditLead(item)}
-                                    style={[styles.contactButton, { backgroundColor: EDIT_BUTTON_COLOR }]}
+                                    style={styles.editButton}
+                                    activeOpacity={0.9}
                                 >
-                                    <Icon name="edit" size={15} color={CARD_BG} />
-                                    <Text style={styles.buttonText}>Edit</Text>
+                                    <LinearGradient colors={EDIT_GRADIENT} style={styles.editButtonGradient}>
+                                        <Icon name="pencil" size={16} color="white" />
+                                        <Text style={styles.editButtonText}>Edit Lead Details</Text>
+                                    </LinearGradient>
                                 </TouchableOpacity>
                             )}
                         </View>
                     </View>
                 )}
-            </TouchableOpacity>
+            </View>
         );
     };
 
@@ -331,119 +308,64 @@ const ViewLeads = ({ route, navigation }) => {
 
     const filteredLeads = searchQuery
         ? allLeads.filter((item) => {
-            const itemData = `${item.lead_name.toUpperCase()} ${item.lead_phone.toUpperCase()} ${item.group_id?.group_name ? item.group_id.group_name.toUpperCase() : ""
-                }`;
+            const itemData = `${item.lead_name.toUpperCase()} ${item.lead_phone.toUpperCase()} ${item.group_id?.group_name ? item.group_id.group_name.toUpperCase() : ""}`;
             const textData = searchQuery.toUpperCase();
             return itemData.includes(textData);
         })
         : allLeads;
 
-    const noDataMessage =
-        activeTab === "CHIT" ? "No chit leads found" : "No gold leads found";
+    const noDataMessage = activeTab === "CHIT" ? "No chit leads found" : "No gold leads found";
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
             <LinearGradient colors={TOP_GRADIENT} style={styles.topContainer}>
-                <View style={styles.headerSpacer}>
-                    <Header />
-                </View>
+                <View style={styles.headerSpacer}><Header /></View>
 
                 <View style={styles.titleContainer}>
-                    <View style={styles.titleAndCountRow}>
+                    <View style={styles.titleRow}>
                         <Text style={styles.title}>Leads</Text>
-                        <Text style={styles.totalAmountText}>
-                            Total: {chitLeads.length + goldLeads.length || 0}
-                        </Text>
+                        <View style={styles.totalCountBadge}>
+                            <Text style={styles.totalCountText}>{chitLeads.length + goldLeads.length}</Text>
+                        </View>
                     </View>
                     
-                    {/* COMBINED SEARCH AND FILTER ROW */}
-                    <View style={styles.searchAndFilterCombinedRow}>
-                        
-                        {/* Search Bar Container */}
+                    <View style={styles.searchRow}>
                         <View style={styles.searchBarContainer}>
-                            <Icon name="search" size={20} color={NEUTRAL_GREY} style={styles.searchIcon} />
+                            <Feather name="search" size={20} color={NEUTRAL_GREY} style={styles.searchIcon} />
                             <TextInput
                                 style={styles.searchBar}
-                                placeholder="Search leads by name or phone..."
+                                placeholder="Search leads..."
                                 placeholderTextColor={NEUTRAL_GREY}
                                 onChangeText={searchFilterFunction}
                                 value={searchQuery}
-                                autoCapitalize="none"
                             />
                         </View>
-
-                        {/* Filter Box */}
-                        <TouchableOpacity
-                            style={styles.filterBox}
-                            onPress={() => setModalVisible(true)}
-                        >
-                            <Feather name="filter" size={18} color={ACCENT_BLUE} style={styles.filterIcon} />
-                            <Text style={styles.filterText}>{filterText}</Text>
+                        <TouchableOpacity style={styles.filterBtn} onPress={() => setModalVisible(true)}>
+                            <Feather name="sliders" size={20} color="white" />
                         </TouchableOpacity>
                     </View>
                 </View>
                 
                 <View style={styles.tabContainer}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
-                        onPress={() => setActiveTab("CHIT")}
-                    >
-                        <Icon
-                            name="users"
-                            size={20}
-                            color={activeTab === "CHIT" ? MODERN_PRIMARY : CARD_BG}
-                        />
-                        <Text
-                            style={[
-                                styles.tabText,
-                                activeTab === "CHIT" && styles.activeTabText,
-                            ]}
-                        >
-                            Chit Leads ({chitLeads.length || 0})
-                        </Text>
+                    <TouchableOpacity style={[styles.tab, activeTab === "CHIT" && styles.activeTab]} onPress={() => setActiveTab("CHIT")}>
+                        <Text style={[styles.tabText, activeTab === "CHIT" && styles.activeTabText]}>Chit ({chitLeads.length})</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                        onPress={() => setActiveTab("GOLD")}
-                    >
-                        <Icon
-                            name="money"
-                            size={20}
-                            color={activeTab === "GOLD" ? MODERN_PRIMARY : CARD_BG}
-                        />
-                        <Text
-                            style={[
-                                styles.tabText,
-                                activeTab === "GOLD" && styles.activeTabText,
-                            ]}
-                        >
-                            Gold Leads ({goldLeads.length || 0})
-                        </Text>
+                    <TouchableOpacity style={[styles.tab, activeTab === "GOLD" && styles.activeTab]} onPress={() => setActiveTab("GOLD")}>
+                        <Text style={[styles.tabText, activeTab === "GOLD" && styles.activeTabText]}>Gold ({goldLeads.length})</Text>
                     </TouchableOpacity>
                 </View>
             </LinearGradient>
 
-            {/* Scrollable Content Area */}
             <View style={styles.mainContentArea}>
-                <KeyboardAvoidingView
-                    style={{ flex: 1 }}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-                >
-                    {isLoading && (
-                        <ActivityIndicator
-                            size="large"
-                            color={ACCENT_BLUE}
-                            style={{ marginTop: 20 }}
-                        />
-                    )}
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+                    {isLoading && <ActivityIndicator size="large" color={ACCENT_BLUE} style={{ marginTop: 30 }} />}
                     {!isLoading && dataLoaded && filteredLeads.length > 0 && (
                         <FlatList
                             data={filteredLeads}
                             keyExtractor={(item, index) => item._id || index.toString()}
                             renderItem={renderLeadCard}
-                            contentContainerStyle={styles.flatListContent}
+                            contentContainerStyle={styles.listContent}
+                            showsVerticalScrollIndicator={false}
                         />
                     )}
                     {!isLoading && dataLoaded && filteredLeads.length === 0 && (
@@ -455,415 +377,171 @@ const ViewLeads = ({ route, navigation }) => {
                 </KeyboardAvoidingView>
             </View>
 
-            <TouchableOpacity
-                onPress={() => navigation.navigate("AddLead", { user: user })}
-                style={styles.floatingActionButton}
-            >
-                <Feather name="plus" size={24} color="white" />
+            <TouchableOpacity onPress={() => navigation.navigate("AddLead", { user: user })} style={styles.fab}>
+                <LinearGradient colors={EDIT_GRADIENT} style={styles.fabGradient}>
+                    <Feather name="plus" size={26} color="white" />
+                </LinearGradient>
             </TouchableOpacity>
 
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => {
-                    setModalVisible(false);
-                }}
-            >
-                <View style={styles.centeredView}>
-                    <View style={styles.modalView}>
-                        <Text style={styles.modalTitle}>Filter Leads By Date</Text>
-                        {["All",
-                            "Today",
-                            "Yesterday",
-                            "This Week",
-                            "Last Week",
-                            "This Month",
-                            "Last Month",
-                            "This Year",
-                            "Last Year",
-                        ].map((range) => (
-                            <TouchableOpacity
-                                key={range}
-                                style={styles.dateRangeOption}
-                                onPress={() => handleDateRangeSelect(range)}
-                            >
-                                <Text style={styles.dateRangeText}>{range}</Text>
+            <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+                <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
+                    <View style={styles.modalView} onStartShouldSetResponder={() => true}>
+                        <Text style={styles.modalTitle}>Filter Leads</Text>
+                        {["All", "Today", "Yesterday", "This Week", "Last Week", "This Month", "Last Month", "This Year", "Last Year"].map((range) => (
+                            <TouchableOpacity key={range} style={styles.modalOption} onPress={() => handleDateRangeSelect(range)}>
+                                <Text style={styles.modalOptionText}>{range}</Text>
                             </TouchableOpacity>
                         ))}
-                        <View style={styles.buttonContainer}>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Text style={styles.modalButtonText}>CLOSE</Text>
-                            </TouchableOpacity>
-                        </View>
                     </View>
-                </View>
+                </TouchableOpacity>
             </Modal>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    // --- LAYOUT STYLES (MODERN) ---
-    safeArea: { 
-        flex: 1, 
-        backgroundColor: TOP_GRADIENT[0] 
-    },
-    topContainer: {
-        paddingHorizontal: 22,
-        paddingBottom: 20,
-    },
-    mainContentArea: {
-        flex: 1,
-        backgroundColor: SUBTLE_BG_GREY, 
-        borderTopLeftRadius: 30, 
-        borderTopRightRadius: 30,
-        paddingHorizontal: 16,
-        marginTop: -20, 
-        paddingTop: 10,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 5,
-    },
-    headerSpacer: { 
-        paddingTop: 20, 
-        paddingBottom: 5 
-    }, 
-
-    // --- TITLE STYLES ---
-    titleContainer: {
-        alignItems: 'center',
-        marginBottom: 15,
-        marginTop: 10,
-    },
-    titleAndCountRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        width: "100%",
-        marginBottom: 10,
-    },
-    title: {
-        fontSize: 28, 
-        fontWeight: "900",
-        color: CARD_BG, 
-    },
-    totalAmountText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: 'rgba(255, 255, 255, 0.85)',
-    },
+    safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
+    topContainer: { paddingHorizontal: 20, paddingBottom: 10, paddingTop: 10 },
+    headerSpacer: { paddingBottom: 5 },
+    titleContainer: { alignItems: 'center', marginVertical: 10 },
+    titleRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 15 },
+    title: { fontSize: 32, fontWeight: '800', color: 'white', letterSpacing: -1 },
+    totalCountBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
+    totalCountText: { color: 'white', fontWeight: '700', fontSize: 14 },
     
-    // --- SEARCH & FILTER (MODIFIED TO BE IN ONE LINE) ---
-    searchAndFilterCombinedRow: {
-        flexDirection: 'row',
-        width: '100%',
-        alignItems: 'center', 
-        marginBottom: 10, 
-        gap: 10, // Space between search and filter
-    },
-    searchBarContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: CARD_BG,
-        borderRadius: 15,
-        paddingHorizontal: 15,
-        flex: 1, // Takes full available width
-        height: 45,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    searchIcon: {
-        marginRight: 10,
-        color: NEUTRAL_GREY
-    },
-    searchBar: {
-        flex: 1,
-        height: 45,
-        color: MODERN_PRIMARY,
-        fontSize: 14,
-        paddingVertical: 0,
-    },
-    filterBox: {
-        backgroundColor: CARD_BG,
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 15,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-        height: 45,
-    },
-    filterIcon: {
-        marginRight: 5,
-        fontSize: 16,
-        color: ACCENT_BLUE,
-    },
-    filterText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: MODERN_PRIMARY,
-    },
-    
-    // --- TABS ---
-    tabContainer: {
-        flexDirection: "row",
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: 15,
-        marginBottom: 10,
-        padding: 5,
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: "center",
-        flexDirection: 'row',
-        justifyContent: 'center',
-        borderRadius: 10,
-    },
-    activeTab: {
-        backgroundColor: CARD_BG,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.15,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    tabText: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.9)',
-        fontWeight: "600",
-        marginLeft: 5,
-    },
-    activeTabText: {
-        color: MODERN_PRIMARY,
-        fontWeight: 'bold',
-    },
+    // Search
+    searchRow: { flexDirection: 'row', width: '100%', gap: 12, marginBottom: 10 },
+    searchBarContainer: { flex: 1, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 12, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, height: 48 },
+    searchIcon: { marginRight: 10 },
+    searchBar: { flex: 1, color: MODERN_PRIMARY, fontSize: 15 },
+    filterBtn: { width: 48, height: 48, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
 
-    // --- LEAD CARD STYLES (MODERN) ---
-    customerCardStyle: {
-        backgroundColor: CARD_BG, 
-        borderRadius: 18, 
-        marginBottom: 15,
-        padding: 20,
-        borderLeftWidth: 6, 
-        shadowColor: MODERN_PRIMARY,
+    // Tabs
+    tabContainer: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 12, padding: 4 },
+    tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
+    activeTab: { backgroundColor: 'white' },
+    tabText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+    activeTabText: { color: TOP_GRADIENT[1], fontWeight: '800' },
+
+    // Main Area
+    mainContentArea: { flex: 1, backgroundColor: SUBTLE_BG_GREY, paddingHorizontal: 16, paddingTop: 20 },
+    listContent: { paddingBottom: 100 },
+    
+    // --- STYLISH CARD DESIGN ---
+    cardContainer: {
+        backgroundColor: CARD_BG,
+        borderRadius: 24,
+        marginBottom: 20,
+        shadowColor: "#64748b",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08, 
-        shadowRadius: 8,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: SUBTLE_BG_GREY, 
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
+        overflow: 'hidden',
     },
-    
-    // CARD CONTENT
     cardHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingBottom: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: SUBTLE_BG_GREY,
-    },
-    customerName: {
-        fontSize: 22,
-        fontWeight: "900",
-        color: MODERN_PRIMARY,
-        flexShrink: 1,
-        marginRight: 10,
-    },
-    statusTag: { 
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 15,
-        alignSelf: 'flex-start', 
-    },
-    statusTagText: {
-        fontSize: 11,
-        fontWeight: "700",
-        textTransform: 'uppercase',
-    },
-    cardBody: {
-        paddingVertical: 15,
-    },
-    groupInfoText: {
-        fontSize: 15,
-        color: NEUTRAL_GREY,
-        marginTop: 5,
-        fontWeight: "500",
-        lineHeight: 24,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    groupInfoValue: {
-        color: MODERN_PRIMARY,
-        fontWeight: '700',
-    },
-    cardFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: SUBTLE_BG_GREY,
-    },
-
-    // EXPANDED CONTENT
-    expandedContent: {
-        marginTop: 15,
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: SUBTLE_BG_GREY,
-    },
-    createdAt: {
-        fontSize: 14,
-        color: NEUTRAL_GREY,
-        fontStyle: "italic",
-        marginBottom: 10,
-        fontWeight: '500',
-    },
-    leadImage: {
-        width: '100%',
-        height: 150,
-        borderRadius: 10,
-        marginTop: 10,
-        marginBottom: 15,
-        resizeMode: 'cover',
-    },
-
-    // CONTACT BUTTONS (STANDARD STYLE)
-    contactButtons: {
-        flexDirection: "row",
-        justifyContent: "space-between", 
-        gap: 10,
-        marginTop: 10,
-    },
-    contactButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        borderRadius: 50,
-        elevation: 2,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        gap: 6,
-        flex: 1,
-    },
-    buttonText: { 
-        color: CARD_BG, 
-        fontWeight: "bold", 
-        fontSize: 14 
-    }, 
-    
-    // --- NO DATA / FAB ---
-    noDataContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 50,
-        backgroundColor: CARD_BG,
         padding: 20,
-        borderRadius: 15,
-    },
-    noDataText: {
-        fontSize: 16,
-        color: NEUTRAL_GREY,
-        textAlign: 'center',
-        fontWeight: '600'
-    },
-    noImage: {
-        width: 150,
-        height: 150,
-        resizeMode: "contain",
-        marginBottom: 20,
-    },
-    flatListContent: {
-        paddingBottom: 120,
-    },
-    floatingActionButton: {
-        position: "absolute",
-        bottom: 70,
-        right: 20,
-        backgroundColor: ACCENT_BLUE,
-        borderRadius: 30,
-        width: 60,
-        height: 60,
-        justifyContent: "center",
-        alignItems: "center",
-        elevation: 5,
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        zIndex: 10,
-    },
-    
-    // --- MODAL STYLES (MODERN) ---
-    centeredView: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: 'rgba(0,0,0,0.6)',
-    },
-    modalView: {
-        backgroundColor: CARD_BG,
-        borderRadius: 20,
-        padding: 25,
-        alignItems: "flex-start",
-        shadowColor: MODERN_PRIMARY,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
-        width: '85%',
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: MODERN_PRIMARY,
-        marginBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: SUBTLE_BG_GREY,
-        width: '100%',
         paddingBottom: 10,
     },
-    dateRangeOption: {
-        paddingVertical: 12,
-        width: '100%',
-        borderBottomWidth: 1,
-        borderBottomColor: SUBTLE_BG_GREY,
+    headerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    avatarPlaceholder: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#e2e8f0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+        borderWidth: 2,
+        borderColor: '#fff',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
     },
-    dateRangeText: {
-        fontSize: 16,
-        color: MODERN_PRIMARY,
-        fontWeight: '500',
+    avatarText: { fontSize: 20, fontWeight: '800', color: MODERN_PRIMARY },
+    titleBlock: { flex: 1 },
+    customerName: { fontSize: 20, fontWeight: '800', color: MODERN_PRIMARY, marginBottom: 6 },
+    statusBadge: { 
+        alignSelf: 'flex-start', 
+        paddingHorizontal: 10, 
+        paddingVertical: 4, 
+        borderRadius: 8, 
+        borderWidth: 1,
+        backgroundColor: 'transparent'
     },
-    buttonContainer: {
+    statusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+
+    // Card Body
+    cardBody: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
-        width: '100%',
-        marginTop: 20,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        justifyContent: 'space-between',
     },
-    modalButtonText: {
-        fontSize: 16,
-        color: ACCENT_BLUE,
-        fontWeight: 'bold',
-        marginLeft: 20,
+    infoColumn: { flex: 1, justifyContent: 'space-between' },
+    infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 }, // Spacing between rows
+    iconBox: { 
+        width: 32, 
+        height: 32, 
+        borderRadius: 8, 
+        backgroundColor: '#f1f5f9', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        marginRight: 12 
     },
+    textGroup: { justifyContent: 'center' },
+    labelText: { fontSize: 11, color: NEUTRAL_GREY, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
+    valueText: { fontSize: 15, color: MODERN_PRIMARY, fontWeight: '600' },
+
+    // Actions Column
+    actionsColumn: { justifyContent: 'flex-start', alignItems: 'center', width: 60 },
+    fabButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 5,
+    },
+    fabGradient: { 
+        width: '100%', 
+        height: '100%', 
+        borderRadius: 24, 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+    },
+
+    // Expanded
+    expandedContainer: { backgroundColor: '#f8fafc', borderTopWidth: 1, borderTopColor: '#e2e8f0' },
+    expandedInner: { padding: 20 },
+    expandedText: { fontSize: 13, color: NEUTRAL_GREY, marginBottom: 15, fontStyle: 'italic' },
+    leadImage: { width: '100%', height: 160, borderRadius: 16, marginBottom: 15 },
+    
+    editButton: { borderRadius: 12, overflow: 'hidden', shadowColor: ACCENT_BLUE, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 },
+    editButtonGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 20 },
+    editButtonText: { color: 'white', fontWeight: '700', fontSize: 15, marginLeft: 8 },
+
+    // Misc
+    noDataContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50, backgroundColor: CARD_BG, borderRadius: 20, margin: 16 },
+    noDataText: { fontSize: 16, color: NEUTRAL_GREY, marginTop: 10, fontWeight: '600' },
+    noImage: { width: 120, height: 120, resizeMode: "contain", opacity: 0.6 },
+    
+    // FAB
+    fab: { position: 'absolute', bottom: 30, right: 24, width: 64, height: 64, borderRadius: 32, shadowColor: ACCENT_BLUE, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 8 },
+    
+    // Modal
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    modalView: { width: '80%', backgroundColor: 'white', borderRadius: 20, padding: 20, paddingTop: 30 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: MODERN_PRIMARY, marginBottom: 20, textAlign: 'center' },
+    modalOption: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+    modalOptionText: { fontSize: 16, color: MODERN_PRIMARY, fontWeight: '500', textAlign: 'center' }
 });
 
 export default ViewLeads;

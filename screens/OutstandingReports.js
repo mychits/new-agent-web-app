@@ -230,7 +230,7 @@ const OutstandingReports = ({ route, navigation }) => {
                             <Feather name="refresh-cw" size={18} color={COLORS.primary} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.headerTitle}>Outstanding Report</Text>
+                    <Text style={styles.headerTitle}>Customer Collection Outstanding Report</Text>
                     <Text style={styles.headerSub}>Manage pending dues efficiently</Text>
                 </View>
 
@@ -336,8 +336,8 @@ const styles = StyleSheet.create({
         alignItems: "center"
     },
     headerTopRow: { flexDirection: "row", justifyContent: "space-between", width: "100%", marginBottom: 15 },
-    headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", letterSpacing: 0.5 },
-    headerSub: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+    headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", letterSpacing: 0.5, textAlign:'center' },
+    headerSub: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 , textAlign:'center'},
     iconCircle: { backgroundColor: "#fff", padding: 6, borderRadius: 12 },
     refreshBtn: { backgroundColor: COLORS.accent, padding: 8, borderRadius: 12 },
     
