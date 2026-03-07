@@ -82,7 +82,7 @@ const Due = ({ route, navigation }) => {
             />
             
             <CustomRouteCard
-              name={`Group Outstanding \nReport`}
+              name={`Group Outstanding Report`}
               description="Analyze manager-wise performance metrics"
               icon="people-outline"
               onPress={() => navigation.navigate("RelationshipManagerReport", { user })}
