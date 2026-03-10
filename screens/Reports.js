@@ -41,7 +41,7 @@ const CustomReportCard = ({ name, icon, onPress, subText }) => (
     </View>
 
     <View style={styles.actionBadge}>
-        <Text style={styles.actionBadgeText}>VIEW</Text>
+  
         <Ionicons name="chevron-forward-outline" size={14} color={ACCENT_BLUE} />
     </View>
   </TouchableOpacity>
@@ -55,9 +55,9 @@ const Reports = ({ route, navigation }) => {
     { name: "Gold Report", icon: "ribbon-outline", route: "GoldPayment", params: { user }, sub: "Gold scheme analytics" },
     { name: "Loan Report", icon: "wallet-outline", route: "LoanPayments", params: { user, areaId: "loan-chits" }, sub: "Loan & interest status" },
     { name: "Pigmy Report", icon: "trending-up-outline", route: "PigmePayments", params: { user, areaId: "pigme-chits" }, sub: "Daily collection tracking" },
-    { name: "Collection Report", icon: "document-text-outline", route: "OutstandingReports", params: { user }, sub: "Outstanding balance list" },
-    { name: "Referred Report", icon: "share-social-outline", route: "ReferredReport", params: { user }, sub: "Referral performance" },
-    { name: "Relation ship manager ", icon: "people-outline", route: "RelationshipManagerReport", params: { user }, sub: "Manager activity logs" },
+    { name: "Customer Collection Outstanding Report", icon: "document-text-outline", route: "OutstandingReports", params: { user }, sub: "Outstanding balance list" },
+    { name: "Referral Customer Outstanding Report", icon: "share-social-outline", route: "ReferredReport", params: { user }, sub: "Referral performance" },
+    { name: "Group Outstanding Report ", icon: "people-outline", route: "RelationshipManagerReport", params: { user }, sub: "Manager activity logs" },
   ];
 
   return (
@@ -111,11 +111,11 @@ const styles = StyleSheet.create({
     marginTop: -20, 
     paddingTop: 20 
   },
-  headerSpacer: { paddingTop: 20, paddingBottom: 5 }, 
+  headerSpacer: { paddingTop: 10, paddingBottom: 5 }, 
   titleContainer: { alignItems: 'center', marginBottom: 15 },
-  title: { fontSize: 28, fontWeight: "900", color: CARD_BG, marginBottom: 4 },
+  title: { fontSize: 24, fontWeight: "900", color: CARD_BG, marginBottom: 4 },
   subtitle: { 
-    fontSize: 14, 
+    fontSize: 12, 
     color: 'rgba(255, 255, 255, 0.85)', 
     fontWeight: '500', 
     textAlign: 'center' 
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER_COLOR,
   },
   cardListContainer: { 
-    gap: 15, // Space between cards inside the big box
+    gap: 10, // Space between cards inside the big box
     alignItems: 'stretch' 
   },
   cardContainer: {
@@ -155,8 +155,8 @@ const styles = StyleSheet.create({
   },
   cardContent: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   iconWrapper: {
-    width: 40,
-    height: 40,
+    width: 20,
+    height: 20,
     borderRadius: 10,
     backgroundColor: '#fff',
     justifyContent: 'center',

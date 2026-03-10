@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     // Header Styles - Merged from Target
     header: { 
         paddingHorizontal: 20, 
-        paddingTop: Platform.OS === "android" ? 50 : 10,
+        paddingTop: Platform.OS === "android" ? 35 : 10,
         paddingBottom: 20,
     },
     headerTopRow: {
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
         width: "100%",
         marginBottom: 15
     },
-    headerTitle: { fontSize: 26, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: 5 },
+    headerTitle: { fontSize: 26, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: -2 },
     headerSubTitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2, marginBottom: 20 },
     iconCircle: { backgroundColor: "#fff", padding: 8, borderRadius: 12, elevation: 4 },
     refreshBtn: { backgroundColor: COLORS.accent, padding: 10, borderRadius: 12, elevation: 4 },

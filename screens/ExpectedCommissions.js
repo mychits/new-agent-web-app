@@ -1,3 +1,4 @@
+
 import {
     View,
     Text,
@@ -10,20 +11,25 @@ import {
     Linking,
     Alert,
     Pressable,
-    TextInput
+    TextInput,
+    Image,
+    StatusBar
 } from "react-native";
 import { TapGestureHandler } from "react-native-gesture-handler";
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
-import baseUrl from "../constants/baseUrl";
+// Importing the base URL from the constants file
+import baseUrl from "../constants/baseUrl"; 
 import { Feather, MaterialIcons } from "@expo/vector-icons";
-import { whatsappMessage } from "../components/data/messages"; // Assuming this path is correct
+import { whatsappMessage } from "../components/data/messages";
 import { LinearGradient } from "expo-linear-gradient";
 
+// --- BACKGROUND ASSET (From Target Screen) ---
+const backgroundImage = require("../assets/hero1.jpg");
+
 // --- DESIGN CONSTANTS ---
-const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#0d0d0eff"; // Dark text/headers
 const ACCENT_BLUE = "#1796d1ff"; // Blue accent
 const BORDER_COLOR = "#e0e0e0"; // Lighter border
@@ -31,11 +37,14 @@ const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = '#f9fafb'; // Very light background for content area
 
+// --- TARGET BACKGROUND COLORS ---
+const TARGET_PRIMARY = "#183A5D";
+const TARGET_BG_BLUE = "#1aa2ccff";
+
 // --- DISTINCT VALUE COLORS ---
 const VALUE_COLOR_GREEN = '#3ed160ff';
 const VALUE_COLOR_MAGENTA = '#f70cb4ff';
 // ---------------------------------------------
-
 
 const ExpectedCommissions = ({ route, navigation }) => {
     const { user } = route.params;
@@ -48,6 +57,17 @@ const ExpectedCommissions = ({ route, navigation }) => {
     const [totalChitCommmissions, setTotalChitCommissions] = useState("");
     const [totalGoldCommmissions, setTotalGoldCommissions] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Helper to format the date
+    const formatDate = (dateString) => {
+        if (!dateString) return "N/A";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        }); // Example: 12 Feb 2026
+    };
 
     const sendWhatsappMessage = async (item) => {
         if (item.user_id?.phone_number) {
@@ -88,15 +108,14 @@ const ExpectedCommissions = ({ route, navigation }) => {
 
     useEffect(() => {
         const fetchExpectedCommissions = async () => {
-            // NOTE: The GOLD base URL is hardcoded here, ensure it's correct for your environment.
-            const currentBaseUrl =
-                activeTab === "CHIT" ? baseUrl : "http://13.60.68.201:3000/api";
-            
+            // Using the imported baseUrl directly
+            const currentBaseUrl = baseUrl;
             const setLoading = activeTab === "CHIT" ? setIsChitLoading : setIsGoldLoading;
 
             setLoading(true);
 
             try {
+                // Removing trailing slash just in case
                 const apiUrl = `${currentBaseUrl.replace(/\/+$/, '')}/enroll/get-commission-info/${user.userId}`;
 
                 const response = await axios.get(apiUrl);
@@ -174,6 +193,10 @@ const ExpectedCommissions = ({ route, navigation }) => {
                     <Text style={styles.name}>
                        {item?.user_id?.full_name || "No User Name"}
                     </Text>
+                    {/* Added Enrollment Date */}
+                    <Text style={styles.dateText}>
+                        Enrollment Date: {formatDate(item.createdAt)}
+                    </Text>
                 </View>
                 <View style={styles.rightSection}>
                     <View style={styles.commissionContainer}>
@@ -193,141 +216,169 @@ const ExpectedCommissions = ({ route, navigation }) => {
         ? "No CHIT expected commissions found. Start enrolling new customers!"
         : "No GOLD CHIT expected commissions found. Start enrolling new customers!";
 
+    // --- COMPONENT FOR THE SCROLLABLE HEADER ---
+    const renderListHeader = () => (
+        <View>
+            {/* Search Input and Icon */}
+            <View style={styles.searchContainer}>
+                <Feather name="search" size={20} color={TEXT_GREY} style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search by customer name or group"
+                    placeholderTextColor={TEXT_GREY}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+            </View>
+            
+            {/* Tabs */}
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
+                    onPress={() => { setActiveTab("CHIT"); setSearchQuery(""); }}
+                >
+                    <MaterialIcons
+                        name="groups"
+                        size={20}
+                        color={activeTab === "CHIT" ? CARD_BG : TEXT_GREY}
+                    />
+                    <Text
+                        style={[
+                            styles.tabText,
+                            activeTab === "CHIT" && styles.activeTabText,
+                        ]}
+                    >
+                        Chits ({chitCustomerLength || 0}) 
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
+                    onPress={() => { setActiveTab("GOLD"); setSearchQuery(""); }}
+                >
+                    <MaterialIcons
+                        name="diamond"
+                        size={20}
+                        color={activeTab === "GOLD" ? CARD_BG : TEXT_GREY}
+                    />
+                    <Text
+                        style={[
+                            styles.tabText,
+                            activeTab === "GOLD" && styles.activeTabText,
+                        ]}
+                    >
+                        Gold Chits ({goldCustomerLength || 0})
+                    </Text>
+                </TouchableOpacity>
+            </View>
+            
+            {/* Total Card */}
+            <View style={styles.totalCardContainer}>
+                <View style={styles.totalCard}>
+                    <View style={styles.totalCardContent}>
+                        <View>
+                            <Text style={styles.totalCardText}>Total Expected Commission</Text>
+                            <Text style={[styles.totalCardValue, { color: VALUE_COLOR_GREEN }]}>
+                                {`₹${formatCommission(totalCommission)}`}
+                            </Text>
+                        </View>
+                        <MaterialIcons name="trending-up" size={32} style={styles.cardIcon} />
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+
+    // --- COMPONENT FOR EMPTY STATE OR LOADING ---
+    const renderListEmpty = () => {
+        if (isLoading) {
+            return (
+                <ActivityIndicator
+                    size="large"
+                    color={ACCENT_BLUE}
+                    style={{ marginTop: 40 }}
+                />
+            );
+        }
+        
+        if (searchQuery !== "") {
+             return (
+                <Text style={styles.noLeadsText}>
+                    No customers match your search criteria.
+                </Text>
+            );
+        }
+
+        return (
+            <Text style={styles.noLeadsText}>
+                {noCommissionText}
+            </Text>
+        );
+    };
+
 
     return (
-        <View style={{ flex: 1, backgroundColor: TOP_GRADIENT[0] }}>
-            <LinearGradient colors={TOP_GRADIENT}
-                style={styles.gradientOverlay}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                <KeyboardAvoidingView
-                    style={{ flex: 1 }}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-                >
-                    {/* Fixed Header Section (Elements that should NOT scroll) */}
-                    <View style={styles.fixedHeaderArea}>
-                        <Header />
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.title}>Expected Commissions</Text>
-                            <Text style={styles.subtitle}>View your estimated earnings</Text>
-                        </View>
-                    </View>
-                    
-                    {/* Main Content Area (White Background, Overlapping Header) */}
-                    <View style={styles.mainContentArea}>
-                        
-                        {/* Search Input and Icon */}
-                        <View style={styles.searchContainer}>
-                            <Feather name="search" size={20} color={TEXT_GREY} style={styles.searchIcon} />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search by customer name or group"
-                                placeholderTextColor={TEXT_GREY}
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                            />
-                        </View>
-                        
-                        {/* Tabs */}
-                        <View style={styles.tabContainer}>
-                            <TouchableOpacity
-                                style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
-                                onPress={() => { setActiveTab("CHIT"); setSearchQuery(""); }}
-                            >
-                                <MaterialIcons
-                                    name="groups"
-                                    size={20}
-                                    color={activeTab === "CHIT" ? CARD_BG : TEXT_GREY}
-                                />
-                                <Text
-                                    style={[
-                                        styles.tabText,
-                                        activeTab === "CHIT" && styles.activeTabText,
-                                    ]}
-                                >
-                                    Chits ({chitCustomerLength || 0}) 
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                                onPress={() => { setActiveTab("GOLD"); setSearchQuery(""); }}
-                            >
-                                <MaterialIcons
-                                    name="diamond"
-                                    size={20}
-                                    color={activeTab === "GOLD" ? CARD_BG : TEXT_GREY}
-                                />
-                                <Text
-                                    style={[
-                                        styles.tabText,
-                                        activeTab === "GOLD" && styles.activeTabText,
-                                    ]}
-                                >
-                                    Gold Chits ({goldCustomerLength || 0})
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                        
-                        {/* Total Card */}
-                        <View style={styles.totalCardContainer}>
-                            <View style={styles.totalCard}>
-                                <View style={styles.totalCardContent}>
-                                    <View>
-                                        <Text style={styles.totalCardText}>Total Expected Commission</Text>
-                                        <Text style={[styles.totalCardValue, { color: VALUE_COLOR_GREEN }]}>
-                                            {`₹${formatCommission(totalCommission)}`}
-                                        </Text>
-                                    </View>
-                                    <MaterialIcons name="trending-up" size={32} style={styles.cardIcon} />
-                                </View>
-                            </View>
-                        </View>
+        <View style={styles.mainContainer}>
+            <StatusBar barStyle="light-content" />
+            {/* Target Background Layer: Blurred Image */}
+            <Image source={backgroundImage} style={styles.bgOverlay} blurRadius={12} />
+            {/* Target Background Layer: Gradient Overlay */}
+            <LinearGradient 
+                colors={["rgba(26, 162, 204, 0.9)", TARGET_PRIMARY]} 
+                style={StyleSheet.absoluteFill} 
+            />
 
-                        {/* Scrolling Content Section (FlatList) */}
-                        <View style={styles.listContainer}>
-                            {isLoading ? (
-                                <ActivityIndicator
-                                    size="large"
-                                    color={ACCENT_BLUE}
-                                    style={{ marginTop: 20 }}
-                                />
-                            ) : customerCount === 0 && searchQuery === "" ? (
-                                <Text style={styles.noLeadsText}>
-                                    {noCommissionText}
-                                </Text>
-                            ) : filteredCustomers.length === 0 && searchQuery !== "" ? (
-                                 <Text style={styles.noLeadsText}>
-                                     No customers match your search criteria.
-                                 </Text>
-                            ) : (
-                                <FlatList
-                                    data={filteredCustomers}
-                                    keyExtractor={(item, index) => `${activeTab}-${index}`}
-                                    renderItem={renderEnrolledCustomerCard}
-                                    showsVerticalScrollIndicator={false}
-                                    contentContainerStyle={{ paddingBottom: 20 }}
-                                />
-                            )}
-                        </View>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+            >
+                {/* Fixed Header Section (Elements that should NOT scroll) */}
+                <View style={styles.fixedHeaderArea}>
+                    <Header />
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.title}>Expected Commissions</Text>
+                        <Text style={styles.subtitle}>View your estimated earnings</Text>
                     </View>
-                </KeyboardAvoidingView>
-            </LinearGradient>
+                </View>
+                
+                {/* Main Content Area (White Background, Overlapping Header) */}
+                <View style={styles.mainContentArea}>
+                    {/* 
+                        The FlatList now takes up the entire mainContentArea.
+                        The Search, Tabs, and Total Card are moved to ListHeaderComponent
+                        so they scroll away with the list.
+                    */}
+                    <FlatList
+                        data={filteredCustomers}
+                        keyExtractor={(item, index) => `${activeTab}-${index}`}
+                        renderItem={renderEnrolledCustomerCard}
+                        ListHeaderComponent={renderListHeader}
+                        ListEmptyComponent={renderListEmpty}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 20 }}
+                        style={{ flex: 1 }}
+                    />
+                </View>
+            </KeyboardAvoidingView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    // --- LAYOUT STYLES (Modernized) ---
-    gradientOverlay: {
-        flex: 1,
-        paddingHorizontal: 0, 
-        paddingTop: 0, 
+    // --- BACKGROUND STYLES (From Target) ---
+    mainContainer: { 
+        flex: 1, 
+        backgroundColor: TARGET_PRIMARY, 
     },
+    bgOverlay: { 
+        ...StyleSheet.absoluteFillObject, 
+        opacity: 0.15 
+    },
+
+    // --- LAYOUT STYLES (Modernized) ---
     fixedHeaderArea: {
         paddingHorizontal: 22, 
-        paddingTop: Platform.OS === 'android' ? 50 : 32, 
+        paddingTop: Platform.OS === 'android' ? 25 : 32, 
         paddingBottom: 20, 
         zIndex: 10,
     },
@@ -336,24 +387,25 @@ const styles = StyleSheet.create({
         backgroundColor: CARD_BG, 
         borderTopLeftRadius: 30, 
         borderTopRightRadius: 30,
-        // Adjusted from -30 to -10 to increase the space between the subtitle and the white container
         marginTop: -10, 
         zIndex: 2, 
-        paddingHorizontal: 22, 
-        paddingTop: 30,
+        // PaddingTop is removed here because the FlatList content handles spacing
+        // or we can add it inside the ListHeader if needed. 
+        // However, to keep the white card look, we usually want the first item to have some padding.
+        // The ListHeaderComponent items will handle their own margins.
+        paddingTop: 30, 
+        paddingHorizontal: 22,
     },
-    listContainer: {
-        flex: 1,
-    },
+    // listContainer is removed as the FlatList now sits directly in mainContentArea
 
     // --- TITLE STYLES ---
     titleContainer: {
-        marginTop: 15,
+        marginTop: 5,
         marginBottom: 5,
         alignItems: 'center',
     },
     title: {
-        fontSize: 28,
+        fontSize: 22,
         fontWeight: "900",
         color: CARD_BG, 
         shadowColor: MODERN_PRIMARY,
@@ -363,7 +415,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: 12,
         color: 'rgba(255, 255, 255, 0.9)', 
         fontWeight: '500',
         marginTop: 4,
@@ -509,6 +561,12 @@ const styles = StyleSheet.create({
         color: TEXT_GREY,
         marginTop: 3,
         textAlign: 'left',
+    },
+    dateText: {
+        fontSize: 12, 
+        color: '#888', 
+        marginTop: 2,
+        fontStyle: 'italic',
     },
     groupName: {
         textAlign: 'left',

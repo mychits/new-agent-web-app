@@ -36,6 +36,9 @@ const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f9fafb"; 
 const PRIMARY_BUTTON_COLOR = "#f8c009ff"; 
 
+// Error Gradient
+const ERROR_GRADIENT = ['#eb3349', '#f45c43'];
+
 const Payin = ({ route, navigation }) => {
   const { user, customer } = route.params;
   const { modifyPayment } = useContext(AgentContext);
@@ -52,6 +55,10 @@ const Payin = ({ route, navigation }) => {
 
   // New state for Confirmation Modal
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // New state for Error Modal
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [customerInfo, setCustomerInfo] = useState({});
   const [groups, setGroups] = useState([]);
@@ -205,9 +212,25 @@ const Payin = ({ route, navigation }) => {
 
   const validateAndShowModal = () => {
     if (!customerInfo.full_name || !selectedGroup || !selectedTicket || !amount) {
-      Alert.alert("Validation Error", "Please fill all mandatory fields.");
+      setErrorMessage("Please fill all mandatory fields.");
+      setShowErrorModal(true);
       return;
     }
+
+    // Condition 1: Check for single digit amount
+    if (amount.length === 1) {
+      setErrorMessage("Amount must be at least 2 digits.");
+      setShowErrorModal(true);
+      return;
+    }
+
+    // Validation for Online Payment: Ensure Transaction ID exists
+    if (paymentDetails === "online" && !transactionId.trim()) {
+      setErrorMessage("Please enter a Transaction ID for online payments.");
+      setShowErrorModal(true);
+      return;
+    }
+
     setShowConfirmModal(true);
   };
 
@@ -281,6 +304,37 @@ const Payin = ({ route, navigation }) => {
         </View>
       </Modal>
 
+      {/* Stylish Error Modal */}
+      <Modal animationType="fade" transparent={true} visible={showErrorModal}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.stylishModalCard}>
+            {/* Error Gradient Header */}
+            <LinearGradient colors={ERROR_GRADIENT} style={styles.errorHeader}>
+              <View style={styles.iconCircle}>
+                <MaterialIcons name="error-outline" size={40} color={CARD_BG} />
+              </View>
+              <Text style={styles.errorTitle}>Validation Error</Text>
+            </LinearGradient>
+
+            {/* Error Body */}
+            <View style={[styles.stylishBody, { alignItems: 'center', paddingTop: 30 }]}>
+               <MaterialIcons name="info" size={24} color={ERROR_GRADIENT[1]} style={{marginBottom: 10}} />
+               <Text style={styles.errorMessageText}>{errorMessage}</Text>
+            </View>
+
+            {/* Error Footer */}
+            <View style={styles.stylishFooter}>
+              <TouchableOpacity 
+                onPress={() => setShowErrorModal(false)} 
+                style={[styles.stylishCancelButton, { flex: 1, backgroundColor: '#fee2e2', marginLeft: 0 }]}
+              >
+                <Text style={[styles.stylishCancelText, { color: ERROR_GRADIENT[1] }]}>OKAY</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Stylish Confirmation Modal */}
       <Modal animationType="fade" transparent={true} visible={showConfirmModal}>
         <View style={styles.modalOverlay}>
@@ -324,6 +378,14 @@ const Payin = ({ route, navigation }) => {
                   <Text style={styles.methodText}>{paymentDetails.toUpperCase()}</Text>
                 </View>
               </View>
+
+              {/* Condition 2: Show Transaction ID if payment is online */}
+              {paymentDetails === "online" && (
+                <View style={styles.stylishRow}>
+                  <Text style={styles.stylishLabel}>Trans. ID</Text>
+                  <Text style={[styles.stylishValue, { fontSize: 14 }]}>{transactionId}</Text>
+                </View>
+              )}
 
               {/* Total Amount Box */}
               <View style={styles.totalBox}>
@@ -512,7 +574,7 @@ const styles = StyleSheet.create({
     width: '85%',
     backgroundColor: CARD_BG,
     borderRadius: 24,
-    overflow: 'hidden', // Important for header gradient radius
+    overflow: 'hidden', 
     elevation: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -527,6 +589,29 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
+  // --- Error Modal Specific Styles ---
+  errorHeader: {
+    paddingTop: 24,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: CARD_BG,
+    letterSpacing: 0.5,
+    marginTop: 8,
+  },
+  errorMessageText: {
+    fontSize: 16,
+    color: TEXT_GREY,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+
   iconCircle: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 50,
