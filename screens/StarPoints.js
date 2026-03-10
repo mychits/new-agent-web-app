@@ -390,7 +390,7 @@ const StarPoints = ({ navigation, route }) => {
                                   <Text style={styles.agentName}>{item.name || "Agent Name"}</Text>
                                   <Text style={styles.agentRole}>Executive Performance</Text>
                                   
-                                  {/* UPDATED: Date as a Badge/Tag */}
+                                  {/* Report Date Badge (Static for the selected period) */}
                                   <View style={styles.dateBadge}>
                                       <MaterialIcons name="event" size={18} color="#00d2ff" style={{marginRight: 5}} />
                                       <Text style={styles.dateBadgeText}>Report Date: {formatDateDisplay(selectedDate, filterMode)}</Text>
@@ -419,6 +419,15 @@ const StarPoints = ({ navigation, route }) => {
 
                           <View style={styles.receiptFooter}>
                               <View style={styles.dashedLine} />
+                              
+                              {/* PRESENT DATE / GENERATED DATE */}
+                              <Text style={styles.generatedAtText}>
+                                Generated: {new Date().toLocaleString('en-IN', { 
+                                  day: '2-digit', month: 'short', year: 'numeric', 
+                                  hour: '2-digit', minute: '2-digit' 
+                                })}
+                              </Text>
+
                               <Text style={styles.brandName}>STAR POINTS PRO</Text>
                           </View>
                         </View>
@@ -643,7 +652,7 @@ const styles = StyleSheet.create({
   avatarText: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
   agentName: { fontSize: 20, fontWeight: '800', color: TEXT_MAIN },
   agentRole: { fontSize: 12, color: '#829AB1', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 },
-  // New Date Badge Style
+  // Date Badge Style
   dateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -672,6 +681,15 @@ const styles = StyleSheet.create({
   
   receiptFooter: { marginTop: 20, alignItems: 'center', paddingTop: 15 },
   dashedLine: { width: '100%', height: 1, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', borderStyle: 'dashed', marginBottom: 12 },
+  // New Style for Generated Date
+  generatedAtText: { 
+    fontSize: 10, 
+    color: '#829AB1', 
+    marginBottom: 4, 
+    fontWeight: '600', 
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
+  },
   brandName: { fontSize: 13, fontWeight: '900', color: ACCENT_TEAL, marginTop: 6, letterSpacing: 2 },
   
   actionRow: { flexDirection: 'row', marginTop: 15, marginBottom: 10, gap: 10 },
