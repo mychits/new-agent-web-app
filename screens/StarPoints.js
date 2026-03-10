@@ -49,6 +49,7 @@ const StarPoints = ({ navigation, route }) => {
 
   const viewShotRefs = useRef({});
   const abortControllerRef = useRef(null);
+  const flatListRef = useRef(null); // Ref for Year List
 
   // Generate Year List
   const yearList = useMemo(() => {
@@ -181,13 +182,16 @@ const StarPoints = ({ navigation, route }) => {
   };
 
   const handleCustomConfirm = () => {
+    // Use the current temp state directly here if this function is called manually
     setSelectedDate(new Date(tempYear, tempMonth, 1));
     setShowCustomPicker(false);
   };
 
   const handleMonthSelect = (monthIndex) => {
     setTempMonth(monthIndex);
-    handleCustomConfirm(); // Immediate Confirm
+    // FIX: Use monthIndex directly instead of 'tempMonth' state to avoid async delay issues
+    setSelectedDate(new Date(tempYear, monthIndex, 1));
+    setShowCustomPicker(false);
   };
 
   const handleYearSelect = (year) => {
@@ -197,8 +201,9 @@ const StarPoints = ({ navigation, route }) => {
       // If in month mode, go back to month selection
       setPickerView('MONTHS');
     } else if (filterMode === 'year') {
-      // If in year mode, immediate confirm
-      handleCustomConfirm();
+      // FIX: Use 'year' directly instead of 'tempYear' state
+      setSelectedDate(new Date(year, 0, 1));
+      setShowCustomPicker(false);
     }
   };
 
@@ -593,10 +598,13 @@ const StarPoints = ({ navigation, route }) => {
                     ) : (
                       // YEAR LIST VIEW
                       <FlatList
+                        ref={flatListRef}
                         key="yearList"
                         data={yearList}
                         keyExtractor={(item) => item.toString()}
                         contentContainerStyle={styles.listContent}
+                        decelerationRate="fast"
+                        snapToInterval={50}
                         renderItem={({ item }) => (
                           <TouchableOpacity 
                             style={[styles.listRow, tempYear === item && styles.listRowActive]} 
@@ -776,6 +784,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    height: 50 // Fixed height for snapping
   },
   listRowActive: {
     backgroundColor: '#f0fdff',
