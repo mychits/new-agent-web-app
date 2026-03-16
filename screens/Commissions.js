@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     // Header Styles - Merged from Target
     header: { 
         paddingHorizontal: 20, 
-        paddingTop: Platform.OS === "android" ? 35 : 10,
+        paddingTop: Platform.OS === "android" ? 45 : 10,
         paddingBottom: 20,
     },
     headerTopRow: {

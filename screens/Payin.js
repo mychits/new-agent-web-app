@@ -1,4 +1,3 @@
-
 import {
   View,
   Text,
@@ -28,15 +27,14 @@ import { AgentContext } from "../context/AgentContextProvider";
 import { MaterialIcons } from "@expo/vector-icons";
 
 const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
-const MODERN_PRIMARY = "#0d0d0eff"; 
-const ACCENT_BLUE = "#1796d1ff"; 
-const BORDER_COLOR = "#e0e0e0"; 
-const TEXT_GREY = "#4b5563"; 
+const MODERN_PRIMARY = "#0d0d0eff";
+const ACCENT_BLUE = "#1796d1ff";
+const BORDER_COLOR = "#e0e0e0";
+const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = "#f9fafb"; 
-const PRIMARY_BUTTON_COLOR = "#f8c009ff"; 
+const SUBTLE_BG_GREY = "#f9fafb";
+const PRIMARY_BUTTON_COLOR = "#f8c009ff";
 
-// Error Gradient
 const ERROR_GRADIENT = ['#eb3349', '#f45c43'];
 
 const Payin = ({ route, navigation }) => {
@@ -53,10 +51,8 @@ const Payin = ({ route, navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // New state for Confirmation Modal
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  // New state for Error Modal
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -66,7 +62,7 @@ const Payin = ({ route, navigation }) => {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [selectedTicket, setSelectedTicket] = useState("");
   const [allData, setAllData] = useState([]);
-  
+
   const [balance, setBalance] = useState(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
 
@@ -134,7 +130,9 @@ const Payin = ({ route, navigation }) => {
           setTickets(groupTickets);
           if (groupTickets.length === 1) {
             setSelectedTicket(groupTickets[0].toString());
-            const enrollId = response.data.find(item => item.group_id?._id === groupId && item.tickets === groupTickets[0])?._id;
+            const enrollId = response.data.find(
+              (item) => item.group_id?._id === groupId && item.tickets === groupTickets[0]
+            )?._id;
             fetchPendingBalance(enrollId);
           }
         }
@@ -170,28 +168,40 @@ const Payin = ({ route, navigation }) => {
     setSelectedTicket("");
     setBalance(null);
     if (groupId) {
-      const groupTickets = allData.filter((item) => item.group_id && item.group_id._id === groupId).map((item) => item.tickets);
+      const groupTickets = allData
+        .filter((item) => item.group_id && item.group_id._id === groupId)
+        .map((item) => item.tickets);
       setTickets(groupTickets);
       if (groupTickets.length === 1) {
         const ticket = groupTickets[0].toString();
         setSelectedTicket(ticket);
-        const enroll = allData.find(item => item.group_id?._id === groupId && item.tickets.toString() === ticket);
+        const enroll = allData.find(
+          (item) => item.group_id?._id === groupId && item.tickets.toString() === ticket
+        );
         if (enroll) fetchPendingBalance(enroll._id);
       }
-    } else { setTickets([]); }
+    } else {
+      setTickets([]);
+    }
   };
 
   const handleTicketChange = (ticketValue) => {
     setSelectedTicket(ticketValue);
     if (ticketValue && selectedGroup) {
-      const enroll = allData.find(item => item.group_id?._id === selectedGroup && item.tickets.toString() === ticketValue);
+      const enroll = allData.find(
+        (item) => item.group_id?._id === selectedGroup && item.tickets.toString() === ticketValue
+      );
       if (enroll) fetchPendingBalance(enroll._id);
-    } else { setBalance(null); }
+    } else {
+      setBalance(null);
+    }
   };
 
   const handlePaymentTypeChange = (type) => {
     setPaymentDetails(type);
-    setAdditionalInfo(type === "online" ? "Transaction ID" : type === "cheque" ? "Cheque Number" : "");
+    setAdditionalInfo(
+      type === "online" ? "Transaction ID" : type === "cheque" ? "Cheque Number" : ""
+    );
     setTransactionId("");
   };
 
@@ -217,14 +227,12 @@ const Payin = ({ route, navigation }) => {
       return;
     }
 
-    // Condition 1: Check for single digit amount
     if (amount.length === 1) {
       setErrorMessage("Amount must be at least 2 digits.");
       setShowErrorModal(true);
       return;
     }
 
-    // Validation for Online Payment: Ensure Transaction ID exists
     if (paymentDetails === "online" && !transactionId.trim()) {
       setErrorMessage("Please enter a Transaction ID for online payments.");
       setShowErrorModal(true);
@@ -254,23 +262,29 @@ const Payin = ({ route, navigation }) => {
         Alert.alert("Success", "Payment added successfully!");
         navigation.navigate("Print", { store_id: response.data._id });
       }
-    } catch (error) { 
-      Alert.alert("Payment Error", "Failed to add payment."); 
-    }
-    finally { 
-      setIsLoading(false); 
+    } catch (error) {
+      Alert.alert("Payment Error", "Failed to add payment.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const generateQrCode = async () => {
     try {
       setQrLoading(true);
-      const response = await axios.post(`${baseUrl}/qrcode?amount=${amount}`, {}, { responseType: "arraybuffer" });
+      const response = await axios.post(
+        `${baseUrl}/qrcode?amount=${amount}`,
+        {},
+        { responseType: "arraybuffer" }
+      );
       const base64 = Buffer.from(response.data, "binary").toString("base64");
       setUrl(`data:image/png;base64,${base64}`);
       setModalVisible(true);
-    } catch (error) { console.error("Failed to generate qr code", error); }
-    finally { setQrLoading(false); }
+    } catch (error) {
+      console.error("Failed to generate qr code", error);
+    } finally {
+      setQrLoading(false);
+    }
   };
 
   if (isInitialLoading) {
@@ -282,12 +296,16 @@ const Payin = ({ route, navigation }) => {
   }
 
   const getGroupName = () => {
-    const g = groups.find(g => g.group_id._id === selectedGroup);
+    const g = groups.find((g) => g.group_id._id === selectedGroup);
     return g ? g.group_id.group_name : "N/A";
   };
 
+  // Determine if there is a real outstanding balance (positive number)
+  const hasOutstanding = balance !== null && balance > 0;
+  const isPaidUp = balance !== null && balance <= 0;
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       {/* QR Code Modal */}
       <Modal animationType="slide" transparent={true} visible={modalVisible}>
         <View style={styles.modalOverlay}>
@@ -295,7 +313,11 @@ const Payin = ({ route, navigation }) => {
             <Text style={styles.modalTitle}>MyChits Payment</Text>
             <Text style={styles.modalSubtitle}>Pay ₹{amount}</Text>
             <View style={styles.qrContainer}>
-              <Image source={{ uri: url }} style={{ width: 240, height: 240 }} resizeMode="contain" />
+              <Image
+                source={{ uri: url }}
+                style={{ width: 240, height: 240 }}
+                resizeMode="contain"
+              />
             </View>
             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>Close</Text>
@@ -308,7 +330,6 @@ const Payin = ({ route, navigation }) => {
       <Modal animationType="fade" transparent={true} visible={showErrorModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.stylishModalCard}>
-            {/* Error Gradient Header */}
             <LinearGradient colors={ERROR_GRADIENT} style={styles.errorHeader}>
               <View style={styles.iconCircle}>
                 <MaterialIcons name="error-outline" size={40} color={CARD_BG} />
@@ -316,17 +337,23 @@ const Payin = ({ route, navigation }) => {
               <Text style={styles.errorTitle}>Validation Error</Text>
             </LinearGradient>
 
-            {/* Error Body */}
-            <View style={[styles.stylishBody, { alignItems: 'center', paddingTop: 30 }]}>
-               <MaterialIcons name="info" size={24} color={ERROR_GRADIENT[1]} style={{marginBottom: 10}} />
-               <Text style={styles.errorMessageText}>{errorMessage}</Text>
+            <View style={[styles.stylishBody, { alignItems: "center", paddingTop: 30 }]}>
+              <MaterialIcons
+                name="info"
+                size={24}
+                color={ERROR_GRADIENT[1]}
+                style={{ marginBottom: 10 }}
+              />
+              <Text style={styles.errorMessageText}>{errorMessage}</Text>
             </View>
 
-            {/* Error Footer */}
             <View style={styles.stylishFooter}>
-              <TouchableOpacity 
-                onPress={() => setShowErrorModal(false)} 
-                style={[styles.stylishCancelButton, { flex: 1, backgroundColor: '#fee2e2', marginLeft: 0 }]}
+              <TouchableOpacity
+                onPress={() => setShowErrorModal(false)}
+                style={[
+                  styles.stylishCancelButton,
+                  { flex: 1, backgroundColor: "#fee2e2", marginLeft: 0 },
+                ]}
               >
                 <Text style={[styles.stylishCancelText, { color: ERROR_GRADIENT[1] }]}>OKAY</Text>
               </TouchableOpacity>
@@ -339,7 +366,6 @@ const Payin = ({ route, navigation }) => {
       <Modal animationType="fade" transparent={true} visible={showConfirmModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.stylishModalCard}>
-            {/* Gradient Header */}
             <LinearGradient colors={TOP_GRADIENT} style={styles.stylishHeader}>
               <View style={styles.iconCircle}>
                 <MaterialIcons name="check-circle" size={32} color={CARD_BG} />
@@ -348,15 +374,14 @@ const Payin = ({ route, navigation }) => {
               <Text style={styles.stylishHeaderSubtitle}>Please verify the details</Text>
             </LinearGradient>
 
-            {/* Receipt Body */}
             <View style={styles.stylishBody}>
               <View style={styles.stylishRow}>
                 <Text style={styles.stylishLabel}>Customer</Text>
                 <Text style={styles.stylishValue}>{customerInfo.full_name}</Text>
               </View>
-              
+
               <View style={styles.divider} />
-              
+
               <View style={styles.stylishRow}>
                 <Text style={styles.stylishLabel}>Group</Text>
                 <Text style={styles.stylishValue}>{getGroupName()}</Text>
@@ -369,7 +394,9 @@ const Payin = ({ route, navigation }) => {
 
               <View style={styles.stylishRow}>
                 <Text style={styles.stylishLabel}>Date</Text>
-                <Text style={styles.stylishValue}>{moment(currentDate).format("DD-MM-YYYY")}</Text>
+                <Text style={styles.stylishValue}>
+                  {moment(currentDate).format("DD-MM-YYYY")}
+                </Text>
               </View>
 
               <View style={styles.stylishRow}>
@@ -379,7 +406,6 @@ const Payin = ({ route, navigation }) => {
                 </View>
               </View>
 
-              {/* Condition 2: Show Transaction ID if payment is online */}
               {paymentDetails === "online" && (
                 <View style={styles.stylishRow}>
                   <Text style={styles.stylishLabel}>Trans. ID</Text>
@@ -387,30 +413,25 @@ const Payin = ({ route, navigation }) => {
                 </View>
               )}
 
-              {/* Total Amount Box */}
               <View style={styles.totalBox}>
                 <Text style={styles.totalLabel}>Total Amount</Text>
                 <Text style={styles.totalAmount}>₹ {amount}</Text>
               </View>
             </View>
 
-            {/* Footer Buttons */}
             <View style={styles.stylishFooter}>
-              <TouchableOpacity 
-                onPress={() => setShowConfirmModal(false)} 
+              <TouchableOpacity
+                onPress={() => setShowConfirmModal(false)}
                 style={styles.stylishCancelButton}
               >
                 <Text style={styles.stylishCancelText}>Edit</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                onPress={executePayment} 
-                style={styles.stylishConfirmButton}
-              >
-                 {isLoading ? (
-                   <ActivityIndicator size="small" color={MODERN_PRIMARY} />
+
+              <TouchableOpacity onPress={executePayment} style={styles.stylishConfirmButton}>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={MODERN_PRIMARY} />
                 ) : (
-                   <Text style={styles.stylishConfirmText}>CONFIRM</Text>
+                  <Text style={styles.stylishConfirmText}>CONFIRM</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -418,76 +439,148 @@ const Payin = ({ route, navigation }) => {
         </View>
       </Modal>
 
+      {/* Fixed Gradient Header */}
       <LinearGradient colors={TOP_GRADIENT} style={styles.fixedHeaderArea}>
-          <View style={styles.headerSpacer}><Header /></View>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Add Chit Payment</Text>
-            <Text style={styles.subtitle}>{customerInfo.full_name || 'Customer Details'}</Text>
-            
-            <View style={styles.headerBalanceContainer}>
-                {isBalanceLoading ? (
-                    <ActivityIndicator size="small" color={MODERN_PRIMARY} />
+        <View style={styles.headerSpacer}>
+          <Header />
+        </View>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Add Chit Payment</Text>
+          <Text style={styles.subtitle}>{customerInfo.full_name || "Customer Details"}</Text>
+
+          {/* ── Balance Pill — only shown when a group+ticket is selected ── */}
+          {isBalanceLoading ? (
+            <ActivityIndicator size="small" color={CARD_BG} style={{ marginTop: 4 }} />
+          ) : (
+            selectedGroup && selectedTicket && balance !== null ? (
+              <View
+                style={[
+                  styles.balancePill,
+                  hasOutstanding ? styles.balancePillDanger : styles.balancePillSuccess,
+                ]}
+              >
+                {isPaidUp ? (
+                  <>
+                    <MaterialIcons name="check-circle" size={15} color="#166534" style={styles.pillIcon} />
+                    <Text style={styles.balanceSuccessText}>Payments up to date</Text>
+                  </>
                 ) : (
-                    <>
-                      {balance !== null && balance < 0 ? (
-                        <Text style={styles.headerBalanceAmount}>Great! Your payments are up to date.</Text>
-                      ) : (
-                        <>
-                          <Text style={styles.headerBalanceLabel}>Outstanding Amount: </Text>
-                          <Text style={styles.headerBalanceAmount}>₹ {balance !== null ? balance : '0'}</Text>
-                        </>
-                      )}
-                    </>
+                  <>
+                    <MaterialIcons name="warning" size={15} color="#991b1b" style={styles.pillIcon} />
+                    <Text style={styles.balanceDangerLabel}>Outstanding: </Text>
+                    <Text style={styles.balanceDangerAmount}>₹ {balance}</Text>
+                  </>
                 )}
-            </View>
-          </View>
+              </View>
+            ) : null
+          )}
+        </View>
       </LinearGradient>
 
-      <KeyboardAvoidingView style={styles.scrollableContentWrapper} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      {/* Scrollable Content */}
+      <KeyboardAvoidingView
+        style={styles.scrollableContentWrapper}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <View style={styles.mainContentArea}>
-          <ScrollView contentContainerStyle={styles.scrollContentContainer} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContentContainer}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.formBox}>
-              <Text style={styles.label}>Name<Text style={styles.star}>*</Text></Text>
+              <Text style={styles.label}>
+                Name<Text style={styles.star}>*</Text>
+              </Text>
               <TextInput style={styles.textInput} value={customerInfo.full_name} editable={false} />
-              
-              <Text style={styles.label}>Group<Text style={styles.star}>*</Text></Text>
+
+              <Text style={styles.label}>
+                Group<Text style={styles.star}>*</Text>
+              </Text>
               <View style={styles.pickerContainerFull}>
-                <Picker selectedValue={selectedGroup} onValueChange={handleGroupChange} style={styles.picker}>
-                  {groups.length !== 1 && <Picker.Item label="Select Group" value="" color={TEXT_GREY} />}
+                <Picker
+                  selectedValue={selectedGroup}
+                  onValueChange={handleGroupChange}
+                  style={styles.picker}
+                >
+                  {groups.length !== 1 && (
+                    <Picker.Item label="Select Group" value="" color={TEXT_GREY} />
+                  )}
                   {groups.map((group, index) => (
-                    <Picker.Item key={index} label={group.group_id.group_name} value={group.group_id._id} color={MODERN_PRIMARY} />
+                    <Picker.Item
+                      key={index}
+                      label={group.group_id.group_name}
+                      value={group.group_id._id}
+                      color={MODERN_PRIMARY}
+                    />
                   ))}
                 </Picker>
               </View>
 
-              <Text style={styles.label}>Ticket<Text style={styles.star}>*</Text></Text>
+              <Text style={styles.label}>
+                Ticket<Text style={styles.star}>*</Text>
+              </Text>
               <View style={styles.pickerContainerFull}>
-                <Picker selectedValue={selectedTicket} onValueChange={handleTicketChange} style={styles.picker}>
-                  {tickets.length !== 1 && <Picker.Item label="Select Ticket" value="" color={TEXT_GREY} />}
+                <Picker
+                  selectedValue={selectedTicket}
+                  onValueChange={handleTicketChange}
+                  style={styles.picker}
+                >
+                  {tickets.length !== 1 && (
+                    <Picker.Item label="Select Ticket" value="" color={TEXT_GREY} />
+                  )}
                   {tickets.map((ticket, index) => (
-                    <Picker.Item key={index} label={`${ticket}`} value={ticket.toString()} color={MODERN_PRIMARY} />
+                    <Picker.Item
+                      key={index}
+                      label={`${ticket}`}
+                      value={ticket.toString()}
+                      color={MODERN_PRIMARY}
+                    />
                   ))}
                 </Picker>
               </View>
-              
+
               <View style={styles.row}>
                 <View style={styles.column}>
-                  <Text style={styles.label}>Date<Text style={styles.star}>*</Text></Text>
+                  <Text style={styles.label}>
+                    Date<Text style={styles.star}>*</Text>
+                  </Text>
                   <TouchableOpacity onPress={() => modifyPayment && setShowDatePicker(true)}>
-                    <TextInput style={styles.textInput} value={moment(currentDate).format("DD-MM-YYYY")} editable={false} />
+                    <TextInput
+                      style={styles.textInput}
+                      value={moment(currentDate).format("DD-MM-YYYY")}
+                      editable={false}
+                    />
                   </TouchableOpacity>
-                  {showDatePicker && <DateTimePicker value={currentDate} mode="date" onChange={handleDateChange} />}
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={currentDate}
+                      mode="date"
+                      onChange={handleDateChange}
+                    />
+                  )}
                 </View>
                 <View style={styles.column}>
-                  <Text style={styles.label}>Receipt<Text style={styles.star}>*</Text></Text>
-                  <TextInput style={styles.textInput} value={receipt.receipt_no !== undefined ? String(receipt.receipt_no) : ""} editable={false} />
+                  <Text style={styles.label}>
+                    Receipt<Text style={styles.star}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={receipt.receipt_no !== undefined ? String(receipt.receipt_no) : ""}
+                    editable={false}
+                  />
                 </View>
               </View>
-              
+
               <View>
-                <Text style={styles.label}>Payment Type<Text style={styles.star}>*</Text></Text>
+                <Text style={styles.label}>
+                  Payment Type<Text style={styles.star}>*</Text>
+                </Text>
                 <View style={styles.pickerContainerFull}>
-                  <Picker selectedValue={paymentDetails} onValueChange={handlePaymentTypeChange} style={styles.picker}>
+                  <Picker
+                    selectedValue={paymentDetails}
+                    onValueChange={handlePaymentTypeChange}
+                    style={styles.picker}
+                  >
                     <Picker.Item label="Cash" value="cash" color={MODERN_PRIMARY} />
                     <Picker.Item label="Online" value="online" color={MODERN_PRIMARY} />
                   </Picker>
@@ -495,30 +588,53 @@ const Payin = ({ route, navigation }) => {
               </View>
 
               <View>
-                <Text style={styles.label}>Amount<Text style={styles.star}>*</Text></Text>
-                <TextInput 
-                  style={styles.textInput} 
-                  placeholder="Enter The Amount" 
-                  keyboardType="number-pad" 
-                  value={amount} 
-                  onChangeText={handleAmountChange} 
+                <Text style={styles.label}>
+                  Amount<Text style={styles.star}>*</Text>
+                </Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter The Amount"
+                  keyboardType="number-pad"
+                  value={amount}
+                  onChangeText={handleAmountChange}
                 />
               </View>
 
               {additionalInfo !== "" && (
                 <View>
-                  <Text style={styles.label}>{additionalInfo}<Text style={styles.star}>*</Text></Text>
-                  <TextInput style={styles.textInput} value={transactionId} onChangeText={setTransactionId} />
+                  <Text style={styles.label}>
+                    {additionalInfo}
+                    <Text style={styles.star}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={transactionId}
+                    onChangeText={setTransactionId}
+                  />
                 </View>
               )}
 
-              <View style={[styles.buttonContainer, !(amount && paymentDetails === "online") && styles.buttonContainerCentered]}>
+              <View
+                style={[
+                  styles.buttonContainer,
+                  !(amount && paymentDetails === "online") && styles.buttonContainerCentered,
+                ]}
+              >
                 {amount && paymentDetails === "online" && (
                   <TouchableOpacity onPress={generateQrCode} style={styles.qrButton}>
-                    {qrLoading ? <ActivityIndicator size="small" color={MODERN_PRIMARY} /> : <MaterialIcons name="qr-code-2" size={30} color={MODERN_PRIMARY} />}
+                    {qrLoading ? (
+                      <ActivityIndicator size="small" color={MODERN_PRIMARY} />
+                    ) : (
+                      <MaterialIcons name="qr-code-2" size={30} color={MODERN_PRIMARY} />
+                    )}
                   </TouchableOpacity>
                 )}
-                <Button title={isLoading ? "Please wait..." : "Add Payment"} filled style={styles.button} onPress={validateAndShowModal} />
+                <Button
+                  title={isLoading ? "Please wait..." : "Add Payment"}
+                  filled
+                  style={styles.button}
+                  onPress={validateAndShowModal}
+                />
               </View>
             </View>
           </ScrollView>
@@ -530,51 +646,157 @@ const Payin = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: SUBTLE_BG_GREY },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: SUBTLE_BG_GREY,
+  },
   fixedHeaderArea: { paddingHorizontal: 16, paddingBottom: 25 },
   scrollableContentWrapper: { flex: 1 },
-  mainContentArea: { flex: 1, backgroundColor: SUBTLE_BG_GREY, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 16, marginTop: -20, paddingTop: 30 },
+  mainContentArea: {
+    flex: 1,
+    backgroundColor: SUBTLE_BG_GREY,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 16,
+    marginTop: -20,
+    paddingTop: 30,
+  },
   headerSpacer: { paddingTop: 20, paddingBottom: 5 },
   titleContainer: { alignItems: "center" },
   title: { fontSize: 26, fontWeight: "900", color: CARD_BG },
-  subtitle: { fontSize: 16, color: "rgba(255, 255, 255, 0.9)", fontWeight: "600", marginBottom: 8 },
-  headerBalanceContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor:"#f0d16eff" , 
-    paddingHorizontal: 12, 
-    paddingVertical: 4, 
-    borderRadius: 20 
+  subtitle: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.9)",
+    fontWeight: "600",
+    marginBottom: 10,
   },
-  headerBalanceLabel: { fontSize: 14, color: MODERN_PRIMARY, fontWeight: '500' },
-  headerBalanceAmount: { fontSize: 16, color: MODERN_PRIMARY, fontWeight: 'bold' },
+
+  // ── Balance Pill ──────────────────────────────────────────
+  balancePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  balancePillDanger: {
+    backgroundColor: "#fee2e2",
+    borderColor: "#fca5a5",
+  },
+  balancePillSuccess: {
+    backgroundColor: "#dcfce7",
+    borderColor: "#86efac",
+  },
+  pillIcon: {
+    marginRight: 5,
+  },
+  balanceDangerLabel: {
+    fontSize: 13,
+    color: "#991b1b",
+    fontWeight: "600",
+  },
+  balanceDangerAmount: {
+    fontSize: 15,
+    color: "#7f1d1d",
+    fontWeight: "900",
+    letterSpacing: 0.3,
+  },
+  balanceSuccessText: {
+    fontSize: 13,
+    color: "#166534",
+    fontWeight: "700",
+  },
+  // ─────────────────────────────────────────────────────────
+
   scrollContentContainer: { paddingBottom: 50, flexGrow: 1 },
-  formBox: { backgroundColor: CARD_BG, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: BORDER_COLOR, elevation: 5 },
+  formBox: {
+    backgroundColor: CARD_BG,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+    elevation: 5,
+  },
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
   column: { flex: 1, marginHorizontal: 3 },
   label: { fontWeight: "600", marginTop: 10, fontSize: 14, color: MODERN_PRIMARY },
   star: { color: "#ff0000" },
-  textInput: { height: 56, borderColor: BORDER_COLOR, borderWidth: 1, borderRadius: 12, paddingHorizontal: 15, marginVertical: 8, color: MODERN_PRIMARY, backgroundColor: SUBTLE_BG_GREY, fontSize: 16 },
-  pickerContainerFull: { borderColor: BORDER_COLOR, borderWidth: 1, borderRadius: 12, backgroundColor: SUBTLE_BG_GREY, marginVertical: 8, minHeight: 56, justifyContent: 'center' },
+  textInput: {
+    height: 56,
+    borderColor: BORDER_COLOR,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginVertical: 8,
+    color: MODERN_PRIMARY,
+    backgroundColor: SUBTLE_BG_GREY,
+    fontSize: 16,
+  },
+  pickerContainerFull: {
+    borderColor: BORDER_COLOR,
+    borderWidth: 1,
+    borderRadius: 12,
+    backgroundColor: SUBTLE_BG_GREY,
+    marginVertical: 8,
+    minHeight: 56,
+    justifyContent: "center",
+  },
   picker: { width: "100%", height: 56 },
-  buttonContainer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20 },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 20,
+  },
   buttonContainerCentered: { justifyContent: "center" },
-  qrButton: { flex: 1.5, backgroundColor: "#D9F3D0", justifyContent: "center", alignItems: "center", borderRadius: 12, height: 55, marginRight: 10 },
+  qrButton: {
+    flex: 1.5,
+    backgroundColor: "#D9F3D0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+    height: 55,
+    marginRight: 10,
+  },
   button: { flex: 5, backgroundColor: PRIMARY_BUTTON_COLOR, height: 55, borderRadius: 12 },
-  modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)" },
-  modalContent: { width: 320, padding: 24, backgroundColor: CARD_BG, borderRadius: 16, alignItems: "center" },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+  },
+  modalContent: {
+    width: 320,
+    padding: 24,
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    alignItems: "center",
+  },
   modalTitle: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 5 },
   modalSubtitle: { fontSize: 16, color: TEXT_GREY, marginBottom: 16 },
-  qrContainer: { padding: 12, backgroundColor: SUBTLE_BG_GREY, borderRadius: 12, marginBottom: 20 },
-  closeButton: { width: "100%", paddingVertical: 12, backgroundColor: ACCENT_BLUE, borderRadius: 8 },
+  qrContainer: {
+    padding: 12,
+    backgroundColor: SUBTLE_BG_GREY,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  closeButton: {
+    width: "100%",
+    paddingVertical: 12,
+    backgroundColor: ACCENT_BLUE,
+    borderRadius: 8,
+  },
   closeButtonText: { color: CARD_BG, fontWeight: "bold", textAlign: "center" },
-  
-  // --- Stylish Modal Styles ---
+
+  // ── Stylish Modal Styles ──────────────────────────────────
   stylishModalCard: {
-    width: '85%',
+    width: "85%",
     backgroundColor: CARD_BG,
     borderRadius: 24,
-    overflow: 'hidden', 
+    overflow: "hidden",
     elevation: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -585,22 +807,21 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 30,
     paddingHorizontal: 20,
-    alignItems: 'center',
+    alignItems: "center",
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
-  // --- Error Modal Specific Styles ---
   errorHeader: {
     paddingTop: 24,
     paddingBottom: 30,
     paddingHorizontal: 20,
-    alignItems: 'center',
+    alignItems: "center",
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
   errorTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: "800",
     color: CARD_BG,
     letterSpacing: 0.5,
     marginTop: 8,
@@ -608,45 +829,44 @@ const styles = StyleSheet.create({
   errorMessageText: {
     fontSize: 16,
     color: TEXT_GREY,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
-
   iconCircle: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderRadius: 50,
     padding: 10,
     marginBottom: 10,
   },
   stylishHeaderTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: "800",
     color: CARD_BG,
     letterSpacing: 0.5,
   },
   stylishHeaderSubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     marginTop: 4,
   },
   stylishBody: {
     padding: 24,
   },
   stylishRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   stylishLabel: {
     fontSize: 15,
     color: TEXT_GREY,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   stylishValue: {
     fontSize: 16,
     color: MODERN_PRIMARY,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   methodBadge: {
     backgroundColor: SUBTLE_BG_GREY,
@@ -654,61 +874,61 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: BORDER_COLOR
+    borderColor: BORDER_COLOR,
   },
   methodText: {
     fontSize: 12,
     color: ACCENT_BLUE,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 1,
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     marginVertical: 8,
     marginBottom: 16,
   },
   totalBox: {
-    backgroundColor: 'rgba(23, 150, 209, 0.08)',
+    backgroundColor: "rgba(23, 150, 209, 0.08)",
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
     borderWidth: 1,
-    borderColor: 'rgba(23, 150, 209, 0.2)',
+    borderColor: "rgba(23, 150, 209, 0.2)",
   },
   totalLabel: {
     fontSize: 14,
     color: ACCENT_BLUE,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: "600",
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   totalAmount: {
     fontSize: 28,
     color: MODERN_PRIMARY,
-    fontWeight: '900',
+    fontWeight: "900",
     marginTop: 4,
   },
   stylishFooter: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 20,
     backgroundColor: CARD_BG,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: "#f0f0f0",
   },
   stylishCancelButton: {
     flex: 1,
     paddingVertical: 14,
     marginRight: 10,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: SUBTLE_BG_GREY,
   },
   stylishCancelText: {
     color: TEXT_GREY,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 15,
   },
   stylishConfirmButton: {
@@ -716,7 +936,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginLeft: 10,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: PRIMARY_BUTTON_COLOR,
     shadowColor: "#f8c009ff",
     shadowOffset: { width: 0, height: 4 },
@@ -726,10 +946,10 @@ const styles = StyleSheet.create({
   },
   stylishConfirmText: {
     color: MODERN_PRIMARY,
-    fontWeight: '800',
+    fontWeight: "800",
     fontSize: 16,
     letterSpacing: 0.5,
-  }
+  },
 });
 
 export default Payin;

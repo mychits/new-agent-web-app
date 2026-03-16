@@ -273,7 +273,7 @@ const Target = ({ navigation }) => {
               )}
 
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Enrollment List</Text>
+                <Text style={styles.sectionTitle}>Achievement List</Text>
                 <View style={styles.countBadge}>
                    <Text style={styles.countText}>{enrollments.length}</Text>
                 </View>
