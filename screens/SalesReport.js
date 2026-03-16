@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   rowDivider: {
     height: 1,
     backgroundColor: "#E2E8F0",
-    marginBottom: 14,
+    marginBottom: 1,
   },
 
   // Row 2 — Leads & Customers
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.muted,
     textTransform: "uppercase",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statValue: {
     fontSize: 18,
