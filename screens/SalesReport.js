@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -46,7 +45,8 @@ const SalesReport = ({ navigation }) => {
   const [summary, setSummary] = useState({
     totalLeads: 0,
     totalCustomers: 0,
-    totalBusiness: 0,
+    leadBusiness: 0,
+    customerBusiness: 0,
   });
 
   const [month, setMonth] = useState(moment().month());
@@ -95,12 +95,19 @@ const SalesReport = ({ navigation }) => {
 
       const totals = validData.reduce(
         (acc, item) => {
-          acc.totalLeads += parseInt(item.leads || 0, 10);
-          acc.totalCustomers += parseInt(item.customers || 0, 10);
-          acc.totalBusiness += Number(item.groupValue) || 0; 
+          const val = Number(item.groupValue) || 0;
+          const leadsCount = parseInt(item.leads || 0, 10);
+          const customersCount = parseInt(item.customers || 0, 10);
+
+          acc.totalLeads += leadsCount;
+          acc.totalCustomers += customersCount;
+          
+          acc.leadBusiness += leadsCount * val;
+          acc.customerBusiness += customersCount * val;
+          
           return acc;
         },
-        { totalLeads: 0, totalCustomers: 0, totalBusiness: 0 }
+        { totalLeads: 0, totalCustomers: 0, leadBusiness: 0, customerBusiness: 0 }
       );
 
       setSummary(totals);
@@ -128,7 +135,7 @@ const SalesReport = ({ navigation }) => {
     Linking.openURL(`tel:${phone}`).catch(() => console.log("Call failed"));
   };
 
-  const hasNoActivity = summary.totalLeads === 0 && summary.totalCustomers === 0 && summary.totalBusiness === 0;
+  const hasNoActivity = summary.totalLeads === 0 && summary.totalCustomers === 0 && summary.customerBusiness === 0;
 
   return (
     <View style={styles.mainContainer}>
@@ -206,37 +213,36 @@ const SalesReport = ({ navigation }) => {
                 </View>
               ) : (
                 <>
-                  {/* Horizontal Layout Summary Cards */}
-                  <View style={styles.miniGrid}>
-                    <View style={styles.miniCard}>
-                      <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}>
-                        <MaterialCommunityIcons name="account-multiple-plus" size={20} color={COLORS.primary} />
-                      </View>
-                      <View style={styles.textCol}>
-                        <Text style={styles.miniVal}>{summary.totalLeads}</Text>
-                        <Text style={styles.miniLabel}>Total Leads</Text>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.miniCard}>
-                      <View style={[styles.iconBox, { backgroundColor: '#E8F5E9' }]}>
+                  {/* Single Full Width Card for Customer Business & Counts */}
+                  <View style={styles.fullWidthCard}>
+                    {/* Left Side: Icon & Business Value */}
+                    <View style={styles.cardLeft}>
+                      <View style={[styles.iconBoxLarge, { backgroundColor: '#E8F5E9' }]}>
                         <MaterialCommunityIcons name="account-check" size={20} color={COLORS.success} />
                       </View>
-                      <View style={styles.textCol}>
-                        <Text style={styles.miniVal}>{summary.totalCustomers}</Text>
-                        <Text style={styles.miniLabel}>Customers</Text>
+                      <View style={styles.textColLeft}>
+                        <Text style={styles.cardLabel}>Cust. Business</Text>
+                        <Text style={styles.cardValue}>₹{summary.customerBusiness.toLocaleString("en-IN")}</Text>
                       </View>
                     </View>
-                  </View>
 
-                  <View style={styles.mainCard}>
-                     <View style={styles.cardHeader}>
-                        <Text style={styles.cardLabel}>Total Business</Text>
-                        <View style={[styles.statusBadge, { backgroundColor: 'rgba(248, 192, 9, 0.15)' }]}>
-                            <Text style={[styles.statusText, { color: COLORS.primary }]}>Monthly</Text>
-                        </View>
-                     </View>
-                     <Text style={styles.bigAmountText}>₹{summary.totalBusiness.toLocaleString("en-IN")}</Text>
+                    {/* Vertical Divider */}
+                    <View style={styles.verticalDivider} />
+
+                    {/* Right Side: Stats (Leads & Customers) */}
+                    <View style={styles.cardRight}>
+                      <View style={styles.statBlock}>
+                        <Text style={styles.statLabel}>Leads</Text>
+                        <Text style={styles.statValue}>{summary.totalLeads}</Text>
+                      </View>
+                      
+                      <View style={styles.statSpacer} />
+
+                      <View style={styles.statBlock}>
+                        <Text style={styles.statLabel}>Customers</Text>
+                        <Text style={styles.statValue}>{summary.totalCustomers}</Text>
+                      </View>
+                    </View>
                   </View>
                 </>
               )}
@@ -413,47 +419,75 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  mainCard: { 
-    backgroundColor: COLORS.cardBg, 
-    borderRadius: 16, 
-    padding: 16, 
-    marginBottom: 15, 
-    elevation: 6,
+  // NEW Full Width Card Styles
+  fullWidthCard: {
+    backgroundColor: COLORS.white,
+    width: "100%",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 5,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  cardLabel: { fontSize: 11, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase" },
-  statusBadge: { backgroundColor: 'rgba(39, 174, 96, 0.1)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  statusText: { color: COLORS.success, fontSize: 9, fontWeight: '900' },
-  bigAmountText: { fontSize: 26, fontWeight: "900", color: COLORS.primary },
-
-  // Updated Mini Card Styles for Horizontal Layout
-  miniGrid: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    marginBottom: 12 
+  cardLeft: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  miniCard: { 
-    backgroundColor: COLORS.white, 
-    width: "48%", 
-    borderRadius: 14, 
-    padding: 12, 
-    flexDirection: "row", // Horizontal layout
-    alignItems: "center", // Center vertically
-    elevation: 3
+  iconBoxLarge: {
+    padding: 10, // Slightly larger padding for the main icon
+    borderRadius: 12,
+    marginRight: 12,
   },
-  iconBox: { 
-    padding: 8, 
-    borderRadius: 10, 
-    marginRight: 10 // Space between icon and text
+  textColLeft: {
+    flexDirection: 'column',
   },
-  textCol: {
-    flexDirection: 'column' // Stack text vertically
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+    marginBottom: 2
   },
-  miniVal: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
-  miniLabel: { fontSize: 11, fontWeight: "600", color: COLORS.muted, marginTop: 1 },
+  cardValue: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: COLORS.primary,
+  },
+  verticalDivider: {
+    width: 1,
+    height: '70%',
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 10,
+  },
+  cardRight: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  statBlock: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.primary,
+    marginTop: 2,
+  },
+  statSpacer: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#F1F4F8',
+  },
   
-  statLabel: { fontSize: 11, color: COLORS.muted, fontWeight: "700" },
-
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, marginTop: 10 },
   sectionTitle: { fontSize: 18, fontWeight: "900", color: "#fff", marginRight: 10 },
   countBadge: { backgroundColor: COLORS.accent, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
