@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -222,7 +221,7 @@ const SalesReport = ({ navigation }) => {
                         <MaterialCommunityIcons name="account-check" size={20} color={COLORS.success} />
                       </View>
                       <View style={styles.textColLeft}>
-                        <Text style={styles.cardLabel}>Sales Business</Text>
+                        <Text style={styles.cardLabel}>Cust. Business</Text>
                         <Text style={styles.cardValue}>₹{summary.customerBusiness.toLocaleString("en-IN")}</Text>
                       </View>
                     </View>
@@ -437,7 +436,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconBoxLarge: {
-    padding: 6, // Slightly larger padding for the main icon
+    padding: 10, // Slightly larger padding for the main icon
     borderRadius: 12,
     marginRight: 12,
   },
