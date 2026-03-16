@@ -10,17 +10,14 @@ import {
     Linking,
     Alert,
     Pressable,
-    TextInput,
     Image,
     StatusBar,
     SafeAreaView,
     Animated,
-    Dimensions,
 } from "react-native";
 import { TapGestureHandler } from "react-native-gesture-handler";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import COLORS from "../constants/color";
 import Header from "../components/Header";
 import baseUrl from "../constants/baseUrl";
 import { Feather, MaterialIcons, MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
@@ -28,7 +25,6 @@ import { whatsappMessage } from "../components/data/messages";
 import { LinearGradient } from "expo-linear-gradient";
 
 const backgroundImage = require("../assets/hero1.jpg");
-const { width } = Dimensions.get("window");
 
 // --- DESIGN TOKENS ---
 const C = {
@@ -43,80 +39,11 @@ const C = {
     background: "#0f2a44",
     border: "#F1F4F8",
     subtleBg: "#F5F7FA",
-    shimmer1: "#E8EDF2",
-    shimmer2: "#F5F7FA",
 };
-
-// --- SKELETON COMPONENTS ---
-const SkeletonBox = ({ width: w, height: h, borderRadius = 8, style }) => {
-    const shimmer = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        const loop = Animated.loop(
-            Animated.sequence([
-                Animated.timing(shimmer, { toValue: 1, duration: 800, useNativeDriver: true }),
-                Animated.timing(shimmer, { toValue: 0, duration: 800, useNativeDriver: true }),
-            ])
-        );
-        loop.start();
-        return () => loop.stop();
-    }, []);
-
-    const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
-
-    return (
-        <Animated.View
-            style={[
-                { width: w, height: h, borderRadius, backgroundColor: C.shimmer1, opacity },
-                style,
-            ]}
-        />
-    );
-};
-
-const SkeletonCard = () => (
-    <View style={[styles.listCard, { gap: 10 }]}>
-        {/* Header row */}
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <SkeletonBox width={44} height={44} borderRadius={14} />
-            <View style={{ flex: 1, marginLeft: 12, gap: 6 }}>
-                <SkeletonBox width="60%" height={14} />
-                <SkeletonBox width="40%" height={10} />
-                <SkeletonBox width="50%" height={10} />
-            </View>
-            <SkeletonBox width={90} height={52} borderRadius={12} />
-        </View>
-        {/* Divider */}
-        <View style={styles.cardDivider} />
-        {/* Footer row */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <SkeletonBox width="35%" height={30} />
-            <SkeletonBox width={70} height={30} borderRadius={8} />
-            <SkeletonBox width="30%" height={30} />
-        </View>
-    </View>
-);
-
-const SkeletonMainCard = () => (
-    <View style={[styles.mainCard, { gap: 12 }]}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <SkeletonBox width={160} height={12} />
-            <SkeletonBox width={50} height={22} borderRadius={6} />
-        </View>
-        <View style={{ alignItems: "center", marginVertical: 6, gap: 6 }}>
-            <SkeletonBox width={140} height={38} borderRadius={10} />
-        </View>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <SkeletonBox width="40%" height={36} borderRadius={8} />
-            <SkeletonBox width={1} height={24} />
-            <SkeletonBox width="40%" height={36} borderRadius={8} />
-        </View>
-    </View>
-);
 
 const ExpectedCommissions = ({ route, navigation }) => {
     const { user } = route.params;
-    // null = not yet loaded (prevents 0 flash); number = loaded
+
     const [chitCustomerLength, setChitCustomerLength] = useState(null);
     const [goldCustomerLength, setGoldCustomerLength] = useState(null);
     const [isChitLoading, setIsChitLoading] = useState(true);
@@ -126,10 +53,8 @@ const ExpectedCommissions = ({ route, navigation }) => {
     const [totalChitCommissions, setTotalChitCommissions] = useState(null);
     const [totalGoldCommissions, setTotalGoldCommissions] = useState(null);
 
-    // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
-    const blinkAnim = useRef(new Animated.Value(1)).current;
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -198,12 +123,22 @@ const ExpectedCommissions = ({ route, navigation }) => {
                 }
 
                 Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-                Animated.spring(progressAnim, { toValue: Math.min(customerCount * 5, 100), tension: 40, friction: 7, useNativeDriver: false }).start();
+                Animated.spring(progressAnim, {
+                    toValue: Math.min(customerCount * 5, 100),
+                    tension: 40,
+                    friction: 7,
+                    useNativeDriver: false,
+                }).start();
             } catch (err) {
                 console.error("Error fetching commissions:", err);
                 setCustomer([]);
-                if (activeTab === "CHIT") { setTotalChitCommissions("0"); setChitCustomerLength(0); }
-                else { setTotalGoldCommissions("0"); setGoldCustomerLength(0); }
+                if (activeTab === "CHIT") {
+                    setTotalChitCommissions("0");
+                    setChitCustomerLength(0);
+                } else {
+                    setTotalGoldCommissions("0");
+                    setGoldCustomerLength(0);
+                }
             } finally {
                 setLoading(false);
             }
@@ -215,19 +150,21 @@ const ExpectedCommissions = ({ route, navigation }) => {
 
     const formatCommission = (value) => {
         const numericValue = String(value || "0").replace(/[^\d.]/g, "");
-        return Number(numericValue).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        return Number(numericValue).toLocaleString("en-IN", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        });
     };
 
     const totalCommission = activeTab === "CHIT" ? totalChitCommissions : totalGoldCommissions;
     const isLoading = activeTab === "CHIT" ? isChitLoading : isGoldLoading;
     const customerCount = activeTab === "CHIT" ? chitCustomerLength : goldCustomerLength;
 
-    // Helper: show "—" while loading, actual value once loaded
     const displayCount = (val) => (val === null ? "—" : val);
     const displayCommission = (val) => (val === null ? "—" : `₹${formatCommission(val)}`);
 
     // --- CARD RENDER ---
-    const renderEnrolledCustomerCard = ({ item, index }) => {
+    const renderEnrolledCustomerCard = ({ item }) => {
         const phone = getPhone(item?.user_id);
         const groupName = item?.group_id?.group_name || "N/A";
         const groupValue = item?.group_id?.group_value
@@ -292,7 +229,10 @@ const ExpectedCommissions = ({ route, navigation }) => {
                                 </TouchableOpacity>
                             )}
                             {phone && (
-                                <TouchableOpacity style={[styles.actionBtn, { marginLeft: 8 }]} onPress={() => sendWhatsappMessage(item)}>
+                                <TouchableOpacity
+                                    style={[styles.actionBtn, { marginLeft: 8 }]}
+                                    onPress={() => sendWhatsappMessage(item)}
+                                >
                                     <MaterialCommunityIcons name="whatsapp" size={12} color={C.success} />
                                 </TouchableOpacity>
                             )}
@@ -321,30 +261,37 @@ const ExpectedCommissions = ({ route, navigation }) => {
             <View style={styles.tabContainer}>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === "CHIT" && styles.activeTab]}
-                    onPress={() => { setActiveTab("CHIT"); }}
+                    onPress={() => setActiveTab("CHIT")}
                     activeOpacity={0.85}
                 >
                     <MaterialIcons name="groups" size={18} color={activeTab === "CHIT" ? C.white : C.muted} />
                     <Text style={[styles.tabText, activeTab === "CHIT" && styles.activeTabText]}>
-                        {/* Show dash while loading, count once loaded */}
-                        Chits {isChitLoading && chitCustomerLength === null ? "(—)" : `(${chitCustomerLength ?? 0})`}
+                        Chits{" "}
+                        {isChitLoading && chitCustomerLength === null
+                            ? "(—)"
+                            : `(${chitCustomerLength ?? 0})`}
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                    onPress={() => { setActiveTab("GOLD"); }}
+                    onPress={() => setActiveTab("GOLD")}
                     activeOpacity={0.85}
                 >
                     <MaterialIcons name="diamond" size={18} color={activeTab === "GOLD" ? C.white : C.muted} />
                     <Text style={[styles.tabText, activeTab === "GOLD" && styles.activeTabText]}>
-                        Gold {isGoldLoading && goldCustomerLength === null ? "(—)" : `(${goldCustomerLength ?? 0})`}
+                        Gold{" "}
+                        {isGoldLoading && goldCustomerLength === null
+                            ? "(—)"
+                            : `(${goldCustomerLength ?? 0})`}
                     </Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Total Commission Card — skeleton while loading */}
+            {/* Total Commission Card */}
             {isLoading ? (
-                <SkeletonMainCard />
+                <View style={styles.mainCard}>
+                    <ActivityIndicator size="large" color={C.bgBlue} style={{ marginVertical: 18 }} />
+                </View>
             ) : (
                 <Animated.View style={[styles.mainCard, { opacity: fadeAnim }]}>
                     <View style={styles.cardHeader}>
@@ -406,24 +353,10 @@ const ExpectedCommissions = ({ route, navigation }) => {
 
     // --- EMPTY / LOADING STATE ---
     const renderListEmpty = () => {
-        if (isLoading) {
-            // Skeleton cards instead of spinner
-            return (
-                <View>
-                    {/* Section header skeleton */}
-                    <View style={[styles.sectionHeader, { marginBottom: 12 }]}>
-                        <SkeletonBox width={110} height={16} borderRadius={6} />
-                        <SkeletonBox width={28} height={22} borderRadius={10} style={{ marginLeft: 10 }} />
-                    </View>
-                    <SkeletonCard />
-                    <SkeletonCard />
-                    <SkeletonCard />
-                </View>
-            );
-        }
+        if (isLoading) return null;
         return (
             <View style={styles.emptyContainer}>
-                <MaterialCommunityIcons name="database-off-outline" size={48} color="rgba(255,255,255,0.3)" />
+                <MaterialCommunityIcons name="database-off-outline" size={48} color={C.muted} />
                 <Text style={styles.noDataText}>
                     {activeTab === "CHIT"
                         ? "No CHIT commissions yet. Start enrolling!"
@@ -741,7 +674,7 @@ const styles = StyleSheet.create({
         borderColor: C.border,
     },
 
-    emptyContainer: { alignItems: "center", marginTop: 40, opacity: 0.7 },
+    emptyContainer: { alignItems: "center", marginTop: 40 },
     noDataText: {
         color: C.muted,
         textAlign: "center",

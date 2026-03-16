@@ -141,6 +141,14 @@ const Target = ({ navigation }) => {
     outputRange: ["0%", "100%"],
   });
 
+  // --- LOGIC FOR EXTRA & INCENTIVE ---
+  const extraBusiness = Math.max(0, targetData.total_business - targetData.total_target);
+  const incentiveEarned = Math.floor(extraBusiness / 100000) * 1000; 
+
+  // --- DYNAMIC WIDTH LOGIC ---
+  // If extraBusiness exists, we have 3 cards (31% width). If not, 2 cards (48% width).
+  const cardWidth = extraBusiness > 0 ? "31%" : "48%";
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" />
@@ -237,11 +245,12 @@ const Target = ({ navigation }) => {
                     </View>
                   </View>
 
-                  {/* Horizontal Mini Stats */}
+                  {/* Horizontal Mini Stats - DYNAMIC LAYOUT */}
                   <View style={styles.miniGrid}>
-                    <View style={styles.miniCard}>
+                    {/* Card 1: Enrollments */}
+                    <View style={[styles.miniCard, { width: cardWidth }]}>
                       <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}>
-                        <MaterialCommunityIcons name="account-group" size={22} color={COLORS.primary} />
+                        <MaterialCommunityIcons name="account-group" size={20} color={COLORS.primary} />
                       </View>
                       <View style={styles.textCol}>
                         <Text style={styles.miniLabel}>Enrollments</Text>
@@ -249,15 +258,30 @@ const Target = ({ navigation }) => {
                       </View>
                     </View>
                     
-                    <View style={styles.miniCard}>
+                    {/* Card 2: Revenue */}
+                    <View style={[styles.miniCard, { width: cardWidth }]}>
                       <View style={[styles.iconBox, { backgroundColor: '#E8F5E9' }]}>
-                        <MaterialCommunityIcons name="cash-multiple" size={22} color={COLORS.success} />
+                        <MaterialCommunityIcons name="cash-multiple" size={20} color={COLORS.success} />
                       </View>
                       <View style={styles.textCol}>
                         <Text style={styles.miniLabel}>Revenue</Text>
                         <Text style={styles.miniVal}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
                       </View>
                     </View>
+
+                    {/* Card 3: Extra Achieved - CONDITIONAL RENDERING */}
+                    {extraBusiness > 0 && (
+                      <View style={[styles.miniCard, { width: cardWidth }]}>
+                        <View style={[styles.iconBox, { backgroundColor: 'rgba(248, 192, 9, 0.15)' }]}>
+                          <MaterialCommunityIcons name="cash-plus" size={20} color={COLORS.accent} />
+                        </View>
+                        <View style={styles.textCol}>
+                          <Text style={styles.miniLabel}>Incentive</Text>
+                       
+                          <Text style={styles.incentiveSubText}>₹{incentiveEarned.toLocaleString()} </Text>
+                        </View>
+                      </View>
+                    )}
                   </View>
                 </>
               ) : (
@@ -273,7 +297,7 @@ const Target = ({ navigation }) => {
               )}
 
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Enrollment List</Text>
+                <Text style={styles.sectionTitle}>Achievement List</Text>
                 <View style={styles.countBadge}>
                    <Text style={styles.countText}>{enrollments.length}</Text>
                 </View>
@@ -412,7 +436,7 @@ const styles = StyleSheet.create({
   mainCard: { 
     backgroundColor: COLORS.cardBg, 
     borderRadius: 20, 
-    padding: 14, // Reduced padding
+    padding: 14, 
     marginBottom: 16, 
     elevation: 6,
   },
@@ -420,7 +444,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    marginBottom: 2 // Reduced margin
+    marginBottom: 2
   },
   cardLabel: { fontSize: 11, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1 },
   
@@ -431,13 +455,13 @@ const styles = StyleSheet.create({
   
   progressCenter: { alignItems: 'center', marginVertical: 4 },
   percentageText: { 
-    fontSize: 32, // Reduced from 56
+    fontSize: 32, 
     fontWeight: "900", 
     color: COLORS.primary 
   },
 
   progressTrack: { 
-    height: 8, // Reduced from 12
+    height: 8, 
     backgroundColor: "#E9ECEF", 
     borderRadius: 4, 
     overflow: "hidden", 
@@ -452,26 +476,27 @@ const styles = StyleSheet.create({
     marginTop: 4 
   },
   statBox: { flexDirection: 'row', alignItems: 'center' },
-  statIconSmall: { padding: 4, borderRadius: 6 }, // Smaller icon box
+  statIconSmall: { padding: 4, borderRadius: 6 }, 
   statLabel: { fontSize: 10, color: COLORS.muted, fontWeight: "700" },
   statValue: { fontSize: 13, fontWeight: "900", marginTop: 1 },
   statDivider: { width: 1, height: 20, backgroundColor: '#E9ECEF', marginHorizontal: 5 },
 
-  // Mini Grid (Horizontal Layout)
+  // Mini Grid
   miniGrid: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
   miniCard: { 
     backgroundColor: COLORS.white, 
-    width: "48%", 
     borderRadius: 18, 
-    padding: 14, 
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 10, 
+    flexDirection: 'column',
+    alignItems: 'center', 
     elevation: 4,
+    // Width is now handled dynamically via props
   },
-  iconBox: { padding: 6, borderRadius: 12, marginRight: 6 },
-  textCol: { justifyContent: 'center' },
-  miniVal: { fontSize: 15, fontWeight: "900", color: COLORS.primary },
-  miniLabel: { fontSize: 9, fontWeight: "700", color: COLORS.muted, marginTop: 2 },
+  iconBox: { padding: 6, borderRadius: 12, marginBottom: 6 }, 
+  textCol: { justifyContent: 'center', alignItems: 'center' }, 
+  miniVal: { fontSize: 13, fontWeight: "900", color: COLORS.primary }, 
+  miniLabel: { fontSize: 8, fontWeight: "700", color: COLORS.muted, marginBottom: 2, textAlign: 'center' },
+  incentiveSubText: { fontSize: 13, fontWeight: "700", color: COLORS.success, marginTop: 2, textAlign: 'center' },
 
   // No Target
   noTargetCard: {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
@@ -112,15 +113,15 @@ const BreakdownChip = ({ name, total, configMap }) => {
     bg: "rgba(26,162,204,0.13)", label: capitalize(name),
   };
   return (
-    <View style={[styles.chip, { backgroundColor: cfg.bg }]}>
-      <View style={[styles.chipIconWrap, { backgroundColor: cfg.color + "25" }]}>
-        <Ionicons name={cfg.icon} size={11} color={cfg.color} />
+    <View style={[styles.chip, { backgroundColor: 'rgba(0,0,0,0.2)', borderColor: cfg.color + "40", borderWidth: 1 }]}>
+      <View style={[styles.chipIconWrap, { backgroundColor: cfg.color }]}>
+        <Ionicons name={cfg.icon} size={11} color="#FFFFFF" />
       </View>
       <View>
-        <Text style={[styles.chipLabel, { color: cfg.color }]}>
+        <Text style={styles.chipLabel}>
           {cfg.label ?? capitalize(name)}
         </Text>
-        <Text style={[styles.chipAmount, { color: cfg.color }]}>
+        <Text style={styles.chipAmount}>
           ₹{total?.toLocaleString("en-IN") ?? "0"}
         </Text>
       </View>
@@ -142,11 +143,17 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
   }, []);
 
   return (
-    <View style={styles.summaryCard}>
+    // BRIGHT GRADIENT BACKGROUND
+    <LinearGradient
+      colors={["#4FACFE", "#00F2FE"]} // Bright Blue to Cyan
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.summaryCard}
+    >
       {/* Header row */}
       <View style={styles.summaryHeader}>
         <View style={styles.summaryHeaderLeft}>
-          <View style={styles.calendarIconBg}>
+          <View style={[styles.calendarIconBg, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
             <Ionicons name="wallet" size={18} color={COLORS.white} />
           </View>
           <View>
@@ -154,8 +161,8 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
             {loading ? (
               <ActivityIndicator
                 size="small"
-                color={COLORS.accent}
-                style={{ marginTop: 4, alignSelf: "flex-start" }}
+                color={COLORS.white}
+                style={{ marginTop: 1, alignSelf: "flex-start" }}
               />
             ) : (
               <Text style={styles.summaryAmount}>
@@ -166,7 +173,7 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
         </View>
 
         {/* Live pulse */}
-        <Animated.View style={[styles.liveDot, { opacity: blinkAnim }]} />
+        <Animated.View style={[styles.liveDot, { opacity: blinkAnim, backgroundColor: '#FFFFFF' }]} />
       </View>
 
       {!loading && (paymentsFor?.length > 0 || paymentTypes?.length > 0) && (
@@ -179,7 +186,7 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
           {paymentsFor?.length > 0 && (
             <View style={styles.chipSection}>
               <View style={styles.chipSectionRow}>
-                <View style={[styles.chipSectionPip, { backgroundColor: COLORS.bgBlue }]} />
+                <View style={[styles.chipSectionPip, { backgroundColor: 'rgba(255,255,255,0.6)' }]} />
                 <Text style={styles.chipSectionLabel}>BY CATEGORY</Text>
               </View>
               <View style={styles.chipRow}>
@@ -194,7 +201,7 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
           {paymentTypes?.length > 0 && (
             <View style={styles.chipSection}>
               <View style={styles.chipSectionRow}>
-                <View style={[styles.chipSectionPip, { backgroundColor: COLORS.accent }]} />
+                <View style={[styles.chipSectionPip, { backgroundColor: 'rgba(255,255,255,0.6)' }]} />
                 <Text style={styles.chipSectionLabel}>BY MODE</Text>
               </View>
               <View style={styles.chipRow}>
@@ -206,7 +213,7 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
           )}
         </>
       )}
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -502,16 +509,15 @@ const styles = StyleSheet.create({
   loaderContainer:  { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText:      { color: COLORS.white, marginTop: 10, fontWeight: "600", opacity: 0.8 },
 
-  // ── Summary Card ──
+  // ── Summary Card (UPDATED STYLES) ──
   summaryCard: {
-    backgroundColor: COLORS.cardBg,
     borderRadius: 20,
     padding: 16,
     marginBottom: 18,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 10,
   },
   summaryHeader: {
@@ -526,28 +532,31 @@ const styles = StyleSheet.create({
   },
   summaryMicroLabel: {
     fontSize: 10,
-    color: COLORS.muted,
+    color: "rgba(255,255,255,0.9)", // White with opacity
     fontWeight: "800",
     letterSpacing: 1,
   },
   summaryAmount: {
     fontSize: 30,
     fontWeight: "900",
-    color: COLORS.primary,
-    marginTop: 2,
+    color: COLORS.white, // Bright White
+    marginTop: -6,
     letterSpacing: -0.5,
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   liveDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.success,
+    backgroundColor: COLORS.white,
     alignSelf: "flex-start",
     marginTop: 4,
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: "#EEF2F7",
+    backgroundColor: "rgba(255,255,255,0.25)", // White transparent divider
     marginVertical: 14,
   },
 
@@ -556,7 +565,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    marginBottom: 6,
+    marginBottom: 1,
   },
   chipSectionPip: {
     width: 14,
@@ -566,7 +575,7 @@ const styles = StyleSheet.create({
   chipSectionLabel: {
     fontSize: 9,
     fontWeight: "800",
-    color: COLORS.muted,
+    color: "rgba(255,255,255,0.9)", // White
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
@@ -584,6 +593,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flex: 1,
     minWidth: 80,
+    // Background is now set dynamically in BreakdownChip component for glass effect
   },
   chipIconWrap: {
     width: 22,
@@ -597,11 +607,13 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.6,
     textTransform: "uppercase",
+    color: "#FFFFFF", // White text
   },
   chipAmount: {
     fontSize: 11,
     fontWeight: "900",
     marginTop: 1,
+    color: "#FFFFFF", // White text
   },
 
   // ── Section heading ──
