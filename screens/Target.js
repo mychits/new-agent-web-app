@@ -264,7 +264,7 @@ const Target = ({ navigation }) => {
                         <MaterialCommunityIcons name="cash-multiple" size={20} color={COLORS.success} />
                       </View>
                       <View style={styles.textCol}>
-                        <Text style={styles.miniLabel}>Revenue</Text>
+                        <Text style={styles.miniLabel}>Achievement</Text>
                         <Text style={styles.miniVal}>₹{targetData.total_business.toLocaleString("en-IN")}</Text>
                       </View>
                     </View>

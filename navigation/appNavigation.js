@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "../screens/Home";
 import Login from "../screens/Login";
+import LoginSecond from "../screens/LoginSecond";
 import BottomNavigation from "./BottomNavigation";
 import PaymentNavigator from "./PaymentNavigator";
 import Enrollment from "../screens/Enrollment";
@@ -84,6 +85,11 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={Login}
         />
+          <Stack.Screen
+          name="LoginSecond"
+          options={{ headerShown: false }}
+          component={LoginSecond}
+        />
         <Stack.Screen
           name="MonthlyTurnover"
           component={MonthlyTurnover}
@@ -133,6 +139,11 @@ export default function AppNavigation() {
         name= "StarPoints"
         options={{headerShown: false}}
         component={StarPoints}
+        />
+             <Stack.Screen
+        name= "Home"
+        options={{headerShown: false}}
+        component={Home}
         />
         <Stack.Screen
         name= "CustomerPaymentLink"

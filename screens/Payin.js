@@ -467,7 +467,7 @@ const Payin = ({ route, navigation }) => {
                 ) : (
                   <>
                     <MaterialIcons name="warning" size={15} color="#991b1b" style={styles.pillIcon} />
-                    <Text style={styles.balanceDangerLabel}>Outstanding: </Text>
+                    <Text style={styles.balanceDangerLabel}>Outstanding Balance: </Text>
                     <Text style={styles.balanceDangerAmount}>₹ {balance}</Text>
                   </>
                 )}

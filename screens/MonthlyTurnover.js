@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef, memo } from "react"; // Added memo
+import React, { useState, useEffect, useRef, memo } from "react";
 import {
   View,
   Text,
@@ -41,14 +40,14 @@ const COLORS = {
   background: "#0f2a44",
   box1: "#E0E7FF",
   box1Text: "#4338ca",
-  box2: "#D1FAE5",
-  box2Text: "#059669",
+  box2: "#D1FAE5", // Light Green (Used for Negative Balance)
+  box2Text: "#059669", // Dark Green Text
   box3: "#FEF3C7",
   box3Text: "#D97706",
   box4: "#E0F2FE",
   box4Text: "#0284c7",
-  box5: "#FFE4E6",
-  box5Text: "#e11d48",
+  box5: "#FFE4E6", // Light Red (Used for Positive Balance)
+  box5Text: "#e11d48", // Dark Red Text
 };
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -103,7 +102,7 @@ const TurnoverHeader = memo(({
         <Feather name="search" size={18} color={COLORS.muted} style={{ marginRight: 10 }} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search name, phone or group..."
+          placeholder="Search name, phone, ticket or group..."
           placeholderTextColor={COLORS.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -199,6 +198,8 @@ const MonthlyTurnover = ({ navigation }) => {
           return {
             ...c,
             enrollmentId:  c._id,
+            // EXTRACT TICKET NUMBER FROM API
+            ticketNumber:  c.ticket || "N/A", 
             balance:       balance,
             paymentStatus: monthlyPaid >= monthlyInstallment ? "PAID" : "UNPAID",
             lastPaymentDate,
@@ -221,15 +222,16 @@ const MonthlyTurnover = ({ navigation }) => {
     }
   };
 
-  // Filter logic for Search
+  // Filter logic for Search (Updated to include Ticket)
   const filteredCustomers = customersData.filter((item) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     const name  = (item.user_id?.full_name || "").toLowerCase();
     const phone = (item.user_id?.phone_number || "").toLowerCase();
     const group = (item.group_id?.group_name || "").toLowerCase();
+    const ticket = (item.ticketNumber || "").toString().toLowerCase();
     
-    return name.includes(query) || phone.includes(query) || group.includes(query);
+    return name.includes(query) || phone.includes(query) || group.includes(query) || ticket.includes(query);
   });
 
   const onDateChange = (_event, newDate) => {
@@ -257,9 +259,20 @@ const MonthlyTurnover = ({ navigation }) => {
     const customerPhone = item.user_id?.phone_number;
     const customerName  = item.user_id?.full_name || "Unknown";
     const groupName     = item.group_id?.group_name || "Group";
+    const ticketNum     = item.ticketNumber; // Use the extracted ticket number
     const balanceVal    = item.balance || 0;
     const diffVal       = item.differenceAmount || 0;
     const diffColor     = diffVal > 0 ? COLORS.box3Text : COLORS.success;
+
+    // --- LOGIC FOR BALANCE COLOR ---
+    // If balance is minus (-), display Green. If positive or plus (+), display Red.
+    const isNegativeBalance = balanceVal < 0;
+    const balanceBoxBg = isNegativeBalance ? COLORS.box2 : COLORS.box5; // Green bg if negative, Red bg if positive
+    const balanceBoxText = isNegativeBalance ? COLORS.box2Text : COLORS.box5Text; // Green text if negative, Red text if positive
+
+    // --- HIDE MINUS SIGN ---
+    // Use Math.abs() to remove the negative sign from the displayed number
+    const displayBalance = Math.abs(balanceVal);
 
     return (
       <FadeInView delay={index * 30}>
@@ -278,7 +291,13 @@ const MonthlyTurnover = ({ navigation }) => {
               </View>
               
               <View style={styles.metaRow}>
-                <Text style={styles.ticketText}>{groupName}</Text>
+                {/* DISPLAY TICKET NUMBER AFTER GROUP NAME */}
+                <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Text style={styles.ticketText} numberOfLines={1}>{groupName}</Text>
+                  <Text style={styles.ticketText}> • </Text>
+                  <Text style={[styles.ticketText, { color: COLORS.bgBlue, fontWeight: '700' }]}>Ticket #{ticketNum}</Text>
+                </View>
+                
                 {customerPhone && (
                   <TouchableOpacity onPress={() => handleCall(customerPhone)} style={styles.callBtn}>
                     <Feather name="phone" size={12} color={COLORS.bgBlue} />
@@ -318,10 +337,11 @@ const MonthlyTurnover = ({ navigation }) => {
               <Text style={styles.gridLabel}>Total Paid</Text>
             </View>
 
-            {/* 5. Balance */}
-            <View style={[styles.gridBox, { backgroundColor: COLORS.box5, width: '48%' }]}>
-              <MaterialCommunityIcons name="scale-balance" size={16} color={COLORS.box5Text} />
-              <Text style={[styles.gridVal, { color: COLORS.box5Text }]}>{formatCurrency(balanceVal)}</Text>
+            {/* 5. Balance - DYNAMIC COLOR */}
+            <View style={[styles.gridBox, { backgroundColor: balanceBoxBg, width: '48%' }]}>
+              <MaterialCommunityIcons name="scale-balance" size={16} color={balanceBoxText} />
+              {/* Using displayBalance (absolute value) to hide the minus sign */}
+              <Text style={[styles.gridVal, { color: balanceBoxText }]}>{formatCurrency(displayBalance)}</Text>
               <Text style={styles.gridLabel}>Balance</Text>
             </View>
           </View>
@@ -509,9 +529,9 @@ const styles = StyleSheet.create({
   avatarText: { color: "#fff", fontSize: 18, fontWeight: "900" },
   
   clientName: { fontSize: 16, fontWeight: "800", color: COLORS.primary, marginBottom: 4, flex: 1 },
-  metaRow: { flexDirection: 'row', alignItems: 'center' },
-  ticketText: { fontSize: 12, color: COLORS.muted, fontWeight: '600', marginRight: 10 },
-  callBtn: { padding: 4 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ticketText: { fontSize: 12, color: COLORS.muted, fontWeight: '600' },
+  callBtn: { padding: 4, marginLeft: 8 },
 
   statsGrid: {
     flexDirection: 'row',

@@ -249,7 +249,7 @@ const SalesReport = ({ navigation }) => {
                         />
                       </View>
                       <View style={styles.textColLeft}>
-                        <Text style={styles.cardLabel}>Sales Business</Text>
+                        <Text style={styles.cardLabel}>Sales (Business)</Text>
                         <Text style={styles.cardValue}>
                           ₹{summary.customerBusiness.toLocaleString("en-IN")}
                         </Text>
