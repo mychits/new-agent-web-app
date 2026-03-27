@@ -28,7 +28,7 @@ import chitBaseUrl from "../constants/baseUrl";
 
 const { height, width } = Dimensions.get('window');
 
-// --- THEME CONSTANTS (Unchanged) ---
+
 const THEME = {
   primary: "#24C6DC",
   secondary: "#183A5D",
@@ -46,7 +46,7 @@ const THEME = {
 
 const CustomerOnHold = () => {
   const [customers, setCustomers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState(""); // <--- ADDED STATE
+  const [searchQuery, setSearchQuery] = useState(""); 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
