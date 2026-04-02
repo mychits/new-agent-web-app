@@ -13,7 +13,7 @@ import COLORS from "../constants/color"; // Assuming this is defined
 import Header from "../components/Header"; // Assuming this is defined
 import blePrinter from "../components/BluetoothPrinter"; // Assuming this is defined
 import Button from "../components/Button"; // Assuming this is defined
-import RNPrint from "react-native-print";
+import * as ExpoPrint from 'expo-print';
 import axios from "axios";
 import baseUrl from "../constants/baseUrl";
 
@@ -270,7 +270,7 @@ Collected by: ${agent_name || "N/A"}
     setIsPrinting(true);
     const htmlContent = generatePosReceiptHtml("58mm");
     try {
-      await RNPrint.print({ html: htmlContent });
+      await ExpoPrint.printAsync({ html: htmlContent });
     } catch (error) {
       console.error("POS 58MM Print Error:", error);
       Alert.alert("Print Error", "Failed to print the document via POS 58MM.");
@@ -283,7 +283,7 @@ Collected by: ${agent_name || "N/A"}
     setIsPrinting(true);
     const htmlContent = generatePosReceiptHtml("80mm");
     try {
-      await RNPrint.print({ html: htmlContent });
+      await ExpoPrint.printAsync({ html: htmlContent });
     } catch (error) {
       console.error("POS 80MM Print Error:", error);
       Alert.alert("Print Error", "Failed to print the document via POS 80MM.");

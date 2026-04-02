@@ -16,7 +16,7 @@ import React, { useState, useEffect } from "react";
 import Icon from "react-native-vector-icons/FontAwesome"; // For filter icons (users, calendar, etc.)
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-import RNPrint from 'react-native-print';
+import * as ExpoPrint from 'expo-print';
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons"; // For modern icons (back arrow, close, print)
 
@@ -444,7 +444,7 @@ const ChitPayments = ({ route, navigation }) => {
         `;
 
         try {
-            await RNPrint.print({ html: htmlContent });
+            await ExpoPrint.printAsync({ html: htmlContent });
         } catch (error) {
             Alert.alert("Print Error", "Failed to print the document.");
         }
@@ -507,7 +507,7 @@ const ChitPayments = ({ route, navigation }) => {
         `;
 
         try {
-            await RNPrint.print({ html: htmlContent });
+           await ExpoPrint.printAsync({ html: htmlContent });
         } catch (error) {
             Alert.alert("Print Error", "Failed to print the total collection details.");
         }
