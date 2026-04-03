@@ -289,6 +289,9 @@ import {
   Pressable,
   Animated,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { useState, useRef, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -434,7 +437,15 @@ export default function Login({ navigation }) {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "android" ? "padding" : "height"}
+    >
+      
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.contentWrapper}>
           {/* Logo */}
@@ -526,6 +537,9 @@ export default function Login({ navigation }) {
 
         </View>
       </SafeAreaView>
+      </ScrollView>
+    </KeyboardAvoidingView>
+
     </View>
   );
 }
