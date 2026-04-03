@@ -1,43 +1,49 @@
 {
   "expo": {
-    "name": "CollAgentApp",
-    "slug": "CollAgentApp",
-    "jsEngine": "hermes",
+    "name": "MyChits Agent",
+    "slug": "MyChitsAgent",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.gagansk.agentapp"
+      "supportsTablet": false,
+      "bundleIdentifier": "agentapp.mychits.co.in",
+      "buildNumber": "1.0.0",
+      
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses camera to scan documents.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photos.",
+        "NSLocationWhenInUseUsageDescription": "Location is used for better service."
+      }
     },
+
     "android": {
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#37367C"
       },
-      "package": "com.gagansk.agentapp",
-      "queries": [
-        {
-          "schemes": [
-            "whatsapp",
-            "mailto",
-            "tel"
-          ]
-        }
-      ]
+      "package": "com.gagansk.agentapp"
     },
+
     "web": {
       "favicon": "./assets/favicon.png"
     },
+
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#232323",
+          "image": "./assets/icon.png",
+          "imageWidth": 200
+        }
+      ],
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-sharing"
     ]
   }
 }

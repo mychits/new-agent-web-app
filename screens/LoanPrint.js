@@ -5,7 +5,7 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import blePrinter from "../components/BluetoothPrinter";
 import Button from "../components/Button";
-import RNPrint from "react-native-print";
+import * as ExpoPrint from 'expo-print';
 import baseUrl from "../constants/baseUrl";
 import axios from "axios";
 
@@ -262,7 +262,7 @@ Collected by: ${agent_name || "N/A"}
     `;
 
     try {
-      await RNPrint.print({ html: htmlContent });
+      await ExpoPrint.printAsync({ html: htmlContent });
     } catch (error) {
       console.error(`POS Print (${widthMM}MM) Error:`, error);
       Alert.alert(
