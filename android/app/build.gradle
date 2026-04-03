@@ -99,7 +99,7 @@ android {
     }
     signingConfigs {
         debug {
-           storeFile file('my-release-key.jks')
+            storeFile file('my-release-key.jks')
             storePassword 'Gagansk@16'
             keyAlias 'my-key-alias'
             keyPassword 'Gagansk@16'
