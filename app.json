@@ -8,8 +8,15 @@
     "userInterfaceStyle": "light",
 
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.gagansk.agentapp"
+      "supportsTablet": false,
+      "bundleIdentifier": "agentapp.mychits.co.in",
+      "buildNumber": "1.0.0",
+      
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses camera to scan documents.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photos.",
+        "NSLocationWhenInUseUsageDescription": "Location is used for better service."
+      }
     },
 
     "android": {
