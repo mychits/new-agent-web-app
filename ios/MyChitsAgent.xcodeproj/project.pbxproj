@@ -8,23 +8,23 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		2A5D8476FF515DAAA9228694 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4073712499FA7B6CE99BADB8 /* ExpoModulesProvider.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		43FD3E07B7C380FC2B92AE44 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F903A6911DFB380B9CDA847 /* ExpoModulesProvider.swift */; };
+		558A6E0887757E029C1957DE /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 968D9D98CFB086881A265508 /* PrivacyInfo.xcprivacy */; };
+		5F83426A7F2D4D4F36D2FDB9 /* libPods-MyChitsAgent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 214A6D7F3B4952843019BAA7 /* libPods-MyChitsAgent.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		BDB06DCC8596560C8D196F36 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6A99AB18A9B7108BE3123763 /* PrivacyInfo.xcprivacy */; };
-		CEB02C50E6D016B2815C0728 /* libPods-MyChitsAgent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B63E1EE9AA90B14E7CCDD1E /* libPods-MyChitsAgent.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0FEB814169F75083AD16E45A /* Pods-MyChitsAgent.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyChitsAgent.debug.xcconfig"; path = "Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent.debug.xcconfig"; sourceTree = "<group>"; };
+		0E1217773EDB50463A52A0DE /* Pods-MyChitsAgent.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyChitsAgent.debug.xcconfig"; path = "Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent.debug.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* MyChitsAgent.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyChitsAgent.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = MyChitsAgent/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = MyChitsAgent/Info.plist; sourceTree = "<group>"; };
-		1F903A6911DFB380B9CDA847 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-MyChitsAgent/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		6A99AB18A9B7108BE3123763 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = MyChitsAgent/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		8B63E1EE9AA90B14E7CCDD1E /* libPods-MyChitsAgent.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MyChitsAgent.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		9D98E89A0EFD9C999FFF2F20 /* Pods-MyChitsAgent.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyChitsAgent.release.xcconfig"; path = "Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent.release.xcconfig"; sourceTree = "<group>"; };
+		214A6D7F3B4952843019BAA7 /* libPods-MyChitsAgent.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MyChitsAgent.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4073712499FA7B6CE99BADB8 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-MyChitsAgent/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		968D9D98CFB086881A265508 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = MyChitsAgent/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		97B7C3A3DBA72023CB9A178C /* Pods-MyChitsAgent.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyChitsAgent.release.xcconfig"; path = "Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = MyChitsAgent/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -37,21 +37,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CEB02C50E6D016B2815C0728 /* libPods-MyChitsAgent.a in Frameworks */,
+				5F83426A7F2D4D4F36D2FDB9 /* libPods-MyChitsAgent.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0CE80E80F1ED1AA40D683643 /* MyChitsAgent */ = {
-			isa = PBXGroup;
-			children = (
-				1F903A6911DFB380B9CDA847 /* ExpoModulesProvider.swift */,
-			);
-			name = MyChitsAgent;
-			sourceTree = "<group>";
-		};
 		13B07FAE1A68108700A75B9A /* MyChitsAgent */ = {
 			isa = PBXGroup;
 			children = (
@@ -61,18 +53,44 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				6A99AB18A9B7108BE3123763 /* PrivacyInfo.xcprivacy */,
+				968D9D98CFB086881A265508 /* PrivacyInfo.xcprivacy */,
 			);
 			name = MyChitsAgent;
+			sourceTree = "<group>";
+		};
+		22618D478B5EA97169324304 /* MyChitsAgent */ = {
+			isa = PBXGroup;
+			children = (
+				4073712499FA7B6CE99BADB8 /* ExpoModulesProvider.swift */,
+			);
+			name = MyChitsAgent;
+			sourceTree = "<group>";
+		};
+		27B5C23B43AA3CAB7CD3FB4F /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				0E1217773EDB50463A52A0DE /* Pods-MyChitsAgent.debug.xcconfig */,
+				97B7C3A3DBA72023CB9A178C /* Pods-MyChitsAgent.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				8B63E1EE9AA90B14E7CCDD1E /* libPods-MyChitsAgent.a */,
+				214A6D7F3B4952843019BAA7 /* libPods-MyChitsAgent.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		488AFA1CE2F88FEC1149F0EE /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				22618D478B5EA97169324304 /* MyChitsAgent */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -89,8 +107,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				ED13FB8B5E340A0A4CCC5209 /* Pods */,
-				E6261E0599F62C596004F5C1 /* ExpoModulesProviders */,
+				27B5C23B43AA3CAB7CD3FB4F /* Pods */,
+				488AFA1CE2F88FEC1149F0EE /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -114,24 +132,6 @@
 			path = MyChitsAgent/Supporting;
 			sourceTree = "<group>";
 		};
-		E6261E0599F62C596004F5C1 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				0CE80E80F1ED1AA40D683643 /* MyChitsAgent */,
-			);
-			name = ExpoModulesProviders;
-			sourceTree = "<group>";
-		};
-		ED13FB8B5E340A0A4CCC5209 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				0FEB814169F75083AD16E45A /* Pods-MyChitsAgent.debug.xcconfig */,
-				9D98E89A0EFD9C999FFF2F20 /* Pods-MyChitsAgent.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "MyChitsAgent" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				D12993353FCAED3E1B83B515 /* [Expo] Configure project */,
+				A523E0DCCD59319A77203AD3 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				E7E12A2E7E0B1A6C1176425D /* [CP] Embed Pods Frameworks */,
+				27F1B894AFD7EC49B6312FBC /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				BDB06DCC8596560C8D196F36 /* PrivacyInfo.xcprivacy in Resources */,
+				558A6E0887757E029C1957DE /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,6 +240,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		27F1B894AFD7EC49B6312FBC /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
@@ -314,7 +336,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		D12993353FCAED3E1B83B515 /* [Expo] Configure project */ = {
+		A523E0DCCD59319A77203AD3 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -338,28 +360,6 @@
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-MyChitsAgent/expo-configure-project.sh\"\n";
 		};
-		E7E12A2E7E0B1A6C1176425D /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MyChitsAgent/Pods-MyChitsAgent-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -368,7 +368,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				43FD3E07B7C380FC2B92AE44 /* ExpoModulesProvider.swift in Sources */,
+				2A5D8476FF515DAAA9228694 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -377,7 +377,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0FEB814169F75083AD16E45A /* Pods-MyChitsAgent.debug.xcconfig */;
+			baseConfigurationReference = 0E1217773EDB50463A52A0DE /* Pods-MyChitsAgent.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -401,19 +401,19 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = "agentapp.mychits.co.in";
-				PRODUCT_NAME = "MyChitsAgent";
+				PRODUCT_BUNDLE_IDENTIFIER = agentapp.mychits.co.in;
+				PRODUCT_NAME = MyChitsAgent;
 				SWIFT_OBJC_BRIDGING_HEADER = "MyChitsAgent/MyChitsAgent-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 9D98E89A0EFD9C999FFF2F20 /* Pods-MyChitsAgent.release.xcconfig */;
+			baseConfigurationReference = 97B7C3A3DBA72023CB9A178C /* Pods-MyChitsAgent.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -432,11 +432,11 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = "agentapp.mychits.co.in";
-				PRODUCT_NAME = "MyChitsAgent";
+				PRODUCT_BUNDLE_IDENTIFIER = agentapp.mychits.co.in;
+				PRODUCT_NAME = MyChitsAgent;
 				SWIFT_OBJC_BRIDGING_HEADER = "MyChitsAgent/MyChitsAgent-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
