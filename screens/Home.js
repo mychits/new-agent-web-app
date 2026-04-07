@@ -828,16 +828,17 @@ const styles = StyleSheet.create({
 
   // GREETING
   scrollView: { flex: 1, marginTop: 10 },
-  greetingCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 15, marginTop: 10, marginBottom: 25, padding: 20, borderRadius: 24, backgroundColor: '#FFFFFF', elevation: 12, shadowColor: COLORS.primary, shadowOpacity: 0.15, shadowRadius: 15, shadowOffset: { width: 0, height: 8 } },
-  greetingTextContainer: { flex: 1 }, greetingLabel: { fontSize: 14, color: COLORS.muted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
-  agentName: { fontSize: 24, color: COLORS.primary, fontWeight: '900', marginTop: 4 },
+  greetingCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 15, marginTop: 10, marginBottom: 20, padding: 18, borderRadius: 20, backgroundColor: '#FFFFFF', elevation: 12, shadowColor: COLORS.primary, shadowOpacity: 0.15, shadowRadius: 15, shadowOffset: { width: 0, height: 8 } },
+  greetingTextContainer: { flex: 1 }, 
+  greetingLabel: { fontSize: 10, color: COLORS.muted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
+  agentName: { fontSize: 16, color: COLORS.primary, fontWeight: '900', marginTop: 4 },
   statusBadgeContainer: { shadowColor: COLORS.success, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
   statusBadge: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center' },
   statusText: { color: '#fff', fontWeight: 'bold', fontSize: 12, letterSpacing: 0.5 },
   
   // SEARCH
   servicesSection: { paddingHorizontal: 15, marginBottom: 20 },
-  sectionTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 18, marginLeft: 5, letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 15, marginLeft: 5, letterSpacing: 0.5 },
   searchContainer: { paddingHorizontal: 0, marginBottom: 15 }, // Adjusted padding for new location
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 18, paddingVertical: 8, elevation: 8, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
   searchIcon: { marginRight: 12 }, searchInput: { flex: 1, height: 45, fontSize: 15, color: COLORS.primary, fontWeight: '500' },
@@ -847,24 +848,24 @@ const styles = StyleSheet.create({
   noResultText: { color: 'rgba(255,255,255,0.8)', fontSize: 16, fontWeight: '500' },
 
   // WIDE CARDS
-  wideCardsSection: { paddingHorizontal: 15, marginBottom: 25 },
-  wideCardWrapper: { marginBottom: 15 },
-  wideCard: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 28, elevation: 12, shadowColor: COLORS.primary, shadowOpacity: 0.25, shadowRadius: 15, shadowOffset: { width: 0, height: 8 }, overflow: 'hidden', position: 'relative' },
+  wideCardsSection: { paddingHorizontal: 15, marginBottom: 20 },
+  wideCardWrapper: { marginBottom: 12 },
+  wideCard: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 22, elevation: 12, shadowColor: COLORS.primary, shadowOpacity: 0.25, shadowRadius: 15, shadowOffset: { width: 0, height: 8 }, overflow: 'hidden', position: 'relative' },
   shimmerOverlay: { position: 'absolute', top: 0, left: 0, width: '60%', height: '100%', backgroundColor: 'rgba(255,255,255,0.15)', transform: [{ skewX: '-15deg' }] },
-  overviewLayout: { flexDirection: 'column', alignItems: 'center', paddingVertical: 30, justifyContent: 'center' },
-  wideIconCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 18, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 5 },
-  overviewIcon: { marginRight: 0, marginBottom: 15, backgroundColor: '#fff', shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 6 }, shadowRadius: 15, elevation: 8 },
+  overviewLayout: { flexDirection: 'column', alignItems: 'center', paddingVertical: 25, justifyContent: 'center' },
+  wideIconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 15, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 5 },
+  overviewIcon: { marginRight: 0, marginBottom: 12, backgroundColor: '#fff', shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 6 }, shadowRadius: 15, elevation: 8 },
   wideTextContainer: { flex: 1 }, overviewTextContainer: { alignItems: 'center' },
-  wideTitle: { color: '#fff', fontSize: 19, fontWeight: 'bold' }, overviewTitleText: { fontSize: 22, textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 },
-  wideSubTitle: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 4, fontWeight: '500' },
+  wideTitle: { color: '#fff', fontSize: 17, fontWeight: 'bold' }, overviewTitleText: { fontSize: 20, textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 },
+  wideSubTitle: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 3, fontWeight: '500' },
 
   // GRID CARDS
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  gridItemWrapper: { width: '31.5%', marginBottom: 12 },
-  gridItemBox: { backgroundColor: '#FFFFFF', borderRadius: 22, paddingVertical: 18, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 4 }, height: 115 },
+  gridItemWrapper: { width: '31%', marginBottom: 10 },
+  gridItemBox: { backgroundColor: '#FFFFFF', borderRadius: 18, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 4 }, height: 100 },
   gridItemPressed: { transform: [{ scale: 0.95 }] }, // Active state
-  iconContainer: { width: 50, height: 50, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  gridTitle: { fontSize: 11, fontWeight: '700', color: COLORS.primary, textAlign: 'center' },
+  iconContainer: { width: 45, height: 45, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  gridTitle: { fontSize: 10, fontWeight: '600', color: COLORS.primary, textAlign: 'center' },
 
   // QR SECTION
   qrSection: { paddingHorizontal: 15, marginBottom: 30 },
