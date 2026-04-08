@@ -856,7 +856,7 @@ const styles = StyleSheet.create({
   wideIconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 15, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 5 },
   overviewIcon: { marginRight: 0, marginBottom: 12, backgroundColor: '#fff', shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 6 }, shadowRadius: 15, elevation: 8 },
   wideTextContainer: { flex: 1 }, overviewTextContainer: { alignItems: 'center' },
-  wideTitle: { color: '#fff', fontSize: 17, fontWeight: 'bold' }, overviewTitleText: { fontSize: 20, textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 },
+  wideTitle: { color: '#fff', fontSize: 17, fontWeight: 'bold' }, overviewTitleText: { fontSize: 18, textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 4 },
   wideSubTitle: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 3, fontWeight: '500' },
 
   // GRID CARDS
