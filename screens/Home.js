@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
 import {
   View,
@@ -75,6 +74,7 @@ const ICON_CONFIG = {
   starPoints: { name: 'star-face', type: 'MaterialCommunityIcons', color: COLORS.accent },
   SalesReport: { name: 'point-of-sale', type: 'MaterialCommunityIcons', color: '#8BC34A' },
   appLogo: { name: 'domain', color: '#fff' },
+  approvals: { name: 'approval', color: '#673AB7' }, // NEW: Approvals Icon
 };
 
 // --- COMPONENT: HELP MODAL ---
@@ -159,7 +159,6 @@ const AttendanceModal = ({
   setNote,
 }) => {
   const [isNoteOpen, setIsNoteOpen] = useState(false);
-  // FIXED: Changed [0] to .current
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -609,6 +608,10 @@ const Home = ({ route, navigation }) => {
     {
       id: "SalesReport", name: "Sales Report",
       onPress: () => navigation.navigate("SalesReport", { employeeId: user.userId, agentName: agent.name }),
+    },
+    {
+      id: "approvals", name: "approvals", // NEW ITEM ADDED HERE
+      onPress: () => navigation.navigate("approvals", { user }),
     },
   ].filter(Boolean);
 

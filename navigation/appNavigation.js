@@ -13,6 +13,7 @@ import PaymentList from "../screens/PaymentList";
 import PayNavigation from "./PayNavigation";
 import SalesReport from "../screens/SalesReport";
 import { StatusBar } from "react-native";
+import approvals from "../screens/approvals";
 import AddCustomer from "../screens/AddCustomer";
 import ViewCustomer from "../screens/ViewCustomer";
 import CustomerNavigation from "./CustomerNavigation";
@@ -49,7 +50,7 @@ import PigmePayments from "../screens/PigmePayments";
 import MyCommission from "../screens/MyCommission";
 import ViewEnrollments from "../screens/ViewEnrollments";
 import ExpectedCommissions from "../screens/ExpectedCommissions";
-import Attendence from "../screens/Attendence"; 
+import Attendence from "../screens/Attendence";
 
 import RelationshipManagerReport from "../screens/RelationshipManagerReport";
 import ReferredReport from "../screens/ReferredReport";
@@ -79,13 +80,13 @@ export default function AppNavigation() {
           component={BottomNavigation}
           options={{ headerShown: false }}
         />
-       
+
         <Stack.Screen
           name="Login"
           options={{ headerShown: false }}
           component={Login}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="LoginSecond"
           options={{ headerShown: false }}
           component={LoginSecond}
@@ -95,7 +96,7 @@ export default function AppNavigation() {
           component={MonthlyTurnover}
           options={{ headerShown: false }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="Rewards"
           component={Rewards}
           options={{ headerShown: false }}
@@ -105,19 +106,19 @@ export default function AppNavigation() {
           component={PayNavigation}
           options={{ headerShown: false }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="LoanPayments"
           component={LoanPayments}
-          options={{headerShown: false}}
-          />
-          <Stack.Screen name="MyCommission" component={MyCommission} options={{headerShown: false}}/>
-           <Stack.Screen name="ViewEnrollments" component={ViewEnrollments} options={{headerShown: false}} />
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="MyCommission" component={MyCommission} options={{ headerShown: false }} />
+        <Stack.Screen name="ViewEnrollments" component={ViewEnrollments} options={{ headerShown: false }} />
 
-          <Stack.Screen
+        <Stack.Screen
           name="PigmePayments"
           component={PigmePayments}
-          options={{headerShown: false}}
-          /> 
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="qrCode"
           options={{ headerShown: false }}
@@ -128,74 +129,79 @@ export default function AppNavigation() {
           options={{ headerShown: false }}
           component={PaymentNavigator}
         />
-        
+
         {/* ADD TASK SCREEN */}
         <Stack.Screen
-        name= "AddTaskScreen"
-        options={{headerShown: false}}
-        component={AddTaskScreen}
+          name="AddTaskScreen"
+          options={{ headerShown: false }}
+          component={AddTaskScreen}
         />
-         <Stack.Screen
-        name= "StarPoints"
-        options={{headerShown: false}}
-        component={StarPoints}
-        />
-             <Stack.Screen
-        name= "Home"
-        options={{headerShown: false}}
-        component={Home}
+          <Stack.Screen
+          name="approvals"
+          options={{ headerShown: false }}
+          component={approvals}
         />
         <Stack.Screen
-        name= "CustomerPaymentLink"
-        options={{headerShown: false}}
-        component={CustomerPaymentLink}
+          name="StarPoints"
+          options={{ headerShown: false }}
+          component={StarPoints}
         />
-            <Stack.Screen
-        name= "Review"
-        options={{headerShown: false}}
-        component={Review}
-        /> 
-          <Stack.Screen
+        <Stack.Screen
+          name="Home"
+          options={{ headerShown: false }}
+          component={Home}
+        />
+        <Stack.Screen
+          name="CustomerPaymentLink"
+          options={{ headerShown: false }}
+          component={CustomerPaymentLink}
+        />
+        <Stack.Screen
+          name="Review"
+          options={{ headerShown: false }}
+          component={Review}
+        />
+        <Stack.Screen
           name="OutstandingReports"
           options={{ headerShown: false }}
           component={OutstandingReports}
-          />
-          <Stack.Screen name="EnrollCustomer" options={{headerShown: false}} component={EnrollCustomer} />
-          <Stack.Screen name="EnrolledGroups" options={{headerShown: false}} component={EnrolledGroups} />
-            <Stack.Screen name="LoanPayin" options={{headerShown: false}} component={LoanPayin} />
-          <Stack.Screen
+        />
+        <Stack.Screen name="EnrollCustomer" options={{ headerShown: false }} component={EnrollCustomer} />
+        <Stack.Screen name="EnrolledGroups" options={{ headerShown: false }} component={EnrolledGroups} />
+        <Stack.Screen name="LoanPayin" options={{ headerShown: false }} component={LoanPayin} />
+        <Stack.Screen
           name="RelationshipManagerReport"
           options={{ headerShown: false }}
           component={RelationshipManagerReport}
-          />
-          <Stack.Screen
+        />
+        <Stack.Screen
           name="ReferredReport"
           options={{ headerShown: false }}
           component={ReferredReport}
-          />
-             <Stack.Screen
+        />
+        <Stack.Screen
           name="SalesReport"
           options={{ headerShown: false }}
           component={SalesReport}
-          />
-          <Stack.Screen name="RouteCustomerChit" options={{headerShown: false}} component={RouteCustomerChit}/>
+        />
+        <Stack.Screen name="RouteCustomerChit" options={{ headerShown: false }} component={RouteCustomerChit} />
 
-           <Stack.Screen name="RouteCustomerLoan" options={{headerShown: false}} component={RouteCustomerLoan}/>
-            <Stack.Screen name="RouteCustomerGold" options={{headerShown: false}} component={RouteCustomerGold}/>
-             <Stack.Screen name="RouteCustomerPigme" options={{headerShown: false}} component={RouteCustomerPigme}/>
+        <Stack.Screen name="RouteCustomerLoan" options={{ headerShown: false }} component={RouteCustomerLoan} />
+        <Stack.Screen name="RouteCustomerGold" options={{ headerShown: false }} component={RouteCustomerGold} />
+        <Stack.Screen name="RouteCustomerPigme" options={{ headerShown: false }} component={RouteCustomerPigme} />
 
 
 
-          <Stack.Screen name="Attendance" component={Attendence} options={{headerShown: false}} />
-          <Stack.Screen
+        <Stack.Screen name="Attendance" component={Attendence} options={{ headerShown: false }} />
+        <Stack.Screen
           name="Due"
           options={{ headerShown: false }}
           component={Due}
-          />
-          <Stack.Screen name="LogOut" component={LogOut} options={{headerShown: false}} />
-          <Stack.Screen name="ExpectedCommissions" component={ExpectedCommissions} options={{headerShown: false}} />
-            <Stack.Screen name="PigmePayin" component={PigmePayin} options={{headerShown: false}} />
-        
+        />
+        <Stack.Screen name="LogOut" component={LogOut} options={{ headerShown: false }} />
+        <Stack.Screen name="ExpectedCommissions" component={ExpectedCommissions} options={{ headerShown: false }} />
+        <Stack.Screen name="PigmePayin" component={PigmePayin} options={{ headerShown: false }} />
+
         {/* REMOVED DUPLICATE CustomerOnHold BELOW */}
         <Stack.Screen
           name="CustomerOnHold"
@@ -203,6 +209,7 @@ export default function AppNavigation() {
           component={CustomerOnHold}
         />
         
+
         <Stack.Screen
           name="CustomerNavigation"
           options={{ headerShown: false }}
