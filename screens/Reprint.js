@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Alert, StyleSheet } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, Alert, StyleSheet, TouchableOpacity } from "react-native"; 
 import { SafeAreaView } from "react-native-safe-area-context";
 import COLORS from "../constants/color";
 import Header from "../components/Header";
@@ -8,6 +8,9 @@ import Button from "../components/Button";
 import * as ExpoPrint from 'expo-print';
 import axios from "axios";
 import baseUrl from "../constants/baseUrl";
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import { FontAwesome5 } from "@expo/vector-icons";
 
 import { BackHandler } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -22,6 +25,9 @@ const Reprint = ({ route }) => {
   const [agent, setAgent] = useState({});
   const [totalAmount, setTotalAmount] = useState(null);
 
+  // Ref to capture the receipt view
+  const viewRef = useRef();
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {
@@ -30,7 +36,6 @@ const Reprint = ({ route }) => {
         );
         setPayInfo(response.data);
       } catch (error) {
-        x;
         console.error("Error fetching customer data:", error);
       }
     };
@@ -46,7 +51,6 @@ const Reprint = ({ route }) => {
         );
         setAgent(response.data);
       } catch (error) {
-        x;
         console.error("Error fetching customer data:", error);
       }
     };
@@ -56,6 +60,8 @@ const Reprint = ({ route }) => {
 
   useEffect(() => {
     const fetchAmount = async () => {
+      if (!payInfo?.user_id?._id || !payInfo?.group_id?._id) return;
+      
       try {
         const response = await axios.post(
           `${baseUrl}/payment/get-total-amount`,
@@ -68,7 +74,6 @@ const Reprint = ({ route }) => {
         setTotalAmount(response.data.totalAmount);
       } catch (err) {
         console.error("Error fetching total amount:", err);
-        setError("Failed to fetch the total amount.");
       }
     };
     fetchAmount();
@@ -103,12 +108,12 @@ const Reprint = ({ route }) => {
     };
 
     const receiptText = `
-${centerText("MY CHITS")}
-${centerText("No.11/36-25,2nd Main,")}
-${centerText("Kathriguppe Main Road,")}
-${centerText("Bangalore, 560085 9483900777")}
+ ${centerText("MY CHITS")}
+ ${centerText("No.11/36-25,2nd Main,")}
+ ${centerText("Kathriguppe Main Road,")}
+ ${centerText("Bangalore, 560085 9483900777")}
 --------------------------------
-${centerText("Receipt")}
+ ${centerText("Receipt")}
 
 Receipt No: ${payInfo?.receipt_no}
 Date: ${formatDate(payInfo?.pay_date)}
@@ -124,11 +129,38 @@ Mode: ${payInfo?.pay_type}
 Total: Rs.${totalAmount || 0}
 --------------------------------
 Collected by: ${agent.name}
-${centerText("Duplicate Copy")}
+ ${centerText("Duplicate Copy")}
 `;
 
     blePrinter.printText(receiptText);
   };
+
+  // --- UPDATED SHARE FUNCTION (IMAGE SHARING) ---
+  const handleWhatsAppShare = async () => {
+    try {
+      // Capture the view referenced by viewRef as a PNG image
+      const uri = await captureRef(viewRef, {
+        format: "png",
+        quality: 0.9,
+      });
+
+      // Check if sharing is available
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert("Error", "Sharing isn't available on your platform");
+        return;
+      }
+
+      // Open the share sheet (User can select WhatsApp from here)
+      await Sharing.shareAsync(uri, {
+        mimeType: 'image/png',
+        dialogTitle: 'Share Receipt Image',
+      });
+    } catch (error) {
+      console.error("Error sharing image:", error);
+      Alert.alert("Error", "Failed to share receipt image.");
+    }
+  };
+
   const handlePos80MMPrint = async () => {
     const htmlContent = `
   <html>
@@ -228,6 +260,7 @@ ${centerText("Duplicate Copy")}
       Alert.alert("Print Error", "Failed to print the document.");
     }
   };
+
   const handlePosPrint = async () => {
     const htmlContent = `
       <html>
@@ -335,21 +368,33 @@ ${centerText("Duplicate Copy")}
       <View style={{ marginHorizontal: 22, marginTop: 12 }}>
         <Header />
 
-        <Button
-          title={
-            isConnecting
-              ? "Connecting..."
-              : isConnected
-              ? "Connected"
-              : "Connect to Printer"
-          }
-          filled
-          style={{ marginTop: 18, marginBottom: 4 }}
-          onPress={handleConnect}
-          disabled={isConnecting || isConnected}
-        />
+        {/* Top Action Row: Connect Button + WhatsApp Icon */}
+        <View style={styles.topActionRow}>
+          <Button
+            title={
+              isConnecting
+                ? "Connecting..."
+                : isConnected
+                ? "Connected"
+                : "Connect to Printer"
+            }
+            filled
+            style={styles.connectButton}
+            onPress={handleConnect}
+            disabled={isConnecting || isConnected}
+          />
+          
+          {/* WhatsApp Icon Button */}
+          <TouchableOpacity style={styles.whatsappBtn} onPress={handleWhatsAppShare}>
+    <FontAwesome5 name="whatsapp" size={20} color="#fff" />
+    <Text style={styles.btnText}> Share</Text>
+  </TouchableOpacity>
+        </View>
 
+        {/* Receipt Container - Added ref={viewRef} and collapsable={false} */}
         <View
+          ref={viewRef}
+          collapsable={false} 
           style={{
             padding: 8,
             backgroundColor: "#f0eeee",
@@ -528,6 +573,7 @@ ${centerText("Duplicate Copy")}
             disabled={false}
           />
         </View>
+
       </View>
     </SafeAreaView>
   );
@@ -536,6 +582,40 @@ ${centerText("Duplicate Copy")}
 const styles = StyleSheet.create({
   textStyle: {
     fontSize: 13,
+  },
+  // Style for the horizontal row at the top
+  topActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 18,
+    marginBottom: 4,
+  },
+  // Connect button takes available space
+  connectButton: {
+    flex: 1,
+    marginRight: 10, // Space between button and icon
+  },
+  // WhatsApp Icon Button Style
+  whatsappBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#25D366', // WhatsApp Green
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8, // Rounded rectangle shape
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  btnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8, // Space between icon and text
+    fontSize: 14,
   },
 });
 

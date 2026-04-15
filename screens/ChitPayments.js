@@ -1,4 +1,3 @@
-
 import { 
     View, 
     Text, 
@@ -451,55 +450,102 @@ const ChitPayments = ({ route, navigation }) => {
     };
 
     const printTotalCollectionDetails = async () => {
+        // Generate HTML rows for each customer
+        const customerListHtml = filteredCustomers.map((customer) => `
+            <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #ccc;">
+                <div style="font-size: 14px; margin-bottom: 2px; color: #000;">
+                    <strong>Customer:</strong> ${customer?.user_id?.full_name || 'N/A'}
+                </div>
+                <div style="font-size: 13px; margin-bottom: 2px; color: #444;">
+                    <strong>Group:</strong> ${customer?.group_id?.group_name || 'N/A'}
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                    <div style="font-size: 13px; color: #444;">
+                        <strong>Mode:</strong> ${customer.pay_type || 'N/A'}
+                    </div>
+                    <div style="font-size: 14px; font-weight: bold; color: #3ed160ff;">
+                        ₹ ${parseFloat(customer.amount || 0).toFixed(2)}
+                    </div>
+                </div>
+            </div>
+        `).join("");
+
         const htmlContent = `
             <html>
             <head>
                 <style>
                     @page {
-                        size: A6;
-                        margin: 10mm;
+                        size: A4; 
+                        margin: 15mm;
                     }
                     body {
                         font-family: Arial, sans-serif;
-                        font-size: 14px;
+                        font-size: 12px;
                         margin: 0;
                         padding: 0;
-                        text-align: center;
+                        color: #333;
                     }
                     .container {
-                        padding: 5mm;
+                        padding: 0mm;
                     }
                     h1 {
-                        font-size: 24px;
-                        margin-bottom: 10px;
-                        color: ${ACCENT_BLUE};
-                    }
-                    p {
-                        font-size: 16px;
+                        text-align: center;
+                        font-size: 22px;
                         margin-bottom: 5px;
-                        color: ${MODERN_PRIMARY};
+                        color: #183A5D;
                     }
-                    .amount {
-                        font-size: 36px;
+                    .header-info {
+                        text-align: center;
+                        margin-bottom: 15px;
+                        font-size: 13px;
+                        color: #555;
+                        border-bottom: 2px solid #183A5D;
+                        padding-bottom: 10px;
+                    }
+                    .total-amount {
+                        text-align: center;
+                        font-size: 26px;
                         font-weight: bold;
-                        color: ${SUCCESS_GREEN};
-                        margin: 15px 0;
+                        color: #3ed160ff;
+                        margin: 10px 0 20px 0;
+                        background-color: #f0fdf4;
+                        padding: 10px;
+                        border-radius: 8px;
+                        border: 1px solid #3ed160ff;
+                    }
+                    .list-container {
+                        margin-top: 10px;
                     }
                     .footer {
-                        margin-top: 20px;
-                        font-size: 12px;
-                        color: ${TEXT_GREY};
+                        text-align: center;
+                        margin-top: 30px;
+                        font-size: 10px;
+                        color: #888;
+                        border-top: 1px solid #ddd;
+                        padding-top: 10px;
                     }
                 </style>
             </head>
             <body>
                 <div class="container">
-                    <h1>Total Collection Summary</h1>
-                    <p class="amount">₹ ${totalAmount.toFixed(2)}</p>
-                    <p>Agent: ${agent.name || 'N/A'}</p>
-                    <p>Date: ${formatDate(selectedDate)}</p>
+                    <h1>Collection Summary</h1>
+                    
+                    <div class="header-info">
+                        <p><strong>Agent:</strong> ${agent.name || 'N/A'}</p>
+                        <p><strong>Date:</strong> ${formatDate(selectedDate)}</p>
+                    </div>
+
+                    <div class="total-amount">
+                        Total: ₹ ${totalAmount.toFixed(2)}
+                    </div>
+
+                    <div class="list-container">
+                        ${customerListHtml}
+                    </div>
+
                     <div class="footer">
                         <p>Generated by Chit Payments App</p>
+                        <p>${new Date().toLocaleString()}</p>
                     </div>
                 </div>
             </body>

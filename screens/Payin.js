@@ -30,7 +30,7 @@ const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
 const MODERN_PRIMARY = "#0d0d0eff";
 const ACCENT_BLUE = "#1796d1ff";
 const BORDER_COLOR = "#e0e0e0";
-const TEXT_GREY = "#4b5563";
+const TEXT_GREY = "#ffffff";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f9fafb";
 const PRIMARY_BUTTON_COLOR = "#f8c009ff";
@@ -405,7 +405,7 @@ const Payin = ({ route, navigation }) => {
               {paymentDetails === "online" && (
                 <View style={styles.stylishRow}>
                   <Text style={styles.stylishLabel}>Trans. ID</Text>
-                  <Text style={[styles.stylishValue, { fontSize: 13 }]}>{transactionId}</Text>
+                  <Text style={[styles.stylishValue]}>{transactionId}</Text>
                 </View>
               )}
 
@@ -494,6 +494,7 @@ const Payin = ({ route, navigation }) => {
                   selectedValue={selectedGroup}
                   onValueChange={handleGroupChange}
                   style={styles.picker}
+                  itemStyle={styles.pickerItem}
                 >
                   {groups.length !== 1 && (
                     <Picker.Item label="Select Group" value="" color={TEXT_GREY} />
@@ -517,6 +518,7 @@ const Payin = ({ route, navigation }) => {
                   selectedValue={selectedTicket}
                   onValueChange={handleTicketChange}
                   style={styles.picker}
+                  itemStyle={styles.pickerItem}
                 >
                   {tickets.length !== 1 && (
                     <Picker.Item label="Select Ticket" value="" color={TEXT_GREY} />
@@ -573,6 +575,7 @@ const Payin = ({ route, navigation }) => {
                     selectedValue={paymentDetails}
                     onValueChange={handlePaymentTypeChange}
                     style={styles.picker}
+                    itemStyle={styles.pickerItem}
                   >
                     <Picker.Item label="Cash" value="cash" color={MODERN_PRIMARY} />
                     <Picker.Item label="Online" value="online" color={MODERN_PRIMARY} />
@@ -687,18 +690,18 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   balanceDangerLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#991b1b",
     fontWeight: "600",
   },
   balanceDangerAmount: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#7f1d1d",
     fontWeight: "900",
     letterSpacing: 0.3,
   },
   balanceSuccessText: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#166534",
     fontWeight: "700",
   },
@@ -714,7 +717,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   column: { flex: 1, marginHorizontal: 3 },
-  label: { fontWeight: "600", marginTop: 4, fontSize: 11, color: MODERN_PRIMARY },
+  label: { fontWeight: "600", marginTop: 4, fontSize: 12, color: MODERN_PRIMARY }, // Updated to 12
   star: { color: "#ff0000" },
   textInput: {
     paddingVertical: 12,
@@ -736,8 +739,13 @@ const styles = StyleSheet.create({
     marginVertical: 3,
     justifyContent: "center",
   },
-  picker: { 
-    width: "100%", 
+  picker: {
+    width: "100%",
+    fontSize: 14, // Added size
+    color: MODERN_PRIMARY,
+  },
+  pickerItem: {
+    fontSize: 14, // Ensures options are size 14 on iOS
   },
   buttonContainer: {
     flexDirection: "row",
@@ -870,7 +878,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER_COLOR,
   },
   methodText: {
-    fontSize: 10,
+    fontSize: 14,
     color: ACCENT_BLUE,
     fontWeight: "700",
     letterSpacing: 1,
@@ -899,7 +907,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   totalAmount: {
-    fontSize: 22,
+    fontSize: 14,
     color: MODERN_PRIMARY,
     fontWeight: "900",
     marginTop: 4,
@@ -922,7 +930,7 @@ const styles = StyleSheet.create({
   stylishCancelText: {
     color: TEXT_GREY,
     fontWeight: "700",
-    fontSize: 13,
+    fontSize: 14,
   },
   stylishConfirmButton: {
     flex: 1.5,
@@ -940,7 +948,7 @@ const styles = StyleSheet.create({
   stylishConfirmText: {
     color: MODERN_PRIMARY,
     fontWeight: "800",
-    fontSize: 13,
+    fontSize: 14,
     letterSpacing: 0.5,
   },
 });
