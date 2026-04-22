@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Platform,
   FlatList,
+  Linking,
+  Alert,
 } from "react-native";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,30 +27,82 @@ const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = '#f9fafb';
 
+// --- HELPER FOR LINKING ---
+const handleAction = (type, value) => {
+  if (!value) return;
+
+  let url = "";
+  if (type === "call") {
+    url = `tel:${value}`;
+  } else if (type === "whatsapp") {
+    // Remove non-numeric characters for WhatsApp
+    const cleanPhone = value.replace(/[^0-9]/g, "");
+    url = `whatsapp://send?phone=${cleanPhone}`;
+  } else if (type === "email") {
+    url = `mailto:${value}`;
+  }
+
+  Linking.canOpenURL(url)
+    .then((supported) => {
+      if (!supported) {
+        Alert.alert("Error", `Unable to handle ${type}: ${value}`);
+      } else {
+        return Linking.openURL(url);
+      }
+    })
+    .catch((err) => console.error("An error occurred", err));
+};
+
 // --- CUSTOMER CARD COMPONENT ---
-const CustomerCard = React.memo(({ name, phone, loanAmount, loanId, address, onPress }) => (
+const CustomerCard = React.memo(({ name, phone, loanAmount, loanId, address, email, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.cardContainer} activeOpacity={0.8}>
     <View style={styles.topCardSection}>
       <View style={styles.iconCircle}>
-        <Ionicons name="wallet-outline" size={24} color={ACCENT_BLUE} />
+        <Ionicons name="wallet-outline" size={20} color={ACCENT_BLUE} />
       </View>
       <View style={styles.infoContainer}>
         <Text style={styles.cardTitle}>{name}</Text>
-        <View style={styles.contactRow}>
-          <Ionicons name="call" size={14} color={ACCENT_BLUE} style={{ marginRight: 6 }} />
-          <Text style={styles.phoneText}>{phone}</Text>
+        
+        {/* Action Icons Row */}
+        <View style={styles.contactActionsRow}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={() => handleAction("call", phone)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="call" size={16} color="#10B981" /> 
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={() => handleAction("whatsapp", phone)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+          </TouchableOpacity>
+
+          {email ? (
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => handleAction("email", email)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="mail" size={16} color={ACCENT_BLUE} />
+            </TouchableOpacity>
+          ) : null}
         </View>
+
         <View style={styles.amountBadgeContainer}>
           <Text style={styles.amountBadgeText}>Loan Amount: ₹{loanAmount}</Text>
         </View>
       </View>
       <View style={styles.chevronContainer}>
-        <Ionicons name="chevron-forward" size={22} color={ACCENT_BLUE} />
+        <Ionicons name="chevron-forward" size={20} color={ACCENT_BLUE} />
       </View>
     </View>
     <View style={styles.separator} />
     <View style={styles.detailRowSection}>
-      <Ionicons name="finger-print-outline" size={16} color={TEXT_GREY} style={{ marginRight: 8 }} />
+      <Ionicons name="finger-print-outline" size={14} color={TEXT_GREY} style={{ marginRight: 8 }} />
       <View style={{ flex: 1 }}>
         <Text style={styles.detailLabel}>Loan ID:</Text>
         <Text style={styles.detailText}>{loanId}</Text>
@@ -56,7 +110,7 @@ const CustomerCard = React.memo(({ name, phone, loanAmount, loanId, address, onP
     </View>
     <View style={styles.separator} />
     <View style={styles.detailRowSection}>
-      <Ionicons name="location-sharp" size={16} color={ACCENT_BLUE} style={{ marginRight: 8, marginTop: 2 }} />
+      <Ionicons name="location-sharp" size={14} color={ACCENT_BLUE} style={{ marginRight: 8, marginTop: 2 }} />
       <View style={{ flex: 1 }}>
         <Text style={styles.detailLabel}>Address:</Text>
         <Text style={styles.addressText}>{address || "No address provided"}</Text>
@@ -106,6 +160,7 @@ const RouteCustomerLoan = ({ route, navigation }) => {
     <CustomerCard
       name={item.borrower?.full_name || "Unknown Customer"}
       phone={item.borrower?.phone_number || "N/A"}
+      email={item.borrower?.email} // Added Email prop
       loanAmount={item.loan_amount || "N/A"}
       loanId={item.loan_id || "N/A"}
       address={formatCompleteAddress(item.borrower)}
@@ -179,56 +234,68 @@ const styles = StyleSheet.create({
   headerSpacer: { paddingTop: 10, paddingBottom: 10 },
   loadingContainer: { marginTop: 80, alignItems: 'center' },
   titleContainer: { marginBottom: 15 },
-  title: { fontSize: 24, fontWeight: "900", color: CARD_BG, textAlign: 'center' },
-  subtitle: { fontSize: 13, color: 'rgba(255, 255, 255, 0.8)', marginTop: 4, textAlign: 'center' },
+  title: { fontSize: 22, fontWeight: "900", color: CARD_BG, textAlign: 'center' }, // Decreased
+  subtitle: { fontSize: 12, color: 'rgba(255, 255, 255, 0.8)', marginTop: 4, textAlign: 'center' }, // Decreased
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: CARD_BG,
     borderRadius: 12,
     paddingHorizontal: 15,
-    height: 48,
+    height: 46, // Decreased
     elevation: 4,
   },
   searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 15, color: MODERN_PRIMARY },
+  searchInput: { flex: 1, fontSize: 14, color: MODERN_PRIMARY }, // Decreased
   scrollContainer: { paddingHorizontal: 15, paddingBottom: 30 },
   cardContainer: {
     backgroundColor: CARD_BG,
-    borderRadius: 20,
-    padding: 15,
+    borderRadius: 16, // Decreased
+    padding: 12, // Decreased
     borderWidth: 1,
     borderColor: BORDER_COLOR,
     elevation: 2,
   },
-  topCardSection: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  topCardSection: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   iconCircle: {
-    width: 50, height: 50, borderRadius: 25,
+    width: 44, height: 44, borderRadius: 22, // Decreased
     backgroundColor: '#e8f6fc', justifyContent: 'center', alignItems: 'center',
   },
-  infoContainer: { flex: 1, marginLeft: 12 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: MODERN_PRIMARY, marginBottom: 4 },
-  contactRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  phoneText: { fontSize: 14, color: TEXT_GREY, fontWeight: '500' },
+  infoContainer: { flex: 1, marginLeft: 10 },
+  cardTitle: { fontSize: 14, fontWeight: 'bold', color: MODERN_PRIMARY, marginBottom: 4 }, // Decreased
+  contactActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   amountBadgeContainer: {
     backgroundColor: ACCENT_BLUE,
-    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start',
-    marginTop: 4,
+    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start', // Tighter padding
+    marginTop: 2,
   },
-  amountBadgeText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  amountBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' }, // Decreased
   chevronContainer: { paddingLeft: 8 },
-  separator: { height: 1, backgroundColor: BORDER_COLOR, marginVertical: 10 },
+  separator: { height: 1, backgroundColor: BORDER_COLOR, marginVertical: 8 }, // Decreased margin
   detailRowSection: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 2 },
-  detailLabel: { fontSize: 11, fontWeight: '700', color: ACCENT_BLUE, marginBottom: 2 },
-  detailText: { fontSize: 13, color: MODERN_PRIMARY, fontWeight: '600' },
+  detailLabel: { fontSize: 10, fontWeight: '700', color: ACCENT_BLUE, marginBottom: 2 }, // Decreased
+  detailText: { fontSize: 12, color: MODERN_PRIMARY, fontWeight: '600' }, // Decreased
   addressText: {
-    fontSize: 13,
+    fontSize: 12, // Decreased
     color: MODERN_PRIMARY,
-    lineHeight: 18,
+    lineHeight: 16,
     fontWeight: '500',
     marginTop: 2,
   },
-  noCustomersText: { textAlign: "center", marginTop: 30, fontSize: 15, color: TEXT_GREY },
+  noCustomersText: { textAlign: "center", marginTop: 30, fontSize: 14, color: TEXT_GREY }, // Decreased
 });
 
 export default RouteCustomerLoan;

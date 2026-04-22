@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
@@ -12,7 +11,7 @@ import {
   Dimensions,
   RefreshControl,
   Animated,
-  TextInput, // <--- ADDED IMPORT
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
@@ -27,7 +26,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import chitBaseUrl from "../constants/baseUrl";
 
 const { height, width } = Dimensions.get('window');
-
 
 const THEME = {
   primary: "#24C6DC",
@@ -51,43 +49,24 @@ const CustomerOnHold = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   
-  // Animation References
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // --- PULSE ANIMATION EFFECT ---
   useEffect(() => {
     const pulse = () => {
       Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ]).start(() => pulse());
     };
     pulse();
   }, []);
 
-  // --- ENTRY ANIMATION ---
   const animateEntry = () => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
     ]).start();
   };
 
@@ -104,12 +83,32 @@ const CustomerOnHold = () => {
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
-  const fetchData = async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
+  // --- HELPER FOR LINKING ---
+  const handleAction = (type, value) => {
+    if (!value) return;
+    let url = "";
+    if (type === "call") {
+      url = `tel:${value}`;
+    } else if (type === "whatsapp") {
+      const cleanPhone = value.replace(/[^0-9]/g, "");
+      url = `whatsapp://send?phone=${cleanPhone}`;
+    } else if (type === "email") {
+      url = `mailto:${value}`;
     }
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (!supported) {
+          Alert.alert("Error", `Unable to handle ${type}: ${value}`);
+        } else {
+          return Linking.openURL(url);
+        }
+      })
+      .catch((err) => console.error("An error occurred", err));
+  };
+
+  const fetchData = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
 
     try {
@@ -145,15 +144,10 @@ const CustomerOnHold = () => {
     }
   };
 
-  useEffect(() => {
-    fetchData(false);
-  }, []);
+  useEffect(() => { fetchData(false); }, []);
 
-  const onRefresh = useCallback(() => {
-    fetchData(true);
-  }, []);
+  const onRefresh = useCallback(() => { fetchData(true); }, []);
 
-  // --- SEARCH LOGIC ---
   const filteredCustomers = customers.filter((item) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -163,41 +157,6 @@ const CustomerOnHold = () => {
     );
   });
 
-  const handleCall = async (phoneNumber) => {
-    if (!phoneNumber) return;
-    try {
-      await Linking.openURL(`tel:${phoneNumber}`);
-    } catch (error) {
-      Alert.alert("Error", "Could not open phone dialer.");
-    }
-  };
-
-  const handleEmail = async (email, customerName) => {
-    if (!email) return;
-    try {
-      const subject = "Regarding your pending Chit payment";
-      const body = `Dear ${customerName},\n\nWe noticed that your recent chit payment is still pending.\n\nTo continue your participation, please complete the payment.\n\nSincerely,\nMyChits Team`;
-      const url = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      await Linking.openURL(url);
-    } catch (error) {
-      Alert.alert("Error", "Could not open email client.");
-    }
-  };
-
-  const handleWhatsApp = async (phoneNumber) => {
-    if (!phoneNumber) return;
-    try {
-      const url = `whatsapp://send?phone=${phoneNumber}`;
-      if (await Linking.canOpenURL(url)) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert("Error", "WhatsApp is not installed.");
-      }
-    } catch (error) {
-      Alert.alert("Error", "Could not open WhatsApp.");
-    }
-  };
-
   const getInitials = (name) => {
     if (!name) return "?";
     const parts = name.split(' ');
@@ -206,7 +165,6 @@ const CustomerOnHold = () => {
       : name.substring(0, 2).toUpperCase();
   };
 
-  // --- STAGGERED ANIMATED ITEM COMPONENT ---
   const AnimatedCustomerCard = ({ item, index }) => {
     const itemAnim = useRef(new Animated.Value(0)).current;
 
@@ -241,7 +199,7 @@ const CustomerOnHold = () => {
                             <Text style={styles.customerName} numberOfLines={1}>{item.name}</Text>
                             <Animated.View style={[styles.holdBadgeContainer, { transform: [{ scale: pulseAnim }] }]}>
                                 <View style={styles.holdBadge}>
-                                    <Ionicons name="alert-circle" size={10} color="#fff" />
+                                    <Ionicons name="alert-circle" size={8} color="#fff" />
                                     <Text style={styles.holdBadgeText}> ON HOLD </Text>
                                 </View>
                             </Animated.View>
@@ -251,6 +209,35 @@ const CustomerOnHold = () => {
                             <Text style={styles.groupNameText}>{item.groupName}</Text>
                         </View>
                     </View>
+                </View>
+
+                {/* Action Icons Row */}
+                <View style={styles.contactActionsRow}>
+                    <TouchableOpacity 
+                        style={styles.actionButton} 
+                        onPress={() => handleAction("call", item.phoneNumber)}
+                        activeOpacity={0.7}
+                    >
+                      <Ionicons name="call" size={16} color="#10B981" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.actionButton} 
+                        onPress={() => handleAction("whatsapp", item.phoneNumber)}
+                        activeOpacity={0.7}
+                    >
+                      <FontAwesome5 name="whatsapp" size={18} color="#25D366" />
+                    </TouchableOpacity>
+
+                    {item.email ? (
+                        <TouchableOpacity 
+                            style={styles.actionButton} 
+                            onPress={() => handleAction("email", item.email)}
+                            activeOpacity={0.7}
+                        >
+                          <MaterialCommunityIcons name="email" size={16} color={THEME.primary} />
+                        </TouchableOpacity>
+                    ) : null}
                 </View>
 
                 {/* Middle Section: Financials Glass Strip */}
@@ -270,39 +257,15 @@ const CustomerOnHold = () => {
                     </View>
                 </LinearGradient>
 
-                {/* Bottom Section: Dates & Actions */}
+                {/* Bottom Section: Dates */}
                 <View style={styles.cardFooter}>
-                    <View style={styles.dateSection}>
-                        <View style={styles.miniDateBlock}>
-                            <Ionicons name="calendar-outline" size={12} color={THEME.textMuted} />
-                            <Text style={styles.miniDateText}>{formatDate(item.enrollmentDate)}</Text>
-                        </View>
-                        <View style={styles.miniDateBlock}>
-                            <Ionicons name="pause-circle" size={12} color={THEME.highlight} />
-                            <Text style={[styles.miniDateText, { color: THEME.highlight }]}>{formatDate(item.holdedDate)}</Text>
-                        </View>
+                    <View style={styles.miniDateBlock}>
+                        <Ionicons name="calendar-outline" size={12} color={THEME.textMuted} />
+                        <Text style={styles.miniDateText}>{formatDate(item.enrollmentDate)}</Text>
                     </View>
-
-                    <View style={styles.actionsRow}>
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => handleCall(item.phoneNumber)}>
-                            <LinearGradient colors={['#00b09b', '#96c93d']} style={styles.iconGradient}>
-                                <Ionicons name="call" size={14} color="#fff" />
-                            </LinearGradient>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => handleWhatsApp(item.phoneNumber)}>
-                            <LinearGradient colors={['#25D366', '#128C7E']} style={styles.iconGradient}>
-                                <FontAwesome5 name="whatsapp" size={14} color="#fff" />
-                            </LinearGradient>
-                        </TouchableOpacity>
-                        
-                        {item.email && (
-                            <TouchableOpacity style={styles.iconBtn} onPress={() => handleEmail(item.email, item.name)}>
-                                <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.iconGradient}>
-                                    <MaterialCommunityIcons name="email" size={14} color="#fff" />
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        )}
+                    <View style={[styles.miniDateBlock, { marginLeft: 15 }]}>
+                        <Ionicons name="pause-circle" size={12} color={THEME.highlight} />
+                        <Text style={[styles.miniDateText, { color: THEME.highlight }]}>{formatDate(item.holdedDate)}</Text>
                     </View>
                 </View>
             </View>
@@ -352,10 +315,8 @@ const CustomerOnHold = () => {
                       />
                     }
                 >
-                    {/* Premium Summary Card */}
-                    <Animated.View style={{ 
-                        transform: [{ scale: pulseAnim }], 
-                    }}>
+                    {/* Summary Card */}
+                    <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                         <LinearGradient
                             colors={['#232526', '#414345']}
                             style={styles.summaryCard}
@@ -377,7 +338,7 @@ const CustomerOnHold = () => {
                         </LinearGradient>
                     </Animated.View>
 
-                    {/* --- SEARCH BAR SECTION --- */}
+                    {/* SEARCH BAR */}
                     <View style={styles.searchContainer}>
                         <View style={styles.searchBar}>
                             <Ionicons name="search" size={20} color={THEME.textMuted} style={styles.searchIcon} />
@@ -424,10 +385,9 @@ export default CustomerOnHold;
 
 const styles = StyleSheet.create({
     safeArea: {
-        flex: 1,
+        flex:1,
         backgroundColor: THEME.background,
     },
-    // --- Header Styles ---
     headerGradient: {
         paddingTop: 10,
         paddingBottom: 30,
@@ -445,13 +405,13 @@ const styles = StyleSheet.create({
         marginTop: 15,
     },
     headerTitle: {
-        fontSize: 26,
+        fontSize: 22, // Reduced
         fontWeight: "800",
         color: THEME.white,
         letterSpacing: 0.5,
     },
     headerSubtitle: {
-        fontSize: 13,
+        fontSize: 12, // Reduced
         color: 'rgba(255,255,255,0.6)',
         marginTop: 2,
         fontWeight: "500",
@@ -470,11 +430,11 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     
-    // --- Summary Card Styles ---
+    // --- Summary Card ---
     summaryCard: {
         borderRadius: 24,
-        padding: 20,
-        marginBottom: 25, // Adjusted spacing for search bar
+        padding: 16, // Reduced
+        marginBottom: 20, // Reduced
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
@@ -500,13 +460,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     summaryLabel: {
-        fontSize: 12,
+        fontSize: 11,
         color: 'rgba(255,255,255,0.6)',
         fontWeight: '700',
         letterSpacing: 1.5,
     },
     summaryCount: {
-        fontSize: 42,
+        fontSize: 36, // Reduced
         fontWeight: '900',
         color: THEME.white,
         marginTop: 5,
@@ -515,9 +475,9 @@ const styles = StyleSheet.create({
         textShadowRadius: 5,
     },
     summaryIconBox: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 50, // Reduced
+        height: 50,
+        borderRadius: 25,
         backgroundColor: 'rgba(255,255,255,0.15)',
         justifyContent: 'center',
         alignItems: 'center',
@@ -527,21 +487,21 @@ const styles = StyleSheet.create({
     summaryFooter: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 15,
+        marginTop: 12,
         backgroundColor: 'rgba(0,0,0,0.2)',
-        paddingVertical: 8,
-        paddingHorizontal: 12,
+        paddingVertical: 6, // Reduced
+        paddingHorizontal: 10, // Reduced
         borderRadius: 10,
         alignSelf: 'flex-start',
     },
     summaryFooterText: {
         color: 'rgba(255,255,255,0.8)',
-        fontSize: 11,
+        fontSize: 10,
         marginLeft: 8,
         fontWeight: '600',
     },
 
-    // --- Search Bar Styles (NEW) ---
+    // --- Search ---
     searchContainer: {
         marginBottom: 20,
     },
@@ -550,7 +510,7 @@ const styles = StyleSheet.create({
         backgroundColor: THEME.cardBg,
         borderRadius: 15,
         paddingHorizontal: 15,
-        paddingVertical: 12,
+        paddingVertical: 10, // Reduced
         alignItems: 'center',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -560,9 +520,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(0,0,0,0.03)',
     },
-    searchIcon: {
-        marginRight: 10,
-    },
+    searchIcon: { marginRight: 10 },
     searchInput: {
         flex: 1,
         fontSize: 14,
@@ -571,11 +529,11 @@ const styles = StyleSheet.create({
         height: 20,
     },
 
-    // --- Customer Card Styles ---
+    // --- Customer Card ---
     cardContainer: {
         backgroundColor: THEME.cardBg,
         borderRadius: 20,
-        marginBottom: 20,
+        marginBottom: 16,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
@@ -587,51 +545,48 @@ const styles = StyleSheet.create({
     },
     cardHeader: {
         flexDirection: 'row',
-        padding: 15,
+        padding: 12, // Reduced
         alignItems: 'center',
     },
     avatarBox: {
-        width: 50,
-        height: 50,
-        borderRadius: 16,
+        width: 44, // Reduced
+        height: 44,
+        borderRadius: 14, // Reduced
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 15,
+        marginRight: 12,
         shadowColor: "#764ba2",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
     },
     avatarText: {
-        fontSize: 18,
+        fontSize: 16, // Reduced
         fontWeight: '800',
         color: '#fff',
     },
-    headerInfo: {
-        flex: 1,
-    },
+    headerInfo: { flex: 1 },
     nameRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: 3,
     },
     customerName: {
-        fontSize: 16,
+        fontSize: 14, // Reduced
         fontWeight: '700',
         color: THEME.textDark,
         flex: 1,
-        marginRight: 10,
+        marginRight: 8,
     },
-    holdBadgeContainer: {
-    },
+    holdBadgeContainer: {},
     holdBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: THEME.highlight,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
+        paddingHorizontal: 6, // Reduced
+        paddingVertical: 2, // Reduced
+        borderRadius: 10,
         shadowColor: THEME.highlight,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.4,
@@ -639,9 +594,9 @@ const styles = StyleSheet.create({
     },
     holdBadgeText: {
         color: '#fff',
-        fontSize: 9,
+        fontSize: 8, // Reduced
         fontWeight: '800',
-        marginLeft: 4,
+        marginLeft: 3,
         letterSpacing: 0.5,
     },
     subInfoRow: {
@@ -649,16 +604,33 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     groupNameText: {
-        fontSize: 12,
+        fontSize: 11, // Reduced
         color: THEME.textMuted,
         marginLeft: 5,
         fontWeight: '500',
     },
     
+    // --- Action Row ---
+    contactActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        marginLeft: 68, // Align with text
+    },
+    actionButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+
     // Financial Strip
     financialStrip: {
         flexDirection: 'row',
-        paddingVertical: 12,
+        paddingVertical: 10, // Reduced
         paddingHorizontal: 15,
         borderTopWidth: 1,
         borderBottomWidth: 1,
@@ -674,62 +646,39 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
     },
     finLabel: {
-        fontSize: 10,
+        fontSize: 9, // Reduced
         color: THEME.textMuted,
         fontWeight: '700',
         textTransform: 'uppercase',
         marginBottom: 2,
     },
     finValuePaid: {
-        fontSize: 15,
+        fontSize: 13, // Reduced
         fontWeight: '800',
         color: THEME.success,
     },
     finValueBalance: {
-        fontSize: 15,
+        fontSize: 13, // Reduced
         fontWeight: '800',
         color: THEME.highlight,
     },
 
-    // Card Footer
+    // Card Footer (Dates)
     cardFooter: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 15,
-        paddingTop: 10,
-    },
-    dateSection: {
-        flex: 1,
+        justifyContent: 'flex-start',
+        padding: 12, // Reduced
+        paddingTop: 8,
     },
     miniDateBlock: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 4,
     },
     miniDateText: {
-        fontSize: 11,
+        fontSize: 10, // Reduced
         color: THEME.textDark,
-        marginLeft: 6,
+        marginLeft: 5,
         fontWeight: '600',
-    },
-    actionsRow: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    iconBtn: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 2,
-    },
-    iconGradient: {
-        width: 38,
-        height: 38,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
 
     // UI States
@@ -744,19 +693,19 @@ const styles = StyleSheet.create({
         marginTop: 15,
         color: THEME.textMuted,
         fontWeight: '600',
-        fontSize: 14,
+        fontSize: 13,
     },
     errorText: {
         marginTop: 15,
         color: THEME.textMuted,
         textAlign: 'center',
-        fontSize: 14,
+        fontSize: 13,
     },
     retryBtn: {
         marginTop: 20,
         backgroundColor: THEME.highlight,
-        paddingVertical: 12,
-        paddingHorizontal: 30,
+        paddingVertical: 10, // Reduced
+        paddingHorizontal: 24, // Reduced
         borderRadius: 25,
         shadowColor: THEME.highlight,
         shadowOffset: { width: 0, height: 4 },
@@ -768,6 +717,7 @@ const styles = StyleSheet.create({
         color: THEME.white,
         fontWeight: '800',
         letterSpacing: 1,
+        fontSize: 13, // Reduced
     },
     emptyState: {
         alignItems: 'center',
@@ -775,13 +725,13 @@ const styles = StyleSheet.create({
         paddingVertical: 40,
     },
     emptyTitle: {
-        fontSize: 22,
+        fontSize: 20, // Reduced
         fontWeight: 'bold',
         color: THEME.textDark,
         marginTop: 20,
     },
     emptyDesc: {
-        fontSize: 14,
+        fontSize: 13, // Reduced
         color: THEME.textMuted,
         marginTop: 8,
         textAlign: 'center',
