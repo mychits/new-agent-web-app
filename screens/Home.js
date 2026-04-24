@@ -610,7 +610,7 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("SalesReport", { employeeId: user.userId, agentName: agent.name }),
     },
     {
-      id: "approvals", name: "approvals", // NEW ITEM ADDED HERE
+      id: "approvals", name: "Loan Approvals", // NEW ITEM ADDED HERE
       onPress: () => navigation.navigate("approvals", { user }),
     },
   ].filter(Boolean);

@@ -1,382 +1,785 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
-  SafeAreaView,
-  StatusBar,
-  TextInput,
   ActivityIndicator,
-  Alert
+  Linking,
+  Alert,
+  RefreshControl,
+  Animated,
+  TextInput,
+  Platform,
+  Modal,
+  Pressable,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Header from "../components/Header";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import axios from "axios";
+import baseUrl from "../constants/baseUrl";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// --- COLORS MATCHING YOUR HOME SCREEN ---
-const COLORS = {
-  primary: "#183A5D",
-  accent: "#f8c009ff",
-  bgBlue: "#1aa2ccff",
-  success: "#27AE60",
-  white: "#FFFFFF",
-  muted: "#8898AA",
-  lightBg: "#f4f7fa",
-  warning: "#F39C12",
-  danger: "#E74C3C",
+// ── Design tokens ─────────────────────────────────────────────────
+const TOP_GRADIENT = ["#24C6DC", "#183A5D"];
+const ACCENT_BLUE  = "#1796d1";
+const PRIMARY_DARK = "#0d0d0e";
+const TEXT_GREY    = "#4b5563";
+const BORDER_COLOR = "#e0e0e0";
+const CARD_BG      = "#ffffff";
+const SUBTLE_BG    = "#f9fafb";
+const SUCCESS      = "#10B981";
+const DANGER       = "#ef4444";
+const WARNING      = "#f59e0b";
+const WA_GREEN     = "#25D366";
+
+// ── Helpers ───────────────────────────────────────────────────────
+const formatCurrency = (v) => {
+  const n = Number(v);
+  return isNaN(n) ? "₹0" : "₹" + n.toLocaleString("en-IN");
+};
+const formatDate = (iso) => {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+  });
+};
+const getInitials = (name = "") => {
+  const p = name.trim().split(" ");
+  return p.length >= 2
+    ? (p[0][0] + p[1][0]).toUpperCase()
+    : name.substring(0, 2).toUpperCase() || "?";
 };
 
-// --- DUMMY DATA (REPLACE WITH API DATA LATER) ---
-const loanData = [
-  {
-    id: "1",
-    customerName: "Rajesh Kumar",
-    loanAmount: "₹ 50,000",
-    loanId: "LN-2023-001",
-    date: "2023-10-24",
-    status: "Pending", // Status can be: Pending, Approved, Rejected
-    avatar: null // Can use image URL or null to show initials
-  },
-  {
-    id: "2",
-    customerName: "Anita Desai",
-    loanAmount: "₹ 1,20,000",
-    loanId: "LN-2023-002",
-    date: "2023-10-23",
-    status: "Approved",
-    avatar: null
-  },
-  {
-    id: "3",
-    customerName: "Vikram Singh",
-    loanAmount: "₹ 75,000",
-    loanId: "LN-2023-003",
-    date: "2023-10-22",
-    status: "Rejected",
-    avatar: null
-  },
-  {
-    id: "4",
-    customerName: "Sneha Reddy",
-    loanAmount: "₹ 2,00,000",
-    loanId: "LN-2023-004",
-    date: "2023-10-21",
-    status: "Pending",
-    avatar: null
-  },
+const STATUS_META = {
+  APPROVED: { bg: "#dcfce7", text: "#15803d", icon: "checkmark-circle", label: "Approved" },
+  REJECTED: { bg: "#fee2e2", text: "#b91c1c", icon: "close-circle",     label: "Rejected" },
+  PENDING:  { bg: "#fef9c3", text: "#92400e", icon: "time",             label: "Pending"  },
+};
+const getStatus = (s) => STATUS_META[s] || STATUS_META.PENDING;
+
+const openLink = (type, value) => {
+  if (!value) return;
+  const url = type === "call"
+    ? `tel:${value}`
+    : `whatsapp://send?phone=${value.replace(/[^0-9]/g, "")}`;
+  Linking.openURL(url).catch(() => Alert.alert("Error", `Cannot open ${type}`));
+};
+
+// ── UPDATED TABS (Restored 'ALL', Kept 'REJECTED' removed) ────────
+const TABS = [
+  { key: "ALL",      label: "All"      },
+  { key: "PENDING",  label: "Pending"  },
+  { key: "APPROVED", label: "Approved" },
 ];
+const TAB_COLORS = {
+  ALL: ACCENT_BLUE, PENDING: WARNING, APPROVED: SUCCESS,
+};
 
-const Approvals = ({ navigation, route }) => {
-  const { user } = route.params || {}; // Getting user if passed from Home
-  const insets = useSafeAreaInsets();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [data, setData] = useState(loanData); // Set initial data
-  const [loading, setLoading] = useState(false);
+// ── Custom Confirmation Modal ─────────────────────────────────────
+const ConfirmModal = ({ visible, type, borrowerName, loanAmount, onConfirm, onCancel, loading }) => {
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
 
-  // --- FILTER LOGIC ---
-  const filteredData = data.filter(item =>
-    item.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.loanId.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, { toValue: 1, tension: 120, friction: 8, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]).start();
+    } else {
+      scaleAnim.setValue(0.85);
+      fadeAnim.setValue(0);
+    }
+  }, [visible]);
+
+  const isApprove   = type === "APPROVED";
+  const accentColor = isApprove ? SUCCESS : DANGER;
+  const lightBg     = isApprove ? "#f0fdf4" : "#fff1f2";
+  const iconName    = isApprove ? "checkmark-circle" : "close-circle";
+  const title       = isApprove ? "Approve Loan?" : "Reject Loan?";
+  const desc        = isApprove
+    ? "You're about to approve this loan request. This action cannot be undone."
+    : "You're about to reject this loan request. This action cannot be undone.";
+
+  return (
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+      <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
+
+        <Animated.View style={[styles.modalCard, { transform: [{ scale: scaleAnim }] }]}>
+          {/* Icon circle */}
+          <View style={[styles.modalIconWrap, { backgroundColor: lightBg }]}>
+            <Ionicons name={iconName} size={36} color={accentColor} />
+          </View>
+
+          {/* Title */}
+          <Text style={styles.modalTitle}>{title}</Text>
+
+          {/* Borrower info strip */}
+          <View style={[styles.modalInfoStrip, { borderColor: accentColor + "33", backgroundColor: lightBg }]}>
+            <View style={styles.modalInfoRow}>
+              <Ionicons name="person-circle-outline" size={14} color={TEXT_GREY} />
+              <Text style={styles.modalInfoLabel}> Borrower</Text>
+              <Text style={styles.modalInfoValue} numberOfLines={1}>{borrowerName || "—"}</Text>
+            </View>
+            <View style={[styles.modalInfoDivider, { backgroundColor: accentColor + "22" }]} />
+            <View style={styles.modalInfoRow}>
+              <Ionicons name="cash-outline" size={14} color={TEXT_GREY} />
+              <Text style={styles.modalInfoLabel}> Amount</Text>
+              <Text style={[styles.modalInfoValue, { color: SUCCESS, fontWeight: "700" }]}>
+                {formatCurrency(loanAmount)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Description */}
+          <Text style={styles.modalDesc}>{desc}</Text>
+
+          {/* Buttons */}
+          <View style={styles.modalBtnRow}>
+            <TouchableOpacity
+              style={styles.modalCancelBtn}
+              onPress={onCancel}
+              activeOpacity={0.7}
+              disabled={loading}
+            >
+              <Text style={styles.modalCancelTxt}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalConfirmBtn, { backgroundColor: accentColor }]}
+              onPress={onConfirm}
+              activeOpacity={0.8}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name={iconName} size={15} color="#fff" />
+                  <Text style={styles.modalConfirmTxt}>
+                    {isApprove ? "  Yes, Approve" : "  Yes, Reject"}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
   );
+};
 
-  // --- STATUS HELPER ---
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Approved": return { bg: "rgba(39, 174, 96, 0.15)", text: COLORS.success };
-      case "Rejected": return { bg: "rgba(231, 76, 60, 0.15)", text: COLORS.danger };
-      default: return { bg: "rgba(243, 156, 18, 0.15)", text: COLORS.warning }; // Pending
+// ── Loan Card ─────────────────────────────────────────────────────
+const LoanCard = React.memo(({ item, index, onStatusChange }) => {
+  const anim  = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: 1, duration: 350, delay: index * 60, useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const borrower    = item.borrower || {};
+  const status      = getStatus(item.agent_approval_status);
+  const isPending   = !item.agent_approval_status || item.agent_approval_status === "PENDING";
+  const accentColor = isPending ? WARNING
+    : item.agent_approval_status === "APPROVED" ? SUCCESS : DANGER;
+
+  const pressIn  = () => Animated.spring(scale, { toValue: 0.974, useNativeDriver: true }).start();
+  const pressOut = () => Animated.spring(scale, { toValue: 1,     useNativeDriver: true }).start();
+
+  const openModal = (newStatus) => {
+    setPendingStatus(newStatus);
+    setModalVisible(true);
+  };
+
+  const handleConfirm = async () => {
+    setBusy(true);
+    try {
+      const res = await axios.put(
+        `${baseUrl}/v1/mobile/loans/update-borrower-status/${item._id}`,
+        { agent_approval_status: pendingStatus }
+      );
+      if (!res.data?.success) throw new Error(res.data?.message || "Failed");
+      setModalVisible(false);
+      onStatusChange(item._id, pendingStatus);
+    } catch (e) {
+      setModalVisible(false);
+      Alert.alert("Error", e.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
     }
   };
 
-  // --- RENDER ITEM ---
-  const renderLoanCard = ({ item, index }) => {
-    const statusStyle = getStatusColor(item.status);
-    
-    // Extract initials for avatar
-    const initials = item.customerName.split(' ').map(n => n[0]).join('').substring(0,2);
-
-    return (
-      <View style={styles.cardContainer}>
-        <View style={styles.cardLeft}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-          <View style={styles.cardInfo}>
-            <Text style={styles.customerName}>{item.customerName}</Text>
-            <View style={styles.rowInfo}>
-              <MaterialIcons name="description" size={14} color={COLORS.muted} />
-              <Text style={styles.subText}>{item.loanId}</Text>
-            </View>
-            <View style={styles.rowInfo}>
-              <Ionicons name="calendar-outline" size={14} color={COLORS.muted} />
-              <Text style={styles.subText}>{item.date}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.cardRight}>
-          <Text style={styles.loanAmount}>{item.loanAmount}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-            <Text style={[styles.statusText, { color: statusStyle.text }]}>{item.status}</Text>
-          </View>
-          
-          {item.status === "Pending" && (
-            <TouchableOpacity 
-              style={styles.actionBtn}
-              onPress={() => Alert.alert("Action", `Process loan for ${item.customerName}?`)}
-            >
-              <Ionicons name="eye-outline" size={20} color={COLORS.primary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bgBlue} />
-      
-      {/* HEADER */}
-      <LinearGradient colors={[COLORS.bgBlue, COLORS.primary]} style={styles.headerGradient}>
-        <View style={[styles.headerContent, { paddingTop: insets.top + 10 }]}>
-          <TouchableOpacity 
-            style={styles.backBtn} 
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loan Customers</Text>
-          <TouchableOpacity style={styles.iconPlaceholder}>
-             {/* Placeholder icon if needed for balance */}
-             <Ionicons name="filter-list" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
+    <>
+      <ConfirmModal
+        visible={modalVisible}
+        type={pendingStatus}
+        borrowerName={borrower.full_name}
+        loanAmount={item.loan_amount}
+        onConfirm={handleConfirm}
+        onCancel={() => !busy && setModalVisible(false)}
+        loading={busy}
+      />
 
-        {/* Search Bar Floating on Header */}
-        <View style={styles.searchWrapper}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color={COLORS.muted} style={{ marginRight: 10 }} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by Name or ID..."
-              placeholderTextColor={COLORS.muted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery("")}>
-                <Ionicons name="close-circle" size={20} color={COLORS.muted} />
-              </TouchableOpacity>
+      <Animated.View
+        style={{
+          opacity: anim,
+          transform: [
+            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+            { scale },
+          ],
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.95}
+          onPressIn={pressIn}
+          onPressOut={pressOut}
+          style={styles.card}
+        >
+          <View style={[styles.cardBar, { backgroundColor: accentColor }]} />
+
+          {/* Header */}
+          <View style={styles.cardHead}>
+            <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.avatar}>
+              <Text style={styles.avatarTxt}>{getInitials(borrower.full_name)}</Text>
+            </LinearGradient>
+            <View style={styles.headInfo}>
+              <Text style={styles.cardName} numberOfLines={1}>
+                {borrower.full_name || "Unknown"}
+              </Text>
+              <View style={styles.phoneRow}>
+                <Ionicons name="call-outline" size={10} color={TEXT_GREY} />
+                <Text style={styles.phoneText}> {borrower.phone_number || "—"}</Text>
+              </View>
+            </View>
+            <View style={[styles.pill, { backgroundColor: status.bg }]}>
+              <Ionicons name={status.icon} size={9} color={status.text} />
+              <Text style={[styles.pillTxt, { color: status.text }]}> {status.label}</Text>
+            </View>
+          </View>
+
+          {/* Financial strip */}
+          <View style={styles.finStrip}>
+            <View style={styles.finCell}>
+              <Text style={styles.finLabel}>AMOUNT</Text>
+              <Text style={[styles.finValue, { color: SUCCESS }]}>
+                {formatCurrency(item.loan_amount)}
+              </Text>
+            </View>
+            <View style={styles.finDivider} />
+            <View style={styles.finCell}>
+              <Text style={styles.finLabel}>PURPOSE</Text>
+              <Text style={[styles.finValue, { color: PRIMARY_DARK }]} numberOfLines={1}>
+                {item.loan_purpose || "—"}
+              </Text>
+            </View>
+            {isPending && (
+              <>
+                <View style={styles.finDivider} />
+                <View style={styles.finCell}>
+                  <Text style={styles.finLabel}>REQUESTED</Text>
+                  <Text style={[styles.finValue, { color: WARNING }]} numberOfLines={1}>
+                    {item.approval_status || "—"}
+                  </Text>
+                </View>
+              </>
             )}
           </View>
+
+          {/* Actions / Banner */}
+          {isPending ? (
+            <View style={styles.actionRow}>
+              <View style={styles.contactGroup}>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => openLink("call", borrower.phone_number)}
+                >
+                  <Ionicons name="call" size={13} color={SUCCESS} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.iconBtn, { marginLeft: 6 }]}
+                  onPress={() => openLink("whatsapp", borrower.phone_number)}
+                >
+                  <FontAwesome5 name="whatsapp" size={14} color={WA_GREEN} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.decGroup}>
+                <TouchableOpacity
+                  style={[styles.decBtn, { backgroundColor: SUCCESS }]}
+                  onPress={() => openModal("APPROVED")}
+                >
+                  <Ionicons name="checkmark-circle" size={12} color="#fff" />
+                  <Text style={styles.decTxt}> Approve</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.decBtn, { backgroundColor: DANGER, marginLeft: 7 }]}
+                  onPress={() => openModal("REJECTED")}
+                >
+                  <Ionicons name="close-circle" size={12} color="#fff" />
+                  <Text style={styles.decTxt}> Reject</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.banner, {
+              backgroundColor: item.agent_approval_status === "APPROVED"
+                ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+            }]}>
+              <Ionicons
+                name={item.agent_approval_status === "APPROVED" ? "checkmark-circle" : "close-circle"}
+                size={12}
+                color={item.agent_approval_status === "APPROVED" ? SUCCESS : DANGER}
+              />
+              <Text style={[styles.bannerTxt, {
+                color: item.agent_approval_status === "APPROVED" ? SUCCESS : DANGER,
+              }]}>
+                {item.agent_approval_status === "APPROVED"
+                  ? "  You approved this loan"
+                  : "  You rejected this loan"}
+              </Text>
+            </View>
+          )}
+
+          {/* Footer */}
+          <View style={styles.cardFoot}>
+            <View style={styles.footItem}>
+              <Ionicons name="document-text-outline" size={10} color={TEXT_GREY} />
+              <Text style={styles.footTxt}> {item.loan_id || "—"}</Text>
+            </View>
+            <View style={styles.footItem}>
+              <Ionicons name="calendar-outline" size={10} color={TEXT_GREY} />
+              <Text style={styles.footTxt}> {formatDate(item.createdAt)}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    </>
+  );
+});
+
+// ── Main Screen ───────────────────────────────────────────────────
+const ApprovalsScreen = () => {
+  const [loans, setLoans]           = useState([]);
+  const [search, setSearch]         = useState("");
+  // UPDATED: Default to "ALL" to show all cards by default
+  const [activeTab, setActiveTab]   = useState("ALL");
+  const [loading, setLoading]       = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError]           = useState(null);
+
+  const fetchData = async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
+    setError(null);
+    try {
+      const stored = await AsyncStorage.getItem("agentInfo");
+      if (!stored) throw new Error("No agent info. Please login again.");
+      const agentId = JSON.parse(stored)?._id;
+      if (!agentId) throw new Error("Agent ID missing.");
+      const res = await axios.get(`${baseUrl}/v1/mobile/loans/get-borrowers/${agentId}`);
+      if (!res.data?.success) throw new Error(res.data?.message || "Fetch failed.");
+      setLoans(res.data.data);
+    } catch (e) {
+      setError(e.message || "Network error. Please retry.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchData(false); }, []);
+  const onRefresh = useCallback(() => fetchData(true), []);
+
+  const handleStatusChange = useCallback((id, status) =>
+    setLoans((prev) =>
+      prev.map((l) => (l._id === id ? { ...l, agent_approval_status: status } : l))
+    ), []);
+
+  // UPDATED: Re-added ALL count, kept REJECTED removed
+  const counts = useMemo(() => ({
+    ALL:      loans.length,
+    PENDING:  loans.filter((l) => !l.agent_approval_status || l.agent_approval_status === "PENDING").length,
+    APPROVED: loans.filter((l) => l.agent_approval_status === "APPROVED").length,
+  }), [loans]);
+
+  // UPDATED: Logic to filter only if tab is not ALL
+  const displayed = useMemo(() => {
+    let list = loans;
+    
+    // Only filter if activeTab is NOT "ALL"
+    if (activeTab !== "ALL") {
+      list = list.filter((l) => (l.agent_approval_status || "PENDING") === activeTab);
+    }
+
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((l) =>
+        l.borrower?.full_name?.toLowerCase().includes(q) ||
+        l.borrower?.phone_number?.includes(q) ||
+        l.loan_purpose?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [loans, activeTab, search]);
+
+  const renderCard = useCallback(
+    ({ item, index }) => (
+      <LoanCard item={item} index={index} onStatusChange={handleStatusChange} />
+    ), [handleStatusChange]);
+
+  const keyExtractor = useCallback(
+    (item) => item._id?.toString() || Math.random().toString(), []);
+
+  return (
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <LinearGradient colors={TOP_GRADIENT} style={styles.header}>
+        <View style={styles.headerTop}><Header /></View>
+        <View style={styles.headerBody}>
+          <Text style={styles.headerTitle}>Loan Approvals</Text>
+          <Text style={styles.headerSub}>Review and manage borrower requests</Text>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabsRow}>
+          {TABS.map((tab) => {
+            const active = activeTab === tab.key;
+            const color  = TAB_COLORS[tab.key];
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[
+                  styles.tab,
+                  active
+                    ? { backgroundColor: CARD_BG, borderColor: CARD_BG }
+                    : { backgroundColor: "rgba(255,255,255,0.13)", borderColor: "rgba(255,255,255,0.2)" },
+                ]}
+                onPress={() => setActiveTab(tab.key)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.tabCount, { color: active ? color : "#fff" }]}>
+                  {counts[tab.key]}
+                </Text>
+                <Text style={[styles.tabLabel, {
+                  color: active ? PRIMARY_DARK : "rgba(255,255,255,0.75)",
+                }]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </LinearGradient>
 
-      {/* CONTENT */}
-      <View style={styles.contentContainer}>
-        {loading ? (
-          <View style={styles.centerLoading}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={{ marginTop: 10, color: COLORS.muted }}>Loading customers...</Text>
+      <View style={styles.body}>
+        {loading && !refreshing ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={ACCENT_BLUE} />
+            <Text style={styles.loadTxt}>Syncing data…</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.center}>
+            <Ionicons name="cloud-offline-outline" size={52} color={TEXT_GREY} />
+            <Text style={styles.errTxt}>{error}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => fetchData(false)}>
+              <Text style={styles.retryTxt}>RETRY</Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          <FlatList
-            data={filteredData}
-            renderItem={renderLoanCard}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <MaterialIcons name="folder-open" size={60} color={COLORS.muted} />
-                <Text style={styles.emptyText}>No Loan Customers Found</Text>
-              </View>
-            }
-          />
+          <View style={styles.listBox}>
+            <View style={styles.searchWrap}>
+              <Ionicons name="search-outline" size={16} color={TEXT_GREY} style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search name, phone or purpose…"
+                placeholderTextColor={TEXT_GREY}
+                value={search}
+                onChangeText={setSearch}
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {search.length > 0 && (
+                <TouchableOpacity onPress={() => setSearch("")}>
+                  <Ionicons name="close-circle" size={17} color={TEXT_GREY} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <FlatList
+              data={displayed}
+              renderItem={renderCard}
+              keyExtractor={keyExtractor}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              initialNumToRender={10}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              removeClippedSubviews={Platform.OS === "android"}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[ACCENT_BLUE]}
+                  tintColor={ACCENT_BLUE}
+                />
+              }
+              ListHeaderComponent={
+                <Text style={styles.countLabel}>
+                  {displayed.length} {displayed.length === 1 ? "request" : "requests"}
+                  {search ? ` for "${search}"` : ""}
+                </Text>
+              }
+              ListEmptyComponent={
+                <View style={styles.empty}>
+                  <Ionicons
+                    name={search ? "search-outline" : "checkmark-done-circle-outline"}
+                    size={56}
+                    color={search ? TEXT_GREY : SUCCESS}
+                  />
+                  <Text style={styles.emptyTitle}>
+                    {search ? "No results found" : "Nothing here"}
+                  </Text>
+                  <Text style={styles.emptySub}>
+                    {search
+                      ? `No loans match "${search}"`
+                      : `No ${activeTab === "ALL" ? "" : activeTab.toLowerCase() + " "}loan requests.`}
+                  </Text>
+                </View>
+              }
+            />
+          </View>
         )}
       </View>
     </SafeAreaView>
   );
 };
 
+export default ApprovalsScreen;
+
+// ── Styles ────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.lightBg,
+  safe: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
+
+  header:      { paddingBottom: 20 },
+  headerTop:   { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
+  headerBody:  { paddingHorizontal: 20, marginBottom: 14 },
+  headerTitle: { fontSize: 20, fontWeight: "900", color: CARD_BG, letterSpacing: 0.2 },
+  headerSub:   { fontSize: 11, color: "rgba(255,255,255,0.65)", marginTop: 2, fontWeight: "500" },
+
+  tabsRow: { flexDirection: "row", paddingHorizontal: 14, gap: 8 },
+  tab: {
+    flex: 1, alignItems: "center",
+    paddingVertical: 8, borderRadius: 10, borderWidth: 1,
   },
-  // HEADER
-  headerGradient: {
-    paddingBottom: 80, // Space for the search bar to overlap
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+  tabCount: { fontSize: 15, fontWeight: "800" },
+  tabLabel: { fontSize: 9, fontWeight: "600", marginTop: 1, textTransform: "uppercase", letterSpacing: 0.4 },
+
+  body: {
+    flex: 1, backgroundColor: SUBTLE_BG,
+    borderTopLeftRadius: 26, borderTopRightRadius: 26,
+    marginTop: -14, paddingTop: 14, overflow: "hidden",
+  },
+
+  listBox: {
+    flex: 1,
+    backgroundColor: CARD_BG,
+    marginHorizontal: 14,
+    marginTop: 10,
+    marginBottom: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 15,
-  },
-  backBtn: {
-    padding: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  iconPlaceholder: {
-    padding: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-  },
-  searchWrapper: {
-    position: 'absolute',
-    bottom: -25, // Pull down to overlap
-    left: 20,
-    right: 20,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.primary,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
   },
 
-  // CONTENT
-  contentContainer: {
-    flex: 1,
-    marginTop: 35, // Space for the search bar
+  searchWrap: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: SUBTLE_BG,
+    borderRadius: 10,
+    marginHorizontal: 14, 
+    marginTop: 14,
+    marginBottom: 8,
+    paddingHorizontal: 12, height: 40,
+    borderWidth: 1, borderColor: BORDER_COLOR,
   },
-  listContent: {
-    paddingHorizontal: 20,
+  searchInput: { flex: 1, fontSize: 12, color: PRIMARY_DARK, padding: 0 },
+  countLabel:  { fontSize: 10, color: TEXT_GREY, fontWeight: "600", marginLeft: 2, marginBottom: 8 },
+  listContent: { paddingHorizontal: 14, paddingBottom: 20 }, 
+
+  card: {
+    backgroundColor: CARD_BG, borderRadius: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: BORDER_COLOR,
+    elevation: 1, shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 3,
+    overflow: "hidden",
+  },
+  cardBar: { height: 3 },
+
+  cardHead: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 11, paddingTop: 10, paddingBottom: 7,
+  },
+  avatar: {
+    width: 36, height: 36, borderRadius: 10,
+    justifyContent: "center", alignItems: "center", marginRight: 9,
+  },
+  avatarTxt: { fontSize: 13, fontWeight: "800", color: "#fff" },
+  headInfo:  { flex: 1 },
+  cardName:  { fontSize: 13, fontWeight: "700", color: PRIMARY_DARK },
+  phoneRow:  { flexDirection: "row", alignItems: "center", marginTop: 1 },
+  phoneText: { fontSize: 10, color: TEXT_GREY, fontWeight: "500" },
+  pill: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 7, paddingVertical: 3,
+    borderRadius: 8, marginLeft: 6,
+  },
+  pillTxt: { fontSize: 8, fontWeight: "800", letterSpacing: 0.3 },
+
+  finStrip: {
+    flexDirection: "row", paddingVertical: 8, paddingHorizontal: 12,
+    backgroundColor: "rgba(23,150,209,0.05)",
+    borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: "rgba(23,150,209,0.1)",
+  },
+  finCell:    { flex: 1, alignItems: "center" },
+  finDivider: { width: 1, backgroundColor: "rgba(23,150,209,0.15)", alignSelf: "center", height: "65%" },
+  finLabel:   { fontSize: 7, color: TEXT_GREY, fontWeight: "700", letterSpacing: 0.6, marginBottom: 2 },
+  finValue:   { fontSize: 11, fontWeight: "800" },
+
+  actionRow: {
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 11, paddingVertical: 8,
+  },
+  contactGroup: { flexDirection: "row" },
+  iconBtn: {
+    width: 28, height: 28, borderRadius: 8,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center", alignItems: "center",
+  },
+  decGroup: { flexDirection: "row" },
+  decBtn: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 11, paddingVertical: 6,
+    borderRadius: 9, elevation: 2,
+  },
+  decTxt: { color: "#fff", fontWeight: "700", fontSize: 11 },
+
+  banner: {
+    flexDirection: "row", alignItems: "center",
+    marginHorizontal: 11, marginVertical: 7,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+  },
+  bannerTxt: { fontSize: 10, fontWeight: "700" },
+
+  cardFoot: {
+    flexDirection: "row", justifyContent: "space-between",
+    paddingHorizontal: 12, paddingTop: 4, paddingBottom: 9,
+  },
+  footItem: { flexDirection: "row", alignItems: "center" },
+  footTxt:  { fontSize: 9, color: TEXT_GREY, fontWeight: "600" },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(10,20,40,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    backgroundColor: CARD_BG,
+    borderRadius: 24,
+    paddingHorizontal: 22,
+    paddingTop: 28,
     paddingBottom: 20,
-  },
-  centerLoading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  // CARD STYLES
-  cardContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 15,
-    alignItems: 'center',
-    // Shadow
+    alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3.84,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)'
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.18,
+    shadowRadius: 32,
+    elevation: 20,
   },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  modalIconWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    justifyContent: "center", alignItems: "center",
+    marginBottom: 16,
   },
-  avatarCircle: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: COLORS.bgBlue,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  modalTitle: {
+    fontSize: 18, fontWeight: "800", color: PRIMARY_DARK,
+    marginBottom: 14, letterSpacing: 0.2,
   },
-  avatarText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  modalInfoStrip: {
+    width: "100%", borderRadius: 12,
+    borderWidth: 1, overflow: "hidden",
+    marginBottom: 14,
   },
-  cardInfo: {
-    justifyContent: 'center',
+  modalInfoRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 14, paddingVertical: 10,
   },
-  customerName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginBottom: 4,
+  modalInfoLabel: {
+    fontSize: 12, color: TEXT_GREY, fontWeight: "600", flex: 1,
   },
-  rowInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
+  modalInfoValue: {
+    fontSize: 12, color: PRIMARY_DARK, fontWeight: "600",
+    maxWidth: "55%", textAlign: "right",
   },
-  subText: {
-    fontSize: 12,
-    color: COLORS.muted,
-    marginLeft: 4,
+  modalInfoDivider: { height: 1, marginHorizontal: 14 },
+  modalDesc: {
+    fontSize: 12, color: TEXT_GREY, textAlign: "center",
+    lineHeight: 18, marginBottom: 22, paddingHorizontal: 4,
   },
-
-  // RIGHT SIDE OF CARD
-  cardRight: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+  modalBtnRow: {
+    flexDirection: "row", width: "100%", gap: 10,
   },
-  loanAmount: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.primary,
-    marginBottom: 6,
+  modalCancelBtn: {
+    flex: 1, paddingVertical: 13, borderRadius: 12,
+    borderWidth: 1.5, borderColor: BORDER_COLOR,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: SUBTLE_BG,
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 6,
+  modalCancelTxt: {
+    fontSize: 13, fontWeight: "700", color: TEXT_GREY,
   },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+  modalConfirmBtn: {
+    flex: 1.6, flexDirection: "row",
+    paddingVertical: 13, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25, shadowRadius: 6,
   },
-  actionBtn: {
-    backgroundColor: '#f0f4f8',
-    padding: 6,
-    borderRadius: 8,
+  modalConfirmTxt: {
+    fontSize: 13, fontWeight: "800", color: "#fff", letterSpacing: 0.2,
   },
 
-  // EMPTY STATE
-  emptyContainer: {
-    marginTop: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
+  center:   { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 28 },
+  loadTxt:  { marginTop: 12, color: TEXT_GREY, fontSize: 12, fontWeight: "600" },
+  errTxt:   { marginTop: 12, color: TEXT_GREY, fontSize: 12, textAlign: "center" },
+  retryBtn: {
+    marginTop: 16, backgroundColor: ACCENT_BLUE,
+    paddingVertical: 9, paddingHorizontal: 24,
+    borderRadius: 22, elevation: 3,
   },
-  emptyText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: COLORS.muted,
-    fontWeight: '500',
-  },
+  retryTxt:   { color: "#fff", fontWeight: "800", letterSpacing: 0.8, fontSize: 12 },
+  empty:      { alignItems: "center", marginTop: 50, paddingVertical: 30 },
+  emptyTitle: { fontSize: 15, fontWeight: "700", color: PRIMARY_DARK, marginTop: 14 },
+  emptySub:   { fontSize: 11, color: TEXT_GREY, marginTop: 5, textAlign: "center" },
 });
-
-export default Approvals;
