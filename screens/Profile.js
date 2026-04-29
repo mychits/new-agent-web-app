@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
     View,
@@ -77,13 +76,21 @@ const Profile = ({ route, navigation }) => {
 
     const menuItems = [
         { name: "Language", icon: "globe-outline", component: Ionicons, value: "English", action: () => { } },
-        { name: "Collections", icon: "briefcase", component: MaterialCommunityIcons, action: () => navigation.navigate("PaymentNavigator") },
+        
+        // UPDATED: Collections only shows if permission is true
+        agent?.designation_id?.permission?.collection === "true" && {
+            name: "Collections",
+            icon: "briefcase",
+            component: MaterialCommunityIcons,
+            action: () => navigation.navigate("Routes")
+        },
+
         { name: "Payments", icon: "credit-card-outline", component: MaterialCommunityIcons, action: () => navigation.navigate("PayNavigation", { user: user }) },
         { name: "Leads", icon: "account-plus", component: MaterialCommunityIcons, action: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user: user } }) },
         { name: "Commissions", icon: "cash-multiple", component: MaterialCommunityIcons, action: () => navigation.navigate("Commissions") },
         { name: "About MyChits", icon: "information-circle-outline", component: Ionicons, action: () => navigation.navigate("AboutMyChits") },
         { name: "Help & Support", icon: "help-circle-outline", component: Ionicons, action: () => navigation.navigate("HelpAndSupport") },
-    ];
+    ].filter(Boolean); // Filter out false values to prevent rendering errors
 
     return (
         <View style={styles.mainContainer}>
