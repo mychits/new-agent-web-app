@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import {
     View,
@@ -19,12 +18,12 @@ import {
 } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import axios from "axios"; // Assuming axios is used based on typical patterns, or standard fetch
+import axios from "axios";
 import url from "../constants/baseUrl";
 
 const { width, height } = Dimensions.get("window");
 
-// --- THEME CONSTANTS (Matching Target.js) ---
+// --- THEME CONSTANTS ---
 const COLORS = {
     primary: "#183A5D",
     accent: "#f8c009ff", // Gold
@@ -60,7 +59,11 @@ const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) =
     const name = item?.user_id?.full_name || "Unknown Client";
     const phone = item?.user_id?.phone_number;
     const groupName = item?.group_id?.group_name || "N/A";
-    const paymentType = item?.payment_type || "N/A";
+    
+    // --- TICKET DATA EXTRACTION ---
+    const ticketNumber = item?.tickets || "N/A"; // The specific ticket number (e.g., 3, 12)
+    const ticketCount = item?.no_of_tickets || 0; // How many tickets they hold
+
     const isCalling = activeCallId === item?._id;
 
     const totalPayable = item?.total_to_be_paid?.[0] || item?.total_to_be_paid || 0;
@@ -77,7 +80,6 @@ const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) =
     };
 
     const toggleDetails = () => {
-        // Simple layout animation for toggle
         setIsDetailsVisible(!isDetailsVisible);
     };
 
@@ -88,10 +90,19 @@ const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) =
                     <Text style={styles.avatarText}>{name.charAt(0)}</Text>
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.clientName}>{name}</Text>
-                    <View style={styles.rowCenter}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 10 }}>
+                        <Text style={styles.clientName} numberOfLines={1}>{name}</Text>
+                        
+                        {/* Ticket Badge */}
+                        <View style={styles.ticketBadge}>
+                            <Text style={styles.ticketBadgeText}>Ticket {ticketNumber}</Text>
+                        </View>
+                    </View>
+                    
+                    <View style={[styles.rowCenter, { marginTop: 4 }]}>
                         <Ionicons name="layers-outline" size={12} color={COLORS.muted} />
                         <Text style={styles.subText}> {groupName}</Text>
+                        
                     </View>
                 </View>
                 
@@ -177,11 +188,23 @@ const OutstandingReports = ({ route, navigation }) => {
         const fetchData = async () => {
             try {
                 setLoading(true);
+                
+                // --- LOGS START ---
+                console.log("------------------------------------------------");
+                console.log("Fetching data for User ID:", user?.userId);
+
                 const groupRes = await fetch(`${url}/group/get-group`);
                 const dueRes = await fetch(`${url}/enroll/due/routes/agent/${user?.userId}`);
                 
                 const groupJson = await groupRes.json();
                 const dueJson = await dueRes.json();
+
+                // Console logs to verify data in terminal
+                console.log("Group API Response Status:", groupRes.status);
+                console.log("Due API Response Status:", dueRes.status);
+                console.log("Parsed Groups Count:", Array.isArray(groupJson?.data) ? groupJson.data.length : 0);
+                console.log("Parsed Dues Count:", dueJson?.enrollments?.length || 0);
+                console.log("------------------------------------------------");
 
                 const allGroups = Array.isArray(groupJson?.data) ? groupJson.data : Array.isArray(groupJson) ? groupJson : [];
                 const allDues = dueJson?.enrollments || [];
@@ -193,7 +216,7 @@ const OutstandingReports = ({ route, navigation }) => {
                 // Trigger entrance animation
                 Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
             } catch (err) {
-                console.error("Error fetching:", err);
+                console.error("Error fetching data:", err);
             } finally {
                 setLoading(false);
             }
@@ -392,9 +415,26 @@ const styles = StyleSheet.create({
     listHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     avatar: { width: 42, height: 42, borderRadius: 12, backgroundColor: COLORS.bgBlue, justifyContent: 'center', alignItems: 'center' },
     avatarText: { color: '#fff', fontSize: 16, fontWeight: '900' },
-    clientName: { fontSize: 16, fontWeight: '800', color: COLORS.primary },
+    clientName: { fontSize: 16, fontWeight: '800', color: COLORS.primary, flex: 1 },
+    
+    // New Ticket Styles
+    ticketBadge: {
+        backgroundColor: '#E8F4F8',
+        paddingVertical: 3,
+        paddingHorizontal: 8,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: COLORS.bgBlue
+    },
+    ticketBadgeText: {
+        color: COLORS.bgBlue,
+        fontWeight: '800',
+        fontSize: 10
+    },
+    
     subText: { fontSize: 12, color: COLORS.muted, fontWeight: '500' },
     rowCenter: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+    dotSeparator: { marginHorizontal: 5, color: COLORS.muted, fontSize: 8 },
     callBtnSmall: { padding: 8, borderRadius: 10 },
 
     // Balance

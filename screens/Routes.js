@@ -46,7 +46,7 @@ const CustomRouteCard = ({ name, icon, onPress, subText, special, isPayment }) =
           style={[
             styles.cardIcon, 
             special && styles.specialCardIcon,
-            isPayment && { color: '#fff', fontSize: 22 }
+            isPayment && { color: '#fff', fontSize: 20 } // Reduced size
           ]} 
         /> 
       </View>
@@ -67,7 +67,7 @@ const CustomRouteCard = ({ name, icon, onPress, subText, special, isPayment }) =
     ) : (
       <Ionicons 
         name={isPayment ? "arrow-forward-circle" : "chevron-forward-outline"} 
-        style={[styles.arrowIcon, isPayment && { color: ACCENT_BLUE, fontSize: 28 }]} 
+        style={[styles.arrowIcon, isPayment && { color: ACCENT_BLUE, fontSize: 26 }]} // Reduced size
       />
     )}
   </TouchableOpacity>
@@ -134,26 +134,26 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30, 
     paddingHorizontal: 16, 
     marginTop: -20, 
-    paddingTop: 30 
+    paddingTop: 25 
   },
   headerSpacer: { paddingTop: 20, paddingBottom: 5 }, 
   titleContainer: { alignItems: 'center', marginBottom: 15 },
-  title: { fontSize: 28, fontWeight: "900", color: CARD_BG, marginBottom: 4 },
-  subtitle: { fontSize: 14, color: 'rgba(255, 255, 255, 0.85)', fontWeight: '500', textAlign: 'center' },
-  scrollContainer: { paddingBottom: 50, paddingTop: 10 },
-  cardListContainer: { gap: 18, alignItems: 'stretch' },
+  title: { fontSize: 26, fontWeight: "900", color: CARD_BG, marginBottom: 4 },
+  subtitle: { fontSize: 13, color: 'rgba(255, 255, 255, 0.85)', fontWeight: '500', textAlign: 'center' },
+  scrollContainer: { paddingBottom: 40, paddingTop: 10 },
+  cardListContainer: { gap: 14, alignItems: 'stretch' }, // Reduced gap
   
   cardContainer: {
     backgroundColor: CARD_BG,
-    borderRadius: 18, 
-    padding: 20,
+    borderRadius: 16, // Slightly smaller radius
+    padding: 15, // Reduced padding
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    elevation: 4,
+    elevation: 3, // Slightly less elevation
     borderWidth: 1,
     borderColor: BORDER_COLOR,
-    borderLeftWidth: 5,
+    borderLeftWidth: 4, // Slightly thinner border
     borderLeftColor: ACCENT_BLUE,
     overflow: 'hidden',
   },
@@ -162,8 +162,8 @@ const styles = StyleSheet.create({
   paymentLinkCard: {
     backgroundColor: '#f0f7ff', 
     borderColor: ACCENT_BLUE,
-    borderWidth: 1.5,
-    borderLeftWidth: 1.5, // Reset standard thick left border
+    borderWidth: 1, // thinner dashed border
+    borderLeftWidth: 1,
     borderStyle: 'dashed',
   },
 
@@ -183,19 +183,19 @@ const styles = StyleSheet.create({
 
   paymentIconCircle: {
     backgroundColor: ACCENT_BLUE,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40, // Smaller circle
+    height: 40,
+    borderRadius: 20,
   },
 
-  specialCardText: { color: '#fff', fontSize: 20 },
+  specialCardText: { color: '#fff', fontSize: 18 }, // Reduced font
   specialCardSubText: { color: 'rgba(255,255,255,0.7)' },
-  specialCardIcon: { color: '#fbbf24', fontSize: 32 },
+  specialCardIcon: { color: '#fbbf24', fontSize: 28 }, // Reduced size
   actionBadge: {
     backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10, // Smaller badge
+    paddingVertical: 5,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -203,10 +203,10 @@ const styles = StyleSheet.create({
   actionBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
   cardContent: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   textContainer: { marginLeft: 15, flexShrink: 1 },
-  cardText: { fontSize: 18, fontWeight: '800', color: MODERN_PRIMARY },
-  cardSubText: { fontSize: 14, color: TEXT_GREY, marginTop: 2, fontWeight: '500' },
-  cardIcon: { fontSize: 28, color: ACCENT_BLUE },
-  arrowIcon: { fontSize: 24, color: TEXT_GREY, marginLeft: 10 },
+  cardText: { fontSize: 16, fontWeight: '800', color: MODERN_PRIMARY }, // Reduced font size
+  cardSubText: { fontSize: 13, color: TEXT_GREY, marginTop: 2, fontWeight: '500' }, // Reduced font size
+  cardIcon: { fontSize: 24, color: ACCENT_BLUE }, // Reduced icon size
+  arrowIcon: { fontSize: 22, color: TEXT_GREY, marginLeft: 10 }, // Reduced arrow size
 });
 
 export default Routes;

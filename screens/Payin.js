@@ -30,7 +30,7 @@ const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
 const MODERN_PRIMARY = "#0d0d0eff";
 const ACCENT_BLUE = "#1796d1ff";
 const BORDER_COLOR = "#e0e0e0";
-const TEXT_GREY = "#4b5563";
+const TEXT_GREY = "#ffffff";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f9fafb";
 const PRIMARY_BUTTON_COLOR = "#f8c009ff";
@@ -300,13 +300,11 @@ const Payin = ({ route, navigation }) => {
     return g ? g.group_id.group_name : "N/A";
   };
 
-  // Determine if there is a real outstanding balance (positive number)
   const hasOutstanding = balance !== null && balance > 0;
   const isPaidUp = balance !== null && balance <= 0;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      {/* QR Code Modal */}
       <Modal animationType="slide" transparent={true} visible={modalVisible}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -326,23 +324,22 @@ const Payin = ({ route, navigation }) => {
         </View>
       </Modal>
 
-      {/* Stylish Error Modal */}
       <Modal animationType="fade" transparent={true} visible={showErrorModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.stylishModalCard}>
             <LinearGradient colors={ERROR_GRADIENT} style={styles.errorHeader}>
               <View style={styles.iconCircle}>
-                <MaterialIcons name="error-outline" size={40} color={CARD_BG} />
+                <MaterialIcons name="error-outline" size={32} color={CARD_BG} />
               </View>
               <Text style={styles.errorTitle}>Validation Error</Text>
             </LinearGradient>
 
-            <View style={[styles.stylishBody, { alignItems: "center", paddingTop: 30 }]}>
+            <View style={[styles.stylishBody, { alignItems: "center", paddingTop: 20 }]}>
               <MaterialIcons
                 name="info"
-                size={24}
+                size={22}
                 color={ERROR_GRADIENT[1]}
-                style={{ marginBottom: 10 }}
+                style={{ marginBottom: 8 }}
               />
               <Text style={styles.errorMessageText}>{errorMessage}</Text>
             </View>
@@ -362,13 +359,12 @@ const Payin = ({ route, navigation }) => {
         </View>
       </Modal>
 
-      {/* Stylish Confirmation Modal */}
       <Modal animationType="fade" transparent={true} visible={showConfirmModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.stylishModalCard}>
             <LinearGradient colors={TOP_GRADIENT} style={styles.stylishHeader}>
               <View style={styles.iconCircle}>
-                <MaterialIcons name="check-circle" size={32} color={CARD_BG} />
+                <MaterialIcons name="check-circle" size={28} color={CARD_BG} />
               </View>
               <Text style={styles.stylishHeaderTitle}>Confirm Payment</Text>
               <Text style={styles.stylishHeaderSubtitle}>Please verify the details</Text>
@@ -409,7 +405,7 @@ const Payin = ({ route, navigation }) => {
               {paymentDetails === "online" && (
                 <View style={styles.stylishRow}>
                   <Text style={styles.stylishLabel}>Trans. ID</Text>
-                  <Text style={[styles.stylishValue, { fontSize: 14 }]}>{transactionId}</Text>
+                  <Text style={[styles.stylishValue]}>{transactionId}</Text>
                 </View>
               )}
 
@@ -439,7 +435,6 @@ const Payin = ({ route, navigation }) => {
         </View>
       </Modal>
 
-      {/* Fixed Gradient Header */}
       <LinearGradient colors={TOP_GRADIENT} style={styles.fixedHeaderArea}>
         <View style={styles.headerSpacer}>
           <Header />
@@ -448,9 +443,8 @@ const Payin = ({ route, navigation }) => {
           <Text style={styles.title}>Add Chit Payment</Text>
           <Text style={styles.subtitle}>{customerInfo.full_name || "Customer Details"}</Text>
 
-          {/* ── Balance Pill — only shown when a group+ticket is selected ── */}
           {isBalanceLoading ? (
-            <ActivityIndicator size="small" color={CARD_BG} style={{ marginTop: 4 }} />
+            <ActivityIndicator size="small" color={CARD_BG} style={{ marginTop: 4, marginBottom: 10 }} />
           ) : (
             selectedGroup && selectedTicket && balance !== null ? (
               <View
@@ -461,13 +455,13 @@ const Payin = ({ route, navigation }) => {
               >
                 {isPaidUp ? (
                   <>
-                    <MaterialIcons name="check-circle" size={15} color="#166534" style={styles.pillIcon} />
+                    <MaterialIcons name="check-circle" size={14} color="#166534" style={styles.pillIcon} />
                     <Text style={styles.balanceSuccessText}>Payments up to date</Text>
                   </>
                 ) : (
                   <>
-                    <MaterialIcons name="warning" size={15} color="#991b1b" style={styles.pillIcon} />
-                    <Text style={styles.balanceDangerLabel}>Outstanding Balance: </Text>
+                    <MaterialIcons name="warning" size={14} color="#991b1b" style={styles.pillIcon} />
+                    <Text style={styles.balanceDangerLabel}>Outstanding: </Text>
                     <Text style={styles.balanceDangerAmount}>₹ {balance}</Text>
                   </>
                 )}
@@ -477,7 +471,6 @@ const Payin = ({ route, navigation }) => {
         </View>
       </LinearGradient>
 
-      {/* Scrollable Content */}
       <KeyboardAvoidingView
         style={styles.scrollableContentWrapper}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -501,6 +494,7 @@ const Payin = ({ route, navigation }) => {
                   selectedValue={selectedGroup}
                   onValueChange={handleGroupChange}
                   style={styles.picker}
+                  itemStyle={styles.pickerItem}
                 >
                   {groups.length !== 1 && (
                     <Picker.Item label="Select Group" value="" color={TEXT_GREY} />
@@ -524,6 +518,7 @@ const Payin = ({ route, navigation }) => {
                   selectedValue={selectedTicket}
                   onValueChange={handleTicketChange}
                   style={styles.picker}
+                  itemStyle={styles.pickerItem}
                 >
                   {tickets.length !== 1 && (
                     <Picker.Item label="Select Ticket" value="" color={TEXT_GREY} />
@@ -580,6 +575,7 @@ const Payin = ({ route, navigation }) => {
                     selectedValue={paymentDetails}
                     onValueChange={handlePaymentTypeChange}
                     style={styles.picker}
+                    itemStyle={styles.pickerItem}
                   >
                     <Picker.Item label="Cash" value="cash" color={MODERN_PRIMARY} />
                     <Picker.Item label="Online" value="online" color={MODERN_PRIMARY} />
@@ -625,7 +621,7 @@ const Payin = ({ route, navigation }) => {
                     {qrLoading ? (
                       <ActivityIndicator size="small" color={MODERN_PRIMARY} />
                     ) : (
-                      <MaterialIcons name="qr-code-2" size={30} color={MODERN_PRIMARY} />
+                      <MaterialIcons name="qr-code-2" size={28} color={MODERN_PRIMARY} />
                     )}
                   </TouchableOpacity>
                 )}
@@ -652,7 +648,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: SUBTLE_BG_GREY,
   },
-  fixedHeaderArea: { paddingHorizontal: 16, paddingBottom: 25 },
+  fixedHeaderArea: { paddingHorizontal: 16, paddingBottom: 20 },
   scrollableContentWrapper: { flex: 1 },
   mainContentArea: {
     flex: 1,
@@ -661,26 +657,26 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30,
     paddingHorizontal: 16,
     marginTop: -20,
-    paddingTop: 30,
+    paddingTop: 15,
   },
-  headerSpacer: { paddingTop: 20, paddingBottom: 5 },
+  headerSpacer: { paddingTop: 10, paddingBottom: 0 },
   titleContainer: { alignItems: "center" },
-  title: { fontSize: 26, fontWeight: "900", color: CARD_BG },
+  title: { fontSize: 20, fontWeight: "900", color: CARD_BG },
   subtitle: {
-    fontSize: 16,
+    fontSize: 13,
     color: "rgba(255, 255, 255, 0.9)",
     fontWeight: "600",
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
-  // ── Balance Pill ──────────────────────────────────────────
   balancePill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
     borderRadius: 20,
     borderWidth: 1,
+    marginBottom: 10,
   },
   balancePillDanger: {
     backgroundColor: "#fee2e2",
@@ -691,65 +687,71 @@ const styles = StyleSheet.create({
     borderColor: "#86efac",
   },
   pillIcon: {
-    marginRight: 5,
+    marginRight: 4,
   },
   balanceDangerLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#991b1b",
     fontWeight: "600",
   },
   balanceDangerAmount: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#7f1d1d",
     fontWeight: "900",
     letterSpacing: 0.3,
   },
   balanceSuccessText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#166534",
     fontWeight: "700",
   },
-  // ─────────────────────────────────────────────────────────
 
-  scrollContentContainer: { paddingBottom: 50, flexGrow: 1 },
+  scrollContentContainer: { paddingBottom: 40, flexGrow: 1 },
   formBox: {
     backgroundColor: CARD_BG,
     borderRadius: 20,
-    padding: 20,
+    padding: 12,
     borderWidth: 1,
     borderColor: BORDER_COLOR,
-    elevation: 5,
+    elevation: 4,
   },
-  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
+  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   column: { flex: 1, marginHorizontal: 3 },
-  label: { fontWeight: "600", marginTop: 10, fontSize: 14, color: MODERN_PRIMARY },
+  label: { fontWeight: "600", marginTop: 4, fontSize: 12, color: MODERN_PRIMARY }, // Updated to 12
   star: { color: "#ff0000" },
   textInput: {
-    height: 56,
+    paddingVertical: 12,
     borderColor: BORDER_COLOR,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    marginVertical: 8,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginVertical: 3,
     color: MODERN_PRIMARY,
     backgroundColor: SUBTLE_BG_GREY,
-    fontSize: 16,
+    fontSize: 14,
   },
   pickerContainerFull: {
+    height: 48,
     borderColor: BORDER_COLOR,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: SUBTLE_BG_GREY,
-    marginVertical: 8,
-    minHeight: 56,
+    marginVertical: 3,
     justifyContent: "center",
   },
-  picker: { width: "100%", height: 56 },
+  picker: {
+    width: "100%",
+    fontSize: 14, // Added size
+    color: MODERN_PRIMARY,
+  },
+  pickerItem: {
+    fontSize: 14, // Ensures options are size 14 on iOS
+  },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 12,
   },
   buttonContainerCentered: { justifyContent: "center" },
   qrButton: {
@@ -757,11 +759,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#D9F3D0",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 12,
-    height: 55,
+    borderRadius: 10,
+    height: 48,
     marginRight: 10,
   },
-  button: { flex: 5, backgroundColor: PRIMARY_BUTTON_COLOR, height: 55, borderRadius: 12 },
+  button: { flex: 5, backgroundColor: PRIMARY_BUTTON_COLOR, height: 48, borderRadius: 10 },
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -769,115 +771,114 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.7)",
   },
   modalContent: {
-    width: 320,
-    padding: 24,
+    width: 300,
+    padding: 20,
     backgroundColor: CARD_BG,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: "center",
   },
-  modalTitle: { fontSize: 20, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 5 },
-  modalSubtitle: { fontSize: 16, color: TEXT_GREY, marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: "bold", color: MODERN_PRIMARY, marginBottom: 4 },
+  modalSubtitle: { fontSize: 15, color: TEXT_GREY, marginBottom: 14 },
   qrContainer: {
-    padding: 12,
+    padding: 10,
     backgroundColor: SUBTLE_BG_GREY,
-    borderRadius: 12,
-    marginBottom: 20,
+    borderRadius: 10,
+    marginBottom: 18,
   },
   closeButton: {
     width: "100%",
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: ACCENT_BLUE,
     borderRadius: 8,
   },
   closeButtonText: { color: CARD_BG, fontWeight: "bold", textAlign: "center" },
 
-  // ── Stylish Modal Styles ──────────────────────────────────
   stylishModalCard: {
     width: "85%",
     backgroundColor: CARD_BG,
-    borderRadius: 24,
+    borderRadius: 18,
     overflow: "hidden",
     elevation: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: 18,
   },
   stylishHeader: {
-    paddingTop: 24,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 20,
+    paddingHorizontal: 15,
     alignItems: "center",
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
   },
   errorHeader: {
-    paddingTop: 24,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 20,
+    paddingHorizontal: 15,
     alignItems: "center",
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
   },
   errorTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
     color: CARD_BG,
     letterSpacing: 0.5,
-    marginTop: 8,
+    marginTop: 6,
   },
   errorMessageText: {
-    fontSize: 16,
+    fontSize: 14,
     color: TEXT_GREY,
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: 22,
   },
   iconCircle: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderRadius: 50,
-    padding: 10,
-    marginBottom: 10,
+    padding: 6,
+    marginBottom: 6,
   },
   stylishHeaderTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
     color: CARD_BG,
     letterSpacing: 0.5,
   },
   stylishHeaderSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: "rgba(255, 255, 255, 0.8)",
-    marginTop: 4,
+    marginTop: 3,
   },
   stylishBody: {
-    padding: 24,
+    padding: 15,
   },
   stylishRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 10,
   },
   stylishLabel: {
-    fontSize: 15,
+    fontSize: 12,
     color: TEXT_GREY,
     fontWeight: "500",
   },
   stylishValue: {
-    fontSize: 16,
+    fontSize: 14,
     color: MODERN_PRIMARY,
     fontWeight: "700",
   },
   methodBadge: {
     backgroundColor: SUBTLE_BG_GREY,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: BORDER_COLOR,
   },
   methodText: {
-    fontSize: 12,
+    fontSize: 14,
     color: ACCENT_BLUE,
     fontWeight: "700",
     letterSpacing: 1,
@@ -885,57 +886,57 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "#f0f0f0",
-    marginVertical: 8,
-    marginBottom: 16,
+    marginVertical: 4,
+    marginBottom: 10,
   },
   totalBox: {
     backgroundColor: "rgba(23, 150, 209, 0.08)",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 12,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 5,
     borderWidth: 1,
     borderColor: "rgba(23, 150, 209, 0.2)",
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: ACCENT_BLUE,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   totalAmount: {
-    fontSize: 28,
+    fontSize: 14,
     color: MODERN_PRIMARY,
     fontWeight: "900",
     marginTop: 4,
   },
   stylishFooter: {
     flexDirection: "row",
-    padding: 20,
+    padding: 12,
     backgroundColor: CARD_BG,
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
   },
   stylishCancelButton: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 8,
     marginRight: 10,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: "center",
     backgroundColor: SUBTLE_BG_GREY,
   },
   stylishCancelText: {
     color: TEXT_GREY,
     fontWeight: "700",
-    fontSize: 15,
+    fontSize: 14,
   },
   stylishConfirmButton: {
     flex: 1.5,
-    paddingVertical: 14,
+    paddingVertical: 8,
     marginLeft: 10,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: "center",
     backgroundColor: PRIMARY_BUTTON_COLOR,
     shadowColor: "#f8c009ff",
@@ -947,7 +948,7 @@ const styles = StyleSheet.create({
   stylishConfirmText: {
     color: MODERN_PRIMARY,
     fontWeight: "800",
-    fontSize: 16,
+    fontSize: 14,
     letterSpacing: 0.5,
   },
 });

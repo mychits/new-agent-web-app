@@ -1,4 +1,3 @@
-
 import {
   View,
   Text,
@@ -35,7 +34,7 @@ const ERROR_GRADIENT = ['#FF512F', '#DD2476']; // Red/Orange for errors
 const MODERN_PRIMARY = "#0d0d0eff"; 
 const ACCENT_BLUE = "#1796d1ff"; 
 const BORDER_COLOR = "#e0e0e0"; 
-const TEXT_GREY = "#4b5563"; 
+const TEXT_GREY = "#ffffff"; 
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f9fafb"; 
 const PRIMARY_BUTTON_COLOR = "#f8c009ff"; 
@@ -289,6 +288,7 @@ const LoanPayin = ({ route, navigation }) => {
           selectedValue={selectedLoan}
           onValueChange={(itemValue) => setSelectedLoan(itemValue)}
           style={styles.picker}
+          itemStyle={styles.pickerItem}
           dropdownIconColor="#111827"
         >
           <Picker.Item label="Select Loan" value={null} color="#1F2937" />
@@ -437,6 +437,7 @@ const LoanPayin = ({ route, navigation }) => {
                 selectedValue={paymentDetails}
                 onValueChange={(itemValues) => handlePaymentTypeChange(itemValues)}
                 style={styles.picker}
+                itemStyle={styles.pickerItem}
                 dropdownIconColor="#111827"
               >
                 <Picker.Item label="Select Method" value="" color="#1F2937" />
@@ -563,7 +564,7 @@ const LoanPayin = ({ route, navigation }) => {
               {paymentDetails === "online" && (
                 <View style={styles.stylishRow}>
                   <Text style={styles.stylishLabel}>Trans. ID</Text>
-                  <Text style={[styles.stylishValue, { fontSize: 14 }]}>{transactionId}</Text>
+                  <Text style={[styles.stylishValue]}>{transactionId}</Text>
                 </View>
               )}
 
@@ -627,19 +628,19 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? 40 : 0,
-    paddingBottom: 10, 
+    paddingBottom: 8, 
     backgroundColor: 'transparent',
   },
-  titleContainer: { marginTop: 15 },
+  titleContainer: { marginTop: 10 },
   title: { 
-    fontSize: 24, 
+    fontSize: 22, 
     fontWeight: '800', 
     color: "#fff", 
     letterSpacing: 0.5 ,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
     color: "#E0F7FA", 
     marginTop: 4,
@@ -653,7 +654,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 20, 
-    padding: 20, 
+    padding: 15, 
     marginBottom: 15, 
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -666,13 +667,13 @@ const styles = StyleSheet.create({
   overviewContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 15,
   },
   overviewBox: {
     flex: 1,
-    marginHorizontal: 5,
+    marginHorizontal: 4,
     borderRadius: 20, 
-    height: 110,
+    height: 100,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
@@ -682,7 +683,7 @@ const styles = StyleSheet.create({
   },
   boxGradient: {
     flex: 1,
-    padding: 15,
+    padding: 12,
     justifyContent: "space-between", 
   },
   glassShine: {
@@ -695,14 +696,14 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   boxTitle: {
-    fontSize: 10, 
+    fontSize: 9, 
     color: "rgba(255, 255, 255, 0.8)",
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   boxValue: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#fff",
     fontWeight: "800",
     textAlign: "left", 
@@ -717,42 +718,45 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: "#111827",
-    marginBottom: 16,
+    marginBottom: 12,
     marginTop: 5,
   },
   inputGroup: {
-    marginBottom: 14, 
+    marginBottom: 10, 
   },
   label: {
-    fontSize: 12, 
+    fontSize: 12, // UPDATED TO 12
     color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: 0.8,
     fontWeight: "600",
-    marginBottom: 6,
+    marginBottom: 4,
+    marginTop: 4,
     marginLeft: 2,
   },
   textInput: {
-    height: 52, 
+    paddingVertical: 12,
     backgroundColor: "#F9FAFB",
-    borderRadius: 12, 
-    paddingHorizontal: 16,
-    fontSize: 16,
+    borderRadius: 10, 
+    paddingHorizontal: 12,
+    fontSize: 14, // KEPT AT 14
     color: "#111827",
     borderWidth: 1,
     borderColor: "#E5E7EB", 
+    marginVertical: 3,
   },
   inputContainer: {
-    height: 52,
+    paddingVertical: 12,
     backgroundColor: "#F3F4F6", 
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: 10,
+    paddingHorizontal: 12,
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    marginVertical: 3,
   },
   fakeInputText: {
-    fontSize: 16,
+    fontSize: 14, // KEPT AT 14
     color: "#374151",
     fontWeight: "600",
   },
@@ -760,25 +764,27 @@ const styles = StyleSheet.create({
   rowInputs: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 10,
   },
 
   pickerContainer: {
-    height: 52,
+    height: 48,
     backgroundColor: "#FFFFFF", 
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     justifyContent: "center",
     overflow: 'hidden',
+    marginVertical: 3,
   },
   picker: { 
     width: "100%", 
-    height: 52, 
-    color: "#111827", 
-    backgroundColor: "#FFFFFF",
-    fontSize: 16,
-    marginLeft: -4, 
+    backgroundColor: 'transparent',
+    fontSize: 14, // ADDED FOR SIZE
+    color: MODERN_PRIMARY,
+  },
+  pickerItem: {
+    fontSize: 14, // ADDED FOR OPTIONS SIZE
   },
   
   stylishButton: {
@@ -875,12 +881,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   stylishLabel: {
-    fontSize: 15,
+    fontSize: 12, // UPDATED TO 12
     color: TEXT_GREY,
     fontWeight: '500',
   },
   stylishValue: {
-    fontSize: 16,
+    fontSize: 14, // UPDATED TO 14
     color: MODERN_PRIMARY,
     fontWeight: '700',
   },
@@ -893,7 +899,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER_COLOR
   },
   methodText: {
-    fontSize: 12,
+    fontSize: 14, // UPDATED TO 14
     color: ACCENT_BLUE,
     fontWeight: '700',
     letterSpacing: 1,

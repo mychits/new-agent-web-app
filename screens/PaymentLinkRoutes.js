@@ -10,7 +10,7 @@ import {
   Dimensions,
   Animated,
   Pressable,
-  Linking, // 1. Import Linking
+  Linking,
   Alert,
 } from "react-native";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -32,9 +32,34 @@ const TEXT_GREY = "#64748b";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f8fafc";
 
+/* ------------------ HELPER FOR LINKING ------------------ */
+const handleAction = (type, value) => {
+  if (!value) return;
+
+  let url = "";
+  if (type === "call") {
+    url = `tel:${value}`;
+  } else if (type === "whatsapp") {
+    const cleanPhone = value.replace(/[^0-9]/g, "");
+    url = `whatsapp://send?phone=${cleanPhone}`;
+  } else if (type === "email") {
+    url = `mailto:${value}`;
+  }
+
+  Linking.canOpenURL(url)
+    .then((supported) => {
+      if (!supported) {
+        Alert.alert("Error", `Unable to handle ${type}: ${value}`);
+      } else {
+        return Linking.openURL(url);
+      }
+    })
+    .catch((err) => console.error("An error occurred", err));
+};
+
 /* ------------------ STYLIST CUSTOMER CARD ------------------ */
 const CustomerCard = React.memo(
-  ({ name, phone, customerId, address, onPress, index }) => {
+  ({ name, phone, customerId, address, email, onPress, index }) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
     
@@ -46,24 +71,6 @@ const CustomerCard = React.memo(
         useNativeDriver: true,
       }).start();
     }, [index]);
-
-    // 2. Function to handle calling
-    const makeCall = (phoneNumber) => {
-      if (!phoneNumber) {
-        Alert.alert("Error", "Phone number not available");
-        return;
-      }
-      const url = `tel:${phoneNumber}`;
-      Linking.canOpenURL(url)
-        .then((supported) => {
-          if (!supported) {
-            Alert.alert("Error", "Your device does not support calling");
-          } else {
-            return Linking.openURL(url);
-          }
-        })
-        .catch((err) => console.error("Call Error:", err));
-    };
 
     const handlePressIn = () => {
       Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
@@ -96,20 +103,39 @@ const CustomerCard = React.memo(
               <View style={styles.customerDetails}>
                 <Text style={styles.customerName}>{name || "Guest User"}</Text>
                 
+                {/* Action Icons Row */}
+                <View style={styles.contactActionsRow}>
+                  <TouchableOpacity 
+                    style={styles.actionButton} 
+                    onPress={() => handleAction("call", phone)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="call" size={16} color="#10B981" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.actionButton} 
+                    onPress={() => handleAction("whatsapp", phone)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                  </TouchableOpacity>
+
+                  {email ? (
+                    <TouchableOpacity 
+                      style={styles.actionButton} 
+                      onPress={() => handleAction("email", email)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="mail" size={16} color={ACCENT_BLUE} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
                 <View style={styles.badgeRow}>
                   <View style={styles.idBadge}>
                     <Text style={styles.idBadgeText}>ID: {customerId}</Text>
                   </View>
-                  
-                  {/* 3. Updated Phone Badge with TouchableOpacity to trigger Call */}
-                  <TouchableOpacity 
-                    style={styles.phoneBadge} 
-                    onPress={() => makeCall(phone)}
-                    activeOpacity={0.6}
-                  >
-                    <Ionicons name="call" size={10} color={ACCENT_BLUE} />
-                    <Text style={styles.phoneBadgeText}>{phone || "No Phone"}</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -122,7 +148,7 @@ const CustomerCard = React.memo(
 
             <View style={styles.cardFooter}>
               <View style={styles.footerIconWrapper}>
-                <Ionicons name="location-outline" size={16} color={ACCENT_BLUE} />
+                <Ionicons name="location-outline" size={14} color={ACCENT_BLUE} />
               </View>
               <View style={styles.addressContainer}>
                 <Text style={styles.addressLabelText}>COMPLETE ADDRESS</Text>
@@ -156,9 +182,11 @@ const PaymentLinkRoutes = ({ route, navigation }) => {
         axios.get(`${baseUrl}/loans?referrerId=${user?.userId}`),
       ]);
       const map = new Map();
-      (chitRes.data || []).forEach(c => map.set(c._id, { _id: c._id, name: c.full_name, phone: c.phone_number, address: c.address, customerId: c.customer_id || "CHIT" }));
-      (pigmeRes.data?.data || []).forEach(p => p.customer && map.set(p.customer._id, { _id: p.customer._id, name: p.customer.full_name, phone: p.customer.phone_number, address: p.customer.address, customerId: p.customer.customer_id || "PGMY" }));
-      (loanRes.data?.data || []).forEach(l => l.borrower && map.set(l.borrower._id, { _id: l.borrower._id, name: l.borrower.full_name, phone: l.borrower.phone_number, address: l.borrower.address || l.borrower.city, customerId: l.borrower.customer_id || "LOAN" }));
+      // Added 'email' field here
+      (chitRes.data || []).forEach(c => map.set(c._id, { _id: c._id, name: c.full_name, phone: c.phone_number, address: c.address, customerId: c.customer_id || "CHIT", email: c.email }));
+      (pigmeRes.data?.data || []).forEach(p => p.customer && map.set(p.customer._id, { _id: p.customer._id, name: p.customer.full_name, phone: p.customer.phone_number, address: p.customer.address, customerId: p.customer.customer_id || "PGMY", email: p.customer.email }));
+      (loanRes.data?.data || []).forEach(l => l.borrower && map.set(l.borrower._id, { _id: l.borrower._id, name: l.borrower.full_name, phone: l.borrower.phone_number, address: l.borrower.address || l.borrower.city, customerId: l.borrower.customer_id || "LOAN", email: l.borrower.email }));
+      
       setCustomers([...map.values()]);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
@@ -212,50 +240,63 @@ const styles = StyleSheet.create({
   topContainer: { paddingHorizontal: 20, paddingBottom: 45 },
   headerSpacer: { paddingVertical: 10 },
   titleContainer: { marginBottom: 20, alignItems: 'center' },
-  title: { fontSize: 26, fontWeight: "900", color: "#fff", letterSpacing: 0.5 },
-  subtitle: { fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 },
+  title: { fontSize: 22, fontWeight: "900", color: "#fff", letterSpacing: 0.5 }, // Decreased from 26
+  subtitle: { fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 4 }, // Decreased from 13
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 18,
     paddingHorizontal: 15,
-    height: 54,
+    height: 50, // Decreased slightly
     elevation: 8,
   },
-  searchInput: { flex: 1, marginLeft: 10, fontSize: 15, fontWeight: '500', color: MODERN_PRIMARY },
+  searchInput: { flex: 1, marginLeft: 10, fontSize: 14, fontWeight: '500', color: MODERN_PRIMARY }, // Decreased
   mainContentArea: { flex: 1, backgroundColor: SUBTLE_BG_GREY, borderTopLeftRadius: 35, borderTopRightRadius: 35, marginTop: -30, paddingTop: 30 },
   listContainer: { paddingHorizontal: 20, paddingBottom: 50 },
   
   cardContainer: {
     backgroundColor: CARD_BG,
-    borderRadius: 24,
+    borderRadius: 20, // Slightly less rounded
     marginBottom: 16,
     elevation: 4,
     borderWidth: 1,
     borderColor: '#f1f5f9',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    padding: 12, // Decreased padding
   },
   topAccentBar: { height: 4, backgroundColor: ACCENT_BLUE, width: '25%', borderBottomRightRadius: 10 },
-  cardHeader: { flexDirection: 'row', padding: 16, alignItems: 'center' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center' },
   avatarSection: { position: 'relative' },
-  avatarCircle: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
-  avatarInitial: { fontSize: 22, fontWeight: '900', color: ACCENT_BLUE },
-  statusDot: { position: 'absolute', bottom: 2, right: 2, width: 14, height: 14, borderRadius: 7, backgroundColor: '#10b981', borderWidth: 2, borderColor: '#fff' },
-  customerDetails: { flex: 1, marginLeft: 15 },
-  customerName: { fontSize: 18, fontWeight: '800', color: MODERN_PRIMARY, marginBottom: 6 },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' }, // Decreased from 56
+  avatarInitial: { fontSize: 18, fontWeight: '900', color: ACCENT_BLUE }, // Decreased
+  statusDot: { position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: '#10b981', borderWidth: 2, borderColor: '#fff' }, // Decreased
+  customerDetails: { flex: 1, marginLeft: 12 }, // Decreased margin
+  customerName: { fontSize: 14, fontWeight: '800', color: MODERN_PRIMARY, marginBottom: 4 }, // Decreased from 18
+  contactActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   badgeRow: { flexDirection: 'row', gap: 8 },
-  idBadge: { backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  idBadgeText: { fontSize: 10, fontWeight: '700', color: TEXT_GREY },
-  phoneBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#e0f2fe', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderVisible: true },
-  phoneBadgeText: { fontSize: 10, fontWeight: '700', color: ACCENT_BLUE },
-  actionContainer: { marginLeft: 10 },
-  arrowButton: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  cardFooter: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#f8fafc', borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  idBadge: { backgroundColor: '#f1f5f9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  idBadgeText: { fontSize: 10, fontWeight: '700', color: TEXT_GREY }, // Decreased
+  actionContainer: { marginLeft: 8 },
+  arrowButton: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' }, // Decreased
+  cardFooter: { flexDirection: 'row', paddingHorizontal: 0, paddingVertical: 10, backgroundColor: '#f8fafc', borderTopWidth: 1, borderTopColor: '#f1f5f9', marginTop: 8 },
   footerIconWrapper: { marginTop: 2, marginRight: 10 },
   addressContainer: { flex: 1 },
-  addressLabelText: { fontSize: 9, fontWeight: '900', color: ACCENT_BLUE, marginBottom: 4, letterSpacing: 0.5 },
-  addressText: { fontSize: 13, color: TEXT_GREY, fontWeight: '500', lineHeight: 18 }
+  addressLabelText: { fontSize: 9, fontWeight: '900', color: ACCENT_BLUE, marginBottom: 2, letterSpacing: 0.5 }, // Decreased margin
+  addressText: { fontSize: 12, color: TEXT_GREY, fontWeight: '500', lineHeight: 16 } // Decreased
 });
 
 export default PaymentLinkRoutes;

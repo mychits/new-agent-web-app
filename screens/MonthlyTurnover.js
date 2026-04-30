@@ -14,6 +14,7 @@ import {
   ImageBackground,
   Dimensions,
   TextInput,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -40,14 +41,14 @@ const COLORS = {
   background: "#0f2a44",
   box1: "#E0E7FF",
   box1Text: "#4338ca",
-  box2: "#D1FAE5", // Light Green (Used for Negative Balance)
-  box2Text: "#059669", // Dark Green Text
+  box2: "#D1FAE5",
+  box2Text: "#059669",
   box3: "#FEF3C7",
   box3Text: "#D97706",
   box4: "#E0F2FE",
   box4Text: "#0284c7",
-  box5: "#FFE4E6", // Light Red (Used for Positive Balance)
-  box5Text: "#e11d48", // Dark Red Text
+  box5: "#FFE4E6",
+  box5Text: "#e11d48",
 };
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -62,9 +63,29 @@ const FadeInView = ({ children, delay = 0 }) => {
   return <Animated.View style={{ opacity: fadeAnim }}>{children}</Animated.View>;
 };
 
-const handleCall = (phoneNumber) => {
-  if (!phoneNumber) return;
-  Linking.openURL("tel:" + phoneNumber);
+// --- HELPER FOR LINKING ---
+const handleAction = (type, value) => {
+  if (!value) return;
+
+  let url = "";
+  if (type === "call") {
+    url = `tel:${value}`;
+  } else if (type === "whatsapp") {
+    const cleanPhone = value.replace(/[^0-9]/g, "");
+    url = `whatsapp://send?phone=${cleanPhone}`;
+  } else if (type === "email") {
+    url = `mailto:${value}`;
+  }
+
+  Linking.canOpenURL(url)
+    .then((supported) => {
+      if (!supported) {
+        Alert.alert("Error", `Unable to handle ${type}: ${value}`);
+      } else {
+        return Linking.openURL(url);
+      }
+    })
+    .catch((err) => console.error("An error occurred", err));
 };
 
 const formatCurrency = (amount) => {
@@ -74,14 +95,13 @@ const formatCurrency = (amount) => {
   return num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
 };
 
-// --- EXTRACTED HEADER COMPONENT TO PREVENT REMOUNTING ---
+// --- EXTRACTED HEADER COMPONENT ---
 const TurnoverHeader = memo(({ 
   selectedDate, formattedDate, setShowPicker, 
   searchQuery, setSearchQuery, turnoverData 
 }) => {
   return (
     <FadeInView>
-      {/* DATE CARD */}
       <TouchableOpacity style={styles.dateCard} onPress={() => setShowPicker(true)} activeOpacity={0.9}>
         <View style={styles.dateInfo}>
           <View style={styles.calendarIconBg}>
@@ -97,7 +117,6 @@ const TurnoverHeader = memo(({
         </View>
       </TouchableOpacity>
 
-      {/* SEARCH BAR */}
       <View style={styles.searchBarContainer}>
         <Feather name="search" size={18} color={COLORS.muted} style={{ marginRight: 10 }} />
         <TextInput
@@ -115,7 +134,6 @@ const TurnoverHeader = memo(({
         )}
       </View>
 
-      {/* SUMMARY HERO CARD */}
       <View style={styles.mainCard}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardLabel}>Monthly Summary</Text>
@@ -149,7 +167,6 @@ const MonthlyTurnover = ({ navigation }) => {
   const [showPicker, setShowPicker]       = useState(false);
   const [formattedDate, setFormattedDate] = useState(moment().format("MMMM YYYY"));
   
-  // Search State
   const [searchQuery, setSearchQuery]     = useState("");
 
   useEffect(() => {
@@ -198,7 +215,6 @@ const MonthlyTurnover = ({ navigation }) => {
           return {
             ...c,
             enrollmentId:  c._id,
-            // EXTRACT TICKET NUMBER FROM API
             ticketNumber:  c.ticket || "N/A", 
             balance:       balance,
             paymentStatus: monthlyPaid >= monthlyInstallment ? "PAID" : "UNPAID",
@@ -222,7 +238,6 @@ const MonthlyTurnover = ({ navigation }) => {
     }
   };
 
-  // Filter logic for Search (Updated to include Ticket)
   const filteredCustomers = customersData.filter((item) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -243,7 +258,6 @@ const MonthlyTurnover = ({ navigation }) => {
     }
   };
 
-  // --- NORMAL LOADER ---
   const renderNormalLoader = () => (
     <View style={styles.loaderContainer}>
       <ActivityIndicator size="large" color={COLORS.accent} />
@@ -257,21 +271,16 @@ const MonthlyTurnover = ({ navigation }) => {
     const statusBg      = isPaid ? "rgba(39, 174, 96, 0.15)" : "rgba(225, 29, 72, 0.1)";
     
     const customerPhone = item.user_id?.phone_number;
+    const customerEmail = item.user_id?.email;
     const customerName  = item.user_id?.full_name || "Unknown";
     const groupName     = item.group_id?.group_name || "Group";
-    const ticketNum     = item.ticketNumber; // Use the extracted ticket number
+    const ticketNum     = item.ticketNumber;
     const balanceVal    = item.balance || 0;
     const diffVal       = item.differenceAmount || 0;
-    const diffColor     = diffVal > 0 ? COLORS.box3Text : COLORS.success;
 
-    // --- LOGIC FOR BALANCE COLOR ---
-    // If balance is minus (-), display Green. If positive or plus (+), display Red.
     const isNegativeBalance = balanceVal < 0;
-    const balanceBoxBg = isNegativeBalance ? COLORS.box2 : COLORS.box5; // Green bg if negative, Red bg if positive
-    const balanceBoxText = isNegativeBalance ? COLORS.box2Text : COLORS.box5Text; // Green text if negative, Red text if positive
-
-    // --- HIDE MINUS SIGN ---
-    // Use Math.abs() to remove the negative sign from the displayed number
+    const balanceBoxBg = isNegativeBalance ? COLORS.box2 : COLORS.box5;
+    const balanceBoxText = isNegativeBalance ? COLORS.box2Text : COLORS.box5Text;
     const displayBalance = Math.abs(balanceVal);
 
     return (
@@ -291,56 +300,72 @@ const MonthlyTurnover = ({ navigation }) => {
               </View>
               
               <View style={styles.metaRow}>
-                {/* DISPLAY TICKET NUMBER AFTER GROUP NAME */}
                 <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
                   <Text style={styles.ticketText} numberOfLines={1}>{groupName}</Text>
                   <Text style={styles.ticketText}> • </Text>
                   <Text style={[styles.ticketText, { color: COLORS.bgBlue, fontWeight: '700' }]}>Ticket #{ticketNum}</Text>
                 </View>
-                
-                {customerPhone && (
-                  <TouchableOpacity onPress={() => handleCall(customerPhone)} style={styles.callBtn}>
-                    <Feather name="phone" size={12} color={COLORS.bgBlue} />
-                  </TouchableOpacity>
-                )}
               </View>
             </View>
           </View>
 
+          {/* ACTION ICONS ROW */}
+          <View style={styles.contactActionsRow}>
+            <TouchableOpacity 
+                style={styles.actionButton} 
+                onPress={() => handleAction("call", customerPhone)}
+                activeOpacity={0.7}
+            >
+              <Ionicons name="call" size={16} color="#10B981" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+                style={styles.actionButton} 
+                onPress={() => handleAction("whatsapp", customerPhone)}
+                activeOpacity={0.7}
+            >
+              <FontAwesome5 name="whatsapp" size={18} color="#25D366" />
+            </TouchableOpacity>
+
+            {customerEmail ? (
+                <TouchableOpacity 
+                    style={styles.actionButton} 
+                    onPress={() => handleAction("email", customerEmail)}
+                    activeOpacity={0.7}
+                >
+                  <Ionicons name="mail" size={16} color={COLORS.bgBlue} />
+                </TouchableOpacity>
+            ) : null}
+          </View>
+
           {/* 5 DIFFERENT BOXES GRID */}
           <View style={styles.statsGrid}>
-            {/* 1. Installment */}
             <View style={[styles.gridBox, { backgroundColor: COLORS.box1 }]}>
-              <MaterialCommunityIcons name="calendar-clock" size={16} color={COLORS.box1Text} />
+              <MaterialCommunityIcons name="calendar-clock" size={14} color={COLORS.box1Text} />
               <Text style={[styles.gridVal, { color: COLORS.box1Text }]}>{formatCurrency(item.monthly_installment)}</Text>
               <Text style={styles.gridLabel}>Installment</Text>
             </View>
 
-            {/* 2. Paid */}
             <View style={[styles.gridBox, { backgroundColor: COLORS.box2 }]}>
-              <Ionicons name="wallet" size={16} color={COLORS.box2Text} />
+              <Ionicons name="wallet" size={14} color={COLORS.box2Text} />
               <Text style={[styles.gridVal, { color: COLORS.box2Text }]}>{formatCurrency(item.monthlyPaid)}</Text>
               <Text style={styles.gridLabel}>Paid</Text>
             </View>
 
-            {/* 3. Difference */}
             <View style={[styles.gridBox, { backgroundColor: COLORS.box3 }]}>
-              <Ionicons name="calculator" size={16} color={COLORS.box3Text} />
+              <Ionicons name="calculator" size={14} color={COLORS.box3Text} />
               <Text style={[styles.gridVal, { color: COLORS.box3Text, fontWeight: '900' }]}>{formatCurrency(diffVal)}</Text>
               <Text style={styles.gridLabel}>Diff</Text>
             </View>
 
-            {/* 4. Total Paid */}
             <View style={[styles.gridBox, { backgroundColor: COLORS.box4, width: '48%' }]}>
-              <FontAwesome5 name="hand-holding-usd" size={16} color={COLORS.box4Text} />
+              <FontAwesome5 name="hand-holding-usd" size={14} color={COLORS.box4Text} />
               <Text style={[styles.gridVal, { color: COLORS.box4Text }]}>{formatCurrency(item.totalPaid)}</Text>
               <Text style={styles.gridLabel}>Total Paid</Text>
             </View>
 
-            {/* 5. Balance - DYNAMIC COLOR */}
             <View style={[styles.gridBox, { backgroundColor: balanceBoxBg, width: '48%' }]}>
-              <MaterialCommunityIcons name="scale-balance" size={16} color={balanceBoxText} />
-              {/* Using displayBalance (absolute value) to hide the minus sign */}
+              <MaterialCommunityIcons name="scale-balance" size={14} color={balanceBoxText} />
               <Text style={[styles.gridVal, { color: balanceBoxText }]}>{formatCurrency(displayBalance)}</Text>
               <Text style={styles.gridLabel}>Balance</Text>
             </View>
@@ -357,7 +382,6 @@ const MonthlyTurnover = ({ navigation }) => {
       <LinearGradient colors={["rgba(26, 162, 204, 0.9)", COLORS.primary]} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={{ flex: 1 }}>
-        {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconCircle} activeOpacity={0.7}>
@@ -386,7 +410,6 @@ const MonthlyTurnover = ({ navigation }) => {
               data={filteredCustomers}
               renderItem={renderCustomerCard}
               keyExtractor={(_, i) => i.toString()}
-              // USE THE EXTRACTED COMPONENT HERE
               ListHeaderComponent={
                 <TurnoverHeader 
                   selectedDate={selectedDate}
@@ -425,8 +448,6 @@ const MonthlyTurnover = ({ navigation }) => {
   );
 };
 
-export default MonthlyTurnover;
-
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: COLORS.primary },
   bgOverlay: { ...StyleSheet.absoluteFillObject, opacity: 0.15 },
@@ -442,8 +463,8 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 15
   },
-  headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: 1 },
-  headerSubTitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2 },
+  headerTitle: { fontSize: 22, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: 1 }, // Decreased
+  headerSubTitle: { fontSize: 12, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2 }, // Decreased
   iconCircle: { backgroundColor: "#fff", padding: 8, borderRadius: 12, elevation: 4 },
   refreshBtn: { backgroundColor: COLORS.accent, padding: 10, borderRadius: 12, elevation: 4 },
   
@@ -456,7 +477,7 @@ const styles = StyleSheet.create({
   dateCard: { 
     backgroundColor: COLORS.white, 
     borderRadius: 16, 
-    padding: 14, 
+    padding: 12, // Decreased slightly
     marginBottom: 16, 
     flexDirection: "row", 
     alignItems: "center", 
@@ -470,7 +491,7 @@ const styles = StyleSheet.create({
   dateInfo: { flexDirection: 'row', alignItems: 'center' },
   calendarIconBg: { backgroundColor: COLORS.bgBlue, padding: 8, borderRadius: 10, marginRight: 12 },
   dateLabel: { fontSize: 10, color: COLORS.muted, fontWeight: '800', letterSpacing: 1 },
-  dateText: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
+  dateText: { fontSize: 16, fontWeight: "900", color: COLORS.primary }, // Decreased
   editIconBg: { backgroundColor: '#F5F7FA', padding: 8, borderRadius: 10 },
 
   searchBarContainer: {
@@ -478,7 +499,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.white,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10, // Decreased
     borderRadius: 16,
     marginBottom: 16,
     elevation: 4,
@@ -498,11 +519,11 @@ const styles = StyleSheet.create({
   mainCard: { 
     backgroundColor: COLORS.cardBg, 
     borderRadius: 20, 
-    padding: 16, 
+    padding: 14, // Decreased
     marginBottom: 20, 
     elevation: 6,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   cardLabel: { fontSize: 11, fontWeight: "800", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   statusText: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
@@ -510,13 +531,13 @@ const styles = StyleSheet.create({
   heroStatsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroStatBox: { flex: 1, alignItems: 'center' },
   heroStatLabel: { fontSize: 10, color: COLORS.muted, fontWeight: '700', marginBottom: 4 },
-  heroStatValue: { fontSize: 16, fontWeight: "900", color: COLORS.primary },
+  heroStatValue: { fontSize: 14, fontWeight: "900", color: COLORS.primary }, // Decreased
   heroStatDivider: { width: 1, height: 30, backgroundColor: '#E9ECEF' },
 
   listCard: { 
     backgroundColor: COLORS.white, 
-    borderRadius: 20, 
-    padding: 16, 
+    borderRadius: 16, 
+    padding: 12, // Decreased padding
     marginBottom: 16,
     elevation: 4,
     shadowColor: "#000",
@@ -524,14 +545,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 5,
   },
-  listHeader: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  avatar: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" },
-  avatarText: { color: "#fff", fontSize: 18, fontWeight: "900" },
+  listHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 }, // Decreased margin
+  avatar: { width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primary, justifyContent: "center", alignItems: "center" }, // Decreased size
+  avatarText: { color: "#fff", fontSize: 16, fontWeight: "900" }, // Decreased
   
-  clientName: { fontSize: 16, fontWeight: "800", color: COLORS.primary, marginBottom: 4, flex: 1 },
+  clientName: { fontSize: 14, fontWeight: "800", color: COLORS.primary, marginBottom: 4, flex: 1 }, // Decreased
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ticketText: { fontSize: 12, color: COLORS.muted, fontWeight: '600' },
-  callBtn: { padding: 4, marginLeft: 8 },
+  ticketText: { fontSize: 11, color: COLORS.muted, fontWeight: '600' }, // Decreased
+
+  contactActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
 
   statsGrid: {
     flexDirection: 'row',
@@ -542,18 +577,18 @@ const styles = StyleSheet.create({
     width: '31%', 
     backgroundColor: '#F5F7FA',
     borderRadius: 12,
-    padding: 10,
+    padding: 8, // Decreased
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8, 
   },
   gridVal: {
-    fontSize: 13,
+    fontSize: 11, // Decreased
     fontWeight: "800",
     marginTop: 4,
   },
   gridLabel: {
-    fontSize: 9,
+    fontSize: 8, // Decreased
     fontWeight: "700",
     color: COLORS.muted,
     marginTop: 2,
@@ -567,3 +602,5 @@ const styles = StyleSheet.create({
   emptyContainer: { alignItems: 'center', marginTop: 50, opacity: 0.7 },
   noDataText: { color: "#fff", textAlign: "center", marginTop: 12, fontSize: 15, fontWeight: '600' },
 });
+
+export default MonthlyTurnover;

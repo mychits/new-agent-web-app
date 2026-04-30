@@ -121,13 +121,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   title: {
-    fontSize: 24, 
+    fontSize: 18, 
     fontWeight: "900",
     color: CARD_BG,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.85)', 
     fontWeight: '500',
     textAlign: 'center',
@@ -167,12 +167,12 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   cardText: {
-    fontSize: 18, 
+    fontSize: 15, 
     fontWeight: '800',
     color: MODERN_PRIMARY,
   },
   cardSubText: {
-    fontSize: 13,
+    fontSize: 11,
     color: TEXT_GREY, 
     marginTop: 4,
     fontWeight: '500',

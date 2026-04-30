@@ -1,207 +1,300 @@
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   TextInput,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
+  FlatList,
+  Linking,
+  Alert,
+  Animated,
+  StatusBar,
 } from "react-native";
-import React, { useState, useEffect } from "react";
-import { Ionicons } from "@expo/vector-icons"; 
-import { SafeAreaView } from "react-native-safe-area-context"; 
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-
 import Header from "../components/Header";
-import baseUrl from "../constants/baseUrl"; 
+import baseUrl from "../constants/baseUrl";
 import axios from "axios";
 
-// --- DESIGN CONSTANTS ---
-const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
-const MODERN_PRIMARY = "#0d0d0eff"; 
-const ACCENT_BLUE = "#1796d1ff"; 
-const BORDER_COLOR = "#e0e0e0"; 
-const TEXT_GREY = "#4b5563"; 
+// --- ORIGINAL DESIGN CONSTANTS ---
+const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
+const MODERN_PRIMARY = "#0d0d0e";
+const ACCENT_BLUE = "#1796d1";
+const BORDER_COLOR = "#e0e0e0";
+const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = '#f9fafb'; 
+const SUBTLE_BG_GREY = '#f9fafb';
 
-// --- BIG CARD COMPONENT ---
-const CustomerCard = ({ name, phone, loanAmount, loanId, address, onPress }) => (
-  <TouchableOpacity onPress={onPress} style={styles.cardContainer} activeOpacity={0.8}>
-    
-    <View style={styles.topCardSection}>
-      <View style={styles.iconCircle}>
-        <Ionicons name="wallet-outline" size={30} color={ACCENT_BLUE} />
-      </View>
+// Nav pill accents
+const ACCENT_CHIT   = "#1796d1";   // blue — chit
+const ACCENT_PIGME  = "#F59E0B";   // gold — pigme
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.cardTitle}>{name}</Text>
-        
-        <View style={styles.contactRow}>
-          <Ionicons name="call" size={16} color={ACCENT_BLUE} style={{marginRight: 6}} />
-          <Text style={styles.phoneText}>{phone}</Text>
-        </View>
+// Loan highlight color
+const ACCENT_LOAN   = "#A855F7";   // purple
 
-        <View style={styles.amountBadgeContainer}>
-          <Text style={styles.amountBadgeText}>Loan Amount: ₹{loanAmount}</Text>
-        </View>
-      </View>
+// --- HELPER ---
+const handleAction = (type, value) => {
+  if (!value) return;
+  let url = "";
+  if (type === "call") url = `tel:${value}`;
+  else if (type === "whatsapp") {
+    const cleanPhone = value.replace(/[^0-9]/g, "");
+    url = `whatsapp://send?phone=${cleanPhone}`;
+  } else if (type === "email") url = `mailto:${value}`;
 
-      <View style={styles.chevronContainer}>
-        <Ionicons name="chevron-forward" size={24} color={ACCENT_BLUE} />
-      </View>
-    </View>
+  Linking.canOpenURL(url)
+    .then((supported) => {
+      if (!supported) Alert.alert("Error", `Unable to handle ${type}: ${value}`);
+      else return Linking.openURL(url);
+    })
+    .catch((err) => console.error("An error occurred", err));
+};
 
-    <View style={styles.separator} />
-
-    <View style={styles.detailRowSection}>
-      <Ionicons name="finger-print-outline" size={18} color={TEXT_GREY} style={{marginRight: 8}} />
-      <View style={{flex: 1}}>
-        <Text style={styles.detailLabel}> Loan ID:</Text>
-        <Text style={styles.detailText}>{loanId}</Text>
-      </View>
-    </View>
-
-    <View style={styles.separator} />
-
-    {/* UPDATED ADDRESS SECTION: Similar to Chit layout */}
-    <View style={styles.detailRowSection}>
-      <Ionicons name="location-sharp" size={18} color={ACCENT_BLUE} style={{marginRight: 8, marginTop: 2}} />
-      <View style={{flex: 1}}>
-        <Text style={styles.detailLabel}>Address:</Text>
-        <Text style={styles.addressText}>
-          {address || "No address provided"}
-        </Text>
-      </View>
+// --- NAV PILL ---
+const NavPill = ({ label, icon, color, onPress }) => (
+  <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={[styles.navPill, { borderColor: color }]}>
+    <View style={[styles.navPillInner, { backgroundColor: color + '22' }]}>
+      <Ionicons name={icon} size={16} color={color} />
+      <Text style={[styles.navPillText, { color }]}>{label}</Text>
+      <Ionicons name="arrow-forward-circle" size={14} color={color} style={{ opacity: 0.8 }} />
     </View>
   </TouchableOpacity>
 );
 
+// --- ACTION BUTTON ---
+const ActionBtn = ({ icon, color, bg, onPress }) => (
+  <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[styles.actionBtn, { backgroundColor: bg }]}>
+    <Ionicons name={icon} size={16} color={color} />
+  </TouchableOpacity>
+);
+
+// --- LOAN CUSTOMER CARD ---
+const CustomerCard = React.memo(({ name, phone, email, loanAmount, loanId, address, onPress, index }) => {
+  const scaleAnim   = useRef(new Animated.Value(0.96)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1, delay: index * 55,
+        useNativeDriver: true, tension: 120, friction: 8,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1, duration: 300, delay: index * 55, useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const initial = (name || "?")[0].toUpperCase();
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }}>
+      <TouchableOpacity onPress={onPress} style={styles.card} activeOpacity={0.8}>
+        {/* Purple accent bar for loans */}
+        <View style={styles.cardTopAccent} />
+
+        <View style={styles.cardTop}>
+          {/* Avatar */}
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{initial}</Text>
+          </View>
+
+          {/* Info */}
+          <View style={styles.cardInfo}>
+            <Text style={styles.cardName} numberOfLines={1}>{name || "Unknown Customer"}</Text>
+            <Text style={styles.cardPhone}>{phone || "—"}</Text>
+
+            {/* Action Buttons */}
+            <View style={styles.actionsRow}>
+              <ActionBtn icon="call"          color="#10B981"   bg="#10B98118" onPress={() => handleAction("call", phone)} />
+              <ActionBtn icon="logo-whatsapp" color="#25D366"   bg="#25D36618" onPress={() => handleAction("whatsapp", phone)} />
+              {email ? (
+                <ActionBtn icon="mail"        color={ACCENT_BLUE} bg={ACCENT_BLUE + '18'} onPress={() => handleAction("email", email)} />
+              ) : null}
+            </View>
+
+            {/* Loan Amount Badge */}
+            <View style={styles.loanBadge}>
+              <Ionicons name="cash-outline" size={11} color={ACCENT_LOAN} />
+              <Text style={styles.loanBadgeText}> ₹{loanAmount}</Text>
+            </View>
+          </View>
+
+          <Ionicons name="chevron-forward-circle" size={24} color={ACCENT_BLUE} style={{ opacity: 0.65 }} />
+        </View>
+
+        <View style={styles.separator} />
+
+        {/* Loan ID */}
+        <View style={styles.detailRow}>
+          <Ionicons name="finger-print-outline" size={13} color={TEXT_GREY} />
+          <View style={{ marginLeft: 7 }}>
+            <Text style={styles.detailLabel}>Loan ID</Text>
+            <Text style={styles.detailValue}>{loanId || "—"}</Text>
+          </View>
+        </View>
+
+        <View style={styles.separator} />
+
+        {/* Address */}
+        <View style={styles.detailRow}>
+          <Ionicons name="location-sharp" size={13} color={ACCENT_BLUE} style={{ marginTop: 1 }} />
+          <View style={{ flex: 1, marginLeft: 7 }}>
+            <Text style={styles.detailLabel}>Address</Text>
+            <Text style={styles.detailValue} numberOfLines={2}>{address || "No address provided"}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+});
+
+// --- MAIN SCREEN ---
 const RouteCustomerLoan = ({ route, navigation }) => {
   const { user } = route.params;
-
-  const [search, setSearch] = useState("");
+  const [search, setSearch]       = useState("");
   const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]     = useState(false);
 
   useEffect(() => {
     const fetchLoanCustomers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `${baseUrl}/loans?referrerId=${user?.userId}`
-        );
-
-        if (response?.data?.data) { 
-          setCustomers(response.data.data);
-        }
+        const response = await axios.get(`${baseUrl}/loans?referrerId=${user?.userId}`);
+        if (response?.data?.data) setCustomers(response.data.data);
       } catch (error) {
-        console.error("Error fetching customer data:", error);
+        console.error("Error fetching loan customer data:", error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchLoanCustomers();
-  }, []);
-  
-  // --- UPDATED HELPER: Format Complete Address ---
-  // This checks for the full 'address' field first (like Chit), 
-  // then falls back to concatenated fields if 'address' is missing.
-  const formatCompleteAddress = (borrower) => {
+  }, [user?.userId]);
+
+  const formatAddress = (borrower) => {
     if (!borrower) return "Address details missing";
-    
-    // If the API provides a single 'address' field like in Chit:
     if (borrower.address) return borrower.address;
-
-    // Otherwise, combine all split fields:
     const parts = [
-      borrower.address_line_1,
-      borrower.address_line_2,
-      borrower.city,
-      borrower.state,
-      borrower.pincode
-    ].filter(part => part && String(part).trim() !== ""); 
-
+      borrower.address_line_1, borrower.address_line_2,
+      borrower.city, borrower.state, borrower.pincode,
+    ].filter((p) => p && String(p).trim() !== "");
     return parts.length > 0 ? parts.join(', ') : "Address Not Available";
   };
-  
-  const filteredCustomers = Array.isArray(customers)
-    ? customers.filter((customer) =>
-        customer.borrower?.full_name?.toLowerCase().includes(search.toLowerCase())
-      )
-    : [];
+
+  const filteredCustomers = useMemo(() => {
+    if (!search) return customers;
+    return Array.isArray(customers)
+      ? customers.filter((c) =>
+          c.borrower?.full_name?.toLowerCase().includes(search.toLowerCase())
+        )
+      : [];
+  }, [search, customers]);
+
+  const renderItem = useCallback(({ item, index }) => (
+    <CustomerCard
+      name={item.borrower?.full_name || "Unknown Customer"}
+      phone={item.borrower?.phone_number || "N/A"}
+      email={item.borrower?.email}
+      loanAmount={item.loan_amount || "N/A"}
+      loanId={item.loan_id || "N/A"}
+      address={formatAddress(item.borrower)}
+      index={index}
+      onPress={() =>
+        navigation.navigate("LoanPayin", {
+          user,
+          customer: item?.borrower?._id,
+          loan_id: item._id,
+          custom_loan_id: item.loan_id,
+        })
+      }
+    />
+  ), [navigation, user]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <LinearGradient
-        colors={TOP_GRADIENT}
-        style={styles.topContainer}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.headerSpacer}>
-            <Header />
+      <StatusBar barStyle="light-content" backgroundColor={TOP_GRADIENT[0]} />
+
+      {/* HEADER */}
+      <LinearGradient colors={TOP_GRADIENT} style={styles.headerGradient}>
+        <View style={styles.headerSpacer}><Header /></View>
+
+        {/* Title */}
+        <View style={styles.titleBlock}>
+          <Text style={styles.screenTitle}>Loan Customers</Text>
+          <Text style={styles.screenSubtitle}>
+            {loading ? "Loading..." : `${filteredCustomers.length} loan accounts`}
+          </Text>
         </View>
 
-        <View style={styles.titleContainer}>
-            <Text style={styles.title}>Loan Customers</Text>
-            <Text style={styles.subtitle}>Manage loan accounts & addresses</Text>
+        {/* Navigation Pills */}
+        <View style={styles.navRow}>
+          <NavPill
+            label="Chit Customers"
+            icon="people-outline"
+            color={ACCENT_CHIT}
+            onPress={() => navigation.navigate("RouteCustomerChit", { user })}
+          />
+          <NavPill
+            label="Pigmy Customers"
+            icon="wallet-outline"
+            color={ACCENT_PIGME}
+            onPress={() => navigation.navigate("RouteCustomerPigme", { user })}
+          />
         </View>
-        
-        <View style={styles.searchContainer}>
-            <Ionicons name="search-outline" size={20} color={TEXT_GREY} style={styles.searchIcon} />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search by name..."
-              placeholderTextColor={TEXT_GREY}
-              style={styles.searchInput}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch("")}>
-                <Ionicons name="close-circle" size={20} color={TEXT_GREY} />
-              </TouchableOpacity>
-            )}
+
+        {/* Search */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search-outline" size={19} color={TEXT_GREY} style={{ marginRight: 8 }} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search by customer name..."
+            placeholderTextColor={TEXT_GREY}
+            style={styles.searchInput}
+            autoCorrect={false}
+            autoCapitalize="none"
+            underlineColorAndroid="transparent"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch("")}>
+              <Ionicons name="close-circle" size={21} color={TEXT_GREY} />
+            </TouchableOpacity>
+          )}
         </View>
       </LinearGradient>
 
-      <View style={styles.mainContentArea}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.cardListContainer}>
-              {loading ? (
-                  <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="large" color={ACCENT_BLUE} />
-                  </View>
-              ) : (
-                  <>
-                      {filteredCustomers.length > 0 ? (
-                          filteredCustomers.map((customer, index) => (
-                              <CustomerCard
-                                  key={index}
-                                  name={customer.borrower?.full_name || "Unknown Customer"}
-                                  phone={customer.borrower?.phone_number || "N/A"}
-                                  loanAmount={customer.loan_amount || "N/A"}
-                                  loanId={customer.loan_id || "N/A"}
-                                  // Use the improved formatter
-                                  address={formatCompleteAddress(customer.borrower)}
-                                  onPress={() =>
-                                      navigation.navigate("LoanPayin", {
-                                          user,
-                                          customer: customer?.borrower?._id,
-                                          loan_id: customer._id,
-                                          custom_loan_id: customer.loan_id,
-                                      })
-                                  }
-                              />
-                          ))
-                      ) : (
-                          <Text style={styles.noCustomersText}>No loan customers found.</Text>
-                      )}
-                  </>
-              )}
+      {/* LIST */}
+      <View style={styles.listArea}>
+        {loading ? (
+          <View style={styles.loaderWrap}>
+            <ActivityIndicator size="large" color={ACCENT_BLUE} />
+            <Text style={styles.loadingText}>Fetching loan accounts...</Text>
           </View>
-        </ScrollView>
+        ) : (
+          <FlatList
+            data={filteredCustomers}
+            renderItem={renderItem}
+            keyExtractor={(item) => (item._id || item.loan_id).toString()}
+            ListEmptyComponent={
+              <View style={styles.emptyWrap}>
+                <Ionicons name="cash-outline" size={52} color={BORDER_COLOR} />
+                <Text style={styles.emptyText}>No loan customers found.</Text>
+              </View>
+            }
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -209,69 +302,82 @@ const RouteCustomerLoan = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: TOP_GRADIENT[0] },
-  topContainer: { paddingHorizontal: 20, paddingBottom: 40 },
-  mainContentArea: {
-    flex: 1,
-    backgroundColor: SUBTLE_BG_GREY, 
-    borderTopLeftRadius: 35, 
-    borderTopRightRadius: 35,
-    marginTop: -25, 
-    paddingTop: 20,
+
+  headerGradient: { paddingHorizontal: 18, paddingBottom: 28 },
+  headerSpacer: { paddingTop: 8, paddingBottom: 6 },
+
+  titleBlock: { alignItems: 'center', marginBottom: 14 },
+  screenTitle: { fontSize: 22, fontWeight: '900', color: CARD_BG, letterSpacing: 0.3 },
+  screenSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 3, fontWeight: '500' },
+
+  navRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  navPill: { flex: 1, borderRadius: 12, borderWidth: 1.5, overflow: 'hidden' },
+  navPillInner: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, paddingHorizontal: 10, gap: 6 },
+  navPillText: { fontSize: 12, fontWeight: '700', flex: 1 },
+
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: CARD_BG, borderRadius: 13,
+    paddingHorizontal: 14, height: 46,
+    elevation: 5, shadowColor: '#000',
+    shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  headerSpacer: { paddingTop: 10, paddingBottom: 10 }, 
-  loadingContainer: { marginTop: 100, alignItems: 'center' },
-  titleContainer: { marginBottom: 20 },
-  title: { fontSize: 26, fontWeight: "900", color: CARD_BG, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: 'rgba(255, 255, 255, 0.8)', marginTop: 4, textAlign: 'center' },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: CARD_BG,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    height: 50,
-    elevation: 5,
+  searchInput: { flex: 1, fontSize: 14, color: MODERN_PRIMARY, paddingVertical: 0, fontWeight: '500' },
+
+  listArea: {
+    flex: 1, backgroundColor: SUBTLE_BG_GREY,
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    marginTop: -16, paddingTop: 6,
   },
-  searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, color: MODERN_PRIMARY },
-  scrollContainer: { paddingHorizontal: 20, paddingBottom: 40 },
-  cardListContainer: { gap: 18 },
-  cardContainer: {
-    backgroundColor: CARD_BG,
-    borderRadius: 25,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: BORDER_COLOR,
-    elevation: 5,
+  listContent: { paddingHorizontal: 14, paddingTop: 16, paddingBottom: 34 },
+
+  card: {
+    backgroundColor: CARD_BG, borderRadius: 18,
+    borderWidth: 1, borderColor: BORDER_COLOR,
+    overflow: 'hidden', elevation: 3,
+    shadowColor: '#000', shadowOpacity: 0.08,
+    shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  topCardSection: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  iconCircle: {
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: '#e8f6fc', justifyContent: 'center', alignItems: 'center',
+  cardTopAccent: {
+    height: 3, width: '28%',
+    backgroundColor: ACCENT_LOAN,   // purple bar for loans
+    marginLeft: 14, marginTop: 12, borderRadius: 4,
   },
-  infoContainer: { flex: 1, marginLeft: 20 },
-  cardTitle: { fontSize: 20, fontWeight: '900', color: MODERN_PRIMARY, marginBottom: 6 },
-  contactRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  phoneText: { fontSize: 16, color: TEXT_GREY, fontWeight: '600' },
-  amountBadgeContainer: {
-    backgroundColor: ACCENT_BLUE,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: 'flex-start',
-    marginTop: 4,
+  cardTop: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12, gap: 12,
   },
-  amountBadgeText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  chevronContainer: { paddingLeft: 10 },
-  separator: { height: 1, backgroundColor: BORDER_COLOR, marginVertical: 12 },
-  detailRowSection: { flexDirection: 'row', alignItems: 'flex-start' },
-  detailLabel: { fontSize: 12, fontWeight: '700', color: ACCENT_BLUE, marginBottom: 2 },
-  detailText: { fontSize: 14, color: MODERN_PRIMARY, fontWeight: '600' },
-  addressText: { 
-    fontSize: 14, 
-    color: MODERN_PRIMARY, 
-    lineHeight: 20, 
-    fontWeight: '500',
-    marginTop: 2,
+  avatarCircle: {
+    width: 46, height: 46, borderRadius: 23,
+    backgroundColor: ACCENT_LOAN + '18',
+    borderWidth: 1.5, borderColor: ACCENT_LOAN + '55',
+    justifyContent: 'center', alignItems: 'center',
   },
-  noCustomersText: { textAlign: "center", marginTop: 40, fontSize: 16, color: TEXT_GREY },
+  avatarText: { fontSize: 18, fontWeight: '900', color: ACCENT_LOAN },
+  cardInfo: { flex: 1 },
+  cardName: { fontSize: 14, fontWeight: '800', color: MODERN_PRIMARY, marginBottom: 2 },
+  cardPhone: { fontSize: 12, color: TEXT_GREY, fontWeight: '500', marginBottom: 6 },
+  actionsRow: { flexDirection: 'row', gap: 6, marginBottom: 6 },
+  actionBtn: { width: 30, height: 30, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+
+  loanBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: ACCENT_LOAN + '18',
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6, alignSelf: 'flex-start',
+    borderWidth: 1, borderColor: ACCENT_LOAN + '44',
+  },
+  loanBadgeText: { fontSize: 11, fontWeight: '800', color: ACCENT_LOAN },
+
+  separator: { height: 1, backgroundColor: BORDER_COLOR, marginHorizontal: 14 },
+  detailRow: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 14, paddingVertical: 9 },
+  detailLabel: { fontSize: 10, fontWeight: '700', color: ACCENT_BLUE, marginBottom: 2 },
+  detailValue: { fontSize: 12, color: MODERN_PRIMARY, fontWeight: '600', lineHeight: 17 },
+
+  loaderWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 70, gap: 12 },
+  loadingText: { color: TEXT_GREY, fontSize: 13, fontWeight: '500' },
+  emptyWrap: { alignItems: 'center', marginTop: 60, gap: 10 },
+  emptyText: { color: TEXT_GREY, fontSize: 14, fontWeight: '600' },
 });
 
 export default RouteCustomerLoan;

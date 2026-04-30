@@ -1,4 +1,3 @@
-
 import {
     View,
     Text,
@@ -13,6 +12,7 @@ import {
     Platform,
     Dimensions,
     KeyboardAvoidingView,
+    Alert,
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -32,7 +32,7 @@ const noImage = require("../assets/no.png");
 // --- MODERN COLOR PALETTE ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const MODERN_PRIMARY = "#1e293b"; 
-const ACCENT_BLUE = "#3b82f6"; 
+const ACCENT_BLUE = "#1796d1"; 
 const ACCENT_GREEN = "#10b981";
 const WARNING_ORANGE = "#f59e0b";
 const NEUTRAL_GREY = "#64748b"; 
@@ -43,6 +43,31 @@ const SUBTLE_BG_GREY = '#f8fafc';
 const CALL_GRADIENT = ['#fbbf24', '#d97706']; 
 const WHATSAPP_GRADIENT = ['#34d399', '#059669']; 
 const EDIT_GRADIENT = ['#60a5fa', '#2563eb']; 
+
+// --- HELPER FOR LINKING ---
+const handleAction = (type, value) => {
+    if (!value) return;
+
+    let url = "";
+    if (type === "call") {
+      url = `tel:${value}`;
+    } else if (type === "whatsapp") {
+      const cleanPhone = value.replace(/[^0-9]/g, "");
+      url = `whatsapp://send?phone=${cleanPhone}`;
+    } else if (type === "email") {
+      url = `mailto:${value}`;
+    }
+
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (!supported) {
+          Alert.alert("Error", `Unable to handle ${type}: ${value}`);
+        } else {
+          return Linking.openURL(url);
+        }
+      })
+      .catch((err) => console.error("An error occurred", err));
+};
 
 const ViewLeads = ({ route, navigation }) => {
     const { user } = route.params;
@@ -117,14 +142,6 @@ const ViewLeads = ({ route, navigation }) => {
         }, [startDate, endDate, fetchData])
     );
 
-    const handleCall = (phoneNumber) => {
-        Linking.openURL(`tel:${phoneNumber}`);
-    };
-
-    const handleWhatsApp = (phoneNumber) => {
-        Linking.openURL(`whatsapp://send?phone=${phoneNumber}`);
-    };
-
     const handleEditLead = (lead) => {
         navigation.navigate("EditLead", { user: user, lead: lead });
     };
@@ -191,9 +208,14 @@ const ViewLeads = ({ route, navigation }) => {
             avatarGradient = ['#fbbf24', '#f59e0b'];
         }
 
-        const createdDate = moment(item.createdAt).format("DD MMM YYYY");
         const schemeTypeDisplay = item.scheme_type ? item.scheme_type.charAt(0).toUpperCase() + item.scheme_type.slice(1) : "N/A";
         const groupName = item.group_id?.group_name ? item.group_id.group_name : "N/A";
+        
+        // Combined Date and Time formatted
+        const createdDateTime = moment(item.createdAt).format("DD MMM YYYY, hh:mm A");
+        
+        // Check for email
+        const leadEmail = item.lead_email || item.email;
 
         return (
             <View style={styles.cardContainer}>
@@ -216,43 +238,54 @@ const ViewLeads = ({ route, navigation }) => {
                         </View>
                         <Text style={styles.subText} numberOfLines={1}>{groupName}</Text>
                     </View>
-
-                   
                 </View>
 
-                {/* INFO GRID: Compact 2x2 layout */}
+                {/* INFO GRID: Combined Date & Time */}
                 <View style={styles.infoGrid}>
                     <InfoItem icon="star-outline" label="Scheme" value={schemeTypeDisplay} />
-                    <InfoItem icon="calendar-outline" label="Created" value={createdDate} />
-                    <InfoItem icon="call-outline" label="Phone" value={item.lead_phone} />
-                    <InfoItem icon="time-outline" label="Time" value={moment(item.createdAt).format("HH:mm")} />
+                    <InfoItem icon="calendar-outline" label="Created" value={createdDateTime} />
                 </View>
 
-                {/* ACTIONS: Small Buttons */}
-                <View style={styles.actionRow}>
-                    <TouchableOpacity onPress={() => handleCall(item.lead_phone)} style={styles.iconBtn} activeOpacity={0.7}>
-                        <LinearGradient colors={CALL_GRADIENT} style={styles.iconBtnGradient}>
-                            <Ionicons name="call" size={16} color="white" />
-                      
-                        </LinearGradient>
+                {/* ACTIONS: Circular Icon Buttons */}
+                <View style={styles.contactActionsRow}>
+                    <TouchableOpacity 
+                        onPress={() => handleAction("call", item.lead_phone)} 
+                        style={styles.actionButton} 
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="call" size={16} color="#10B981" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleWhatsApp(item.lead_phone)} style={styles.iconBtn} activeOpacity={0.7}>
-                        <LinearGradient colors={WHATSAPP_GRADIENT} style={styles.iconBtnGradient}>
-                            <Icon name="whatsapp" size={16} color="white" />
-                          
-                        </LinearGradient>
+
+                    <TouchableOpacity 
+                        onPress={() => handleAction("whatsapp", item.lead_phone)} 
+                        style={styles.actionButton} 
+                        activeOpacity={0.7}
+                    >
+                        <Icon name="whatsapp" size={18} color="#25D366" />
                     </TouchableOpacity>
+
+                    {leadEmail ? (
+                        <TouchableOpacity 
+                            onPress={() => handleAction("email", leadEmail)} 
+                            style={styles.actionButton} 
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="mail" size={16} color={ACCENT_BLUE} />
+                        </TouchableOpacity>
+                    ) : null}
+
                     {freshLead && (
-                         <TouchableOpacity onPress={() => handleEditLead(item)} style={styles.iconBtn} activeOpacity={0.7}>
-                            <LinearGradient colors={EDIT_GRADIENT} style={styles.iconBtnGradient}>
-                                <Icon name="pencil" size={14} color="white" />
-                                <Text style={styles.iconBtnText}>Edit</Text>
-                            </LinearGradient>
+                         <TouchableOpacity 
+                            onPress={() => handleEditLead(item)} 
+                            style={styles.actionButton} 
+                            activeOpacity={0.7}
+                        >
+                            <Icon name="pencil" size={14} color={ACCENT_BLUE} />
                         </TouchableOpacity>
                     )}
                 </View>
 
-                {/* EXPANDED IMAGE ONLY (Save space) */}
+                {/* EXPANDED IMAGE ONLY */}
                 {isExpanded && item.lead_image && (
                     <View style={styles.expandedSection}>
                          <Image source={{ uri: item.lead_image }} style={styles.leadImage} />
@@ -376,22 +409,22 @@ const styles = StyleSheet.create({
     headerSpacer: { paddingBottom: 5 },
     titleContainer: { alignItems: 'center', marginVertical: 10 },
     titleRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 15 },
-    title: { fontSize: 28, fontWeight: '800', color: 'white', letterSpacing: -1 },
+    title: { fontSize: 24, fontWeight: "800", color: 'white', letterSpacing: -1 }, 
     totalCountBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 16 },
-    totalCountText: { color: 'white', fontWeight: '700', fontSize: 13 },
+    totalCountText: { color: 'white', fontWeight: '700', fontSize: 12 }, 
     
     // Search
     searchRow: { flexDirection: 'row', width: '100%', gap: 12, marginBottom: 10 },
     searchBarContainer: { flex: 1, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 10, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 40 },
     searchIcon: { marginRight: 8 },
-    searchBar: { flex: 1, color: MODERN_PRIMARY, fontSize: 14 },
+    searchBar: { flex: 1, color: MODERN_PRIMARY, fontSize: 13 }, 
     filterBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
 
     // Tabs
     tabContainer: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 10, padding: 3 },
     tab: { flex: 1, paddingVertical: 6, alignItems: 'center', borderRadius: 7 },
     activeTab: { backgroundColor: 'white' },
-    tabText: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+    tabText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.7)' }, 
     activeTabText: { color: TOP_GRADIENT[1], fontWeight: '800' },
 
     // Main Area
@@ -414,25 +447,25 @@ const styles = StyleSheet.create({
     cardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 8,
     },
     avatarWrapper: {
         borderWidth: 2,
-        borderRadius: 20,
+        borderRadius: 18, 
         marginRight: 10,
     },
     avatarGradient: {
-        width: 38,
-        height: 38,
+        width: 36,
+        height: 36,
         borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    avatarText: { fontSize: 16, fontWeight: '800', color: 'white' },
+    avatarText: { fontSize: 14, fontWeight: '800', color: 'white' },
     headerInfo: { flex: 1, marginRight: 5 },
     nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
     customerName: { 
-        fontSize: 17, 
+        fontSize: 14, 
         fontWeight: '700', 
         color: MODERN_PRIMARY, 
         flex: 1,
@@ -444,62 +477,52 @@ const styles = StyleSheet.create({
         borderRadius: 4, 
         borderWidth: 1 
     },
-    statusText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.3 },
-    subText: { fontSize: 12, color: NEUTRAL_GREY, fontWeight: '500' },
+    statusText: { fontSize: 8, fontWeight: '800', letterSpacing: 0.3 }, 
+    subText: { fontSize: 11, color: NEUTRAL_GREY, fontWeight: '500' }, 
     expandIcon: { padding: 2 },
 
     // Info Grid
     infoGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginBottom: 10,
+        marginBottom: 8,
         backgroundColor: SUBTLE_BG_GREY,
         borderRadius: 8,
         padding: 8,
     },
     infoItem: {
-        width: '50%', // 2 columns
+        width: '100%', // Full width for combined date
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 6,
+        marginBottom: 4,
     },
     infoTextBlock: { marginLeft: 6, flex: 1 },
     infoLabel: { fontSize: 9, color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' },
-    infoValue: { fontSize: 12, color: MODERN_PRIMARY, fontWeight: '600' },
+    infoValue: { fontSize: 11, color: MODERN_PRIMARY, fontWeight: '600' }, 
 
     // Action Row
-    actionRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: 8,
-    },
-    iconBtn: {
-        height: 34,
-        borderRadius: 8,
-        overflow: 'hidden',
-        minWidth: 60,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    iconBtnGradient: {
-        flex: 1,
+    contactActionsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 10,
+        marginBottom: 4,
     },
-    iconBtnText: { color: 'white', fontWeight: '700', fontSize: 12, marginLeft: 4 },
+    actionButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
 
     // Expanded
-    expandedSection: { marginTop: 10, borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 10 },
+    expandedSection: { marginTop: 8, borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 8 },
     leadImage: { width: '100%', height: 120, borderRadius: 8, resizeMode: 'cover' },
 
     // Misc
     noDataContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50, backgroundColor: CARD_BG, borderRadius: 16, margin: 16 },
-    noDataText: { fontSize: 15, color: NEUTRAL_GREY, marginTop: 10, fontWeight: '600' },
+    noDataText: { fontSize: 14, color: NEUTRAL_GREY, marginTop: 10, fontWeight: '600' }, 
     noImage: { width: 100, height: 100, resizeMode: "contain", opacity: 0.5 },
     
     // FAB
