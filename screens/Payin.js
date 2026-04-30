@@ -636,6 +636,22 @@ const Payin = ({ route, navigation }) => {
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Navigation Icons */}
+      <View style={styles.navFabContainer}>
+        <TouchableOpacity 
+          style={styles.navFab} 
+          onPress={() => navigation.navigate("RouteCustomerLoan", { customer })}
+        >
+          <MaterialIcons name="account-balance-wallet" size={24} color={MODERN_PRIMARY} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.navFab} 
+          onPress={() => navigation.navigate("RouteCustomerPigme", { customer })}
+        >
+          <MaterialIcons name="savings" size={24} color={MODERN_PRIMARY} />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -717,7 +733,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   column: { flex: 1, marginHorizontal: 3 },
-  label: { fontWeight: "600", marginTop: 4, fontSize: 12, color: MODERN_PRIMARY }, // Updated to 12
+  label: { fontWeight: "600", marginTop: 4, fontSize: 12, color: MODERN_PRIMARY },
   star: { color: "#ff0000" },
   textInput: {
     paddingVertical: 12,
@@ -741,11 +757,11 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: "100%",
-    fontSize: 14, // Added size
+    fontSize: 14,
     color: MODERN_PRIMARY,
   },
   pickerItem: {
-    fontSize: 14, // Ensures options are size 14 on iOS
+    fontSize: 14,
   },
   buttonContainer: {
     flexDirection: "row",
@@ -950,6 +966,27 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 14,
     letterSpacing: 0.5,
+  },
+  navFabContainer: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    flexDirection: 'column',
+    gap: 12,
+    zIndex: 10,
+  },
+  navFab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: PRIMARY_BUTTON_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 });
 

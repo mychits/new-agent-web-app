@@ -619,6 +619,22 @@ const LoanPayin = ({ route, navigation }) => {
           {renderContent()}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Navigation Icons */}
+      <View style={styles.navFabContainer}>
+        <TouchableOpacity 
+          style={styles.navFab} 
+          onPress={() => navigation.navigate("RouteCustomerChit", { customer })}
+        >
+          <MaterialIcons name="assignment" size={24} color={MODERN_PRIMARY} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.navFab} 
+          onPress={() => navigation.navigate("RouteCustomerPigme", { customer })}
+        >
+          <MaterialIcons name="savings" size={24} color={MODERN_PRIMARY} />
+        </TouchableOpacity>
+      </View>
     </LinearGradient>
   );
 };
@@ -971,6 +987,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 16,
     letterSpacing: 0.5,
+  },
+  navFabContainer: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    flexDirection: 'column',
+    gap: 12,
+    zIndex: 10,
+  },
+  navFab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: PRIMARY_BUTTON_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   }
 });
 
