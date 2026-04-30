@@ -661,6 +661,28 @@ const PigmePayin = ({ route, navigation }) => {
                     {renderContent()}
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Navigation Icons with Text */}
+            <View style={styles.navFabContainer}>
+                <TouchableOpacity 
+                    style={styles.navFab} 
+                    onPress={() => navigation.navigate("RouteCustomerChit", { customer })}
+                >
+                    <View style={styles.navFabCircle}>
+                       <MaterialIcons name="assignment" size={24} color={MODERN_PRIMARY} />
+                    </View>
+                    <Text style={styles.navFabText}>Chit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={styles.navFab} 
+                    onPress={() => navigation.navigate("RouteCustomerLoan", { customer })}
+                >
+                    <View style={styles.navFabCircle}>
+                       <MaterialIcons name="account-balance-wallet" size={24} color={MODERN_PRIMARY} />
+                    </View>
+                    <Text style={styles.navFabText}>Loan</Text>
+                </TouchableOpacity>
+            </View>
         </LinearGradient>
     );
 };
@@ -1019,6 +1041,40 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         fontSize: 16,
         letterSpacing: 0.5,
+    },
+    navFabContainer: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        flexDirection: 'column',
+        gap: 12,
+        zIndex: 10,
+    },
+    navFab: {
+        alignItems: 'center',
+    },
+    navFabCircle: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: PRIMARY_BUTTON_COLOR,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    navFabText: {
+        marginTop: 4,
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: MODERN_PRIMARY,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8,
     }
 });
 
