@@ -14,6 +14,9 @@ import {
   Platform,
   Modal,
   Pressable,
+  Keyboard,
+  ScrollView,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
@@ -35,6 +38,7 @@ const SUCCESS      = "#10B981";
 const DANGER       = "#ef4444";
 const WARNING      = "#f59e0b";
 const WA_GREEN     = "#25D366";
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // ── Helpers ───────────────────────────────────────────────────────
 const formatCurrency = (v) => {
@@ -69,7 +73,7 @@ const openLink = (type, value) => {
   Linking.openURL(url).catch(() => Alert.alert("Error", `Cannot open ${type}`));
 };
 
-// ── UPDATED TABS (Restored 'ALL', Kept 'REJECTED' removed) ────────
+// ── Tabs ─────────────────────────────────────────────────────────
 const TABS = [
   { key: "ALL",      label: "All"      },
   { key: "PENDING",  label: "Pending"  },
@@ -79,102 +83,184 @@ const TAB_COLORS = {
   ALL: ACCENT_BLUE, PENDING: WARNING, APPROVED: SUCCESS,
 };
 
-// ── Custom Confirmation Modal ─────────────────────────────────────
-const ConfirmModal = ({ visible, type, borrowerName, loanAmount, onConfirm, onCancel, loading }) => {
-  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+// ── UPDATED: Custom Confirmation Modal (Amount Disabled on Reject) ────
+const ConfirmModal = ({ 
+  visible, 
+  type, 
+  borrowerName, 
+  loanAmount, 
+  onConfirm, 
+  onCancel, 
+  loading 
+}) => {
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
 
+  // Local state for inputs
+  const [approvedAmount, setApprovedAmount] = useState("");
+  const [remark, setRemark] = useState("");
+
+  // Reset inputs when modal opens/closes
   useEffect(() => {
     if (visible) {
+      setApprovedAmount(loanAmount ? loanAmount.toString() : ""); // Pre-fill
+      setRemark("");
+      
       Animated.parallel([
         Animated.spring(scaleAnim, { toValue: 1, tension: 120, friction: 8, useNativeDriver: true }),
         Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
       ]).start();
     } else {
-      scaleAnim.setValue(0.85);
+      scaleAnim.setValue(0.9);
       fadeAnim.setValue(0);
     }
-  }, [visible]);
+  }, [visible, loanAmount]);
 
   const isApprove   = type === "APPROVED";
   const accentColor = isApprove ? SUCCESS : DANGER;
   const lightBg     = isApprove ? "#f0fdf4" : "#fff1f2";
   const iconName    = isApprove ? "checkmark-circle" : "close-circle";
   const title       = isApprove ? "Approve Loan?" : "Reject Loan?";
-  const desc        = isApprove
-    ? "You're about to approve this loan request. This action cannot be undone."
-    : "You're about to reject this loan request. This action cannot be undone.";
+
+  const handlePressConfirm = () => {
+    // If approving, check amount. If rejecting, amount doesn't matter (disabled).
+    if (isApprove && !approvedAmount.trim()) {
+      Alert.alert("Missing Info", "Please enter the approved amount.");
+      return;
+    }
+    onConfirm(type, approvedAmount, remark);
+  };
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
-      <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
+      <Pressable style={styles.modalOverlay} onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.modalOverlay} edges={["bottom"]}>
+          {/* Center Container */}
+          <View style={styles.modalCenterContainer}>
+            <Pressable style={{ width: "100%" }} onPress={onCancel}>
+              <Animated.View 
+                style={[styles.modalCard, { transform: [{ scale: scaleAnim }] }]} 
+                onStartShouldSetResponder={() => true} 
+              >
+                <ScrollView 
+                  bounces={false} 
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={styles.modalScrollContent}
+                >
+                  {/* Icon circle */}
+                  <View style={[styles.modalIconWrap, { backgroundColor: lightBg }]}>
+                    <Ionicons name={iconName} size={40} color={accentColor} />
+                  </View>
 
-        <Animated.View style={[styles.modalCard, { transform: [{ scale: scaleAnim }] }]}>
-          {/* Icon circle */}
-          <View style={[styles.modalIconWrap, { backgroundColor: lightBg }]}>
-            <Ionicons name={iconName} size={36} color={accentColor} />
-          </View>
+                  {/* Title */}
+                  <Text style={styles.modalTitle}>{title}</Text>
 
-          {/* Title */}
-          <Text style={styles.modalTitle}>{title}</Text>
+                  {/* Borrower info strip */}
+                  <View style={[styles.modalInfoStrip, { borderColor: accentColor + "33", backgroundColor: lightBg }]}>
+                    <View style={styles.modalInfoRow}>
+                      <Ionicons name="person-circle-outline" size={14} color={TEXT_GREY} />
+                      <Text style={styles.modalInfoLabel}> Borrower</Text>
+                      <Text style={styles.modalInfoValue} numberOfLines={1}>{borrowerName || "—"}</Text>
+                    </View>
+                    <View style={[styles.modalInfoDivider, { backgroundColor: accentColor + "22" }]} />
+                    <View style={styles.modalInfoRow}>
+                      <Ionicons name="cash-outline" size={14} color={TEXT_GREY} />
+                      <Text style={styles.modalInfoLabel}> Requested</Text>
+                      <Text style={[styles.modalInfoValue, { color: TEXT_GREY, fontWeight: "600" }]}>
+                        {formatCurrency(loanAmount)}
+                      </Text>
+                    </View>
+                  </View>
 
-          {/* Borrower info strip */}
-          <View style={[styles.modalInfoStrip, { borderColor: accentColor + "33", backgroundColor: lightBg }]}>
-            <View style={styles.modalInfoRow}>
-              <Ionicons name="person-circle-outline" size={14} color={TEXT_GREY} />
-              <Text style={styles.modalInfoLabel}> Borrower</Text>
-              <Text style={styles.modalInfoValue} numberOfLines={1}>{borrowerName || "—"}</Text>
-            </View>
-            <View style={[styles.modalInfoDivider, { backgroundColor: accentColor + "22" }]} />
-            <View style={styles.modalInfoRow}>
-              <Ionicons name="cash-outline" size={14} color={TEXT_GREY} />
-              <Text style={styles.modalInfoLabel}> Amount</Text>
-              <Text style={[styles.modalInfoValue, { color: SUCCESS, fontWeight: "700" }]}>
-                {formatCurrency(loanAmount)}
-              </Text>
-            </View>
-          </View>
+                  {/* --- INPUT SECTION --- */}
+                  <View style={{ width: "100%", marginTop: 20 }}>
+                    {/* Amount Input */}
+                    <Text style={styles.inputLabel}>
+                      {isApprove ? "Final Approved Amount *" : "Requested Amount (Disabled)"}
+                    </Text>
+                    <View style={[
+                      styles.inputContainer, 
+                      { 
+                        borderColor: isApprove ? (approvedAmount ? ACCENT_BLUE : BORDER_COLOR) : "#eee",
+                        backgroundColor: isApprove ? SUBTLE_BG : "#f9f9f9"
+                      }
+                    ]}>
+                      <Text style={[styles.currencySymbol, { color: isApprove ? PRIMARY_DARK : "#aaa" }]}>₹</Text>
+                      <TextInput
+                        style={[styles.textInput, { color: isApprove ? PRIMARY_DARK : "#aaa" }]}
+                        placeholder="0"
+                        placeholderTextColor={TEXT_GREY}
+                        value={approvedAmount}
+                        onChangeText={setApprovedAmount}
+                        keyboardType="number-pad"
+                        returnKeyType="next"
+                        editable={isApprove} // <--- DISABLED IF REJECTING
+                      />
+                    </View>
 
-          {/* Description */}
-          <Text style={styles.modalDesc}>{desc}</Text>
+                    {/* Remark Input */}
+                    <Text style={[styles.inputLabel, { marginTop: 16 }]}>Remark / Reason *</Text>
+                    <TextInput
+                      style={[styles.textArea, { borderColor: remark ? ACCENT_BLUE : BORDER_COLOR }]}
+                      placeholder={isApprove ? "Add a note (e.g. Verified docs)..." : "Reason for rejection..."}
+                      placeholderTextColor={TEXT_GREY}
+                      value={remark}
+                      onChangeText={setRemark}
+                      multiline
+                      textAlignVertical="top"
+                    />
+                  </View>
 
-          {/* Buttons */}
-          <View style={styles.modalBtnRow}>
-            <TouchableOpacity
-              style={styles.modalCancelBtn}
-              onPress={onCancel}
-              activeOpacity={0.7}
-              disabled={loading}
-            >
-              <Text style={styles.modalCancelTxt}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modalConfirmBtn, { backgroundColor: accentColor }]}
-              onPress={onConfirm}
-              activeOpacity={0.8}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name={iconName} size={15} color="#fff" />
-                  <Text style={styles.modalConfirmTxt}>
-                    {isApprove ? "  Yes, Approve" : "  Yes, Reject"}
+                  {/* Description */}
+                  <Text style={styles.modalDesc}>
+                    {isApprove
+                      ? "Confirming this will notify the borrower."
+                      : "This action cannot be undone."}
                   </Text>
-                </>
-              )}
-            </TouchableOpacity>
+
+                  {/* Buttons */}
+                  <View style={styles.modalBtnRow}>
+                    <TouchableOpacity
+                      style={styles.modalCancelBtn}
+                      onPress={onCancel}
+                      activeOpacity={0.7}
+                      disabled={loading}
+                    >
+                      <Text style={styles.modalCancelTxt}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.modalConfirmBtn, { backgroundColor: accentColor }]}
+                      onPress={handlePressConfirm}
+                      activeOpacity={0.8}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Ionicons name={iconName} size={16} color="#fff" />
+                          <Text style={styles.modalConfirmTxt}>
+                            {isApprove ? "  Approve" : "  Reject"}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                  {/* Extra padding for bottom safe area */}
+                  <View style={{ height: 10 }} />
+                </ScrollView>
+              </Animated.View>
+            </Pressable>
           </View>
-        </Animated.View>
-      </Animated.View>
+        </SafeAreaView>
+      </Pressable>
     </Modal>
   );
 };
 
-// ── Loan Card ─────────────────────────────────────────────────────
+// ── Loan Card Component ────────────────────────────────────────────
 const LoanCard = React.memo(({ item, index, onStatusChange }) => {
   const anim  = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
@@ -203,18 +289,21 @@ const LoanCard = React.memo(({ item, index, onStatusChange }) => {
     setModalVisible(true);
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (status, amount, remark) => {
     setBusy(true);
     try {
       const res = await axios.put(
         `${baseUrl}/v1/mobile/loans/update-borrower-status/${item._id}`,
-        { agent_approval_status: pendingStatus }
+        { 
+          agent_approval_status: status,
+          employee_approved_amount: amount, 
+          employee_remark: remark          
+        }
       );
       if (!res.data?.success) throw new Error(res.data?.message || "Failed");
       setModalVisible(false);
-      onStatusChange(item._id, pendingStatus);
+      onStatusChange(item._id, status);
     } catch (e) {
-      setModalVisible(false);
       Alert.alert("Error", e.message || "Something went wrong.");
     } finally {
       setBusy(false);
@@ -227,7 +316,7 @@ const LoanCard = React.memo(({ item, index, onStatusChange }) => {
         visible={modalVisible}
         type={pendingStatus}
         borrowerName={borrower.full_name}
-        loanAmount={item.loan_amount}
+        loanAmount={item.loan_amount} 
         onConfirm={handleConfirm}
         onCancel={() => !busy && setModalVisible(false)}
         loading={busy}
@@ -374,7 +463,6 @@ const LoanCard = React.memo(({ item, index, onStatusChange }) => {
 const ApprovalsScreen = () => {
   const [loans, setLoans]           = useState([]);
   const [search, setSearch]         = useState("");
-  // UPDATED: Default to "ALL" to show all cards by default
   const [activeTab, setActiveTab]   = useState("ALL");
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -407,18 +495,15 @@ const ApprovalsScreen = () => {
       prev.map((l) => (l._id === id ? { ...l, agent_approval_status: status } : l))
     ), []);
 
-  // UPDATED: Re-added ALL count, kept REJECTED removed
   const counts = useMemo(() => ({
     ALL:      loans.length,
     PENDING:  loans.filter((l) => !l.agent_approval_status || l.agent_approval_status === "PENDING").length,
     APPROVED: loans.filter((l) => l.agent_approval_status === "APPROVED").length,
   }), [loans]);
 
-  // UPDATED: Logic to filter only if tab is not ALL
   const displayed = useMemo(() => {
     let list = loans;
     
-    // Only filter if activeTab is NOT "ALL"
     if (activeTab !== "ALL") {
       list = list.filter((l) => (l.agent_approval_status || "PENDING") === activeTab);
     }
@@ -695,59 +780,67 @@ const styles = StyleSheet.create({
   footItem: { flexDirection: "row", alignItems: "center" },
   footTxt:  { fontSize: 9, color: TEXT_GREY, fontWeight: "600" },
 
+  // --- Modal Styles ---
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(10,20,40,0.55)",
+    backgroundColor: "rgba(10,20,40,0.65)",
+  },
+  modalCenterContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   modalCard: {
     width: "100%",
+    maxWidth: 380,
     backgroundColor: CARD_BG,
     borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 24,
+  },
+  modalScrollContent: {
     paddingHorizontal: 22,
     paddingTop: 28,
     paddingBottom: 20,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.18,
-    shadowRadius: 32,
-    elevation: 20,
   },
   modalIconWrap: {
-    width: 72, height: 72, borderRadius: 36,
+    width: 64, height: 64, borderRadius: 32,
     justifyContent: "center", alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   modalTitle: {
-    fontSize: 18, fontWeight: "800", color: PRIMARY_DARK,
-    marginBottom: 14, letterSpacing: 0.2,
+    fontSize: 19, fontWeight: "800", color: PRIMARY_DARK,
+    marginBottom: 10, letterSpacing: 0.2, textAlign: "center",
   },
   modalInfoStrip: {
     width: "100%", borderRadius: 12,
     borderWidth: 1, overflow: "hidden",
-    marginBottom: 14,
+    marginBottom: 12,
   },
   modalInfoRow: {
     flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 14, paddingVertical: 10,
+    paddingHorizontal: 14, paddingVertical: 9,
   },
   modalInfoLabel: {
     fontSize: 12, color: TEXT_GREY, fontWeight: "600", flex: 1,
   },
   modalInfoValue: {
     fontSize: 12, color: PRIMARY_DARK, fontWeight: "600",
-    maxWidth: "55%", textAlign: "right",
+    maxWidth: "50%", textAlign: "right",
   },
   modalInfoDivider: { height: 1, marginHorizontal: 14 },
   modalDesc: {
     fontSize: 12, color: TEXT_GREY, textAlign: "center",
-    lineHeight: 18, marginBottom: 22, paddingHorizontal: 4,
+    lineHeight: 18, marginBottom: 20, paddingHorizontal: 4, marginTop: 4,
   },
   modalBtnRow: {
-    flexDirection: "row", width: "100%", gap: 10,
+    flexDirection: "row", width: "100%", gap: 12,
   },
   modalCancelBtn: {
     flex: 1, paddingVertical: 13, borderRadius: 12,
@@ -759,7 +852,7 @@ const styles = StyleSheet.create({
     fontSize: 13, fontWeight: "700", color: TEXT_GREY,
   },
   modalConfirmBtn: {
-    flex: 1.6, flexDirection: "row",
+    flex: 1.5, flexDirection: "row",
     paddingVertical: 13, borderRadius: 12,
     alignItems: "center", justifyContent: "center",
     elevation: 3,
@@ -768,6 +861,51 @@ const styles = StyleSheet.create({
   },
   modalConfirmTxt: {
     fontSize: 13, fontWeight: "800", color: "#fff", letterSpacing: 0.2,
+  },
+  
+  // --- Input Styles ---
+  inputLabel: {
+    fontSize: 11, 
+    fontWeight: "700", 
+    color: TEXT_GREY, 
+    marginLeft: 2, 
+    marginBottom: 4,
+    textAlign: "left",
+    alignSelf: "flex-start",
+    width: "100%"
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.2,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 48,
+    width: "100%"
+  },
+  currencySymbol: {
+    fontSize: 18, 
+    fontWeight: "700", 
+    marginRight: 8,
+  },
+  textInput: {
+    flex: 1, 
+    fontSize: 16, 
+    fontWeight: "600", 
+    padding: 0,
+  },
+  textArea: {
+    width: "100%",
+    borderWidth: 1.2,
+    borderRadius: 10,
+    backgroundColor: SUBTLE_BG,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
+    fontSize: 14,
+    color: PRIMARY_DARK,
+    minHeight: 70,
+    textAlignVertical: 'top'
   },
 
   center:   { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 28 },
