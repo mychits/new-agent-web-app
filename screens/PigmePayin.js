@@ -33,7 +33,7 @@ const ERROR_GRADIENT = ['#eb3349', '#f45c43']; // Red/Orange for Error Modal
 const MODERN_PRIMARY = "#0d0d0d";
 const ACCENT_BLUE = "#1796d1ff";
 const BORDER_COLOR = "#e0e0e0";
-const TEXT_GREY = "#ffffff";
+const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f9fafb";
 const PRIMARY_BUTTON_COLOR = "#f8c009";
@@ -329,7 +329,6 @@ const PigmePayin = ({ route, navigation }) => {
                         setSelectedPigme(itemValue);
                     }}
                     style={styles.picker}
-                    itemStyle={styles.pickerItem}
                 >
                     <Picker.Item label="Select Pigme ID" value={null} color={TEXT_GREY} />
                     {pigmeData.map((data) => (
@@ -470,7 +469,6 @@ const PigmePayin = ({ route, navigation }) => {
                                 selectedValue={paymentDetails}
                                 onValueChange={handlePaymentTypeChange}
                                 style={styles.picker}
-                                itemStyle={styles.pickerItem}
                                 dropdownIconColor="#111827"
                             >
                                 <Picker.Item label="Cash" value="cash" color="#1F2937" />
@@ -605,7 +603,7 @@ const PigmePayin = ({ route, navigation }) => {
                             {paymentDetails === "online" && (
                                 <View style={styles.stylishRow}>
                                     <Text style={styles.stylishLabel}>Trans. ID</Text>
-                                    <Text style={[styles.stylishValue]}>{transactionId}</Text>
+                                    <Text style={[styles.stylishValue, { fontSize: 14 }]}>{transactionId}</Text>
                                 </View>
                             )}
 
@@ -661,28 +659,6 @@ const PigmePayin = ({ route, navigation }) => {
                     {renderContent()}
                 </ScrollView>
             </KeyboardAvoidingView>
-
-            {/* Navigation Icons with Text */}
-            <View style={styles.navFabContainer}>
-                <TouchableOpacity 
-                    style={styles.navFab} 
-                    onPress={() => navigation.navigate("RouteCustomerChit", { customer })}
-                >
-                    <View style={styles.navFabCircle}>
-                       <MaterialIcons name="assignment" size={24} color={MODERN_PRIMARY} />
-                    </View>
-                    <Text style={styles.navFabText}>Chit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={styles.navFab} 
-                    onPress={() => navigation.navigate("RouteCustomerLoan", { customer })}
-                >
-                    <View style={styles.navFabCircle}>
-                       <MaterialIcons name="account-balance-wallet" size={24} color={MODERN_PRIMARY} />
-                    </View>
-                    <Text style={styles.navFabText}>Loan</Text>
-                </TouchableOpacity>
-            </View>
         </LinearGradient>
     );
 };
@@ -806,7 +782,7 @@ const styles = StyleSheet.create({
         marginBottom: 10, 
     },
     label: {
-        fontSize: 12, // UPDATED TO 12
+        fontSize: 11, 
         color: "#6B7280",
         textTransform: "uppercase",
         letterSpacing: 0.8,
@@ -820,7 +796,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#F9FAFB",
         borderRadius: 10, 
         paddingHorizontal: 12,
-        fontSize: 14, // KEPT AT 14
+        fontSize: 14,
         color: "#111827",
         borderWidth: 1,
         borderColor: "#E5E7EB", 
@@ -837,7 +813,7 @@ const styles = StyleSheet.create({
         marginVertical: 3,
     },
     fakeInputText: {
-        fontSize: 14, // KEPT AT 14
+        fontSize: 14,
         color: "#374151",
         fontWeight: "600",
     },
@@ -859,11 +835,6 @@ const styles = StyleSheet.create({
     picker: { 
         width: "100%", 
         backgroundColor: 'transparent',
-        fontSize: 14, // ADDED FOR SIZE
-        color: MODERN_PRIMARY,
-    },
-    pickerItem: {
-        fontSize: 14, // ADDED FOR OPTIONS SIZE
     },
     stylishButton: {
         marginTop: 10,
@@ -951,12 +922,12 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     stylishLabel: {
-        fontSize: 12, // UPDATED TO 12
+        fontSize: 15,
         color: TEXT_GREY,
         fontWeight: '500',
     },
     stylishValue: {
-        fontSize: 14, // UPDATED TO 14
+        fontSize: 16,
         color: MODERN_PRIMARY,
         fontWeight: '700',
     },
@@ -969,7 +940,7 @@ const styles = StyleSheet.create({
         borderColor: BORDER_COLOR
     },
     methodText: {
-        fontSize: 14, // UPDATED TO 14
+        fontSize: 12,
         color: ACCENT_BLUE,
         fontWeight: '700',
         letterSpacing: 1,
@@ -1041,40 +1012,6 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         fontSize: 16,
         letterSpacing: 0.5,
-    },
-    navFabContainer: {
-        position: 'absolute',
-        bottom: 20,
-        right: 20,
-        flexDirection: 'column',
-        gap: 12,
-        zIndex: 10,
-    },
-    navFab: {
-        alignItems: 'center',
-    },
-    navFabCircle: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: PRIMARY_BUTTON_COLOR,
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 5,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-    },
-    navFabText: {
-        marginTop: 4,
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: MODERN_PRIMARY,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 8,
     }
 });
 

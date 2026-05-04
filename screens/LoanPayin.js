@@ -34,7 +34,7 @@ const ERROR_GRADIENT = ['#FF512F', '#DD2476']; // Red/Orange for errors
 const MODERN_PRIMARY = "#0d0d0eff"; 
 const ACCENT_BLUE = "#1796d1ff"; 
 const BORDER_COLOR = "#e0e0e0"; 
-const TEXT_GREY = "#ffffff"; 
+const TEXT_GREY = "#4b5563"; 
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f9fafb"; 
 const PRIMARY_BUTTON_COLOR = "#f8c009ff"; 
@@ -288,7 +288,6 @@ const LoanPayin = ({ route, navigation }) => {
           selectedValue={selectedLoan}
           onValueChange={(itemValue) => setSelectedLoan(itemValue)}
           style={styles.picker}
-          itemStyle={styles.pickerItem}
           dropdownIconColor="#111827"
         >
           <Picker.Item label="Select Loan" value={null} color="#1F2937" />
@@ -437,7 +436,6 @@ const LoanPayin = ({ route, navigation }) => {
                 selectedValue={paymentDetails}
                 onValueChange={(itemValues) => handlePaymentTypeChange(itemValues)}
                 style={styles.picker}
-                itemStyle={styles.pickerItem}
                 dropdownIconColor="#111827"
               >
                 <Picker.Item label="Select Method" value="" color="#1F2937" />
@@ -564,7 +562,7 @@ const LoanPayin = ({ route, navigation }) => {
               {paymentDetails === "online" && (
                 <View style={styles.stylishRow}>
                   <Text style={styles.stylishLabel}>Trans. ID</Text>
-                  <Text style={[styles.stylishValue]}>{transactionId}</Text>
+                  <Text style={[styles.stylishValue, { fontSize: 14 }]}>{transactionId}</Text>
                 </View>
               )}
 
@@ -619,22 +617,6 @@ const LoanPayin = ({ route, navigation }) => {
           {renderContent()}
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Navigation Icons */}
-      <View style={styles.navFabContainer}>
-        <TouchableOpacity 
-          style={styles.navFab} 
-          onPress={() => navigation.navigate("RouteCustomerChit", { customer })}
-        >
-          <MaterialIcons name="assignment" size={24} color={MODERN_PRIMARY} />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.navFab} 
-          onPress={() => navigation.navigate("RouteCustomerPigme", { customer })}
-        >
-          <MaterialIcons name="savings" size={24} color={MODERN_PRIMARY} />
-        </TouchableOpacity>
-      </View>
     </LinearGradient>
   );
 };
@@ -741,7 +723,7 @@ const styles = StyleSheet.create({
     marginBottom: 10, 
   },
   label: {
-    fontSize: 12, // UPDATED TO 12
+    fontSize: 11, 
     color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -755,7 +737,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
     borderRadius: 10, 
     paddingHorizontal: 12,
-    fontSize: 14, // KEPT AT 14
+    fontSize: 14,
     color: "#111827",
     borderWidth: 1,
     borderColor: "#E5E7EB", 
@@ -772,7 +754,7 @@ const styles = StyleSheet.create({
     marginVertical: 3,
   },
   fakeInputText: {
-    fontSize: 14, // KEPT AT 14
+    fontSize: 14,
     color: "#374151",
     fontWeight: "600",
   },
@@ -796,11 +778,6 @@ const styles = StyleSheet.create({
   picker: { 
     width: "100%", 
     backgroundColor: 'transparent',
-    fontSize: 14, // ADDED FOR SIZE
-    color: MODERN_PRIMARY,
-  },
-  pickerItem: {
-    fontSize: 14, // ADDED FOR OPTIONS SIZE
   },
   
   stylishButton: {
@@ -897,12 +874,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   stylishLabel: {
-    fontSize: 12, // UPDATED TO 12
+    fontSize: 15,
     color: TEXT_GREY,
     fontWeight: '500',
   },
   stylishValue: {
-    fontSize: 14, // UPDATED TO 14
+    fontSize: 16,
     color: MODERN_PRIMARY,
     fontWeight: '700',
   },
@@ -915,7 +892,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER_COLOR
   },
   methodText: {
-    fontSize: 14, // UPDATED TO 14
+    fontSize: 12,
     color: ACCENT_BLUE,
     fontWeight: '700',
     letterSpacing: 1,
@@ -987,27 +964,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 16,
     letterSpacing: 0.5,
-  },
-  navFabContainer: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    flexDirection: 'column',
-    gap: 12,
-    zIndex: 10,
-  },
-  navFab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: PRIMARY_BUTTON_COLOR,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   }
 });
 
