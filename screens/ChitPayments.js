@@ -264,6 +264,8 @@ const ChitPayments = ({ route, navigation }) => {
                                 updateFilterValue('group', selected?.group_name);
                                 setShowPicker(false);
                             }}
+                            style={{ color: MODERN_PRIMARY }}
+                            itemStyle={{ color: MODERN_PRIMARY }}
                         >
                             <Picker.Item label="All Groups" value="" />
                             {Array.isArray(groups) && groups.map((group) => (
@@ -294,6 +296,8 @@ const ChitPayments = ({ route, navigation }) => {
                                 updateFilterValue('customer', selected?.full_name);
                                 setShowPicker(false);
                             }}
+                            style={{ color: MODERN_PRIMARY }}
+                            itemStyle={{ color: MODERN_PRIMARY }}
                         >
                             <Picker.Item label="All Customers" value="" />
                             {cus.map((customer) => (
@@ -321,7 +325,10 @@ const ChitPayments = ({ route, navigation }) => {
                                 setSelectedPaymentMode(value);
                                 updateFilterValue('paymentMode', value);
                                 setShowPicker(false);
-                            }}>
+                            }}
+                            style={{ color: MODERN_PRIMARY }}
+                            itemStyle={{ color: MODERN_PRIMARY }}
+                        >
                             <Picker.Item label="All Modes" value="" />
                             {paymentModes.map((mode) => (
                                 <Picker.Item key={mode} label={mode} value={mode} />

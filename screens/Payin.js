@@ -32,7 +32,8 @@ const ACCENT_BLUE = "#1796d1ff";
 const BORDER_COLOR = "#e0e0e0";
 const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = "#f9fafb";
+// CORRECTED: Changed from #f9fafb (Light Grey) to #ffffff (Pure White) to ensure it looks white in APK
+const SUBTLE_BG_GREY = "#ffffff"; 
 const PRIMARY_BUTTON_COLOR = "#f8c009ff";
 
 const ERROR_GRADIENT = ['#eb3349', '#f45c43'];
@@ -649,7 +650,7 @@ const styles = StyleSheet.create({
   scrollableContentWrapper: { flex: 1 },
   mainContentArea: {
     flex: 1,
-    backgroundColor: SUBTLE_BG_GREY,
+    backgroundColor: SUBTLE_BG_GREY, // Now uses #ffffff
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 16,
@@ -711,6 +712,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER_COLOR,
     elevation: 4,
+    overflow: "hidden", // Added to prevent grey shadow artifacts on Android
   },
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   column: { flex: 1, marginHorizontal: 3 },
@@ -724,7 +726,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginVertical: 3,
     color: MODERN_PRIMARY,
-    backgroundColor: SUBTLE_BG_GREY,
+    backgroundColor: SUBTLE_BG_GREY, // Now uses #ffffff
     fontSize: 14,
   },
   pickerContainerFull: {
@@ -732,7 +734,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER_COLOR,
     borderWidth: 1,
     borderRadius: 10,
-    backgroundColor: SUBTLE_BG_GREY,
+    backgroundColor: SUBTLE_BG_GREY, // Now uses #ffffff
     marginVertical: 3,
     justifyContent: "center",
   },
@@ -773,7 +775,7 @@ const styles = StyleSheet.create({
   modalSubtitle: { fontSize: 15, color: TEXT_GREY, marginBottom: 14 },
   qrContainer: {
     padding: 10,
-    backgroundColor: SUBTLE_BG_GREY,
+    backgroundColor: SUBTLE_BG_GREY, // Now uses #ffffff
     borderRadius: 10,
     marginBottom: 18,
   },
@@ -862,7 +864,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   methodBadge: {
-    backgroundColor: SUBTLE_BG_GREY,
+    backgroundColor: SUBTLE_BG_GREY, // Now uses #ffffff
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -917,7 +919,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderRadius: 8,
     alignItems: "center",
-    backgroundColor: SUBTLE_BG_GREY,
+    backgroundColor: SUBTLE_BG_GREY, // Now uses #ffffff
   },
   stylishCancelText: {
     color: TEXT_GREY,

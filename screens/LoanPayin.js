@@ -36,7 +36,8 @@ const ACCENT_BLUE = "#1796d1ff";
 const BORDER_COLOR = "#e0e0e0"; 
 const TEXT_GREY = "#4b5563"; 
 const CARD_BG = "#ffffff";
-const SUBTLE_BG_GREY = "#f9fafb"; 
+// CORRECTED: Changed from #f9fafb to #ffffff to fix grey issue in APK
+const SUBTLE_BG_GREY = "#ffffff"; 
 const PRIMARY_BUTTON_COLOR = "#f8c009ff"; 
 
 const LoanPayin = ({ route, navigation }) => {
@@ -734,7 +735,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     paddingVertical: 12,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#ffffff", // Changed from #F9FAFB
     borderRadius: 10, 
     paddingHorizontal: 12,
     fontSize: 14,
@@ -745,7 +746,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     paddingVertical: 12,
-    backgroundColor: "#F3F4F6", 
+    backgroundColor: "#ffffff", // Changed from #F3F4F6
     borderRadius: 10,
     paddingHorizontal: 12,
     justifyContent: "center",
@@ -884,7 +885,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   methodBadge: {
-    backgroundColor: SUBTLE_BG_GREY,
+    backgroundColor: SUBTLE_BG_GREY, // Now uses #ffffff
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -939,7 +940,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: SUBTLE_BG_GREY,
+    backgroundColor: SUBTLE_BG_GREY, // Now uses #ffffff
   },
   stylishCancelText: {
     color: TEXT_GREY,

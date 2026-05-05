@@ -90,15 +90,6 @@ const LoanPayments = ({ route, navigation }) => {
 
   const paymentModes = ['cash', 'online'];
 
-  // const handleFilterPress = (filterId) => {
-  //   if (filterId === 'totalCollection') {
-  //     setSelectedFilter(filterId);
-  //     setShowTotalCollectionDetails(true);
-  //   } else {
-  //     setSelectedFilter(filterId);
-  //     setShowPicker(true);
-  //   }
-  // };
 const handleFilterPress = (filterId) => {
     if (filterId === 'totalCollection') {
         setSelectedFilter(filterId);
@@ -253,20 +244,6 @@ const handleFilterPress = (filterId) => {
             maximumDate={new Date(2100, 11, 31)}
         />
     );
-        return (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={(event, date) => {
-              setShowPicker(false);
-              if (date) {
-                setSelectedDate(date);
-                updateFilterValue('date', formatDate(date));
-              }
-            }}
-          />
-        );
       case 'loan':
         const uniqueloanIds = [...new Set(customers.map(c => c?.loan?.loan_id).filter(Boolean))];
         return (
@@ -278,6 +255,8 @@ const handleFilterPress = (filterId) => {
               updateFilterValue('loan', value);
               setShowPicker(false);
             }}
+            style={{ color: MODERN_PRIMARY }}
+            itemStyle={{ color: MODERN_PRIMARY }}
           >
             <Picker.Item label="All loan Accounts" value="" />
             {uniqueloanIds.map((loanId) => (
@@ -300,6 +279,8 @@ const handleFilterPress = (filterId) => {
               updateFilterValue('customer', selected?.full_name);
               setShowPicker(false);
             }}
+            style={{ color: MODERN_PRIMARY }}
+            itemStyle={{ color: MODERN_PRIMARY }}
           >
             <Picker.Item label="All Customers" value="" />
             {cus.map((customer) => (
@@ -320,7 +301,10 @@ const handleFilterPress = (filterId) => {
               setSelectedPaymentMode(value);
               updateFilterValue('paymentMode', value);
               setShowPicker(false);
-            }}>
+            }}
+            style={{ color: MODERN_PRIMARY }}
+            itemStyle={{ color: MODERN_PRIMARY }}
+          >
              <Picker.Item label="All Modes" value="" />
             {paymentModes.map((mode) => (
               <Picker.Item key={mode} label={mode} value={mode} />
@@ -704,28 +688,6 @@ const handleFilterPress = (filterId) => {
             </View>
             
             {/* Modals for Pickers and Total Collection */}
-            {/* <Modal
-                visible={showPicker}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowPicker(false)}>
-                <View style={styles.modalContainer}>
-                    <View style={styles.pickerContainer}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                setShowPicker(false);
-                                setSelectedFilter(null);
-                            }}
-                            style={styles.pickerCloseButton}
-                        >
-                           <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
-                        </TouchableOpacity>
-                        {renderPicker()}
-                    </View>
-                </View>
-            </Modal> */}
-
-            {/* Modals for Pickers - Platform Specific */}
 
 {/* Standard modal for non-date filters (customer, loan, paymentMode) */}
 {showPicker && selectedFilter && selectedFilter !== 'date' && (
