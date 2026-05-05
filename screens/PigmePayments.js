@@ -89,15 +89,6 @@ const PigmePayments = ({ route, navigation }) => {
 
   const paymentModes = ['cash', 'online'];
 
-  // const handleFilterPress = (filterId) => {
-  //   if (filterId === 'totalCollection') {
-  //     setSelectedFilter(filterId);
-  //     setShowTotalCollectionDetails(true);
-  //   } else {
-  //     setSelectedFilter(filterId);
-  //     setShowPicker(true);
-  //   }
-  // };
 
   const handleFilterPress = (filterId) => {
     if (filterId === 'totalCollection') {
@@ -251,20 +242,6 @@ const PigmePayments = ({ route, navigation }) => {
             maximumDate={new Date(2100, 11, 31)}
         />
     );
-        return (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={(event, date) => {
-              setShowPicker(false);
-              if (date) {
-                setSelectedDate(date);
-                updateFilterValue('date', formatDate(date));
-              }
-            }}
-          />
-        );
       case 'pigme':
         const uniquePigmyIds = [...new Set(customers.map(c => c?.pigme?.pigme_id).filter(Boolean))];
         return (
@@ -276,6 +253,8 @@ const PigmePayments = ({ route, navigation }) => {
               updateFilterValue('pigme', value ? `ID: ${value}` : 'All'); 
               setShowPicker(false);
             }}
+            style={{ color: MODERN_PRIMARY }}
+            itemStyle={{ color: MODERN_PRIMARY }}
           >
             <Picker.Item label="All Pigme Accounts" value="" />
             {uniquePigmyIds.map((pigmyId) => (
@@ -298,6 +277,8 @@ const PigmePayments = ({ route, navigation }) => {
               updateFilterValue('customer', selected?.full_name);
               setShowPicker(false);
             }}
+            style={{ color: MODERN_PRIMARY }}
+            itemStyle={{ color: MODERN_PRIMARY }}
           >
             <Picker.Item label="All Customers" value="" />
             {cus.map((customer) => (
@@ -318,7 +299,10 @@ const PigmePayments = ({ route, navigation }) => {
               setSelectedPaymentMode(value);
               updateFilterValue('paymentMode', value ? value.charAt(0).toUpperCase() + value.slice(1) : 'All'); 
               setShowPicker(false);
-            }}>
+            }}
+            style={{ color: MODERN_PRIMARY }}
+            itemStyle={{ color: MODERN_PRIMARY }}
+          >
              <Picker.Item label="All Modes" value="" />
             {paymentModes.map((mode) => (
               <Picker.Item key={mode} label={mode.charAt(0).toUpperCase() + mode.slice(1)} value={mode} />
@@ -650,7 +634,7 @@ const PigmePayments = ({ route, navigation }) => {
 
                     <View style={styles.totalDetailsCard}>
                       <Text style={styles.totalDetailsTitle}>Collection Summary</Text>
-                      <Text style={styles.totalDetailsAmount}>₹ {totalAmount.toFixed(2)}</Text>
+                      <Text style={styles.totalDetailsAmount}>₹ ${totalAmount.toFixed(2)}</Text>
                       <View style={styles.summaryInfo}>
                           <Text style={styles.totalDetailsAgent}>Agent: {agent.name || 'N/A'}</Text>
                           <Text style={styles.totalDetailsDate}>Date: {formatDate(selectedDate)}</Text>
@@ -726,27 +710,6 @@ const PigmePayments = ({ route, navigation }) => {
                         <Ionicons name="print-outline" size={20} color={MODERN_PRIMARY} style={{ marginRight: 5 }} />
                         <Text style={styles.printButtonText}>Print Report</Text>
                     </TouchableOpacity>
-                    {/* <Modal
-                      visible={showPicker}
-                      transparent={true}
-                      animationType="fade"
-                      onRequestClose={() => setShowPicker(false)}>
-                      <View style={styles.modalContainer}>
-                        <View style={styles.pickerContainer}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setShowPicker(false);
-                              setSelectedFilter(null);
-                            }}
-                            style={styles.pickerCloseButton}
-                          >
-                            <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
-                          </TouchableOpacity>
-                          {renderPicker()}
-                        </View>
-                      </View>
-                    </Modal> */}
-                    {/* Modals for Pickers - Platform Specific */}
 
 {/* Standard modal for non-date filters (customer, pigme, paymentMode) */}
 {showPicker && selectedFilter && selectedFilter !== 'date' && (
