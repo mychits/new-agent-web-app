@@ -40,7 +40,7 @@ const COLORS = {
 const backgroundImage = require("../assets/hero1.jpg"); 
 
 // =================================================================
-// COMPONENT: OutstandingReportCard (Stylized)
+// COMPONENT: OutstandingReportCard (Updated)
 // =================================================================
 const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
     const [isDetailsVisible, setIsDetailsVisible] = useState(false);
@@ -60,13 +60,19 @@ const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) =
     const phone = item?.user_id?.phone_number;
     const groupName = item?.group_id?.group_name || "N/A";
     
-    // --- TICKET DATA EXTRACTION ---
-    const ticketNumber = item?.tickets || "N/A"; // The specific ticket number (e.g., 3, 12)
-    const ticketCount = item?.no_of_tickets || 0; // How many tickets they hold
-
+    // --- TICKET DATA EXTRACTION (FIXED) ---
+    // Handles singular 'ticket' (from your JSON) vs plural 'tickets'
+    const ticketData = item?.ticket || item?.tickets;
+    const ticketDisplay = ticketData !== undefined ? ticketData : "N/A";
+    
+    // isCalling state
     const isCalling = activeCallId === item?._id;
 
-    const totalPayable = item?.total_to_be_paid?.[0] || item?.total_to_be_paid || 0;
+    // --- PAYMENT DATA EXTRACTION (FIXED) ---
+    // Handles both Array format (legacy) and Number format (from your JSON)
+    const rawTotalPayable = item?.total_to_be_paid;
+    const totalPayable = Array.isArray(rawTotalPayable) ? rawTotalPayable[0] : (rawTotalPayable || 0);
+    
     const totalPaidAmount = item?.overall_payments?.sum_of_amounts || 0;
     const balance = item?.balance || item?.Balance || 0;
     const balanceStatusColor = balance > 0 ? COLORS.danger : COLORS.success;
@@ -86,26 +92,29 @@ const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) =
     return (
         <Animated.View style={[styles.listCard, { opacity: fadeAnim }]}>
             <View style={styles.listHeader}>
+                {/* Avatar */}
                 <View style={styles.avatar}>
                     <Text style={styles.avatarText}>{name.charAt(0)}</Text>
                 </View>
+                
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Text style={styles.clientName} numberOfLines={1}>{name}</Text>
                         
-                        {/* Ticket Badge */}
-                        <View style={styles.ticketBadge}>
-                            <Text style={styles.ticketBadgeText}>Ticket {ticketNumber}</Text>
+                        {/* --- NEW: SMALL TICKET CARD --- */}
+                        <View style={styles.ticketSmallCard}>
+                          
+                            <Text style={styles.ticketSmallText}>Ticket: {ticketDisplay}</Text>
                         </View>
                     </View>
                     
                     <View style={[styles.rowCenter, { marginTop: 4 }]}>
                         <Ionicons name="layers-outline" size={12} color={COLORS.muted} />
                         <Text style={styles.subText}> {groupName}</Text>
-                        
                     </View>
                 </View>
                 
+                {/* Call Button */}
                 {phone && (
                     <TouchableOpacity 
                         onPress={handlePhonePress} 
@@ -189,17 +198,16 @@ const OutstandingReports = ({ route, navigation }) => {
             try {
                 setLoading(true);
                 
-                // --- LOGS START ---
                 console.log("------------------------------------------------");
                 console.log("Fetching data for User ID:", user?.userId);
 
+                // Using standard fetch instead of axios if preferred, but keeping mixed for consistency
                 const groupRes = await fetch(`${url}/group/get-group`);
                 const dueRes = await fetch(`${url}/enroll/due/routes/agent/${user?.userId}`);
                 
                 const groupJson = await groupRes.json();
                 const dueJson = await dueRes.json();
 
-                // Console logs to verify data in terminal
                 console.log("Group API Response Status:", groupRes.status);
                 console.log("Due API Response Status:", dueRes.status);
                 console.log("Parsed Groups Count:", Array.isArray(groupJson?.data) ? groupJson.data.length : 0);
@@ -213,7 +221,6 @@ const OutstandingReports = ({ route, navigation }) => {
                 setDues(allDues);
                 setFilteredData(allDues);
                 
-                // Trigger entrance animation
                 Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
             } catch (err) {
                 console.error("Error fetching data:", err);
@@ -249,7 +256,11 @@ const OutstandingReports = ({ route, navigation }) => {
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconCircle}>
                             <Ionicons name="chevron-back" size={22} color={COLORS.primary} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => fetchData()} style={styles.refreshBtn}>
+                        <TouchableOpacity onPress={() => {
+                             // Simple refresh trigger
+                             setLoading(true);
+                             fetchData();
+                        }} style={styles.refreshBtn}>
                             <Feather name="refresh-cw" size={18} color={COLORS.primary} />
                         </TouchableOpacity>
                     </View>
@@ -354,12 +365,12 @@ const styles = StyleSheet.create({
     // Header
     header: { 
         paddingHorizontal: 20, 
-        paddingTop: Platform.OS === "android" ? 50 : 20, 
+        paddingTop: Platform.OS === "android" ? 50 : 30, 
         paddingBottom: 15,
         alignItems: "center"
     },
     headerTopRow: { flexDirection: "row", justifyContent: "space-between", width: "100%", marginBottom: 15 },
-    headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", letterSpacing: 0.5, textAlign:'center' },
+    headerTitle: { fontSize: 20, fontWeight: "900", color: "#fff", letterSpacing: 0.5, textAlign:'center' },
     headerSub: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 , textAlign:'center'},
     iconCircle: { backgroundColor: "#fff", padding: 6, borderRadius: 12 },
     refreshBtn: { backgroundColor: COLORS.accent, padding: 8, borderRadius: 12 },
@@ -378,6 +389,10 @@ const styles = StyleSheet.create({
         borderLeftWidth: 6,
         borderLeftColor: COLORS.accent,
         elevation: 6,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
     },
     summaryRow: { flexDirection: 'row', alignItems: 'center' },
     summaryIconBg: { 
@@ -404,38 +419,50 @@ const styles = StyleSheet.create({
     filterContent: { flexDirection: 'row', alignItems: 'center' },
     filterText: { fontSize: 15, fontWeight: '700', color: COLORS.primary, marginLeft: 8 },
 
-    // Cards
+    // List Cards
     listCard: {
         backgroundColor: COLORS.white,
         borderRadius: 18,
         padding: 16,
         marginBottom: 12,
         elevation: 3,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     listHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     avatar: { width: 42, height: 42, borderRadius: 12, backgroundColor: COLORS.bgBlue, justifyContent: 'center', alignItems: 'center' },
     avatarText: { color: '#fff', fontSize: 16, fontWeight: '900' },
-    clientName: { fontSize: 16, fontWeight: '800', color: COLORS.primary, flex: 1 },
+    clientName: { fontSize: 16, fontWeight: '800', color: COLORS.primary, flex: 1, marginRight: 8 },
     
-    // New Ticket Styles
-    ticketBadge: {
-        backgroundColor: '#E8F4F8',
-        paddingVertical: 3,
-        paddingHorizontal: 8,
-        borderRadius: 6,
+    // --- UPDATED: Small Ticket Card Style ---
+    ticketSmallCard: {
+        backgroundColor: '#FFF8E1', // Very light gold
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: COLORS.bgBlue
+        borderColor: COLORS.accent,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: COLORS.accent,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 2,
     },
-    ticketBadgeText: {
-        color: COLORS.bgBlue,
+    ticketSmallText: {
+        color: COLORS.primary,
         fontWeight: '800',
-        fontSize: 10
+        fontSize: 12,
+        marginLeft: 4,
     },
     
     subText: { fontSize: 12, color: COLORS.muted, fontWeight: '500' },
     rowCenter: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
     dotSeparator: { marginHorizontal: 5, color: COLORS.muted, fontSize: 8 },
-    callBtnSmall: { padding: 8, borderRadius: 10 },
+    callBtnSmall: { padding: 8, borderRadius: 10, marginLeft: 8 },
 
     // Balance
     balanceContainer: {

@@ -1,4 +1,3 @@
-
 import { View, Text, StyleSheet, Alert, Linking } from "react-native";
 import React from "react";
 import { TouchableOpacity } from "react-native";
@@ -19,6 +18,7 @@ const PaymentChitList = ({
   group,
   type,
   customer,
+  ticket, // ADDED: ticket prop
 }) => {
   const handlePhonePress = (phoneNumber) => {
     Linking.openURL(`tel:${phoneNumber}`).catch((err) =>
@@ -117,6 +117,15 @@ const PaymentChitList = ({
               <Text style={styles.infoLabel}>Group</Text>
             </View>
             <Text style={styles.infoValue}>{group}</Text>
+          </View>
+
+          {/* ADDED: Ticket Row */}
+          <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
+              <Feather name="tag" size={14} color={COLORS.gray} />
+              <Text style={styles.infoLabel}>Ticket</Text>
+            </View>
+            <Text style={styles.infoValue}>{ticket || "N/A"}</Text>
           </View>
         </View>
 
@@ -259,7 +268,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    // backgroundColor and borderColor are now handled dynamically in the component
     borderWidth: 1,
   },
   typeText: {
@@ -267,7 +275,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    // color is now handled dynamically in the component
   },
   reprintButton: {
     flexDirection: "row",

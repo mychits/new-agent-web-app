@@ -77,7 +77,7 @@ const Profile = ({ route, navigation }) => {
     const menuItems = [
         { name: "Language", icon: "globe-outline", component: Ionicons, value: "English", action: () => { } },
         
-        // UPDATED: Collections only shows if permission is true
+        // Collections only shows if permission is true
         agent?.designation_id?.permission?.collection === "true" && {
             name: "Collections",
             icon: "briefcase",
@@ -85,7 +85,14 @@ const Profile = ({ route, navigation }) => {
             action: () => navigation.navigate("Routes")
         },
 
-        { name: "Payments", icon: "credit-card-outline", component: MaterialCommunityIcons, action: () => navigation.navigate("PayNavigation", { user: user }) },
+        // FIXED: Payments now also checks for collection permission
+        agent?.designation_id?.permission?.collection === "true" && {
+            name: "Payments",
+            icon: "credit-card-outline",
+            component: MaterialCommunityIcons,
+            action: () => navigation.navigate("PayNavigation", { user: user })
+        },
+        
         { name: "Leads", icon: "account-plus", component: MaterialCommunityIcons, action: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user: user } }) },
         { name: "Commissions", icon: "cash-multiple", component: MaterialCommunityIcons, action: () => navigation.navigate("Commissions") },
         { name: "About MyChits", icon: "information-circle-outline", component: Ionicons, action: () => navigation.navigate("AboutMyChits") },
@@ -101,7 +108,7 @@ const Profile = ({ route, navigation }) => {
             />
 
             <SafeAreaView style={{ flex: 1 }}>
-                {/* Header Section - Reduced Padding */}
+                {/* Header Section */}
                 <View style={styles.header}>
                     <View style={styles.headerTopRow}>
                         <View style={{ width: 40 }} />
@@ -124,7 +131,7 @@ const Profile = ({ route, navigation }) => {
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={{ paddingBottom: 20 }}
                         >
-                            {/* Profile Card - Reduced Padding & Size */}
+                            {/* Profile Card */}
                             <View style={styles.profileCard}>
                                 <View style={styles.avatarWrapper}>
                                     <Image
@@ -151,7 +158,7 @@ const Profile = ({ route, navigation }) => {
                                 </View>
                             </View>
 
-                            {/* Menu List - Reduced Margins */}
+                            {/* Menu List */}
                             <View style={styles.menuContainer}>
                                 {menuItems.map((item, index) => {
                                     const IconComponent = item.component;
@@ -174,7 +181,7 @@ const Profile = ({ route, navigation }) => {
                                 })}
                             </View>
 
-                            {/* Logout Button - Reduced Size */}
+                            {/* Logout Button */}
                             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                                 <Feather name="log-out" size={16} color={COLORS.white} style={{marginRight: 8}} />
                                 <Text style={styles.logoutText}>Logout</Text>
@@ -194,36 +201,34 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.primary 
     },
     
-    // Header Styles - Tightened
- header: { 
-    paddingHorizontal: 20, 
-    // INCREASE THESE VALUES:
-    paddingTop: Platform.OS === "android" ? 65 : 50, // Changed from 50/30
-    paddingBottom: 5, 
-    marginBottom: 5 
-},
+    header: { 
+        paddingHorizontal: 20, 
+        paddingTop: Platform.OS === "android" ? 65 : 50, 
+        paddingBottom: 5, 
+        marginBottom: 5 
+    },
     headerTopRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 8 // Reduced margin
+        marginBottom: 8
     },
     headerTitle: { 
-        fontSize: 22, // Slightly smaller
+        fontSize: 22, 
         fontWeight: "900", 
         color: COLORS.white, 
         textAlign: 'center',
         flex: 1
     },
     headerSubTitle: { 
-        fontSize: 12, // Smaller
+        fontSize: 12, 
         color: 'rgba(255,255,255,0.7)', 
         textAlign: 'center', 
-        marginTop: 0 // Removed extra margin
+        marginTop: 0 
     },
     headerIconBtn: {
         backgroundColor: COLORS.white,
-        padding: 8, // Reduced padding
+        padding: 8,
         borderRadius: 10,
         elevation: 4
     },
@@ -233,7 +238,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16 
     },
     
-    // Loader Styles
     loaderContainer: { 
         flex: 1, 
         justifyContent: 'center', 
@@ -246,28 +250,27 @@ const styles = StyleSheet.create({
         opacity: 0.8 
     },
 
-    // Profile Card Styles - Compacted
     profileCard: {
         backgroundColor: COLORS.cardBg,
-        borderRadius: 20, // Slightly less rounded
-        padding: 16, // Reduced from 24
+        borderRadius: 20,
+        padding: 16,
         alignItems: 'center',
-        marginBottom: 15, // Reduced margin
+        marginBottom: 15,
         elevation: 8,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 }, // Smaller shadow
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
     },
     avatarWrapper: {
         position: 'relative',
-        marginBottom: 8 // Reduced margin
+        marginBottom: 8
     },
     avatar: {
-        width: 70, // Reduced from 90
-        height: 70, // Reduced from 90
+        width: 70,
+        height: 70,
         borderRadius: 35,
-        borderWidth: 2, // Thinner border
+        borderWidth: 2,
         borderColor: COLORS.accent
     },
     verifiedBadge: {
@@ -281,25 +284,17 @@ const styles = StyleSheet.create({
         borderColor: COLORS.white
     },
     agentName: {
-        fontSize: 18, // Reduced from 20
+        fontSize: 18,
         fontWeight: "900",
         color: COLORS.primary,
         marginBottom: 0
-    },
-    agentRole: {
-        fontSize: 12, // Reduced from 13
-        fontWeight: "600",
-        color: COLORS.muted,
-        marginBottom: 10, // Reduced from 15
-        textTransform: 'uppercase',
-        letterSpacing: 0.5
     },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F5F7FA',
-        paddingVertical: 8, // Reduced from 10
-        paddingHorizontal: 12, // Reduced from 16
+        paddingVertical: 8,
+        paddingHorizontal: 12,
         borderRadius: 10,
         width: '100%',
         justifyContent: 'center'
@@ -309,47 +304,46 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     infoText: {
-        fontSize: 11, // Reduced from 12
+        fontSize: 11,
         fontWeight: '700',
         color: COLORS.primary,
         marginLeft: 4
     },
     infoDot: {
-        width: 3, // Smaller dot
+        width: 3,
         height: 3,
         borderRadius: 1.5,
         backgroundColor: COLORS.muted,
         marginHorizontal: 8
     },
 
-    // Menu Styles - Compacted
     menuContainer: {
-        marginBottom: 10 // Reduced margin
+        marginBottom: 10
     },
     menuCard: {
         backgroundColor: COLORS.white,
-        borderRadius: 12, // Reduced from 16
-        padding: 10, // Reduced from 14
-        marginBottom: 6, // Reduced from 10
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: 6,
         flexDirection: 'row',
         alignItems: 'center',
-        elevation: 2, // Less shadow for flatter look
+        elevation: 2,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 2,
     },
     menuIconBox: {
-        width: 36, // Reduced from 42
-        height: 36, // Reduced from 42
+        width: 36,
+        height: 36,
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 10, // Reduced from 12
+        marginRight: 10,
         backgroundColor: '#E3F2FD'
     },
     menuLabel: {
-        fontSize: 14, // Reduced from 15
+        fontSize: 14,
         fontWeight: "700",
         color: COLORS.primary
     },
@@ -360,12 +354,11 @@ const styles = StyleSheet.create({
         marginRight: 8
     },
 
-    // Logout Button Styles - Compacted
     logoutBtn: {
         backgroundColor: COLORS.danger,
-        padding: 14, // Reduced from 16
+        padding: 14,
         borderRadius: 16,
-        marginTop: 5, // Reduced margin
+        marginTop: 5,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
@@ -378,7 +371,7 @@ const styles = StyleSheet.create({
     logoutText: {
         color: COLORS.white,
         fontWeight: "900",
-        fontSize: 15, // Reduced from 16
+        fontSize: 15,
         letterSpacing: 1
     }
 });

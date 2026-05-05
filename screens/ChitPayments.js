@@ -93,14 +93,25 @@ const ChitPayments = ({ route, navigation }) => {
     const paymentModes = ['cash', 'online'];
 
     const handleFilterPress = (filterId) => {
-        if (filterId === 'totalCollection') {
-            setSelectedFilter(filterId);
-            setShowTotalCollectionDetails(true);
+    if (filterId === 'totalCollection') {
+        setSelectedFilter(filterId);
+        setShowTotalCollectionDetails(true);
+    } else if (filterId === 'date') {
+        // For date, handle platform-specific behavior
+        setSelectedFilter(filterId);
+        if (Platform.OS === 'android') {
+            // Android: DateTimePicker renders natively, no modal wrapper needed
+            setShowPicker(true);
         } else {
-            setSelectedFilter(filterId);
+            // iOS: Show in custom modal
             setShowPicker(true);
         }
-    };
+    } else {
+        // Other filters use the standard modal
+        setSelectedFilter(filterId);
+        setShowPicker(true);
+    }
+};
 
     const updateFilterValue = (id, value) => {
         setFilters(prevFilters =>
@@ -216,30 +227,31 @@ const ChitPayments = ({ route, navigation }) => {
     const renderPicker = () => {
         switch (selectedFilter) {
             case 'date':
-                return (
-                    <View style={styles.datePickerContainer}>
-                        <DateTimePicker
-                            value={selectedDate}
-                            mode="date"
-                            display="default"
-                            onChange={(event, date) => {
-                                setShowPicker(false);
-                                if (date) {
-                                    setSelectedDate(date);
-                                    updateFilterValue('date', formatDate(date));
-                                }
-                            }}
-                            minimumDate={new Date(2000, 0, 1)}
-                            maximumDate={new Date(2100, 11, 31)}
-                        />
-                        <TouchableOpacity
-                            style={styles.datePickerCancelButton}
-                            onPress={() => setShowPicker(false)}
-                        >
-                            <Text style={styles.datePickerCancelText}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                );
+    return (
+        <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(event, date) => {
+                // Android: Hide picker after selection
+                if (Platform.OS === 'android') {
+                    if (date) {
+                        setSelectedDate(date);
+                        updateFilterValue('date', formatDate(date));
+                    }
+                    setShowPicker(false);
+                    setSelectedFilter(null);
+                } 
+                // iOS: Just update date, keep modal open for "Done" button
+                else if (date) {
+                    setSelectedDate(date);
+                    updateFilterValue('date', formatDate(date));
+                }
+            }}
+            minimumDate={new Date(2000, 0, 1)}
+            maximumDate={new Date(2100, 11, 31)}
+        />
+    );
             case 'group':
                 return (
                     <View style={styles.pickerWrapper}>
@@ -450,102 +462,55 @@ const ChitPayments = ({ route, navigation }) => {
     };
 
     const printTotalCollectionDetails = async () => {
-        // Generate HTML rows for each customer
-        const customerListHtml = filteredCustomers.map((customer) => `
-            <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #ccc;">
-                <div style="font-size: 14px; margin-bottom: 2px; color: #000;">
-                    <strong>Customer:</strong> ${customer?.user_id?.full_name || 'N/A'}
-                </div>
-                <div style="font-size: 13px; margin-bottom: 2px; color: #444;">
-                    <strong>Group:</strong> ${customer?.group_id?.group_name || 'N/A'}
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 4px;">
-                    <div style="font-size: 13px; color: #444;">
-                        <strong>Mode:</strong> ${customer.pay_type || 'N/A'}
-                    </div>
-                    <div style="font-size: 14px; font-weight: bold; color: #3ed160ff;">
-                        ₹ ${parseFloat(customer.amount || 0).toFixed(2)}
-                    </div>
-                </div>
-            </div>
-        `).join("");
-
         const htmlContent = `
             <html>
             <head>
                 <style>
                     @page {
-                        size: A4; 
-                        margin: 15mm;
+                        size: A6;
+                        margin: 10mm;
                     }
                     body {
                         font-family: Arial, sans-serif;
-                        font-size: 12px;
+                        font-size: 14px;
                         margin: 0;
                         padding: 0;
-                        color: #333;
+                        text-align: center;
                     }
                     .container {
-                        padding: 0mm;
+                        padding: 5mm;
                     }
                     h1 {
-                        text-align: center;
-                        font-size: 22px;
+                        font-size: 24px;
+                        margin-bottom: 10px;
+                        color: ${ACCENT_BLUE};
+                    }
+                    p {
+                        font-size: 16px;
                         margin-bottom: 5px;
-                        color: #183A5D;
+                        color: ${MODERN_PRIMARY};
                     }
-                    .header-info {
-                        text-align: center;
-                        margin-bottom: 15px;
-                        font-size: 13px;
-                        color: #555;
-                        border-bottom: 2px solid #183A5D;
-                        padding-bottom: 10px;
-                    }
-                    .total-amount {
-                        text-align: center;
-                        font-size: 26px;
+                    .amount {
+                        font-size: 36px;
                         font-weight: bold;
-                        color: #3ed160ff;
-                        margin: 10px 0 20px 0;
-                        background-color: #f0fdf4;
-                        padding: 10px;
-                        border-radius: 8px;
-                        border: 1px solid #3ed160ff;
-                    }
-                    .list-container {
-                        margin-top: 10px;
+                        color: ${SUCCESS_GREEN};
+                        margin: 15px 0;
                     }
                     .footer {
-                        text-align: center;
-                        margin-top: 30px;
-                        font-size: 10px;
-                        color: #888;
-                        border-top: 1px solid #ddd;
-                        padding-top: 10px;
+                        margin-top: 20px;
+                        font-size: 12px;
+                        color: ${TEXT_GREY};
                     }
                 </style>
             </head>
             <body>
                 <div class="container">
-                    <h1>Collection Summary</h1>
-                    
-                    <div class="header-info">
-                        <p><strong>Agent:</strong> ${agent.name || 'N/A'}</p>
-                        <p><strong>Date:</strong> ${formatDate(selectedDate)}</p>
-                    </div>
-
-                    <div class="total-amount">
-                        Total: ₹ ${totalAmount.toFixed(2)}
-                    </div>
-
-                    <div class="list-container">
-                        ${customerListHtml}
-                    </div>
-
+                    <h1>Total Collection Summary</h1>
+                    <p class="amount">₹ ${totalAmount.toFixed(2)}</p>
+                    <p>Agent: ${agent.name || 'N/A'}</p>
+                    <p>Date: ${formatDate(selectedDate)}</p>
                     <div class="footer">
                         <p>Generated by Chit Payments App</p>
-                        <p>${new Date().toLocaleString()}</p>
                     </div>
                 </div>
             </body>
@@ -687,34 +652,89 @@ const ChitPayments = ({ route, navigation }) => {
                                                 onPress={() => handleChitPress(customer._id)}
                                                 customer={customer}
                                                 isActive={customer._id === activeChitId}
+                                                ticket={customer.ticket} // ADDED: Passing ticket to component
                                             />
                                         ))
                                 )}
                             </ScrollView>
                         </View>
                         
-                        {/* Modals for Pickers and Total Collection */}
-                        <Modal
-                            visible={showPicker}
-                            transparent={true}
-                            animationType="fade"
-                            onRequestClose={() => setShowPicker(false)}>
-                            <View style={styles.modalContainer}>
-                                <View style={styles.pickerContainer}>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setShowPicker(false);
-                                            setSelectedFilter(null);
-                                        }}
-                                        style={styles.pickerCloseButton}
-                                    >
-                                        <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
-                                    </TouchableOpacity>
-                                    {renderPicker()}
-                                </View>
-                            </View>
-                        </Modal>
+                        {/* Modals for Pickers - Platform Specific */}
 
+{/* Standard modal for non-date filters (customer, group, paymentMode) */}
+{showPicker && selectedFilter && selectedFilter !== 'date' && (
+    <Modal
+        visible={showPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+            setShowPicker(false);
+            setSelectedFilter(null);
+        }}
+    >
+        <View style={styles.modalContainer}>
+            <View style={styles.pickerContainer}>
+                <TouchableOpacity
+                    onPress={() => {
+                        setShowPicker(false);
+                        setSelectedFilter(null);
+                    }}
+                    style={styles.pickerCloseButton}
+                >
+                    <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
+                </TouchableOpacity>
+                {renderPicker()}
+            </View>
+        </View>
+    </Modal>
+)}
+
+{/* iOS: Date picker in custom modal with Done button */}
+{showPicker && selectedFilter === 'date' && Platform.OS === 'ios' && (
+    <Modal
+        visible={showPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+            setShowPicker(false);
+            setSelectedFilter(null);
+        }}
+    >
+        <View style={styles.modalContainer}>
+            <View style={styles.pickerContainer}>
+                <View style={styles.datePickerHeader}>
+                    <Text style={styles.datePickerTitle}>Select Date</Text>
+                    <TouchableOpacity
+                        onPress={() => {
+                            setShowPicker(false);
+                            setSelectedFilter(null);
+                        }}
+                        style={styles.pickerCloseButton}
+                    >
+                        <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
+                    </TouchableOpacity>
+                </View>
+                {renderPicker()}
+                <TouchableOpacity
+                    style={styles.datePickerDoneButton}
+                    onPress={() => {
+                        setShowPicker(false);
+                        setSelectedFilter(null);
+                    }}
+                >
+                    <Text style={styles.datePickerDoneText}>Done</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    </Modal>
+)}
+
+{/* Android: Date picker renders natively - no wrapper modal */}
+{showPicker && selectedFilter === 'date' && Platform.OS === 'android' && (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }}>
+        {renderPicker()}
+    </View>
+)}
                         <Modal
                             visible={showTotalCollectionDetails}
                             transparent={false}
@@ -1165,6 +1185,32 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         opacity: 0.6,
     },
+    datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER_COLOR,
+},
+datePickerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: MODERN_PRIMARY,
+},
+datePickerDoneButton: {
+    backgroundColor: ACCENT_BLUE,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 15,
+},
+datePickerDoneText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+},
 });
 
 export default ChitPayments;

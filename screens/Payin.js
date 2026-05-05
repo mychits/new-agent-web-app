@@ -30,7 +30,7 @@ const TOP_GRADIENT = ['#24C6DC', '#183A5D'];
 const MODERN_PRIMARY = "#0d0d0eff";
 const ACCENT_BLUE = "#1796d1ff";
 const BORDER_COLOR = "#e0e0e0";
-const TEXT_GREY = "#ffffff";
+const TEXT_GREY = "#4b5563";
 const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = "#f9fafb";
 const PRIMARY_BUTTON_COLOR = "#f8c009ff";
@@ -405,7 +405,7 @@ const Payin = ({ route, navigation }) => {
               {paymentDetails === "online" && (
                 <View style={styles.stylishRow}>
                   <Text style={styles.stylishLabel}>Trans. ID</Text>
-                  <Text style={[styles.stylishValue]}>{transactionId}</Text>
+                  <Text style={[styles.stylishValue, { fontSize: 13 }]}>{transactionId}</Text>
                 </View>
               )}
 
@@ -494,7 +494,6 @@ const Payin = ({ route, navigation }) => {
                   selectedValue={selectedGroup}
                   onValueChange={handleGroupChange}
                   style={styles.picker}
-                  itemStyle={styles.pickerItem}
                 >
                   {groups.length !== 1 && (
                     <Picker.Item label="Select Group" value="" color={TEXT_GREY} />
@@ -518,7 +517,6 @@ const Payin = ({ route, navigation }) => {
                   selectedValue={selectedTicket}
                   onValueChange={handleTicketChange}
                   style={styles.picker}
-                  itemStyle={styles.pickerItem}
                 >
                   {tickets.length !== 1 && (
                     <Picker.Item label="Select Ticket" value="" color={TEXT_GREY} />
@@ -575,7 +573,6 @@ const Payin = ({ route, navigation }) => {
                     selectedValue={paymentDetails}
                     onValueChange={handlePaymentTypeChange}
                     style={styles.picker}
-                    itemStyle={styles.pickerItem}
                   >
                     <Picker.Item label="Cash" value="cash" color={MODERN_PRIMARY} />
                     <Picker.Item label="Online" value="online" color={MODERN_PRIMARY} />
@@ -636,22 +633,6 @@ const Payin = ({ route, navigation }) => {
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
-
-      {/* Navigation Icons */}
-      <View style={styles.navFabContainer}>
-        <TouchableOpacity 
-          style={styles.navFab} 
-          onPress={() => navigation.navigate("RouteCustomerLoan", { customer })}
-        >
-          <MaterialIcons name="account-balance-wallet" size={24} color={MODERN_PRIMARY} />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.navFab} 
-          onPress={() => navigation.navigate("RouteCustomerPigme", { customer })}
-        >
-          <MaterialIcons name="savings" size={24} color={MODERN_PRIMARY} />
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -706,18 +687,18 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   balanceDangerLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#991b1b",
     fontWeight: "600",
   },
   balanceDangerAmount: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#7f1d1d",
     fontWeight: "900",
     letterSpacing: 0.3,
   },
   balanceSuccessText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#166534",
     fontWeight: "700",
   },
@@ -733,7 +714,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   column: { flex: 1, marginHorizontal: 3 },
-  label: { fontWeight: "600", marginTop: 4, fontSize: 12, color: MODERN_PRIMARY },
+  label: { fontWeight: "600", marginTop: 4, fontSize: 11, color: MODERN_PRIMARY },
   star: { color: "#ff0000" },
   textInput: {
     paddingVertical: 12,
@@ -755,13 +736,8 @@ const styles = StyleSheet.create({
     marginVertical: 3,
     justifyContent: "center",
   },
-  picker: {
-    width: "100%",
-    fontSize: 14,
-    color: MODERN_PRIMARY,
-  },
-  pickerItem: {
-    fontSize: 14,
+  picker: { 
+    width: "100%", 
   },
   buttonContainer: {
     flexDirection: "row",
@@ -894,7 +870,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER_COLOR,
   },
   methodText: {
-    fontSize: 14,
+    fontSize: 10,
     color: ACCENT_BLUE,
     fontWeight: "700",
     letterSpacing: 1,
@@ -923,7 +899,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   totalAmount: {
-    fontSize: 14,
+    fontSize: 22,
     color: MODERN_PRIMARY,
     fontWeight: "900",
     marginTop: 4,
@@ -946,7 +922,7 @@ const styles = StyleSheet.create({
   stylishCancelText: {
     color: TEXT_GREY,
     fontWeight: "700",
-    fontSize: 14,
+    fontSize: 13,
   },
   stylishConfirmButton: {
     flex: 1.5,
@@ -964,29 +940,8 @@ const styles = StyleSheet.create({
   stylishConfirmText: {
     color: MODERN_PRIMARY,
     fontWeight: "800",
-    fontSize: 14,
+    fontSize: 13,
     letterSpacing: 0.5,
-  },
-  navFabContainer: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    flexDirection: 'column',
-    gap: 12,
-    zIndex: 10,
-  },
-  navFab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: PRIMARY_BUTTON_COLOR,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
 });
 
