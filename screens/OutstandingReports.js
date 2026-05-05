@@ -103,8 +103,8 @@ const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) =
                         
                         {/* --- NEW: SMALL TICKET CARD --- */}
                         <View style={styles.ticketSmallCard}>
-                            <Feather name="tag" size={12} color={COLORS.accent} />
-                            <Text style={styles.ticketSmallText}> {ticketDisplay}</Text>
+                          
+                            <Text style={styles.ticketSmallText}>Ticket: {ticketDisplay}</Text>
                         </View>
                     </View>
                     
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     // Header
     header: { 
         paddingHorizontal: 20, 
-        paddingTop: Platform.OS === "android" ? 50 : 20, 
+        paddingTop: Platform.OS === "android" ? 50 : 30, 
         paddingBottom: 15,
         alignItems: "center"
     },

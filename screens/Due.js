@@ -121,13 +121,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   title: {
-    fontSize: 18, 
+    fontSize: 20, 
     fontWeight: "900",
     color: CARD_BG,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.85)', 
     fontWeight: '500',
     textAlign: 'center',
@@ -170,6 +170,7 @@ const styles = StyleSheet.create({
     fontSize: 15, 
     fontWeight: '800',
     color: MODERN_PRIMARY,
+    textAlign: 'center'
   },
   cardSubText: {
     fontSize: 11,
@@ -177,6 +178,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
     lineHeight: 18,
+    textAlign: 'center'
+
   },
   cardIcon: {
     fontSize: 28, 
