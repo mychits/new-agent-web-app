@@ -123,6 +123,15 @@ const ConfirmModal = ({
   const title       = isApprove ? "Approve Loan?" : "Reject Loan?";
 
   const handlePressConfirm = () => {
+    // --- DEBUG LOG: INPUTS ---
+    console.log("------------------------------------------------");
+    console.log(`>>> ACTION TRIGGERED: ${title}`);
+    console.log(">>> INPUT VALUES FROM MODAL:");
+    console.log("   - Type:", type);
+    console.log("   - Approved Amount:", approvedAmount);
+    console.log("   - Remark:", remark);
+    console.log("------------------------------------------------");
+
     // If approving, check amount. If rejecting, amount doesn't matter (disabled).
     if (isApprove && !approvedAmount.trim()) {
       Alert.alert("Missing Info", "Please enter the approved amount.");
@@ -291,19 +300,38 @@ const LoanCard = React.memo(({ item, index, onStatusChange }) => {
 
   const handleConfirm = async (status, amount, remark) => {
     setBusy(true);
+    
+    // Payload construction
+    const payload = {
+      agent_approval_status: status,
+      employee_approved_amount: amount, 
+      employee_remark: remark          
+    };
+
+    // --- DEBUG LOG: API START ---
+    console.log("------------------------------------------------");
+    console.log(">>> SENDING API REQUEST...");
+    console.log(">>> Loan ID:", item._id);
+    console.log(">>> ENDPOINT:", `${baseUrl}/v1/mobile/loans/update-borrower-status/${item._id}`);
+    console.log(">>> PAYLOAD DATA:", JSON.stringify(payload, null, 2));
+    console.log("------------------------------------------------");
+
     try {
       const res = await axios.put(
         `${baseUrl}/v1/mobile/loans/update-borrower-status/${item._id}`,
-        { 
-          agent_approval_status: status,
-          employee_approved_amount: amount, 
-          employee_remark: remark          
-        }
+        payload
       );
+      
+      // --- DEBUG LOG: API RESPONSE ---
+      console.log(">>> API RESPONSE SUCCESS:", res.data);
+
       if (!res.data?.success) throw new Error(res.data?.message || "Failed");
+      
       setModalVisible(false);
       onStatusChange(item._id, status);
     } catch (e) {
+      // --- DEBUG LOG: API ERROR ---
+      console.error(">>> API ERROR:", e);
       Alert.alert("Error", e.message || "Something went wrong.");
     } finally {
       setBusy(false);
@@ -919,5 +947,5 @@ const styles = StyleSheet.create({
   retryTxt:   { color: "#fff", fontWeight: "800", letterSpacing: 0.8, fontSize: 12 },
   empty:      { alignItems: "center", marginTop: 50, paddingVertical: 30 },
   emptyTitle: { fontSize: 15, fontWeight: "700", color: PRIMARY_DARK, marginTop: 14 },
-  emptySub:   { fontSize: 11, color: TEXT_GREY, marginTop: 5, textAlign: "center" },
+  emptySub:   { fontSize: 11, color: TEXT_GREY, marginTop: 5, textAlign: "center" }
 });

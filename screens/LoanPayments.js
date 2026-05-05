@@ -90,16 +90,29 @@ const LoanPayments = ({ route, navigation }) => {
 
   const paymentModes = ['cash', 'online'];
 
-  const handleFilterPress = (filterId) => {
+  // const handleFilterPress = (filterId) => {
+  //   if (filterId === 'totalCollection') {
+  //     setSelectedFilter(filterId);
+  //     setShowTotalCollectionDetails(true);
+  //   } else {
+  //     setSelectedFilter(filterId);
+  //     setShowPicker(true);
+  //   }
+  // };
+const handleFilterPress = (filterId) => {
     if (filterId === 'totalCollection') {
-      setSelectedFilter(filterId);
-      setShowTotalCollectionDetails(true);
+        setSelectedFilter(filterId);
+        setShowTotalCollectionDetails(true);
+    } else if (filterId === 'date') {
+        // For date, handle platform-specific behavior
+        setSelectedFilter(filterId);
+        setShowPicker(true);
     } else {
-      setSelectedFilter(filterId);
-      setShowPicker(true);
+        // Other filters use the standard modal
+        setSelectedFilter(filterId);
+        setShowPicker(true);
     }
-  };
-
+};
   const updateFilterValue = (id, value) => {
     setFilters(prevFilters =>
       prevFilters.map(filter =>
@@ -215,6 +228,31 @@ const LoanPayments = ({ route, navigation }) => {
   const renderPicker = () => {
     switch (selectedFilter) {
       case 'date':
+    return (
+        <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(event, date) => {
+                // Android: Hide picker after selection
+                if (Platform.OS === 'android') {
+                    if (date) {
+                        setSelectedDate(date);
+                        updateFilterValue('date', formatDate(date));
+                    }
+                    setShowPicker(false);
+                    setSelectedFilter(null);
+                } 
+                // iOS: Just update date, keep modal open for "Done" button
+                else if (date) {
+                    setSelectedDate(date);
+                    updateFilterValue('date', formatDate(date));
+                }
+            }}
+            minimumDate={new Date(2000, 0, 1)}
+            maximumDate={new Date(2100, 11, 31)}
+        />
+    );
         return (
           <DateTimePicker
             value={selectedDate}
@@ -666,7 +704,7 @@ const LoanPayments = ({ route, navigation }) => {
             </View>
             
             {/* Modals for Pickers and Total Collection */}
-            <Modal
+            {/* <Modal
                 visible={showPicker}
                 transparent={true}
                 animationType="fade"
@@ -685,7 +723,84 @@ const LoanPayments = ({ route, navigation }) => {
                         {renderPicker()}
                     </View>
                 </View>
-            </Modal>
+            </Modal> */}
+
+            {/* Modals for Pickers - Platform Specific */}
+
+{/* Standard modal for non-date filters (customer, loan, paymentMode) */}
+{showPicker && selectedFilter && selectedFilter !== 'date' && (
+    <Modal
+        visible={showPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+            setShowPicker(false);
+            setSelectedFilter(null);
+        }}
+    >
+        <View style={styles.modalContainer}>
+            <View style={styles.pickerContainer}>
+                <TouchableOpacity
+                    onPress={() => {
+                        setShowPicker(false);
+                        setSelectedFilter(null);
+                    }}
+                    style={styles.pickerCloseButton}
+                >
+                   <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
+                </TouchableOpacity>
+                {renderPicker()}
+            </View>
+        </View>
+    </Modal>
+)}
+
+{/* iOS: Date picker in custom modal with Done button */}
+{showPicker && selectedFilter === 'date' && Platform.OS === 'ios' && (
+    <Modal
+        visible={showPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+            setShowPicker(false);
+            setSelectedFilter(null);
+        }}
+    >
+        <View style={styles.modalContainer}>
+            <View style={styles.pickerContainer}>
+                <View style={styles.datePickerHeader}>
+                    <Text style={styles.datePickerTitle}>Select Date</Text>
+                    <TouchableOpacity
+                        onPress={() => {
+                            setShowPicker(false);
+                            setSelectedFilter(null);
+                        }}
+                        style={styles.pickerCloseButton}
+                    >
+                        <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
+                    </TouchableOpacity>
+                </View>
+                {renderPicker()}
+                <TouchableOpacity
+                    style={styles.datePickerDoneButton}
+                    onPress={() => {
+                        setShowPicker(false);
+                        setSelectedFilter(null);
+                    }}
+                >
+                    <Text style={styles.datePickerDoneText}>Done</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    </Modal>
+)}
+
+{/* Android: Date picker renders natively - no wrapper modal */}
+{showPicker && selectedFilter === 'date' && Platform.OS === 'android' && (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }}>
+        {renderPicker()}
+    </View>
+)}
 
             <Modal
                 visible={showTotalCollectionDetails}
@@ -1100,6 +1215,32 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         opacity: 0.6,
     },
+    datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER_COLOR,
+},
+datePickerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: MODERN_PRIMARY,
+},
+datePickerDoneButton: {
+    backgroundColor: ACCENT_BLUE,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 15,
+},
+datePickerDoneText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+},
 });
 
 export default LoanPayments;

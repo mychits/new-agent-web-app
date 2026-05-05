@@ -31,7 +31,7 @@ const SUBTLE_BG_GREY = '#f9fafb';
 
 // Nav pill accents
 const ACCENT_CHIT = "#1796d1";
-const ACCENT_LOAN = "#A855F7";
+const ACCENT_LOAN = "#c098e6";
 
 // Pigme highlight
 const ACCENT_PIGME = "#F59E0B";
