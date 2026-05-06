@@ -504,11 +504,24 @@ const ApprovalsScreen = () => {
       if (!stored) throw new Error("No agent info. Please login again.");
       const agentId = JSON.parse(stored)?._id;
       if (!agentId) throw new Error("Agent ID missing.");
+      
       const res = await axios.get(`${baseUrl}/v1/mobile/loans/get-borrowers/${agentId}`);
+      
       if (!res.data?.success) throw new Error(res.data?.message || "Fetch failed.");
-      setLoans(res.data.data);
+      setLoans(res.data.data || []);
+      
     } catch (e) {
-      setError(e.message || "Network error. Please retry.");
+      // --- FIX: Handle 404 as "No Loans" instead of a "Critical Error" ---
+      console.error("Fetch Error:", e);
+
+      // Check if error is 404 (Not Found)
+      if (e.response && e.response.status === 404) {
+        setLoans([]); // Set to empty array to show "No loans" UI
+        setError(null); // Clear error so UI doesn't show error screen
+      } else {
+        // For other errors (500, network issues, etc.), show the error message
+        setError(e.response?.data?.message || e.message || "Network error. Please retry.");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -657,17 +670,17 @@ const ApprovalsScreen = () => {
               ListEmptyComponent={
                 <View style={styles.empty}>
                   <Ionicons
-                    name={search ? "search-outline" : "checkmark-done-circle-outline"}
+                    name={search ? "search-outline" : "file-tray-outline"}
                     size={56}
-                    color={search ? TEXT_GREY : SUCCESS}
+                    color={search ? TEXT_GREY : ACCENT_BLUE}
                   />
                   <Text style={styles.emptyTitle}>
-                    {search ? "No results found" : "Nothing here"}
+                    {search ? "No results found" : "No loan requests"}
                   </Text>
                   <Text style={styles.emptySub}>
                     {search
                       ? `No loans match "${search}"`
-                      : `No ${activeTab === "ALL" ? "" : activeTab.toLowerCase() + " "}loan requests.`}
+                      : `There are currently no ${activeTab === "ALL" ? "" : activeTab.toLowerCase() + " "}loan requests assigned to you.`}
                   </Text>
                 </View>
               }
