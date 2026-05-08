@@ -30,11 +30,11 @@ const CARD_BG = "#ffffff";
 const SUBTLE_BG_GREY = '#f9fafb';
 
 // Nav pill accents
-const ACCENT_CHIT   = "#1796d1";   // blue — chit
-const ACCENT_PIGME  = "#F59E0B";   // gold — pigme
+const ACCENT_CHIT   = "#1796d1";
+const ACCENT_PIGME  = "#F59E0B";
 
 // Loan highlight color
-const ACCENT_LOAN   = "#A855F7";   // purple
+const ACCENT_LOAN   = "#A855F7";
 
 // --- HELPER ---
 const handleAction = (type, value) => {
@@ -105,7 +105,14 @@ const CustomerCard = React.memo(({ name, phone, email, loanAmount, loanId, addre
 
           {/* Info */}
           <View style={styles.cardInfo}>
-            <Text style={styles.cardName} numberOfLines={1}>{name || "Unknown Customer"}</Text>
+            {/* Name + LOAN tag inline */}
+            <View style={styles.nameRow}>
+              <Text style={[styles.cardName, { flex: 1 }]} numberOfLines={1}>{name || "Unknown Customer"}</Text>
+              <View style={styles.inlineTag}>
+                <Text style={styles.inlineTagText}>LOAN</Text>
+              </View>
+            </View>
+
             <Text style={styles.cardPhone}>{phone || "—"}</Text>
 
             {/* Action Buttons */}
@@ -340,7 +347,7 @@ const styles = StyleSheet.create({
   },
   cardTopAccent: {
     height: 3, width: '28%',
-    backgroundColor: ACCENT_LOAN,   // purple bar for loans
+    backgroundColor: ACCENT_LOAN,
     marginLeft: 14, marginTop: 12, borderRadius: 4,
   },
   cardTop: {
@@ -355,7 +362,28 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 18, fontWeight: '900', color: ACCENT_LOAN },
   cardInfo: { flex: 1 },
-  cardName: { fontSize: 14, fontWeight: '800', color: MODERN_PRIMARY, marginBottom: 2 },
+
+  // Name row with inline tag
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  inlineTag: {
+    backgroundColor: ACCENT_LOAN,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  inlineTagText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+
+  cardName: { fontSize: 14, fontWeight: '800', color: MODERN_PRIMARY },
   cardPhone: { fontSize: 12, color: TEXT_GREY, fontWeight: '500', marginBottom: 6 },
   actionsRow: { flexDirection: 'row', gap: 6, marginBottom: 6 },
   actionBtn: { width: 30, height: 30, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },

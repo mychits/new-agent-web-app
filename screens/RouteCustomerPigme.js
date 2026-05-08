@@ -105,7 +105,14 @@ const CustomerCard = React.memo(({ name, pigmeId, phone, address, email, onPress
 
           {/* Info */}
           <View style={styles.cardInfo}>
-            <Text style={styles.cardName} numberOfLines={1}>{name || "Unknown Customer"}</Text>
+            {/* Name + PIGMY tag inline */}
+            <View style={styles.nameRow}>
+              <Text style={[styles.cardName, { flex: 1 }]} numberOfLines={1}>{name || "Unknown Customer"}</Text>
+              <View style={styles.inlineTag}>
+                <Text style={styles.inlineTagText}>PIGMY</Text>
+              </View>
+            </View>
+
             <Text style={styles.cardPhone}>{phone || "—"}</Text>
 
             {/* Action Buttons */}
@@ -336,7 +343,28 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 18, fontWeight: '900', color: ACCENT_PIGME },
   cardInfo: { flex: 1 },
-  cardName: { fontSize: 14, fontWeight: '800', color: MODERN_PRIMARY, marginBottom: 2 },
+
+  // Name row with inline tag
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  inlineTag: {
+    backgroundColor: ACCENT_PIGME,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  inlineTagText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+
+  cardName: { fontSize: 14, fontWeight: '800', color: MODERN_PRIMARY },
   cardPhone: { fontSize: 12, color: TEXT_GREY, fontWeight: '500', marginBottom: 6 },
   actionsRow: { flexDirection: 'row', gap: 6, marginBottom: 6 },
   actionBtn: { width: 30, height: 30, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },

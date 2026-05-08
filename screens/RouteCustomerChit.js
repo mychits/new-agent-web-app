@@ -108,7 +108,14 @@ const CustomerCard = React.memo(({ name, phone, customerId, address, email, onPr
 
           {/* Info */}
           <View style={styles.cardInfo}>
-            <Text style={styles.cardName} numberOfLines={1}>{name || "Unknown Name"}</Text>
+            {/* Name + CHIT tag inline */}
+            <View style={styles.nameRow}>
+              <Text style={[styles.cardName, { flex: 1 }]} numberOfLines={1}>{name || "Unknown Name"}</Text>
+              <View style={styles.inlineTag}>
+                <Text style={styles.inlineTagText}>CHIT</Text>
+              </View>
+            </View>
+
             <Text style={styles.cardPhone}>{phone || "—"}</Text>
 
             {/* Action Buttons */}
@@ -135,6 +142,7 @@ const CustomerCard = React.memo(({ name, phone, customerId, address, email, onPr
               ) : null}
             </View>
 
+            {/* ID Badge */}
             <View style={styles.idBadge}>
               <Ionicons name="finger-print-outline" size={10} color={TEXT_GREY} />
               <Text style={styles.idText}> ID: {customerId}</Text>
@@ -423,11 +431,31 @@ const styles = StyleSheet.create({
     color: ACCENT_BLUE,
   },
   cardInfo: { flex: 1 },
+
+  // Name row with inline tag
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  inlineTag: {
+    backgroundColor: ACCENT_BLUE,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  inlineTagText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+
   cardName: {
     fontSize: 14,
     fontWeight: '800',
     color: MODERN_PRIMARY,
-    marginBottom: 2,
   },
   cardPhone: {
     fontSize: 12,
@@ -438,7 +466,7 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   actionBtn: {
     width: 30,
@@ -470,7 +498,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 14,
   },
   addressLabel: {
     fontSize: 10,
