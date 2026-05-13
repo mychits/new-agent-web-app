@@ -116,10 +116,7 @@ const AddCustomer = ({ route, navigation }) => {
         baseUrl = chitBaseUrl;
         apiRoute = "/user/add-user"; // Existing route
         break;
-      case "goldChit":
-        baseUrl = goldBaseUrl;
-        apiRoute = "/user/add-user"; // Existing route
-        break;
+  
       case "pigme":
         baseUrl = pigmeBaseUrl;
         apiRoute = "/pigme/user/add"; // New Pigme route
@@ -304,7 +301,6 @@ const AddCustomer = ({ route, navigation }) => {
                 itemStyle={styles.pickerItem} 
               >
                 <Picker.Item label="Chit" value="chit" />
-                <Picker.Item label="Gold Chit" value="goldChit" />
                 {/* 🎯 Added new customer types */}
                 <Picker.Item label="Pigme" value="pigme" />
                 <Picker.Item label="Loan" value="loan" />
