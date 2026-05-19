@@ -11,6 +11,7 @@ import {
     ActivityIndicator,
     Dimensions,
     Platform,
+    Modal, // 1. Import Modal
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons, Feather } from "@expo/vector-icons";
 import axios from "axios";
@@ -18,7 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import baseUrl from "../constants/baseUrl";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 // --- DESIGN CONSTANTS ---
 const COLORS = {
@@ -37,6 +38,9 @@ const Profile = ({ route, navigation }) => {
     const { user } = route.params || {};
     const [isLoading, setIsLoading] = useState(true);
     const [agent, setAgent] = useState({});
+    
+    // 2. State for controlling the Image Zoom Modal
+    const [isImageModalVisible, setIsImageModalVisible] = useState(false);
 
     useEffect(() => {
         fetchAgent();
@@ -74,10 +78,14 @@ const Profile = ({ route, navigation }) => {
         }
     };
 
+    // Helper to determine image source
+    const imageSource = agent.employee_profile_photo
+        ? { uri: agent.employee_profile_photo }
+        : require('../assets/P.png');
+
     const menuItems = [
         { name: "Language", icon: "globe-outline", component: Ionicons, value: "English", action: () => { } },
         
-        // Collections only shows if permission is true
         agent?.designation_id?.permission?.collection === "true" && {
             name: "Collections",
             icon: "briefcase",
@@ -85,7 +93,6 @@ const Profile = ({ route, navigation }) => {
             action: () => navigation.navigate("Routes")
         },
 
-        // FIXED: Payments now also checks for collection permission
         agent?.designation_id?.permission?.collection === "true" && {
             name: "Payments",
             icon: "credit-card-outline",
@@ -97,7 +104,7 @@ const Profile = ({ route, navigation }) => {
         { name: "Commissions", icon: "cash-multiple", component: MaterialCommunityIcons, action: () => navigation.navigate("Commissions") },
         { name: "About MyChits", icon: "information-circle-outline", component: Ionicons, action: () => navigation.navigate("AboutMyChits") },
         { name: "Help & Support", icon: "help-circle-outline", component: Ionicons, action: () => navigation.navigate("HelpAndSupport") },
-    ].filter(Boolean); // Filter out false values to prevent rendering errors
+    ].filter(Boolean);
 
     return (
         <View style={styles.mainContainer}>
@@ -133,16 +140,27 @@ const Profile = ({ route, navigation }) => {
                         >
                             {/* Profile Card */}
                             <View style={styles.profileCard}>
-                                <View style={styles.avatarWrapper}>
-                                    <Image
-                                        alt="Profile Picture"
-                                        source={require('../assets/P.png')} 
-                                        style={styles.avatar}
-                                    />
-                                    <View style={styles.verifiedBadge}>
-                                        <Feather name="check" size={10} color="#fff" />
+                                {/* 3. Made Avatar Touchable to open Modal */}
+                                <TouchableOpacity 
+                                    onPress={() => setIsImageModalVisible(true)}
+                                    activeOpacity={0.9}
+                                >
+                                    <View style={styles.avatarWrapper}>
+                                        <Image
+                                            alt="Profile Picture"
+                                            source={imageSource}
+                                            style={styles.avatar}
+                                            resizeMode="contain"
+                                            onError={() =>
+                                                setAgent(prev => ({ ...prev, employee_profile_photo: null }))
+                                            }
+                                        />
+                                        <View style={styles.verifiedBadge}>
+                                            <Feather name="check" size={10} color="#fff" />
+                                        </View>
                                     </View>
-                                </View>
+                                </TouchableOpacity>
+                                
                                 <Text style={styles.agentName}>{agent.name || 'Agent Name'}</Text>
                                 
                                 <View style={styles.infoRow}>
@@ -191,6 +209,39 @@ const Profile = ({ route, navigation }) => {
                     )}
                 </View>
             </SafeAreaView>
+
+            {/* 4. Image Zoom Modal Implementation */}
+            <Modal
+                visible={isImageModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setIsImageModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    {/* Close Button */}
+                    <TouchableOpacity 
+                        style={styles.closeButton} 
+                        onPress={() => setIsImageModalVisible(false)}
+                    >
+                        <Ionicons name="close-circle" size={32} color={COLORS.white} />
+                    </TouchableOpacity>
+
+                    {/* Zoomable ScrollView */}
+                    <ScrollView
+                        maximumZoomScale={3} // Allow 3x zoom
+                        minimumZoomScale={1}
+                        showsHorizontalScrollIndicator={false}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.zoomContainer}
+                    >
+                        <Image
+                            source={imageSource}
+                            style={styles.fullScreenImage}
+                            resizeMode="contain"
+                        />
+                    </ScrollView>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -264,14 +315,18 @@ const styles = StyleSheet.create({
     },
     avatarWrapper: {
         position: 'relative',
-        marginBottom: 8
+        marginBottom: 8,
+        backgroundColor: '#F0F4F8', 
+        borderRadius: 50, 
+        padding: 2
     },
     avatar: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        borderWidth: 2,
-        borderColor: COLORS.accent
+        width: 100, 
+        height: 100,
+        borderRadius: 50,
+        borderWidth: 0, 
+        borderColor: 'transparent',
+        backgroundColor: COLORS.white 
     },
     verifiedBadge: {
         position: 'absolute',
@@ -373,6 +428,33 @@ const styles = StyleSheet.create({
         fontWeight: "900",
         fontSize: 15,
         letterSpacing: 1
+    },
+
+    // --- Modal Styles ---
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.95)', // Dark overlay
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    zoomContainer: {
+        flex: 1,
+        width: width,
+        height: height,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullScreenImage: {
+        width: width,
+        height: height * 0.8, // Occupy 80% of screen height
+    },
+    closeButton: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 60 : 40,
+        right: 20,
+        zIndex: 10,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 16,
     }
 });
 
