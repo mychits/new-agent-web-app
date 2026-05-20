@@ -66,10 +66,16 @@ const AddCustomer = ({ route, navigation }) => {
     setIsQuickAdd(!isQuickAdd);
   };
 
+  // const showCustomToast = (msg) => {
+  //   ToastAndroid.show(msg, ToastAndroid.SHORT);
+  // };
   const showCustomToast = (msg) => {
+  if (Platform.OS === "android") {
     ToastAndroid.show(msg, ToastAndroid.SHORT);
-  };
-
+  } else {
+    alert(msg); // ✅ Works on Web + iOS
+  }
+};
   // ✅ Contact Picker (One button below fields)
   const handlePickContact = async () => {
     const { status } = await Contacts.requestPermissionsAsync();
@@ -175,27 +181,43 @@ const AddCustomer = ({ route, navigation }) => {
       const response = await axios.post(`${baseUrl}${apiRoute}`, data);
 
       if (response.status === 201) {
-        showCustomToast(successMessage);
-        
-        // Reset form fields
-        setCustomerInfo({
-          full_name: "",
-          phone_number: "",
-          email: "",
-          password: "",
-          address: "",
-          pincode: "",
-          adhaar_no: "",
-          pan_no: "",
-        });
-        setSelectedCustomerType("chit");
-        
-        // ✅ NAVIGATION CHANGE: Navigate to EnrollCustomer screen
-        navigation.navigate("EnrollCustomer", { 
-          user, 
-          newCustomer: response.data.customer || response.data.user // Assuming API returns customer/user data
-        }); 
-      }
+
+  // ✅ Show success popup
+  if (Platform.OS === "web") {
+    window.alert(successMessage);
+  } else {
+    Alert.alert("Success", successMessage);
+  }
+
+  // ✅ Reset all fields
+  setCustomerInfo({
+    full_name: "",
+    phone_number: "",
+    email: "",
+    password: "",
+    address: "",
+    pincode: "",
+    adhaar_no: "",
+    pan_no: "",
+  });
+
+  // ✅ Reset customer type
+  setSelectedCustomerType("chit");
+
+  // ✅ Reset password visibility
+  setShowPassword(false);
+
+  // ✅ Remove focused input
+  setFocusedInput(null);
+
+  // ✅ Optional navigation delay
+  setTimeout(() => {
+    navigation.navigate("EnrollCustomer", {
+      user,
+      newCustomer: response.data.customer || response.data.user,
+    });
+  }, 500);
+}
     } catch (error) {
       console.error("Error adding customer:", error.message);
       Alert.alert("Error", error?.response?.data?.message || "Something went wrong.");

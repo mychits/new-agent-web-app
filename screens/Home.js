@@ -597,10 +597,10 @@ const Home = ({ route, navigation }) => {
       id: "monthlyTurnover", name: "MIT",
       onPress: () => navigation.navigate("MonthlyTurnover"),
     },
-    {
-      id: "DueReport", name: "Outstanding Reports",
-      onPress: () => navigation.navigate("PayNavigation", { screen: "Due", params: { user } }),
-    },
+    // {
+    //   id: "DueReport", name: "Outstanding Reports",
+    //   onPress: () => navigation.navigate("PayNavigation", { screen: "Due", params: { user } }),
+    // },
     {
       id: "customerOnHold", name: "On Hold Customers",
       onPress: () => navigation.navigate("CustomerOnHold"),

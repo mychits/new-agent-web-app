@@ -138,6 +138,14 @@ const EnrollCustomer = ({ route, navigation }) => {
     }
   };
 
+  const showMessage = (message, title = "Message") => {
+  if (Platform.OS === "web") {
+    window.alert(message);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
   const handleEnrollCustomer = async () => {
     if (!formFields.group_id || !formFields.user_id) {
       Alert.alert("Required", "Please select a Customer and a Group.");
@@ -145,22 +153,20 @@ const EnrollCustomer = ({ route, navigation }) => {
     }
     
     if (!formFields.no_of_tickets || isNaN(formFields.no_of_tickets) || Number(formFields.no_of_tickets) <= 0) {
-      ToastAndroid.showWithGravity(
-        "Number of tickets must be a valid number greater than zero.",
-        ToastAndroid.SHORT,
-        ToastAndroid.CENTER
-      );
+     showMessage(
+  "Number of tickets must be a valid number greater than zero.",
+  "Validation"
+);
       return;
     }
     
     const ticketsCount = parseInt(formFields.no_of_tickets, 10);
     
     if (ticketsCount > availableTickets.length) {
-      ToastAndroid.showWithGravity(
-        `Number of Tickets is more than available tickets. Only ${availableTickets.length} available.`,
-        ToastAndroid.SHORT,
-        ToastAndroid.CENTER
-      );
+      showMessage(
+  `Number of Tickets is more than available tickets. Only ${availableTickets.length} available.`,
+  "Validation"
+);
       return;
     }
 
@@ -194,7 +200,7 @@ const EnrollCustomer = ({ route, navigation }) => {
         await axios.post(`${baseUrl}/enroll/add-enroll`, ticketEntry);
       }
 
-      ToastAndroid.show("Customer Enrolled Successfully!", ToastAndroid.SHORT);
+     showMessage("Customer Enrolled Successfully!", "Success");
       setFormFields({
         group_id: "",
         user_id: "",

@@ -146,7 +146,9 @@ export default function AddTaskScreen({ route, navigation }) {
       const response = await axios.post(apiUrl, payload);
       console.log(">>> SUCCESS: ", response.data);
       Alert.alert("Success", "Task added successfully!");
-      navigation.goBack();
+      navigation.canGoBack()
+  ? navigation.goBack()
+  : navigation.navigate("Home");
     } catch (error) {
       console.error(">>> ERROR ADDING TASK:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to add task.");
@@ -182,9 +184,20 @@ export default function AddTaskScreen({ route, navigation }) {
 
         {Platform.OS === 'ios' ? (
           <BlurView intensity={25} tint="light" style={styles.customHeader}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrow}>
-              <Ionicons name="chevron-back-outline" size={30} color={COLOR_PALETTE.primary} />
-            </TouchableOpacity>
+           <TouchableOpacity
+  onPress={() =>
+    navigation.canGoBack()
+      ? navigation.goBack()
+      : navigation.navigate("Home")
+  }
+  style={styles.backArrow}
+>
+              <Ionicons
+    name="chevron-back-outline"
+    size={30}
+    color={COLOR_PALETTE.primary}
+  />
+</TouchableOpacity>
             <Text style={styles.headerTitle}>Add New Task</Text>
             <Image source={headerImage} style={styles.headerRightImage} resizeMode="cover" />
           </BlurView>
@@ -351,16 +364,39 @@ const styles = StyleSheet.create({
   container: { flex: 1, position: 'relative', backgroundColor: 'transparent' },
   backgroundGradient: { ...StyleSheet.absoluteFillObject },
   safeArea: { flex: 1, width: '100%', backgroundColor: 'transparent' },
-  customHeader: {
-    position: 'absolute', top: Platform.OS === 'android' ? 40 : 50, left: 0, right: 0, height: 65,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15,
-    zIndex: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLOR_PALETTE.glassBorder,
-  },
-  customHeaderAndroid: {
-    position: 'absolute', top: 40, left: 0, right: 0, height: 65,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15,
-  },
-  backArrow: { padding: 8 },
+ customHeader: {
+  position: 'absolute',
+  top: Platform.OS === 'android' ? 40 : 50,
+  left: 0,
+  right: 0,
+  height: 65,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 15,
+  zIndex: 999,
+  elevation: 20,
+  borderBottomWidth: StyleSheet.hairlineWidth,
+  borderBottomColor: COLOR_PALETTE.glassBorder,
+},
+ customHeaderAndroid: {
+  position: 'absolute',
+  top: 40,
+  left: 0,
+  right: 0,
+  height: 65,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 15,
+  zIndex: 999,
+  elevation: 20,
+},
+  backArrow: {
+  padding: 8,
+  zIndex: 999,
+  elevation: 10,
+},
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: COLOR_PALETTE.primary, flex: 1, textAlign: 'center', paddingHorizontal: 10 },
   headerRightImage: { width: 48, height: 48, borderRadius: 24 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 120, paddingBottom: 40 },
