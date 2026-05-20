@@ -39,9 +39,7 @@ const COLORS = {
 // Asset for background (Ensure this path exists or change to a valid path)
 const backgroundImage = require("../assets/hero1.jpg"); 
 
-// =================================================================
-// COMPONENT: OutstandingReportCard (Updated)
-// =================================================================
+
 const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
     const [isDetailsVisible, setIsDetailsVisible] = useState(false);
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -165,9 +163,7 @@ const OutstandingReportCard = ({ item, index, activeCallId, setActiveCallId }) =
     );
 };
 
-// =================================================================
-// MAIN COMPONENT: OutstandingReports
-// =================================================================
+
 const OutstandingReports = ({ route, navigation }) => {
     const { user } = route.params || {};
     const [groups, setGroups] = useState([]);
@@ -202,22 +198,38 @@ const OutstandingReports = ({ route, navigation }) => {
                 console.log("Fetching data for User ID:", user?.userId);
 
                 // Using standard fetch instead of axios if preferred, but keeping mixed for consistency
-                const groupRes = await fetch(`${url}/group/get-group`);
+                // const groupRes = await fetch(`${url}/group/get-group`);
                 const dueRes = await fetch(`${url}/enroll/due/routes/agent/${user?.userId}`);
                 
-                const groupJson = await groupRes.json();
+                // const groupJson = await groupRes.json();
                 const dueJson = await dueRes.json();
 
-                console.log("Group API Response Status:", groupRes.status);
-                console.log("Due API Response Status:", dueRes.status);
-                console.log("Parsed Groups Count:", Array.isArray(groupJson?.data) ? groupJson.data.length : 0);
+               // console.log("Group API Response Status:", groupRes.status);
+                // console.log("Due API Response Status:", dueRes.status);
+                // console.log("Parsed Groups Count:", Array.isArray(groupJson?.data) ? groupJson.data.length : 0);
                 console.log("Parsed Dues Count:", dueJson?.enrollments?.length || 0);
                 console.log("------------------------------------------------");
 
-                const allGroups = Array.isArray(groupJson?.data) ? groupJson.data : Array.isArray(groupJson) ? groupJson : [];
+                // const allGroups = Array.isArray(groupJson?.data) ? groupJson.data : Array.isArray(groupJson) ? groupJson : [];
                 const allDues = dueJson?.enrollments || [];
 
-                setGroups([{ _id: "all", group_name: "All Groups" }, ...allGroups]);
+                // setGroups([{ _id: "all", group_name: "All Groups" }, ...allGroups]);
+                const uniqueGroups = [
+    { _id: "all", group_name: "All Groups" },
+    ...Array.from(
+        new Map(
+            allDues.map((item, index) => [
+                item?.group_id?.group_name,
+                {
+                    _id: index.toString(),
+                    group_name: item?.group_id?.group_name,
+                },
+            ])
+        ).values()
+    ),
+];
+
+setGroups(uniqueGroups);
                 setDues(allDues);
                 setFilteredData(allDues);
                 
@@ -232,12 +244,29 @@ const OutstandingReports = ({ route, navigation }) => {
     }, []);
 
     // Filter Logic
+    // const applyFilter = (group) => {
+    //     setSelectedGroup(group);
+    //     if (group._id === "all") setFilteredData(dues);
+    //     else setFilteredData(dues.filter((item) => item.group_id?._id === group._id));
+    //     setShowPicker(false);
+    // };
+
     const applyFilter = (group) => {
-        setSelectedGroup(group);
-        if (group._id === "all") setFilteredData(dues);
-        else setFilteredData(dues.filter((item) => item.group_id?._id === group._id));
-        setShowPicker(false);
-    };
+    setSelectedGroup(group);
+
+    if (group._id === "all") {
+        setFilteredData(dues);
+    } else {
+        const filtered = dues.filter(
+            (item) =>
+                item?.group_id?.group_name === group?.group_name
+        );
+
+        setFilteredData(filtered);
+    }
+
+    setShowPicker(false);
+};
 
     const totalPending = filteredData.reduce((sum, item) => sum + (item?.balance || item?.Balance || 0), 0);
 
