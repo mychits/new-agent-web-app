@@ -44,13 +44,13 @@ const COLORS = {
 };
 
 const ATTENDANCE_PRIMARY_COLOR = "#00BCD4";
-const ATTENDANCE_GRADIENT_START = "#00E5FF";
-const ATTENDANCE_GRADIENT_END = "#0097A7";
+// const ATTENDANCE_GRADIENT_START = "#00E5FF";
+// const ATTENDANCE_GRADIENT_END = "#0097A7";
 
 const { width, height } = Dimensions.get('window');
 
-const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
-const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
+// const ATTENDANCE_SUBMIT_URL = `${baseUrl}/employee-attendance/punch`;
+// const ATTENDANCE_MODAL_URL = `${baseUrl}/employee-attendance/modal`;
 
 // --- ICON & COLOR MAPPING ---
 const ICON_CONFIG = {
@@ -69,7 +69,7 @@ const ICON_CONFIG = {
   customerOnHold: { name: 'pause-circle-outline', type: 'MaterialCommunityIcons', color: '#795548' },
   monthlyTurnover: { name: 'swap-horiz', color: '#E91E63' },
   DueReport: { name: 'assignment-late', color: '#eb7aa0' },
-  attendanceBtn: { name: 'calendar-clock', type: 'MaterialCommunityIcons', color: COLORS.accent },
+  // attendanceBtn: { name: 'calendar-clock', type: 'MaterialCommunityIcons', color: COLORS.accent },
   rewards: { name: 'card-giftcard', color: COLORS.accent },
   starPoints: { name: 'star-face', type: 'MaterialCommunityIcons', color: COLORS.accent },
   SalesReport: { name: 'point-of-sale', type: 'MaterialCommunityIcons', color: '#8BC34A' },
@@ -148,116 +148,116 @@ const HelpModal = ({ visible, onClose }) => {
 };
 
 // --- COMPONENT: ATTENDANCE MODAL ---
-const AttendanceModal = ({
-  attendanceLoading,
-  selectedStatus,
-  visible,
-  message,
-  onClose,
-  handleSubmitAttendance,
-  note,
-  setNote,
-}) => {
-  const [isNoteOpen, setIsNoteOpen] = useState(false);
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+// const AttendanceModal = ({
+//   attendanceLoading,
+//   selectedStatus,
+//   visible,
+//   message,
+//   onClose,
+//   handleSubmitAttendance,
+//   note,
+//   setNote,
+// }) => {
+//   const [isNoteOpen, setIsNoteOpen] = useState(false);
+//   const scaleAnim = useRef(new Animated.Value(0)).current;
+//   const rotateAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (visible) {
-      scaleAnim.setValue(0);
-      rotateAnim.setValue(-10);
-      Animated.parallel([
-        Animated.spring(scaleAnim, { toValue: 1, tension: 40, friction: 7, useNativeDriver: true }),
-        Animated.timing(rotateAnim, { toValue: 0, duration: 400, easing: Easing.elastic(1.5), useNativeDriver: true })
-      ]).start();
-      setIsNoteOpen(false);
-      setNote("");
-    }
-  }, [visible]);
+//   useEffect(() => {
+//     if (visible) {
+//       scaleAnim.setValue(0);
+//       rotateAnim.setValue(-10);
+//       Animated.parallel([
+//         Animated.spring(scaleAnim, { toValue: 1, tension: 40, friction: 7, useNativeDriver: true }),
+//         Animated.timing(rotateAnim, { toValue: 0, duration: 400, easing: Easing.elastic(1.5), useNativeDriver: true })
+//       ]).start();
+//       setIsNoteOpen(false);
+//       setNote("");
+//     }
+//   }, [visible]);
 
-  return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={modalStyles.centeredView}>
-        <Animated.View style={[modalStyles.modalView, { transform: [{ scale: scaleAnim }, { rotate: rotateAnim.interpolate({inputRange: [-10, 0], outputRange: ['-10deg', '0deg']}) }] }]}>
-          <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
-            <Ionicons name="close-circle" size={32} color="#bdc3c7" />
-          </TouchableOpacity>
+//   return (
+//     <Modal
+//       animationType="fade"
+//       transparent={true}
+//       visible={visible}
+//       onRequestClose={onClose}
+//     >
+//       <View style={modalStyles.centeredView}>
+//         <Animated.View style={[modalStyles.modalView, { transform: [{ scale: scaleAnim }, { rotate: rotateAnim.interpolate({inputRange: [-10, 0], outputRange: ['-10deg', '0deg']}) }] }]}>
+//           <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
+//             <Ionicons name="close-circle" size={32} color="#bdc3c7" />
+//           </TouchableOpacity>
 
-          <LinearGradient
-            colors={[ATTENDANCE_GRADIENT_START, ATTENDANCE_GRADIENT_END]}
-            style={modalStyles.iconHeader}
-          >
-            <Image
-              source={require("../assets/ab.png")} 
-              style={modalStyles.modalImage}
-              resizeMode="contain"
-            />
-          </LinearGradient>
+//           <LinearGradient
+//             colors={[ATTENDANCE_GRADIENT_START, ATTENDANCE_GRADIENT_END]}
+//             style={modalStyles.iconHeader}
+//           >
+//             <Image
+//               source={require("../assets/ab.png")} 
+//               style={modalStyles.modalImage}
+//               resizeMode="contain"
+//             />
+//           </LinearGradient>
 
-          <Text style={modalStyles.modalHeading}>Daily Status Check</Text>
-          <Text style={modalStyles.modalText}>{message}</Text>
+//           <Text style={modalStyles.modalHeading}>Daily Status Check</Text>
+//           <Text style={modalStyles.modalText}>{message}</Text>
 
-          <TouchableOpacity
-            style={modalStyles.accordionHeader}
-            onPress={() => setIsNoteOpen(!isNoteOpen)}
-            activeOpacity={0.7}
-          >
-            <Text style={modalStyles.noteLabel}>
-              {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'}
-            </Text>
-            <Animated.View style={{transform: [{rotate: isNoteOpen ? '180deg' : '0deg'}]}}>
-               <Ionicons name="chevron-down" size={20} color={COLORS.muted} />
-            </Animated.View>
-          </TouchableOpacity>
+//           <TouchableOpacity
+//             style={modalStyles.accordionHeader}
+//             onPress={() => setIsNoteOpen(!isNoteOpen)}
+//             activeOpacity={0.7}
+//           >
+//             <Text style={modalStyles.noteLabel}>
+//               {isNoteOpen ? 'Hide Note' : 'Add a Note (Optional)'}
+//             </Text>
+//             <Animated.View style={{transform: [{rotate: isNoteOpen ? '180deg' : '0deg'}]}}>
+//                <Ionicons name="chevron-down" size={20} color={COLORS.muted} />
+//             </Animated.View>
+//           </TouchableOpacity>
 
-          {isNoteOpen && (
-            <Animated.View style={modalStyles.accordionContent}>
-              <TextInput
-                style={modalStyles.inputField}
-                placeholder="e.g., Working remotely today..."
-                placeholderTextColor="#a0a0a0"
-                value={note}
-                onChangeText={setNote}
-                multiline
-              />
-            </Animated.View>
-          )}
+//           {isNoteOpen && (
+//             <Animated.View style={modalStyles.accordionContent}>
+//               <TextInput
+//                 style={modalStyles.inputField}
+//                 placeholder="e.g., Working remotely today..."
+//                 placeholderTextColor="#a0a0a0"
+//                 value={note}
+//                 onChangeText={setNote}
+//                 multiline
+//               />
+//             </Animated.View>
+//           )}
 
-          <TouchableOpacity
-            disabled={!selectedStatus || attendanceLoading}
-            onPress={handleSubmitAttendance}
-            activeOpacity={0.8}
-            style={modalStyles.markAttendanceButtonWrapper}
-          >
-            <LinearGradient
-              colors={
-                !selectedStatus
-                  ? ["#B0B0B0", "#909090"]
-                  : [ATTENDANCE_GRADIENT_START, ATTENDANCE_GRADIENT_END]
-              }
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={modalStyles.markAttendanceButton}
-            >
-              {attendanceLoading ? (
-                <ActivityIndicator size={"small"} color={"#fff"} />
-              ) : (
-                <Text style={modalStyles.markAttendanceButtonText}>
-                  PRESENT
-                </Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-};
+//           <TouchableOpacity
+//             disabled={!selectedStatus || attendanceLoading}
+//             onPress={handleSubmitAttendance}
+//             activeOpacity={0.8}
+//             style={modalStyles.markAttendanceButtonWrapper}
+//           >
+//             <LinearGradient
+//               colors={
+//                 !selectedStatus
+//                   ? ["#B0B0B0", "#909090"]
+//                   : [ATTENDANCE_GRADIENT_START, ATTENDANCE_GRADIENT_END]
+//               }
+//               start={{ x: 0, y: 0.5 }}
+//               end={{ x: 1, y: 0.5 }}
+//               style={modalStyles.markAttendanceButton}
+//             >
+//               {attendanceLoading ? (
+//                 <ActivityIndicator size={"small"} color={"#fff"} />
+//               ) : (
+//                 <Text style={modalStyles.markAttendanceButtonText}>
+//                   PRESENT
+//                 </Text>
+//               )}
+//             </LinearGradient>
+//           </TouchableOpacity>
+//         </Animated.View>
+//       </View>
+//     </Modal>
+//   );
+// };
 
 // --- COMPONENT: ICON HELPER ---
 const IconRenderer = ({ iconName, iconType, size, color }) => {
@@ -419,8 +419,8 @@ const Home = ({ route, navigation }) => {
 
   const [agent, setAgent] = useState(agentInfo || {});
   const [greeting, setGreeting] = useState('');
-  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
-  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  // const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  // const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [note, setNote] = useState("");
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [isSideMenuVisible, setSideMenuVisible] = useState(false);
@@ -431,7 +431,7 @@ const Home = ({ route, navigation }) => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Present");
-  const [attendanceMessage, setAttendanceMessage] = useState("");
+  // const [attendanceMessage, setAttendanceMessage] = useState("");
 
   const netInfo = useNetInfo();
   const insets = useSafeAreaInsets();
@@ -470,31 +470,31 @@ const Home = ({ route, navigation }) => {
     fetchAgentDetails();
   }, [user?.userId, netInfo.isConnected]);
 
-  useEffect(() => {
-    const checkAttendance = async () => {
-      if (user.userId && netInfo.isConnected) {
-        try {
-          const response = await axios.post(ATTENDANCE_MODAL_URL, { employee_id: user.userId });
-          const data = response.data;
-          if (data?.showModal === true) {
-            setAttendanceMessage(data.message || "Eligible to mark attendance");
-            setShowAttendanceModal(true);
-          } else {
-            setShowAttendanceModal(false);
-          }
-        } catch (error) {
-          const errorMessage = error.response?.data?.message || error.message;
-          if (errorMessage !== "Attendance Already Marked") {
-            console.error("Error checking attendance status:", errorMessage);
-          } else {
-            console.info("✅ Attendance check complete:", errorMessage);
-          }
-          setShowAttendanceModal(false);
-        }
-      }
-    };
-    checkAttendance();
-  }, [user.userId, netInfo.isConnected]);
+  // useEffect(() => {
+  //   const checkAttendance = async () => {
+  //     if (user.userId && netInfo.isConnected) {
+  //       try {
+  //         const response = await axios.post(ATTENDANCE_MODAL_URL, { employee_id: user.userId });
+  //         const data = response.data;
+  //         if (data?.showModal === true) {
+  //           setAttendanceMessage(data.message || "Eligible to mark attendance");
+  //           setShowAttendanceModal(true);
+  //         } else {
+  //           setShowAttendanceModal(false);
+  //         }
+  //       } catch (error) {
+  //         const errorMessage = error.response?.data?.message || error.message;
+  //         if (errorMessage !== "Attendance Already Marked") {
+  //           console.error("Error checking attendance status:", errorMessage);
+  //         } else {
+  //           console.info("✅ Attendance check complete:", errorMessage);
+  //         }
+  //         setShowAttendanceModal(false);
+  //       }
+  //     }
+  //   };
+  //   checkAttendance();
+  // }, [user.userId, netInfo.isConnected]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -508,30 +508,30 @@ const Home = ({ route, navigation }) => {
   const openSideMenu = () => { setSideMenuVisible(true); Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(); };
   const closeSideMenu = () => { Animated.timing(slideAnim, { toValue: -width, duration: 300, useNativeDriver: true }).start(() => setSideMenuVisible(false)); };
 
-  const handleSubmitAttendance = async () => {
-    try {
-      setAttendanceLoading(true);
-      const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
-        employee_id: user?.userId,
-        status: selectedStatus,
-        method: "No Auth",
-        type: "in",
-        note: note,
-      });
-      const responseMessage = response?.data?.message;
-      ToastAndroid.show(
-        responseMessage ? responseMessage : "Attendance Marked Successfully",
-        ToastAndroid.SHORT
-      );
-      setShowAttendanceModal(false);
-      setNote("");
-    } catch (error) {
-      console.log(error, "error");
-      ToastAndroid.show("Failed to Mark Attendance", ToastAndroid.SHORT);
-    } finally {
-      setAttendanceLoading(false);
-    }
-  };
+  // const handleSubmitAttendance = async () => {
+  //   try {
+  //     setAttendanceLoading(true);
+  //     const response = await axios.post(ATTENDANCE_SUBMIT_URL, {
+  //       employee_id: user?.userId,
+  //       status: selectedStatus,
+  //       method: "No Auth",
+  //       type: "in",
+  //       note: note,
+  //     });
+  //     const responseMessage = response?.data?.message;
+  //     ToastAndroid.show(
+  //       responseMessage ? responseMessage : "Attendance Marked Successfully",
+  //       ToastAndroid.SHORT
+  //     );
+  //     setShowAttendanceModal(false);
+  //     setNote("");
+  //   } catch (error) {
+  //     console.log(error, "error");
+  //     ToastAndroid.show("Failed to Mark Attendance", ToastAndroid.SHORT);
+  //   } finally {
+  //     setAttendanceLoading(false);
+  //   }
+  // };
 
   const cardsData = [
     {
@@ -796,16 +796,7 @@ const Home = ({ route, navigation }) => {
         </TouchableOpacity>
       )}
 
-      <AttendanceModal
-        attendanceLoading={attendanceLoading}
-        selectedStatus={selectedStatus}
-        visible={showAttendanceModal}
-        message={attendanceMessage}
-        onClose={() => setShowAttendanceModal(false)}
-        handleSubmitAttendance={handleSubmitAttendance}
-        note={note}
-        setNote={setNote}
-      />
+     
       <HelpModal visible={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </SafeAreaView>
   );

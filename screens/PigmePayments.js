@@ -28,6 +28,7 @@ import axios from "axios";
 import PigmePaymentList from "../components/PigmePaymentList";
 
 const noImage = require('../assets/no.png');
+const isWeb = Platform.OS === 'web';
 
 // --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
@@ -88,6 +89,11 @@ const PigmePayments = ({ route, navigation }) => {
   ]);
 
   const paymentModes = ['cash', 'online'];
+
+  const closePicker = () => {
+    setShowPicker(false);
+    setSelectedFilter(null);
+  };
 
 
   const handleFilterPress = (filterId) => {
@@ -215,9 +221,51 @@ const PigmePayments = ({ route, navigation }) => {
   }, [totalAmount, loading]);
 
   const renderPicker = () => {
-    switch (selectedFilter) {
-      case 'date':
-    return (
+  switch (selectedFilter) {
+    case 'date':
+      // For web, use HTML5 date input
+      if (isWeb) {
+        return (
+          <View style={styles.webDatePickerContainer}>
+            <Text style={styles.webDatePickerLabel}>Select Date</Text>
+            <input
+              type="date"
+              value={selectedDate.toISOString().split('T')[0]}
+              onChange={(e) => {
+                const newDate = new Date(e.target.value);
+                if (!isNaN(newDate.getTime())) {
+                  setSelectedDate(newDate);
+                  updateFilterValue('date', formatDate(newDate));
+                }
+                setShowPicker(false);
+                setSelectedFilter(null);
+              }}
+              max={new Date().toISOString().split('T')[0]}
+              min="2000-01-01"
+              style={{
+                width: '100%',
+                height:'30px',               
+                 fontSize: '16px',
+                borderRadius: '8px',
+                border: `1px solid ${BORDER_COLOR}`,
+                marginBottom: '15px',
+                fontFamily: 'inherit'
+              }}
+            />
+            <TouchableOpacity 
+              style={styles.webDateCloseButton} 
+              onPress={() => {
+                setShowPicker(false);
+                setSelectedFilter(null);
+              }}
+            >
+              <Text style={styles.webDateCloseButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+      // For native platforms
+      return (
         <DateTimePicker
             value={selectedDate}
             mode="date"
@@ -241,10 +289,11 @@ const PigmePayments = ({ route, navigation }) => {
             minimumDate={new Date(2000, 0, 1)}
             maximumDate={new Date(2100, 11, 31)}
         />
-    );
+      );
       case 'pigme':
         const uniquePigmyIds = [...new Set(customers.map(c => c?.pigme?.pigme_id).filter(Boolean))];
         return (
+           <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={selectedPigmyId}
             onValueChange={(value) => {
@@ -265,9 +314,17 @@ const PigmePayments = ({ route, navigation }) => {
               />
             ))}
           </Picker>
+          <TouchableOpacity 
+                      style={styles.pickerCancelButton} 
+                      onPress={closePicker}
+                    >
+                      <Text style={styles.pickerCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+          </View>
         );
       case 'customer':
         return (
+           <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={selectedCustomer}
             onValueChange={(value) => {
@@ -288,11 +345,20 @@ const PigmePayments = ({ route, navigation }) => {
                 value={customer._id}
               />
             ))}
+
           </Picker>
+           <TouchableOpacity 
+                      style={styles.pickerCancelButton} 
+                      onPress={closePicker}
+                    >
+                      <Text style={styles.pickerCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+          </View>
 
         );
       case 'paymentMode':
         return (
+           <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={selectedPaymentMode}
             onValueChange={(value) => {
@@ -308,6 +374,13 @@ const PigmePayments = ({ route, navigation }) => {
               <Picker.Item key={mode} label={mode.charAt(0).toUpperCase() + mode.slice(1)} value={mode} />
             ))}
           </Picker>
+          <TouchableOpacity 
+                      style={styles.pickerCancelButton} 
+                      onPress={closePicker}
+                    >
+                      <Text style={styles.pickerCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+          </View>
         );
 
       default:
@@ -785,6 +858,32 @@ const PigmePayments = ({ route, navigation }) => {
         {renderPicker()}
     </View>
 )}
+
+{/* Web: Date picker in modal */}
+{showPicker && selectedFilter === 'date' && isWeb && (
+    <Modal
+        visible={showPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+            setShowPicker(false);
+            setSelectedFilter(null);
+        }}
+    >
+        <View style={styles.modalContainer}>
+            <View style={styles.pickerContainer}>
+                {renderPicker()}
+            </View>
+        </View>
+    </Modal>
+)}
+
+{/* Android: Date picker renders natively - no wrapper modal */}
+{showPicker && selectedFilter === 'date' && Platform.OS === 'android' && (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }}>
+        {renderPicker()}
+    </View>
+)}
                   </View>
 
                   <ScrollView
@@ -859,6 +958,50 @@ const styles = StyleSheet.create({
         flex: 1,
         marginHorizontal: 22,
     },
+
+     webDatePickerContainer: {
+    padding: 10,
+    width: '100%',
+  },
+  webDatePickerLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: MODERN_PRIMARY,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  webDateCloseButton: {
+    backgroundColor: MODERN_PRIMARY,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  webDateCloseButtonText: {
+    color: CARD_BG,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+    pickerWrapper: {
+  backgroundColor: "white",
+  borderRadius: 10,
+  padding: 10,
+  width: "100%",
+  alignSelf: "center",
+},
+pickerCancelButton: {
+  backgroundColor: MODERN_PRIMARY,
+  padding: 12,
+  borderRadius: 8,
+  alignItems: "center",
+  marginTop: 10,
+},
+pickerCancelText: {
+  color: "white",
+  fontWeight: "bold",
+  fontSize: 14,
+},
     
     // --- LOADING STYLES ---
     loadingContainer: {

@@ -27,6 +27,7 @@ import axios from "axios";
 import LoanPaymentList from "../components/LoanPaymentList";
 
 const noImage = require('../assets/no.png');
+const isWeb = Platform.OS === 'web';
 
 // --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
@@ -89,6 +90,11 @@ const LoanPayments = ({ route, navigation }) => {
   ]);
 
   const paymentModes = ['cash', 'online'];
+
+  const closePicker = () => {
+    setShowPicker(false);
+    setSelectedFilter(null);
+  };
 
 const handleFilterPress = (filterId) => {
     if (filterId === 'totalCollection') {
@@ -216,49 +222,108 @@ const handleFilterPress = (filterId) => {
     }
   }, [totalAmount, loading]);
 
-  const renderPicker = () => {
-    switch (selectedFilter) {
-      case 'date':
-    return (
-        <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event, date) => {
-                // Android: Hide picker after selection
-                if (Platform.OS === 'android') {
-                    if (date) {
-                        setSelectedDate(date);
-                        updateFilterValue('date', formatDate(date));
-                    }
-                    setShowPicker(false);
-                    setSelectedFilter(null);
-                } 
-                // iOS: Just update date, keep modal open for "Done" button
-                else if (date) {
-                    setSelectedDate(date);
-                    updateFilterValue('date', formatDate(date));
-                }
-            }}
-            minimumDate={new Date(2000, 0, 1)}
-            maximumDate={new Date(2100, 11, 31)}
-        />
-    );
-      case 'loan':
-        const uniqueloanIds = [...new Set(customers.map(c => c?.loan?.loan_id).filter(Boolean))];
+ const renderPicker = () => {
+  switch (selectedFilter) {
+    case 'date':
+      // For web, use HTML5 date input
+      if (isWeb) {
         return (
+          <View style={styles.webDatePickerContainer}>
+            <Text style={styles.webDatePickerLabel}>Select Date</Text>
+            <input
+              type="date"
+              value={selectedDate.toISOString().split('T')[0]}
+              onChange={(e) => {
+                const newDate = new Date(e.target.value);
+                if (!isNaN(newDate.getTime())) {
+                  setSelectedDate(newDate);
+                  updateFilterValue('date', formatDate(newDate));
+                }
+               closePicker();
+              }}
+              max={new Date().toISOString().split('T')[0]}
+              min="2000-01-01"
+              style={{
+                width: '100%',
+                height: '30px',
+                fontSize: '16px',
+                borderRadius: '8px',
+                border: `1px solid ${BORDER_COLOR}`,
+                marginBottom: '15px',
+                fontFamily: 'inherit'
+              }}
+            />
+            <TouchableOpacity 
+              style={styles.webDateCloseButton} 
+              onPress={() => {
+               closePicker();
+              }}
+            >
+              <Text style={styles.webDateCloseButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+      // For native platforms
+      return (
+        <View>
+  <DateTimePicker
+    value={selectedDate}
+    mode="date"
+    display="spinner"
+    onChange={(event, date) => {
+      if (date) {
+        setSelectedDate(date);
+      }
+    }}
+    minimumDate={new Date(2000, 0, 1)}
+    maximumDate={new Date(2100, 11, 31)}
+  />
+
+  <View
+    style={{
+      flexDirection: "row",
+      justifyContent: "space-between",
+      padding: 15,
+    }}
+  >
+    <TouchableOpacity
+      onPress={() => {
+        setShowPicker(false);
+        setSelectedFilter(null);
+      }}
+    >
+      <Text>Cancel</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      onPress={() => {
+        updateFilterValue("date", formatDate(selectedDate));
+        setShowPicker(false);
+        setSelectedFilter(null);
+      }}
+    >
+      <Text>Done</Text>
+    </TouchableOpacity>
+  </View>
+</View>
+      );
+       case 'loan':
+      const uniqueloanIds = [...new Set(customers.map(c => c?.loan?.loan_id).filter(Boolean))];
+      return (
+        <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={selectedloanId}
             onValueChange={(value) => {
               setSelectedloanId(value);
               setSelectedloanName(value || ''); 
-              updateFilterValue('loan', value);
-              setShowPicker(false);
+              updateFilterValue('loan', value ? `ID: ${value}` : 'All');
+              closePicker();
             }}
             style={{ color: MODERN_PRIMARY }}
             itemStyle={{ color: MODERN_PRIMARY }}
           >
-            <Picker.Item label="All loan Accounts" value="" />
+            <Picker.Item label="All Loan Accounts" value="" />
             {uniqueloanIds.map((loanId) => (
               <Picker.Item
                 key={loanId}
@@ -267,17 +332,26 @@ const handleFilterPress = (filterId) => {
               />
             ))}
           </Picker>
-        );
-      case 'customer':
-        return (
+          <TouchableOpacity 
+            style={styles.pickerCancelButton} 
+            onPress={closePicker}
+          >
+            <Text style={styles.pickerCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      );
+      
+    case 'customer':
+      return (
+        <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={selectedCustomer}
             onValueChange={(value) => {
               const selected = cus.find((customer) => customer._id === value);
               setSelectedCustomer(value);
               setSelectedCustomerName(selected?.full_name || '');
-              updateFilterValue('customer', selected?.full_name);
-              setShowPicker(false);
+              updateFilterValue('customer', selected?.full_name || 'All');
+              closePicker();
             }}
             style={{ color: MODERN_PRIMARY }}
             itemStyle={{ color: MODERN_PRIMARY }}
@@ -291,31 +365,50 @@ const handleFilterPress = (filterId) => {
               />
             ))}
           </Picker>
-
-        );
-      case 'paymentMode':
-        return (
+          <TouchableOpacity 
+            style={styles.pickerCancelButton} 
+            onPress={closePicker}
+          >
+            <Text style={styles.pickerCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      );
+      
+    case 'paymentMode':
+      return (
+        <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={selectedPaymentMode}
             onValueChange={(value) => {
               setSelectedPaymentMode(value);
-              updateFilterValue('paymentMode', value);
-              setShowPicker(false);
+              updateFilterValue('paymentMode', value ? value.charAt(0).toUpperCase() + value.slice(1) : 'All');
+              closePicker();
             }}
             style={{ color: MODERN_PRIMARY }}
             itemStyle={{ color: MODERN_PRIMARY }}
           >
-             <Picker.Item label="All Modes" value="" />
+            <Picker.Item label="All Modes" value="" />
             {paymentModes.map((mode) => (
-              <Picker.Item key={mode} label={mode} value={mode} />
+              <Picker.Item 
+                key={mode} 
+                label={mode.charAt(0).toUpperCase() + mode.slice(1)} 
+                value={mode} 
+              />
             ))}
           </Picker>
-        );
+          <TouchableOpacity 
+            style={styles.pickerCancelButton} 
+            onPress={closePicker}
+          >
+            <Text style={styles.pickerCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      );
 
-      default:
-        return null;
-    }
-  };
+    default:
+      return null;
+  }
+};
 
   const printPDF = async () => {
     const isSameDate = (date1, date2) => {
@@ -764,6 +857,39 @@ const handleFilterPress = (filterId) => {
     </View>
 )}
 
+{/* Web: Date picker in modal */}
+{showPicker && selectedFilter === 'date' && isWeb && (
+    <Modal
+        visible={showPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+            setShowPicker(false);
+            setSelectedFilter(null);
+        }}
+    >
+        <View style={styles.modalContainer}>
+            <View style={styles.pickerContainer}>
+                {renderPicker()}
+            </View>
+        </View>
+    </Modal>
+)}
+
+{/* Android: Date picker renders natively - no wrapper modal */}
+{showPicker && selectedFilter === 'date' && Platform.OS === 'android' && (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }}>
+        {renderPicker()}
+    </View>
+)}
+
+{/* Android: Date picker renders natively - no wrapper modal */}
+{showPicker && selectedFilter === 'date' && Platform.OS === 'android' && (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 }}>
+        {renderPicker()}
+    </View>
+)}
+
             <Modal
                 visible={showTotalCollectionDetails}
                 transparent={false}
@@ -866,6 +992,49 @@ const styles = StyleSheet.create({
         marginHorizontal: 22,
     },
 
+    webDatePickerContainer: {
+    padding: 10,
+    width: '100%',
+  },
+  webDatePickerLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: MODERN_PRIMARY,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  webDateCloseButton: {
+    backgroundColor: MODERN_PRIMARY,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  webDateCloseButtonText: {
+    color: CARD_BG,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  pickerWrapper: {
+  backgroundColor: "white",
+  borderRadius: 10,
+  padding: 10,
+  width: "100%",
+  alignSelf: "center",
+},
+pickerCancelButton: {
+  backgroundColor: MODERN_PRIMARY,
+  padding: 12,
+  borderRadius: 8,
+  alignItems: "center",
+  marginTop: 10,
+},
+pickerCancelText: {
+  color: "white",
+  fontWeight: "bold",
+  fontSize: 14,
+},
     // --- LOADING STYLES ---
     loadingContainer: {
         flex: 1,

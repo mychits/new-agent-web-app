@@ -27,6 +27,7 @@ import axios from "axios";
 import PaymentChitList from "../components/PaymentChitList";
 
 const noImage = require("../assets/no.png");
+const isWeb = Platform.OS === 'web';  
 
 // --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ["#24C6DC", "#183A5D"];
@@ -254,30 +255,73 @@ const ChitPayments = ({ route, navigation }) => {
   }, [totalAmount, loading, updateFilterValue]);
 
   // --- PICKER RENDERER ---
-  const renderPicker = () => {
-    switch (selectedFilter) {
-      case "date":
+ const renderPicker = () => {
+  switch (selectedFilter) {
+    case "date":
+      if (isWeb) {
+        // Web: Use HTML5 date input
         return (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={(event, date) => {
-              if (Platform.OS === "android") {
-                if (date) {
-                  setSelectedDate(date);
-                  updateFilterValue("date", formatDate(date));
+          <View style={styles.webDatePickerContainer}>
+            <Text style={styles.webDatePickerLabel}>Select Date</Text>
+            <input
+              type="date"
+              value={selectedDate.toISOString().split('T')[0]}
+              onChange={(e) => {
+                const newDate = new Date(e.target.value);
+                if (!isNaN(newDate.getTime())) {
+                  setSelectedDate(newDate);
+                  updateFilterValue("date", formatDate(newDate));
                 }
                 closePicker();
-              } else if (date) {
+              }}
+              max={new Date().toISOString().split('T')[0]}
+              min="2000-01-01"
+               style={{
+                      width: "100%",
+                      height: 50,
+                      borderRadius: 14,
+                      border: "1px solid #dbeafe",
+                   
+                      fontSize: 15,
+                      fontWeight: "500",
+                      backgroundColor: "#f8fbff",
+                      color: "#0f172a",
+                      outline: "none",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                      cursor: "pointer",
+                    }}
+            />
+            <TouchableOpacity 
+              style={styles.webDateCloseButton} 
+              onPress={closePicker}
+            >
+              <Text style={styles.webDateCloseButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+      return (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={(event, date) => {
+            if (Platform.OS === "android") {
+              if (date) {
                 setSelectedDate(date);
                 updateFilterValue("date", formatDate(date));
               }
-            }}
-            minimumDate={new Date(2000, 0, 1)}
-            maximumDate={new Date(2100, 11, 31)}
-          />
-        );
+              closePicker();
+            } else if (date) {
+              setSelectedDate(date);
+              updateFilterValue("date", formatDate(date));
+            } 
+          }}
+          minimumDate={new Date(2000, 0, 1)}
+          maximumDate={new Date(2100, 11, 31)}
+        />
+      );
+
 
       case "group":
         return (
@@ -674,59 +718,75 @@ const ChitPayments = ({ route, navigation }) => {
               )}
 
             {/* iOS Date Picker Modal */}
-            {showPicker &&
-              selectedFilter === "date" &&
-              Platform.OS === "ios" && (
-                <Modal
-                  visible={showPicker}
-                  transparent
-                  animationType="slide"
-                  onRequestClose={closePicker}
-                >
-                  <View style={styles.modalContainer}>
-                    <View style={styles.pickerContainer}>
-                      <View style={styles.datePickerHeader}>
-                        <Text style={styles.datePickerTitle}>Select Date</Text>
-                        <TouchableOpacity
-                          onPress={closePicker}
-                          style={styles.pickerCloseButton}
-                        >
-                          <Ionicons
-                            name="close-circle-outline"
-                            size={30}
-                            color={TEXT_GREY}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                      {renderPicker()}
-                      <TouchableOpacity
-                        style={styles.datePickerDoneButton}
-                        onPress={closePicker}
-                      >
-                        <Text style={styles.datePickerDoneText}>Done</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </Modal>
-              )}
+           {/* iOS Date Picker Modal */}
+{showPicker &&
+  selectedFilter === "date" &&
+  Platform.OS === "ios" && (
+    <Modal
+      visible={showPicker}
+      transparent
+      animationType="slide"
+      onRequestClose={closePicker}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.pickerContainer}>
+          <View style={styles.datePickerHeader}>
+            <Text style={styles.datePickerTitle}>Select Date</Text>
+            <TouchableOpacity
+              onPress={closePicker}
+              style={styles.pickerCloseButton}
+            >
+              <Ionicons
+                name="close-circle-outline"
+                size={30}
+                color={TEXT_GREY}
+              />
+            </TouchableOpacity>
+          </View>
+          {renderPicker()}
+          <TouchableOpacity
+            style={styles.datePickerDoneButton}
+            onPress={closePicker}
+          >
+            <Text style={styles.datePickerDoneText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  )}
 
-            {/* Android Date Picker — renders natively */}
-            {showPicker &&
-              selectedFilter === "date" &&
-              Platform.OS === "android" && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 100,
-                  }}
-                >
-                  {renderPicker()}
-                </View>
-              )}
+{/* Android & Web Date Picker - renders natively or custom modal */}
+{showPicker &&
+  selectedFilter === "date" &&
+  (Platform.OS === "android" || isWeb) && (
+    isWeb ? (
+      <Modal
+        visible={showPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={closePicker}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.pickerContainer}>
+            {renderPicker()}
+          </View>
+        </View>
+      </Modal>
+    ) : (
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 100,
+        }}
+      >
+        {renderPicker()}
+      </View>
+    )
+  )}
 
             {/* Total Collection Details Modal */}
             <Modal
@@ -859,6 +919,30 @@ const styles = StyleSheet.create({
   listScrollView: {
     flex: 1,
     marginHorizontal: 22,
+  },
+
+  webDatePickerContainer: {
+    padding: 10,
+    width: '100%',
+  },
+  webDatePickerLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: MODERN_PRIMARY,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  webDateCloseButton: {
+    backgroundColor: MODERN_PRIMARY,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  webDateCloseButtonText: {
+    color: CARD_BG,
+    fontWeight: '600',
+    fontSize: 14,
   },
 
   // Loading

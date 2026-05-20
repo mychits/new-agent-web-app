@@ -277,6 +277,412 @@
 
 
 
+// import {
+//   View,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   Alert,
+//   StyleSheet,
+//   Dimensions,
+//   Image,
+//   Pressable,
+//   Animated,
+//   ActivityIndicator,
+//   KeyboardAvoidingView,
+//   ScrollView,
+//   Platform,
+// } from "react-native";
+// import { useState, useRef, useEffect } from "react";
+// import { SafeAreaView } from "react-native-safe-area-context";
+// import { Ionicons } from "@expo/vector-icons";
+// import baseUrl from "../constants/baseUrl";
+// import { LinearGradient } from "expo-linear-gradient";
+// import axios from "axios";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// const { width } = Dimensions.get("window");
+
+// const COLOR_PALETTE = {
+//   primary: '#1C2E4A',
+//   secondary: '#5F6C7D',
+//   lightText: '#FFFFFF',
+// };
+
+
+// const backgroundImages = [
+//   require('../assets/i1.png'),
+//   require('../assets/i.png'),
+//   require('../assets/i2.png'),
+// ];
+
+// // Import the new image
+// const logoImage = require('../assets/Group400.png');
+
+// export default function Login({ navigation }) {
+//   const [mobile, setMobile] = useState("");
+//   const [password, setPassword] = useState("");
+//   const [isPasswordShown, setIsPasswordShown] = useState(false);
+//   const [loading, setLoading] = useState(false);
+  
+//   // State for background/UI animation
+//   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+//   const fadeAnim = useRef(new Animated.Value(1)).current;
+//   const scaleAnim = useRef(new Animated.Value(1)).current;
+//   const inputAnim = useRef(new Animated.Value(0)).current; // Animation for the form elements
+
+//   // 1. Background and Input Animations (Runs on component mount)
+//   useEffect(() => {
+//     // Background Image Cycling Animation
+//     const interval = setInterval(() => {
+//       Animated.timing(fadeAnim, {
+//         toValue: 0,
+//         duration: 500,
+//         useNativeDriver: true,
+//       }).start(() => {
+//         setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
+//         Animated.timing(fadeAnim, {
+//           toValue: 1,
+//           duration: 500,
+//           useNativeDriver: true,
+//         }).start();
+//       });
+//     }, 4000);
+
+//     // Form/Input Fade-in and Slide-up Animation (Start immediately)
+//     Animated.timing(inputAnim, {
+//       toValue: 1,
+//       duration: 800,
+//       delay: 500, // Short delay to let the screen load
+//       useNativeDriver: true,
+//     }).start();
+
+//     return () => clearInterval(interval);
+//   }, [fadeAnim, backgroundImages.length, inputAnim]); 
+
+
+//   const onPressInButton = () => {
+//     Animated.spring(scaleAnim, {
+//       toValue: 0.95,
+//       useNativeDriver: true,
+//     }).start();
+//   };
+
+//   const onPressOutButton = () => {
+//     Animated.spring(scaleAnim, {
+//       toValue: 1,
+//       friction: 3,
+//       tension: 40,
+//       useNativeDriver: true,
+//     }).start();
+//   };
+
+//   const handleLogin = async () => {
+//     if (!mobile || !password) {
+//       Alert.alert(
+//         "Validation Error",
+//         "Please enter both mobile number and password."
+//       );
+//       return;
+//     }
+
+//     setLoading(true);
+
+//     try {
+//       const cleanedPassword = password.replace(/\s/g, "");
+//       const response = await fetch(`${baseUrl}/agent/login-agent`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ phone_number: mobile, password: cleanedPassword }),
+//       });
+//       const data = await response.json();
+
+//       if (response.ok) {
+//         const agentDetail = await axios.get(
+//           `${baseUrl}/agent/get-agent-by-id/${data.userId}`
+//         );
+//         // Store user and agent info for future auto-login
+//         await AsyncStorage.setItem("user", JSON.stringify(data));
+//         await AsyncStorage.setItem("agentInfo", JSON.stringify(agentDetail?.data));
+
+//         navigation.navigate("BottomNavigation", {
+//           user: data,
+//           agentInfo: agentDetail?.data,
+//         });
+//       } else {
+//         Alert.alert("Login Failed", data.message || "Invalid credentials.");
+//       }
+//     } catch (error) {
+//       Alert.alert("Error", "An error occurred. Please try again.");
+//       console.error(error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // The full login screen is now rendered immediately
+//   return (
+//     <View style={styles.container}>
+//       {/* Animated Background Image */}
+//       <Animated.Image
+//         source={backgroundImages[currentImageIndex]}
+//         style={[styles.backgroundOverlayImage, { opacity: fadeAnim }]}
+//         resizeMode="cover"
+//       />
+
+//       {/* A richer, semi-transparent gradient overlay */}
+//       <LinearGradient
+//         colors={['#24C6DC', '#183A5D']}
+//         style={styles.gradientOverlay}
+//         start={{ x: 0, y: 0 }}
+//         end={{ x: 1, y: 1 }}
+//       />
+//     <KeyboardAvoidingView
+//       style={{ flex: 1 }}
+//       behavior={Platform.OS === "android" ? "padding" : "height"}
+//     >
+      
+//       <ScrollView
+//         contentContainerStyle={{ flexGrow: 1 }}
+//         keyboardShouldPersistTaps="handled"
+//       >
+//       <SafeAreaView style={styles.safeArea}>
+//         <View style={styles.contentWrapper}>
+//           {/* Logo */}
+//           <Animated.View style={[styles.logoContainer, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] }]}>
+//             <Image source={logoImage} style={styles.logo} resizeMode="contain" />
+//           </Animated.View>
+
+//           <Text style={styles.welcomeTitle}>Welcome Back{"\n"}to Mychits</Text>
+
+//           {/* Phone Number Input */}
+//           <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+//             <Text style={styles.inputLabel}>Phone Number</Text>
+//             <View style={styles.inputContainer}>
+//               <Ionicons name="call" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
+//               <TextInput
+//                 style={styles.textInput}
+//                 placeholder="eg. 1234567890"
+//                 placeholderTextColor="#A9A9A9"
+//                 keyboardType="numeric"
+//                 value={mobile}
+//                 onChangeText={setMobile}
+//               />
+//             </View>
+//           </Animated.View>
+
+//           {/* Password Input */}
+//           <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+//             <Text style={styles.inputLabel}>Password</Text>
+//             <View style={styles.inputContainer}>
+//               <Ionicons name="lock-closed" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
+//               <TextInput
+//                 style={styles.textInput}
+//                 placeholder="***************"
+//                 placeholderTextColor="#A9A9A9"
+//                 secureTextEntry={!isPasswordShown}
+//                 value={password}
+//                 onChangeText={setPassword}
+//               />
+//               <TouchableOpacity
+//                 onPress={() => setIsPasswordShown(!isPasswordShown)}
+//                 style={styles.eyeIcon}
+//               >
+//                 <Ionicons
+//                   name={isPasswordShown ? "eye-off" : "eye"}
+//                   size={24}
+//                   color={COLOR_PALETTE.secondary}
+//                 />
+//               </TouchableOpacity>
+//             </View>
+//             <Pressable style={{ marginTop: 10, alignSelf: 'flex-end' }} onPress={() => navigation.navigate("ForgotPassword")}>
+//               <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+//             </Pressable>
+//           </Animated.View>
+
+//           {/* Become an agent? link */}
+//           <Animated.View style={[styles.becomeAgentLinkWrapper, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+//             <Pressable style={styles.becomeAgentLink} onPress={() => navigation.navigate("Becomeanagent")}>
+//               <Text style={styles.becomeAgentText}>Become an Agent ?</Text>
+//             </Pressable>
+//           </Animated.View>
+
+//           {/* Login Button with Gradient and Animation */}
+//           <Animated.View style={[styles.loginButtonWrapper, { transform: [{ scale: scaleAnim }] }]}>
+//             <TouchableOpacity
+//               onPress={handleLogin}
+//               onPressIn={onPressInButton}
+//               onPressOut={onPressOutButton}
+//               activeOpacity={1}
+//               disabled={loading}
+//             >
+//               <LinearGradient
+//                 colors={[COLOR_PALETTE.primary, COLOR_PALETTE.secondary]}
+//                 style={styles.loginButton}
+//                 start={{ x: 0, y: 0 }}
+//                 end={{ x: 1, y: 1 }}
+//               >
+//                 {/* Conditional rendering for loader */}
+//                 {loading ? (
+//                   <ActivityIndicator color={COLOR_PALETTE.lightText} size="small" />
+//                 ) : (
+//                   <Text style={styles.loginButtonText}>Log in</Text>
+//                 )}
+//               </LinearGradient>
+//             </TouchableOpacity>
+//           </Animated.View>
+
+//           {/* Don't have an account? Sign Up link */}
+          
+
+//         </View>
+//       </SafeAreaView>
+//       </ScrollView>
+//     </KeyboardAvoidingView>
+
+//     </View>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     position: 'relative',
+//     backgroundColor: '#FFFFFF', // Fallback background
+//   },
+//   backgroundOverlayImage: {
+//     ...StyleSheet.absoluteFillObject,
+//   },
+//   gradientOverlay: {
+//     ...StyleSheet.absoluteFillObject,
+//   },
+//   safeArea: {
+//     flex: 1,
+//     width: '100%',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     paddingHorizontal: 0,
+//     backgroundColor: 'transparent',
+//   },
+//   contentWrapper: {
+//     width: '100%',
+//     alignItems: 'center',
+//     paddingHorizontal: 20,
+//   },
+//   logoContainer: {
+//     marginBottom: 1,
+//   },
+//   logo: {
+//     width: 80,
+//     height: 70,
+//   },
+//   welcomeTitle: {
+//     fontSize: 40,
+//     fontWeight: '800',
+//     color: COLOR_PALETTE.lightText,
+//     textAlign: 'center',
+//     marginBottom: 40,
+//     lineHeight: 48,
+//     letterSpacing: 0.5,
+//   },
+//   inputGroup: {
+//     width: '100%',
+//     marginBottom: 20,
+//   },
+//   inputLabel: {
+//     fontSize: 16,
+//     fontWeight: '600',
+//     color: COLOR_PALETTE.lightText,
+//     marginBottom: 8,
+//     marginLeft: 10,
+//   },
+//   inputContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     width: '100%',
+//     height: 60,
+//     borderWidth:1,
+//     borderColor: 'orange',
+//     backgroundColor: '#FFFFFF',
+//     borderRadius: 30,
+//     paddingHorizontal: 20,
+//     shadowColor: "#000",
+//     shadowOffset: { width: 0, height: 3 },
+//     shadowOpacity: 0.1,
+//     shadowRadius: 5,
+//     elevation: 5,
+//   },
+//   textInput: {
+//     flex: 1,
+//     height: '100%',
+//     fontSize: 16,
+//     color: COLOR_PALETTE.primary,
+//   },
+//   eyeIcon: {
+//     padding: 8,
+//   },
+//   forgotPasswordText: {
+//     fontSize: 14,
+//     fontWeight: '600',
+//     color: COLOR_PALETTE.lightText,
+//     textDecorationLine: 'underline',
+//   },
+//   loginButtonWrapper: {
+//     width: '100%',
+//     marginTop: 60,
+//     marginBottom: 40,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   loginButton: {
+//     width: width * 0.7,
+//     height: 60,
+//     borderRadius: 16,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     shadowColor: "#000",
+//     shadowOffset: { width: 0, height: 8 },
+//     shadowOpacity: 0.3,
+//     shadowRadius: 10,
+//     elevation: 12,
+//   },
+//   loginButtonText: {
+//     color: COLOR_PALETTE.lightText,
+//     fontSize: 20,
+//     fontWeight: '700',
+//     letterSpacing: 1,
+//   },
+//   becomeAgentLinkWrapper: {
+//     width: '100%',
+//     alignItems: 'center',
+//     marginTop: 10,
+//     marginBottom: 10,
+//   },
+//   becomeAgentLink: {},
+//   becomeAgentText: {
+//     fontSize: 18,
+//     fontWeight: '600',
+//     color: "black",
+//     textDecorationLine: 'underline',
+//   },
+//   signUpLinkWrapper: {
+//     width: '100%',
+//     alignItems: 'center',
+//     marginTop: 20,
+//   },
+//   signUpText: {
+//     fontSize: 16,
+//     color: COLOR_PALETTE.lightText,
+//   },
+//   signUpLink: {
+//     fontWeight: 'bold',
+//     textDecorationLine: 'underline',
+//   },
+// });
+
+
+
+
 import {
   View,
   Text,
@@ -309,14 +715,12 @@ const COLOR_PALETTE = {
   lightText: '#FFFFFF',
 };
 
-
 const backgroundImages = [
   require('../assets/i1.png'),
   require('../assets/i.png'),
   require('../assets/i2.png'),
 ];
 
-// Import the new image
 const logoImage = require('../assets/Group400.png');
 
 export default function Login({ navigation }) {
@@ -325,59 +729,176 @@ export default function Login({ navigation }) {
   const [isPasswordShown, setIsPasswordShown] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // State for background/UI animation
+  // States for website dropdown
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  
+  // Detect if it's website
+  const [isWebsite, setIsWebsite] = useState(false);
+  
+  // Animation states
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const inputAnim = useRef(new Animated.Value(0)).current; // Animation for the form elements
+  const inputAnim = useRef(new Animated.Value(0)).current;
 
-  // 1. Background and Input Animations (Runs on component mount)
+  // Check if running on web
   useEffect(() => {
-    // Background Image Cycling Animation
-    const interval = setInterval(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start(() => {
-        setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }).start();
+    if (Platform.OS === 'web') {
+      setIsWebsite(true);
+    }
+  }, []);
+
+// Fetch employees for dropdown (for website mode)
+useEffect(() => {
+  if (isWebsite) {
+    const fetchEmployees = async () => {
+      try {
+        const response = await fetch(`${baseUrl}/employee`);
+        const data = await response.json();
+       
+        
+        // Check the structure of your employee data
+        // It might be data.employee or data directly
+        const employeesList = data?.employee || data || [];
+        setEmployees(employeesList);
+        
+        if (employeesList.length === 0) {
+          console.warn("No employees found in response");
+        }
+      } catch (err) {
+        console.error("Error fetching employees:", err);
+        Alert.alert("Error", "Failed to load agents list");
+      }
+    };
+    fetchEmployees();
+  }
+}, [isWebsite]);
+
+  // Verify agent ID and login
+const verifyAndLoginAgent = async (employee) => {
+  setLoading(true);
+  
+  try {
+    const agentId = employee._id || employee.id;
+    // console.log("Verifying agent with ID:", agentId);
+    
+    // Using fetch to get agent details
+    const response = await fetch(`${baseUrl}/agent/get-agent-by-id/${agentId}`);
+    const agentDetail = await response.json();
+    
+    // console.log("Agent detail response:", agentDetail);
+    
+    // Check if agent exists (based on your API response structure)
+    if (response.ok && agentDetail && agentDetail._id) {
+      // console.log("Agent verified successfully, preparing to login...");
+      
+      // Create user data object similar to your app login
+      const userData = {
+        userId: agentDetail._id,
+        name: agentDetail.name,
+        phone_number: agentDetail.phone_number,
+        email: agentDetail.email,
+        role: "agent",
+        loginType: "website",
+        verified: true
+      };
+      
+      try {
+        // Store user and agent info
+        await AsyncStorage.setItem("user", JSON.stringify(userData));
+        await AsyncStorage.setItem("agentInfo", JSON.stringify(agentDetail));
+        await AsyncStorage.setItem("loginMode", "website");
+        
+        // console.log("Data stored in AsyncStorage, navigating...");
+        
+        // Show success message
+        Alert.alert(
+          "Login Successful",
+          `Welcome ${agentDetail.name}!`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                console.log("Navigation to BottomNavigation");
+                navigation.replace("BottomNavigation", {
+                  user: userData,
+                  agentInfo: agentDetail,
+                });
+              }
+            }
+          ]
+        );
+      } catch (storageError) {
+        console.error("Storage error:", storageError);
+        Alert.alert("Error", "Failed to save user data");
+      }
+    } else {
+      console.log("Agent verification failed - agent not found or invalid response");
+      Alert.alert("Verification Failed", "Agent not found. Please try another agent.");
+      setSelectedEmployee(null);
+    }
+  } catch (error) {
+    console.error("Verification error details:", error);
+    Alert.alert("Error", `Failed to verify agent: ${error.message}`);
+    setSelectedEmployee(null);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // Handle employee selection from inline dropdown
+const handleSelectEmployee = (employee) => {
+  // console.log("Selected employee:", employee);
+  // console.log("Employee ID:", employee._id);
+  
+  setSelectedEmployee(employee);
+  setShowDropdown(false);
+  
+  // Check if employee has valid ID
+  if (employee && employee._id) {
+    // Direct login without extra API call since we already have employee data
+    setLoading(true);
+    
+    // Create user data from employee data
+    const userData = {
+      userId: employee._id,
+      name: employee.name,
+      phone_number: employee.phone_number,
+      email: employee.email,
+      role: "agent",
+      loginType: "website",
+      verified: true,
+      designation: employee.designation_id?.title || "Agent"
+    };
+    
+    // Store data in AsyncStorage
+    AsyncStorage.setItem("user", JSON.stringify(userData))
+      .then(() => AsyncStorage.setItem("agentInfo", JSON.stringify(employee)))
+      .then(() => AsyncStorage.setItem("loginMode", "website"))
+      .then(() => {
+        // console.log("Data stored successfully");
+        setLoading(false);
+        // Navigate to main app
+        navigation.replace("BottomNavigation", {
+          user: userData,
+          agentInfo: employee,
+        });
+      })
+      .catch((error) => {
+        console.error("Storage error:", error);
+        setLoading(false);
+        Alert.alert("Error", "Failed to save user data");
       });
-    }, 4000);
+  } else {
+    Alert.alert("Invalid Agent", "Selected agent has no valid ID");
+    setSelectedEmployee(null);
+  }
+};
 
-    // Form/Input Fade-in and Slide-up Animation (Start immediately)
-    Animated.timing(inputAnim, {
-      toValue: 1,
-      duration: 800,
-      delay: 500, // Short delay to let the screen load
-      useNativeDriver: true,
-    }).start();
-
-    return () => clearInterval(interval);
-  }, [fadeAnim, backgroundImages.length, inputAnim]); 
-
-
-  const onPressInButton = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const onPressOutButton = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 3,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handleLogin = async () => {
+  // App login handler (your existing code)
+  const handleAppLogin = async () => {
     if (!mobile || !password) {
       Alert.alert(
         "Validation Error",
@@ -401,11 +922,10 @@ export default function Login({ navigation }) {
         const agentDetail = await axios.get(
           `${baseUrl}/agent/get-agent-by-id/${data.userId}`
         );
-        // Store user and agent info for future auto-login
         await AsyncStorage.setItem("user", JSON.stringify(data));
         await AsyncStorage.setItem("agentInfo", JSON.stringify(agentDetail?.data));
 
-        navigation.navigate("BottomNavigation", {
+        navigation.replace("BottomNavigation", {
           user: data,
           agentInfo: agentDetail?.data,
         });
@@ -420,126 +940,223 @@ export default function Login({ navigation }) {
     }
   };
 
-  // The full login screen is now rendered immediately
+  // Background animations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
+
+    Animated.timing(inputAnim, {
+      toValue: 1,
+      duration: 800,
+      delay: 500,
+      useNativeDriver: true,
+    }).start();
+
+    return () => clearInterval(interval);
+  }, [fadeAnim, inputAnim]);
+
+  const onPressInButton = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOutButton = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <View style={styles.container}>
-      {/* Animated Background Image */}
       <Animated.Image
         source={backgroundImages[currentImageIndex]}
         style={[styles.backgroundOverlayImage, { opacity: fadeAnim }]}
         resizeMode="cover"
       />
 
-      {/* A richer, semi-transparent gradient overlay */}
       <LinearGradient
         colors={['#24C6DC', '#183A5D']}
         style={styles.gradientOverlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "android" ? "padding" : "height"}
-    >
       
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "android" ? "padding" : "height"}
       >
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.contentWrapper}>
-          {/* Logo */}
-          <Animated.View style={[styles.logoContainer, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] }]}>
-            <Image source={logoImage} style={styles.logo} resizeMode="contain" />
-          </Animated.View>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <SafeAreaView style={styles.safeArea}>
+            <View style={styles.contentWrapper}>
+              {/* Logo */}
+              <Animated.View style={[styles.logoContainer, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }] }]}>
+                <Image source={logoImage} style={styles.logo} resizeMode="contain" />
+              </Animated.View>
 
-          <Text style={styles.welcomeTitle}>Welcome Back{"\n"}to Mychits</Text>
+              <Text style={styles.welcomeTitle}>
+                {isWebsite ? "Manager Access" : "Welcome Back\n to Mychits"}
+              </Text>
 
-          {/* Phone Number Input */}
-          <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-            <Text style={styles.inputLabel}>Phone Number</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="call" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="eg. 1234567890"
-                placeholderTextColor="#A9A9A9"
-                keyboardType="numeric"
-                value={mobile}
-                onChangeText={setMobile}
-              />
+              {isWebsite ? (
+                // Website Mode: Inline Agent Dropdown
+                <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+                  <Text style={styles.inputLabel}>Select Agent</Text>
+                  <View style={styles.dropdownWrapper}>
+                    <TouchableOpacity 
+                      style={styles.dropdownButton}
+                      onPress={() => setShowDropdown(!showDropdown)}
+                      disabled={loading}
+                    >
+                      <Text style={selectedEmployee ? styles.selectedText : styles.placeholderText}>
+                        {selectedEmployee ? selectedEmployee.name : "Select an Agent"}
+                      </Text>
+                      <Ionicons 
+                        name={showDropdown ? "chevron-up" : "chevron-down"} 
+                        size={24} 
+                        color={COLOR_PALETTE.secondary} 
+                      />
+                    </TouchableOpacity>
+                    
+                    {showDropdown && (
+                      <View style={styles.dropdownList}>
+                        <ScrollView style={styles.dropdownScroll}>
+                          {employees.map((employee) => (
+                            <TouchableOpacity
+                              key={employee._id || employee.id}
+                              style={styles.dropdownItem}
+                              onPress={() => handleSelectEmployee(employee)}
+                            >
+                              <View style={styles.employeeAvatar}>
+                                <Text style={styles.avatarText}>
+                                  {employee.name?.charAt(0)?.toUpperCase() || "A"}
+                                </Text>
+                              </View>
+                              <View style={styles.employeeInfo}>
+                                <Text style={styles.employeeName}>{employee.name}</Text>
+                                <Text style={styles.employeeDetail}>
+                                  {employee.phone_number}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                          ))}
+                          {employees.length === 0 && (
+                            <View style={styles.noDataView}>
+                              <Text style={styles.noDataText}>No agents available</Text>
+                            </View>
+                          )}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {loading && (
+                    <View style={styles.loadingOverlay}>
+                      <ActivityIndicator size="large" color="#24C6DC" />
+                      <Text style={styles.loadingText}>Verifying agent ID...</Text>
+                    </View>
+                  )}
+                </Animated.View>
+              ) : (
+                // App Mode: Phone and Password
+                <>
+                  <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+                    <Text style={styles.inputLabel}>Phone Number</Text>
+                    <View style={styles.inputContainer}>
+                      <Ionicons name="call" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="eg. 1234567890"
+                        placeholderTextColor="#A9A9A9"
+                        keyboardType="numeric"
+                        value={mobile}
+                        onChangeText={setMobile}
+                      />
+                    </View>
+                  </Animated.View>
+
+                  <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+                    <Text style={styles.inputLabel}>Password</Text>
+                    <View style={styles.inputContainer}>
+                      <Ionicons name="lock-closed" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="***************"
+                        placeholderTextColor="#A9A9A9"
+                        secureTextEntry={!isPasswordShown}
+                        value={password}
+                        onChangeText={setPassword}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setIsPasswordShown(!isPasswordShown)}
+                        style={styles.eyeIcon}
+                      >
+                        <Ionicons
+                          name={isPasswordShown ? "eye-off" : "eye"}
+                          size={24}
+                          color={COLOR_PALETTE.secondary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <Pressable style={{ marginTop: 10, alignSelf: 'flex-end' }} onPress={() => navigation.navigate("ForgotPassword")}>
+                      <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                    </Pressable>
+                  </Animated.View>
+
+                  <Animated.View style={[styles.becomeAgentLinkWrapper, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+                    <Pressable style={styles.becomeAgentLink} onPress={() => navigation.navigate("Becomeanagent")}>
+                      <Text style={styles.becomeAgentText}>Become an Agent ?</Text>
+                    </Pressable>
+                  </Animated.View>
+
+                  {/* Login Button for App Mode */}
+                  <Animated.View style={[styles.loginButtonWrapper, { transform: [{ scale: scaleAnim }] }]}>
+                    <TouchableOpacity
+                      onPress={handleAppLogin}
+                      onPressIn={onPressInButton}
+                      onPressOut={onPressOutButton}
+                      activeOpacity={1}
+                      disabled={loading}
+                    >
+                      <LinearGradient
+                        colors={[COLOR_PALETTE.primary, COLOR_PALETTE.secondary]}
+                        style={styles.loginButton}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        {loading ? (
+                          <ActivityIndicator color={COLOR_PALETTE.lightText} size="small" />
+                        ) : (
+                          <Text style={styles.loginButtonText}>Log in</Text>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </Animated.View>
+                </>
+              )}
             </View>
-          </Animated.View>
-
-          {/* Password Input */}
-          <Animated.View style={[styles.inputGroup, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed" size={24} color={COLOR_PALETTE.secondary} style={{ marginRight: 10 }} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="***************"
-                placeholderTextColor="#A9A9A9"
-                secureTextEntry={!isPasswordShown}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setIsPasswordShown(!isPasswordShown)}
-                style={styles.eyeIcon}
-              >
-                <Ionicons
-                  name={isPasswordShown ? "eye-off" : "eye"}
-                  size={24}
-                  color={COLOR_PALETTE.secondary}
-                />
-              </TouchableOpacity>
-            </View>
-            <Pressable style={{ marginTop: 10, alignSelf: 'flex-end' }} onPress={() => navigation.navigate("ForgotPassword")}>
-              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-            </Pressable>
-          </Animated.View>
-
-          {/* Become an agent? link */}
-          <Animated.View style={[styles.becomeAgentLinkWrapper, { opacity: inputAnim, transform: [{ translateY: inputAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-            <Pressable style={styles.becomeAgentLink} onPress={() => navigation.navigate("Becomeanagent")}>
-              <Text style={styles.becomeAgentText}>Become an Agent ?</Text>
-            </Pressable>
-          </Animated.View>
-
-          {/* Login Button with Gradient and Animation */}
-          <Animated.View style={[styles.loginButtonWrapper, { transform: [{ scale: scaleAnim }] }]}>
-            <TouchableOpacity
-              onPress={handleLogin}
-              onPressIn={onPressInButton}
-              onPressOut={onPressOutButton}
-              activeOpacity={1}
-              disabled={loading}
-            >
-              <LinearGradient
-                colors={[COLOR_PALETTE.primary, COLOR_PALETTE.secondary]}
-                style={styles.loginButton}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                {/* Conditional rendering for loader */}
-                {loading ? (
-                  <ActivityIndicator color={COLOR_PALETTE.lightText} size="small" />
-                ) : (
-                  <Text style={styles.loginButtonText}>Log in</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Don't have an account? Sign Up link */}
-          
-
-        </View>
-      </SafeAreaView>
-      </ScrollView>
-    </KeyboardAvoidingView>
-
+          </SafeAreaView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -548,7 +1165,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
-    backgroundColor: '#FFFFFF', // Fallback background
+    backgroundColor: '#FFFFFF',
   },
   backgroundOverlayImage: {
     ...StyleSheet.absoluteFillObject,
@@ -588,6 +1205,7 @@ const styles = StyleSheet.create({
   inputGroup: {
     width: '100%',
     marginBottom: 20,
+    position: 'relative',
   },
   inputLabel: {
     fontSize: 16,
@@ -601,7 +1219,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     height: 60,
-    borderWidth:1,
+    borderWidth: 1,
     borderColor: 'orange',
     backgroundColor: '#FFFFFF',
     borderRadius: 30,
@@ -658,24 +1276,122 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
   },
-  becomeAgentLink: {},
   becomeAgentText: {
     fontSize: 18,
     fontWeight: '600',
     color: "black",
     textDecorationLine: 'underline',
   },
-  signUpLinkWrapper: {
+  // Website dropdown styles
+  dropdownWrapper: {
+    position: 'relative',
     width: '100%',
+    zIndex: 1000,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'space-between',
+    width: '100%',
+    height: 60,
+    borderWidth: 1,
+    borderColor: 'orange',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
   },
-  signUpText: {
+  placeholderText: {
     fontSize: 16,
-    color: COLOR_PALETTE.lightText,
+    color: '#A9A9A9',
   },
-  signUpLink: {
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
+  selectedText: {
+    fontSize: 16,
+    color: COLOR_PALETTE.primary,
+    fontWeight: '500',
+  },
+  dropdownList: {
+    position: 'absolute',
+    top: 70,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    maxHeight: 300,
+    zIndex: 2000,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  dropdownScroll: {
+    maxHeight: 300,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  employeeAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#24C6DC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  employeeInfo: {
+    flex: 1,
+  },
+  employeeName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLOR_PALETTE.primary,
+  },
+  employeeDetail: {
+    fontSize: 12,
+    color: COLOR_PALETTE.secondary,
+    marginTop: 2,
+  },
+  noDataView: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: COLOR_PALETTE.secondary,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 3000,
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    marginTop: 10,
+    fontSize: 14,
   },
 });
