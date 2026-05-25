@@ -469,9 +469,9 @@ useEffect(() => {
           placeholder="Search customer..."
           placeholderTextColor="#999"
           style={{
-            height: 50,
+            height: 40,
             color: MODERN_PRIMARY,
-            fontSize: 16,
+            fontSize: 14,
           }}
         />
       </View>
@@ -618,9 +618,9 @@ useEffect(() => {
           placeholder="Search loan ID..."
           placeholderTextColor="#999"
           style={{
-            height: 50,
+            height: 40,
             color: MODERN_PRIMARY,
-            fontSize: 16,
+            fontSize: 14,
           }}
         />
       </View>

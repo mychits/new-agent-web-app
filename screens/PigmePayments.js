@@ -446,9 +446,9 @@ const PigmePayments = ({ route, navigation }) => {
           placeholder="Search Pigme ID..."
           placeholderTextColor="#999"
           style={{
-            height: 50,
+            height: 40,
             color: MODERN_PRIMARY,
-            fontSize: 16,
+            fontSize: 14,
           }}
         />
       </View>
@@ -628,9 +628,9 @@ const PigmePayments = ({ route, navigation }) => {
           placeholder="Search customer..."
           placeholderTextColor="#999"
           style={{
-            height: 50,
+            height: 40,
             color: MODERN_PRIMARY,
-            fontSize: 16,
+            fontSize: 14,
           }}
         />
       </View>
