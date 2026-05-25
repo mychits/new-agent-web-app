@@ -49,6 +49,8 @@ const LoanPayments = ({ route, navigation }) => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [agent, setAgent] = useState({})
+  const [customerSearch, setCustomerSearch] = useState("");
+const [loanSearch, setLoanSearch] = useState("");
 
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -116,26 +118,166 @@ const handleFilterPress = (filterId) => {
     setActiveChitId(chitId);
   };
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await axios.get(
-          `${baseUrl}/payment/loan/agent/${user.userId}`
-        );
-        if (response.data) {
-          setCustomers(response.data);
-        } else {
-          console.error("Unexpected API response format:", response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching loan payment data:", error);
-      } finally {
-        setLoading(false)
-      }
-    };
+  // useEffect(() => {
+  //   const fetchCustomers = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         `${baseUrl}/api/v1/mobile/payments/daily-report/${user.userId}`
+  //       );
+  //       if (response.data) {
+  //         setCustomers(response.data);
+  //       } else {
+  //         console.error("Unexpected API response format:", response.data);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching loan payment data:", error);
+  //     } finally {
+  //       setLoading(false)
+  //     }
+  //   };
 
+  //   fetchCustomers();
+  // }, [user.userId]);
+
+useEffect(() => {
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+
+      // format selected date => YYYY-MM-DD
+      const formattedDate = selectedDate
+        ? new Date(selectedDate)
+            .toISOString()
+            .split("T")[0]
+        : "";
+
+      const params = {
+        collected_by: user?.userId,
+        userId: selectedCustomer || undefined,
+        loanId: selectedloanId || undefined,
+        pay_type: selectedPaymentMode || undefined,
+
+        // optional backend filter
+        payment_type: "Loan Payment",
+
+        from_date: formattedDate,
+        to_date: formattedDate,
+      };
+
+      console.log(
+        "========== LOAN API DEBUG =========="
+      );
+
+      console.log(
+        "REQUEST PARAMS :",
+        JSON.stringify(params, null, 2)
+      );
+
+      const response = await axios.get(
+        `${baseUrl}/v1/mobile/payments/daily-report`,
+        {
+          params,
+        }
+      );
+
+      console.log(
+        "ALL PAYMENTS FROM API :",
+        JSON.stringify(response?.data, null, 2)
+      );
+
+      if (
+        response?.data &&
+        Array.isArray(response.data)
+      ) {
+
+        // ONLY LOAN PAYMENTS
+        const loanPayments =
+          response.data.filter((item) => {
+            return (
+              item?.pay_for === "Loan" ||
+              item?.payment_type ===
+                "Loan Payment"
+            );
+          });
+
+        console.log(
+          "ONLY LOAN PAYMENTS :",
+          JSON.stringify(
+            loanPayments,
+            null,
+            2
+          )
+        );
+
+        // set only loan payments
+        setCustomers(loanPayments);
+
+        // unique users only from loan payments
+        const uniqueUsers =
+          loanPayments.reduce(
+            (acc, item) => {
+              const user =
+                item?.user_id;
+
+              if (
+                user &&
+                !acc.some(
+                  (u) =>
+                    u._id === user._id
+                )
+              ) {
+                acc.push(user);
+              }
+
+              return acc;
+            },
+            []
+          );
+
+        setCus(uniqueUsers);
+
+      } else {
+        setCustomers([]);
+        setCus([]);
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Error fetching loan payment data:",
+        error
+      );
+
+      console.log(
+        "ERROR RESPONSE :",
+        JSON.stringify(
+          error?.response?.data,
+          null,
+          2
+        )
+      );
+
+      setCustomers([]);
+      setCus([]);
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (user?.userId) {
     fetchCustomers();
-  }, [user.userId]);
+  } else {
+    setLoading(false);
+  }
+
+}, [
+  user?.userId,
+  selectedDate,
+  selectedCustomer,
+  selectedloanId,
+  selectedPaymentMode,
+]);
 
   useEffect(() => {
     const fetchCus = async () => {
@@ -244,56 +386,342 @@ const handleFilterPress = (filterId) => {
             maximumDate={new Date(2100, 11, 31)}
         />
     );
-      case 'loan':
-        const uniqueloanIds = [...new Set(customers.map(c => c?.loan?.loan_id).filter(Boolean))];
-        return (
-          <Picker
-            selectedValue={selectedloanId}
-            onValueChange={(value) => {
-              setSelectedloanId(value);
-              setSelectedloanName(value || ''); 
-              updateFilterValue('loan', value);
-              setShowPicker(false);
-            }}
-            style={{ color: MODERN_PRIMARY }}
-            itemStyle={{ color: MODERN_PRIMARY }}
-          >
-            <Picker.Item label="All loan Accounts" value="" />
-            {uniqueloanIds.map((loanId) => (
-              <Picker.Item
-                key={loanId}
-                label={`Loan ID: ${loanId}`}
-                value={loanId}
-              />
-            ))}
-          </Picker>
-        );
-      case 'customer':
-        return (
-          <Picker
-            selectedValue={selectedCustomer}
-            onValueChange={(value) => {
-              const selected = cus.find((customer) => customer._id === value);
-              setSelectedCustomer(value);
-              setSelectedCustomerName(selected?.full_name || '');
-              updateFilterValue('customer', selected?.full_name);
-              setShowPicker(false);
-            }}
-            style={{ color: MODERN_PRIMARY }}
-            itemStyle={{ color: MODERN_PRIMARY }}
-          >
-            <Picker.Item label="All Customers" value="" />
-            {cus.map((customer) => (
-              <Picker.Item
-                key={customer._id}
-                label={`${customer.full_name} - ${customer.phone_number}`}
-                value={customer._id}
-              />
-            ))}
-          </Picker>
+      // case 'loan':
+      //   const uniqueloanIds = [...new Set(customers.map(c => c?.loan?.loan_id).filter(Boolean))];
+      //   return (
+      //     <Picker
+      //       selectedValue={selectedloanId}
+      //       onValueChange={(value) => {
+      //         setSelectedloanId(value);
+      //         setSelectedloanName(value || ''); 
+      //         updateFilterValue('loan', value);
+      //         setShowPicker(false);
+      //       }}
+      //       style={{ color: MODERN_PRIMARY }}
+      //       itemStyle={{ color: MODERN_PRIMARY }}
+      //     >
+      //       <Picker.Item label="All loan Accounts" value="" />
+      //       {uniqueloanIds.map((loanId) => (
+      //         <Picker.Item
+      //           key={loanId}
+      //           label={`Loan ID: ${loanId}`}
+      //           value={loanId}
+      //         />
+      //       ))}
+      //     </Picker>
+      //   );
+      // case 'customer':
+      //   return (
+      //     <Picker
+      //       selectedValue={selectedCustomer}
+      //       onValueChange={(value) => {
+      //         const selected = cus.find((customer) => customer._id === value);
+      //         setSelectedCustomer(value);
+      //         setSelectedCustomerName(selected?.full_name || '');
+      //         updateFilterValue('customer', selected?.full_name);
+      //         setShowPicker(false);
+      //       }}
+      //       style={{ color: MODERN_PRIMARY }}
+      //       itemStyle={{ color: MODERN_PRIMARY }}
+      //     >
+      //       <Picker.Item label="All Customers" value="" />
+      //       {cus.map((customer) => (
+      //         <Picker.Item
+      //           key={customer._id}
+      //           label={`${customer.full_name} - ${customer.phone_number}`}
+      //           value={customer._id}
+      //         />
+      //       ))}
+      //     </Picker>
 
-        );
-      case 'paymentMode':
+      //   );
+  case 'customer':
+  const filteredCus = cus.filter((customer) => {
+    const searchText = customerSearch.toLowerCase();
+
+    return (
+      customer?.full_name
+        ?.toLowerCase()
+        .includes(searchText) ||
+      customer?.phone_number
+        ?.toLowerCase()
+        .includes(searchText)
+    );
+  });
+
+  return (
+    <View style={styles.pickerWrapper}>
+      <View
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          marginBottom: 10,
+          borderWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <TextInput
+          value={customerSearch}
+          onChangeText={(text) => {
+            setCustomerSearch(text);
+          }}
+          placeholder="Search customer..."
+          placeholderTextColor="#999"
+          style={{
+            height: 50,
+            color: MODERN_PRIMARY,
+            fontSize: 16,
+          }}
+        />
+      </View>
+
+      <ScrollView
+        style={{
+          maxHeight: 350,
+          backgroundColor: "#fff",
+          borderRadius: 12,
+        }}
+      >
+        <TouchableOpacity
+          style={{
+            padding: 15,
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+          }}
+          onPress={() => {
+            setSelectedCustomer('');
+            setSelectedCustomerName('');
+            updateFilterValue('customer', 'All');
+
+            closePicker();
+          }}
+        >
+          <Text
+            style={{
+              color: MODERN_PRIMARY,
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            All Customers
+          </Text>
+        </TouchableOpacity>
+
+        {filteredCus.map((customer) => (
+          <TouchableOpacity
+            key={customer._id}
+            style={{
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: "#eee",
+            }}
+            onPress={() => {
+              setSelectedCustomer(customer._id);
+
+              setSelectedCustomerName(
+                customer?.full_name || ''
+              );
+
+              updateFilterValue(
+                'customer',
+                customer?.full_name || 'All'
+              );
+
+              setCustomerSearch('');
+
+              setShowPicker(false);
+            }}
+          >
+            <Text
+              style={{
+                color: MODERN_PRIMARY,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              {customer?.full_name || 'Unknown'}
+            </Text>
+
+            <Text
+              style={{
+                color: TEXT_GREY,
+                marginTop: 4,
+              }}
+            >
+              {customer?.phone_number || ''}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {filteredCus.length === 0 && (
+          <View
+            style={{
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: TEXT_GREY }}>
+              No customers found
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.pickerCancelButton}
+        onPress={() => {
+          setCustomerSearch('');
+          setShowPicker(false);
+        }}
+      >
+        <Text style={styles.pickerCancelText}>
+          Cancel
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  case 'loan':
+  const uniqueloanIds = [
+    ...new Set(
+      customers
+        .map((c) => c?.loan?.loan_id)
+        .filter(Boolean)
+    ),
+  ];
+
+  const filteredLoans = uniqueloanIds.filter((loanId) =>
+    loanId
+      ?.toString()
+      .toLowerCase()
+      .includes(loanSearch.toLowerCase())
+  );
+
+  return (
+    <View style={styles.pickerWrapper}>
+      <View
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          marginBottom: 10,
+          borderWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <TextInput
+          value={loanSearch}
+          onChangeText={(text) => {
+            setLoanSearch(text);
+          }}
+          placeholder="Search loan ID..."
+          placeholderTextColor="#999"
+          style={{
+            height: 50,
+            color: MODERN_PRIMARY,
+            fontSize: 16,
+          }}
+        />
+      </View>
+
+      <ScrollView
+        style={{
+          maxHeight: 350,
+          backgroundColor: "#fff",
+          borderRadius: 12,
+        }}
+      >
+        <TouchableOpacity
+          style={{
+            padding: 15,
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+          }}
+          onPress={() => {
+            setSelectedloanId('');
+            setSelectedloanName('');
+
+            updateFilterValue('loan', 'All');
+
+            closePicker();
+          }}
+        >
+          <Text
+            style={{
+              color: MODERN_PRIMARY,
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            All Loan Accounts
+          </Text>
+        </TouchableOpacity>
+
+        {filteredLoans.map((loanId) => (
+          <TouchableOpacity
+            key={loanId}
+            style={{
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: "#eee",
+            }}
+            onPress={() => {
+              setSelectedloanId(loanId);
+
+              setSelectedloanName(loanId);
+
+              updateFilterValue(
+                'loan',
+                loanId
+              );
+
+              setLoanSearch('');
+
+              setShowPicker(false);
+            }}
+          >
+            <Text
+              style={{
+                color: MODERN_PRIMARY,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Loan ID : {loanId}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {filteredLoans.length === 0 && (
+          <View
+            style={{
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: TEXT_GREY }}>
+              No loan IDs found
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.pickerCancelButton}
+        onPress={() => {
+          setLoanSearch('');
+          setShowPicker(false);
+        }}
+      >
+        <Text style={styles.pickerCancelText}>
+          Cancel
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+  
+        case 'paymentMode':
         return (
           <Picker
             selectedValue={selectedPaymentMode}
