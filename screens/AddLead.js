@@ -195,12 +195,7 @@ const AddLead = ({ route, navigation }) => {
               >
                 <Text style={[styles.tabText, selectedTicket === "chit" && styles.activeTabText]}>Chit</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, selectedTicket === "gold" && styles.activeTab]}
-                onPress={() => setSelectedTicket("gold")}
-              >
-                <Text style={[styles.tabText, selectedTicket === "gold" && styles.activeTabText]}>Gold</Text>
-              </TouchableOpacity>
+             
             </View>
 
             <Text style={styles.label}>Group *</Text>

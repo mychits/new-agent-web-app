@@ -123,12 +123,7 @@ const ViewCustomer = ({ route, navigation }) => {
                 setLoading = setIsChitLoading;
                 setCustomers = setChitCustomers;
                 break;
-            case "GOLD":
-                currentUrl = "http://13.60.68.201:3000/api"; 
-                apiPath = `/user/get-users-by-agent-id/${user.userId}`;
-                setLoading = setIsGoldLoading;
-                setCustomers = setGoldCustomers;
-                break;
+         
             case "LOAN": 
                 currentUrl = `${baseUrl}`; 
                 apiPath = `/loans/agent-employee/${REFERRED_TYPE}/${user.userId}/customer`;
@@ -255,8 +250,7 @@ const ViewCustomer = ({ route, navigation }) => {
         switch (tab) {
             case "CHIT":
                 return { customers: chitCustomers, isLoading: isChitLoading, displayName: "Chit" };
-            case "GOLD":
-                return { customers: goldCustomers, isLoading: isGoldLoading, displayName: "Gold" };
+           
             case "LOAN":
                 return { customers: loanCustomers, isLoading: isLoanLoading, displayName: "Loan" };
             case "PIGMY":
@@ -311,7 +305,7 @@ const ViewCustomer = ({ route, navigation }) => {
                 
                 {/* Tab Navigation */}
                 <View style={styles.tabContainer}>
-                    {["CHIT", "GOLD", "LOAN", "PIGMY"].map((tab) => (
+                    {["CHIT", "LOAN", "PIGMY"].map((tab) => (
                         <TouchableOpacity
                             key={tab}
                             style={[styles.tab, activeTab === tab && styles.activeTab]}

@@ -94,10 +94,7 @@ const Routes = ({ route, navigation }) => {
               icon="people-outline"
               onPress={() => navigation.navigate("RouteCustomerChit", { user, areaId: "chits" })}
             />
-            <CustomRouteCard
-              name="Gold Chits Customers"
-              icon="star-outline"
-            />
+           
             <CustomRouteCard
               name="Loan Customers"
               icon="wallet-outline"

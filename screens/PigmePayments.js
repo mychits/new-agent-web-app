@@ -54,14 +54,14 @@ const PigmePayments = ({ route, navigation }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCustomer, setSelectedCustomer] = useState('');
-  
+  const [pigmeSearch, setPigmeSearch] = useState('');
   const [selectedPigmyId, setSelectedPigmyId] = useState(''); 
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('');
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
   const [selectedPigmyName, setSelectedPigmyName] = useState(''); 
   const [activeChitId, setActiveChitId] = useState(null);
   const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false);
-
+ const [customerSearch, setCustomerSearch] = useState('');
   const formatDate = (date) => {
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -116,27 +116,189 @@ const PigmePayments = ({ route, navigation }) => {
     setActiveChitId(chitId);
   };
 
+  // useEffect(() => {
+  //   const fetchCustomers = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         `${baseUrl}/payment/pigme/agent/${user.userId}`
+  //       );
+  //       if (response.data) {
+  //         setCustomers(response.data);
+  //       } else {
+  //         console.error("Unexpected API response format:", response.data);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching pigme payment data:", error);
+  //     } finally {
+  //       setLoading(false)
+  //     }
+  //   };
+
+  //   fetchCustomers();
+  // }, [user.userId]);
+
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await axios.get(
-          `${baseUrl}/payment/pigme/agent/${user.userId}`
-        );
-        if (response.data) {
-          setCustomers(response.data);
-        } else {
-          console.error("Unexpected API response format:", response.data);
+
+  const fetchCustomers = async () => {
+
+    try {
+
+      setLoading(true);
+
+      // format selected date => YYYY-MM-DD
+      const formattedDate = selectedDate
+        ? new Date(selectedDate)
+            .toISOString()
+            .split("T")[0]
+        : "";
+
+      const params = {
+        collected_by: user?.userId,
+
+        userId:
+          selectedCustomer || undefined,
+
+        pigme_id:
+          selectedPigmyId || undefined,
+
+        pay_type:
+          selectedPaymentMode || undefined,
+
+        payment_type:
+          "Pigme Payment",
+
+        from_date: formattedDate,
+        to_date: formattedDate,
+      };
+
+      console.log(
+        "========== PIGME API DEBUG =========="
+      );
+
+      console.log(
+        "REQUEST PARAMS :",
+        JSON.stringify(params, null, 2)
+      );
+
+      const response = await axios.get(
+        `${baseUrl}/v1/mobile/payments/daily-report`,
+        {
+          params,
         }
-      } catch (error) {
-        console.error("Error fetching pigme payment data:", error);
-      } finally {
-        setLoading(false)
+      );
+
+      console.log(
+        "ALL PIGME PAYMENTS :",
+        JSON.stringify(
+          response?.data,
+          null,
+          2
+        )
+      );
+
+      if (
+        response?.data &&
+        Array.isArray(response.data)
+      ) {
+
+        // ONLY PIGME PAYMENTS
+        const pigmePayments =
+          response.data.filter((item) => {
+
+            return (
+              item?.pay_for === "Pigme" ||
+              item?.payment_type ===
+                "Pigme Payment"
+            );
+          });
+
+        console.log(
+          "FILTERED PIGME PAYMENTS :",
+          JSON.stringify(
+            pigmePayments,
+            null,
+            2
+          )
+        );
+
+        setCustomers(pigmePayments);
+
+        // UNIQUE CUSTOMERS
+        const uniqueUsers =
+          pigmePayments.reduce(
+            (acc, item) => {
+
+              const user =
+                item?.user_id;
+
+              if (
+                user &&
+                !acc.some(
+                  (u) =>
+                    u._id === user._id
+                )
+              ) {
+                acc.push(user);
+              }
+
+              return acc;
+
+            },
+            []
+          );
+
+        setCus(uniqueUsers);
+
+      } else {
+
+        setCustomers([]);
+        setCus([]);
+
       }
-    };
+
+    } catch (error) {
+
+      console.error(
+        "Error fetching pigme payment data:",
+        error
+      );
+
+      console.log(
+        "ERROR RESPONSE :",
+        JSON.stringify(
+          error?.response?.data,
+          null,
+          2
+        )
+      );
+
+      setCustomers([]);
+      setCus([]);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
+
+  if (user?.userId) {
 
     fetchCustomers();
-  }, [user.userId]);
 
+  } else {
+
+    setLoading(false);
+
+  }
+
+}, [
+  user?.userId,
+  selectedDate,
+  selectedCustomer,
+  selectedPigmyId,
+  selectedPaymentMode,
+]);
   useEffect(() => {
     const fetchCus = async () => {
       try {
@@ -242,56 +404,356 @@ const PigmePayments = ({ route, navigation }) => {
             maximumDate={new Date(2100, 11, 31)}
         />
     );
-      case 'pigme':
-        const uniquePigmyIds = [...new Set(customers.map(c => c?.pigme?.pigme_id).filter(Boolean))];
-        return (
-          <Picker
-            selectedValue={selectedPigmyId}
-            onValueChange={(value) => {
-              setSelectedPigmyId(value);
-              setSelectedPigmyName(value || ''); 
-              updateFilterValue('pigme', value ? `ID: ${value}` : 'All'); 
-              setShowPicker(false);
-            }}
-            style={{ color: MODERN_PRIMARY }}
-            itemStyle={{ color: MODERN_PRIMARY }}
-          >
-            <Picker.Item label="All Pigme Accounts" value="" />
-            {uniquePigmyIds.map((pigmyId) => (
-              <Picker.Item
-                key={pigmyId}
-                label={`Pigmy ID: ${pigmyId}`}
-                value={pigmyId}
-              />
-            ))}
-          </Picker>
-        );
-      case 'customer':
-        return (
-          <Picker
-            selectedValue={selectedCustomer}
-            onValueChange={(value) => {
-              const selected = cus.find((customer) => customer._id === value);
-              setSelectedCustomer(value);
-              setSelectedCustomerName(selected?.full_name || '');
-              updateFilterValue('customer', selected?.full_name);
-              setShowPicker(false);
-            }}
-            style={{ color: MODERN_PRIMARY }}
-            itemStyle={{ color: MODERN_PRIMARY }}
-          >
-            <Picker.Item label="All Customers" value="" />
-            {cus.map((customer) => (
-              <Picker.Item
-                key={customer._id}
-                label={`${customer.full_name} - ${customer.phone_number}`}
-                value={customer._id}
-              />
-            ))}
-          </Picker>
+     case 'pigme':
 
-        );
-      case 'paymentMode':
+  const uniquePigmyIds = [
+    ...new Set(
+      customers
+        .map((c) => c?.pigme?.pigme_id)
+        .filter(Boolean)
+    ),
+  ];
+
+  const filteredPigmes =
+    uniquePigmyIds.filter((pigmyId) =>
+      pigmyId
+        ?.toString()
+        .toLowerCase()
+        .includes(
+          pigmeSearch.toLowerCase()
+        )
+    );
+
+  return (
+    <View style={styles.pickerWrapper}>
+
+      {/* Search Input */}
+      <View
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          marginBottom: 10,
+          borderWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <TextInput
+          value={pigmeSearch}
+          onChangeText={(text) => {
+            setPigmeSearch(text);
+          }}
+          placeholder="Search Pigme ID..."
+          placeholderTextColor="#999"
+          style={{
+            height: 40,
+            color: MODERN_PRIMARY,
+            fontSize: 14,
+          }}
+        />
+      </View>
+
+      {/* Pigme List */}
+      <ScrollView
+        style={{
+          maxHeight: 350,
+          backgroundColor: "#fff",
+          borderRadius: 12,
+        }}
+      >
+
+        {/* All Pigmes */}
+        <TouchableOpacity
+          style={{
+            padding: 15,
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+          }}
+          onPress={() => {
+
+            setSelectedPigmyId('');
+            setSelectedPigmyName('');
+
+            updateFilterValue(
+              'pigme',
+              'All'
+            );
+
+            closePicker();
+          }}
+        >
+          <Text
+            style={{
+              color: MODERN_PRIMARY,
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            All Pigme Accounts
+          </Text>
+        </TouchableOpacity>
+
+        {/* Filtered Pigmes */}
+        {filteredPigmes.map((pigmyId) => (
+          <TouchableOpacity
+            key={pigmyId}
+            style={{
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: "#eee",
+            }}
+            onPress={() => {
+
+              setSelectedPigmyId(
+                pigmyId
+              );
+
+              setSelectedPigmyName(
+                pigmyId || ''
+              );
+
+              updateFilterValue(
+                'pigme',
+                `ID: ${pigmyId}`
+              );
+
+              setPigmeSearch('');
+
+              setShowPicker(false);
+            }}
+          >
+            <Text
+              style={{
+                color: MODERN_PRIMARY,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Pigme ID : {pigmyId}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {/* Empty State */}
+        {filteredPigmes.length === 0 && (
+          <View
+            style={{
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: TEXT_GREY }}>
+              No Pigme IDs found
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Cancel Button */}
+      <TouchableOpacity
+        style={styles.pickerCancelButton}
+        onPress={() => {
+          setPigmeSearch('');
+          setShowPicker(false);
+        }}
+      >
+        <Text style={styles.pickerCancelText}>
+          Cancel
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+        // case 'customer':
+
+      //   return (
+      //     <Picker
+      //       selectedValue={selectedCustomer}
+      //       onValueChange={(value) => {
+      //         const selected = cus.find((customer) => customer._id === value);
+      //         setSelectedCustomer(value);
+      //         setSelectedCustomerName(selected?.full_name || '');
+      //         updateFilterValue('customer', selected?.full_name);
+      //         setShowPicker(false);
+      //       }}
+      //       style={{ color: MODERN_PRIMARY }}
+      //       itemStyle={{ color: MODERN_PRIMARY }}
+      //     >
+      //       <Picker.Item label="All Customers" value="" />
+      //       {cus.map((customer) => (
+      //         <Picker.Item
+      //           key={customer._id}
+      //           label={`${customer.full_name} - ${customer.phone_number}`}
+      //           value={customer._id}
+      //         />
+      //       ))}
+      //     </Picker>
+
+      //   );
+      
+      case 'customer':
+
+  const filteredCus = cus.filter((customer) => {
+    const searchText =
+      customerSearch.toLowerCase();
+
+    return (
+      customer?.full_name
+        ?.toLowerCase()
+        .includes(searchText) ||
+      customer?.phone_number
+        ?.toLowerCase()
+        .includes(searchText)
+    );
+  });
+
+  return (
+    <View style={styles.pickerWrapper}>
+      
+      {/* Search Input */}
+      <View
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          marginBottom: 10,
+          borderWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <TextInput
+          value={customerSearch}
+          onChangeText={(text) => {
+            setCustomerSearch(text);
+          }}
+          placeholder="Search customer..."
+          placeholderTextColor="#999"
+          style={{
+            height: 40,
+            color: MODERN_PRIMARY,
+            fontSize: 14,
+          }}
+        />
+      </View>
+
+      {/* Customer List */}
+      <ScrollView
+        style={{
+          maxHeight: 350,
+          backgroundColor: "#fff",
+          borderRadius: 12,
+        }}
+      >
+        {/* All Customers */}
+        <TouchableOpacity
+          style={{
+            padding: 15,
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+          }}
+          onPress={() => {
+
+            setSelectedCustomer('');
+            setSelectedCustomerName('');
+
+            updateFilterValue(
+              'customer',
+              'All'
+            );
+
+            closePicker();
+          }}
+        >
+          <Text
+            style={{
+              color: MODERN_PRIMARY,
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            All Customers
+          </Text>
+        </TouchableOpacity>
+
+        {/* Filtered Customers */}
+        {filteredCus.map((customer) => (
+          <TouchableOpacity
+            key={customer._id}
+            style={{
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: "#eee",
+            }}
+            onPress={() => {
+
+              setSelectedCustomer(
+                customer?._id || ''
+              );
+
+              setSelectedCustomerName(
+                customer?.full_name || ''
+              );
+
+              updateFilterValue(
+                'customer',
+                customer?.full_name || 'All'
+              );
+
+              setCustomerSearch('');
+
+              setShowPicker(false);
+            }}
+          >
+            <Text
+              style={{
+                color: MODERN_PRIMARY,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              {customer?.full_name || 'Unknown'}
+            </Text>
+
+            <Text
+              style={{
+                color: TEXT_GREY,
+                marginTop: 4,
+              }}
+            >
+              {customer?.phone_number || ''}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {/* Empty State */}
+        {filteredCus.length === 0 && (
+          <View
+            style={{
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: TEXT_GREY }}>
+              No customers found
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Cancel Button */}
+      <TouchableOpacity
+        style={styles.pickerCancelButton}
+        onPress={() => {
+          setCustomerSearch('');
+          setShowPicker(false);
+        }}
+      >
+        <Text style={styles.pickerCancelText}>
+          Cancel
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+        case 'paymentMode':
         return (
           <Picker
             selectedValue={selectedPaymentMode}
@@ -589,7 +1051,7 @@ const PigmePayments = ({ route, navigation }) => {
                     <View style={styles.searchContainer}>
                         <Icon
                             name="search"
-                            size={20}
+                            size={18}
                             color={TEXT_GREY}
                             style={styles.searchIcon}
                         />
@@ -923,7 +1385,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 2,
         elevation: 1,
-        height: 50,
+        height: 40,
         marginHorizontal: 22,
     },
     searchIcon: {
@@ -934,7 +1396,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: '100%',
         paddingHorizontal: 10,
-        fontSize: 16,
+        fontSize: 15,
         color: MODERN_PRIMARY,
     },
 

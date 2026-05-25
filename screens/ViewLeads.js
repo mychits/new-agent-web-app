@@ -354,9 +354,7 @@ const ViewLeads = ({ route, navigation }) => {
                     <TouchableOpacity style={[styles.tab, activeTab === "CHIT" && styles.activeTab]} onPress={() => setActiveTab("CHIT")}>
                         <Text style={[styles.tabText, activeTab === "CHIT" && styles.activeTabText]}>Chit ({chitLeads.length})</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.tab, activeTab === "GOLD" && styles.activeTab]} onPress={() => setActiveTab("GOLD")}>
-                        <Text style={[styles.tabText, activeTab === "GOLD" && styles.activeTabText]}>Gold ({goldLeads.length})</Text>
-                    </TouchableOpacity>
+                    
                 </View>
             </LinearGradient>
 

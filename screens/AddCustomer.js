@@ -24,10 +24,10 @@ import * as Contacts from "expo-contacts";
 import COLORS from "../constants/color";
 import chitBaseUrl from "../constants/baseUrl";
 import goldBaseUrl from "../constants/goldBaseUrl";
-// 🎯 Added placeholder for new base URLs. Define these correctly in your constants file.
-// Assuming pigmeBaseUrl and loanBaseUrl are the same as chitBaseUrl unless defined separately.
-const pigmeBaseUrl = chitBaseUrl; // Placeholder
-const loanBaseUrl = chitBaseUrl; // Placeholder
+
+// Placeholder for other base URLs
+const pigmeBaseUrl = chitBaseUrl; 
+const loanBaseUrl = chitBaseUrl; 
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -36,14 +36,12 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 const AddCustomer = ({ route, navigation }) => {
   const { user } = route.params;
   
-  // 🎯 STEP 1: Define the referred type based on your context (Employee/Agent)
   const REFERRED_TYPE = "Employee"; 
 
   const [isQuickAdd, setIsQuickAdd] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCustomerType, setSelectedCustomerType] = useState("chit");
   const [focusedInput, setFocusedInput] = useState(null);
-  // ✅ New state to manage password visibility
   const [showPassword, setShowPassword] = useState(false); 
 
   const [customerInfo, setCustomerInfo] = useState({
@@ -70,7 +68,6 @@ const AddCustomer = ({ route, navigation }) => {
     ToastAndroid.show(msg, ToastAndroid.SHORT);
   };
 
-  // ✅ Contact Picker (One button below fields)
   const handlePickContact = async () => {
     const { status } = await Contacts.requestPermissionsAsync();
     if (status !== "granted") {
@@ -86,7 +83,6 @@ const AddCustomer = ({ route, navigation }) => {
       const phoneNumbers = contact.phoneNumbers;
       let phone = "";
       if (phoneNumbers && phoneNumbers.length > 0) {
-        // Simple sanitization for phone number
         phone = phoneNumbers[0].number.replace(/\D/g, "");
       }
 
@@ -106,7 +102,6 @@ const AddCustomer = ({ route, navigation }) => {
   const handleAddCustomer = async () => {
     setIsLoading(true);
 
-    // 🎯 Determine the base URL and the API route based on the selected customer type
     let baseUrl;
     let apiRoute;
     let successMessage = "Customer Added Successfully!";
@@ -114,20 +109,17 @@ const AddCustomer = ({ route, navigation }) => {
     switch (selectedCustomerType) {
       case "chit":
         baseUrl = chitBaseUrl;
-        apiRoute = "/user/add-user"; // Existing route
+        apiRoute = "/user/add-user";
         break;
-      case "goldChit":
-        baseUrl = goldBaseUrl;
-        apiRoute = "/user/add-user"; // Existing route
-        break;
+  
       case "pigme":
         baseUrl = pigmeBaseUrl;
-        apiRoute = "/pigme/user/add"; // New Pigme route
+        apiRoute = "/pigme/user/add";
         successMessage = "Pigme Customer Added Successfully!";
         break;
       case "loan":
         baseUrl = loanBaseUrl;
-        apiRoute = "/loans/user/add"; // New Loan route
+        apiRoute = "/loans/user/add";
         successMessage = "Loan Customer Added Successfully!";
         break;
       default:
@@ -163,18 +155,16 @@ const AddCustomer = ({ route, navigation }) => {
     try {
       let data;
 
-      // 🎯 STEP 2: Include 'referred_type' for Pigme and Loan schemes, and 'agent_id'
       if (selectedCustomerType === "pigme" || selectedCustomerType === "loan") {
         data = { 
           ...customerInfo, 
           agent_id: user.userId, 
-          referred_type: REFERRED_TYPE // <-- **Critical addition for Pigme/Loan**
+          referred_type: REFERRED_TYPE
         }; 
       } else {
-        data = { ...customerInfo, agent: user.userId }; // Keep 'agent' for chit & goldChit
+        data = { ...customerInfo, agent: user.userId };
       }
 
-      // 🎯 Use the determined baseUrl and apiRoute
       const response = await axios.post(`${baseUrl}${apiRoute}`, data);
 
       if (response.status === 201) {
@@ -191,13 +181,18 @@ const AddCustomer = ({ route, navigation }) => {
           adhaar_no: "",
           pan_no: "",
         });
-        setSelectedCustomerType("chit");
-        
-        // ✅ NAVIGATION CHANGE: Navigate to EnrollCustomer screen
-        navigation.navigate("EnrollCustomer", { 
-          user, 
-          newCustomer: response.data.customer || response.data.user // Assuming API returns customer/user data
-        }); 
+
+        // ✅ CONDITIONAL NAVIGATION LOGIC
+        if (selectedCustomerType === "chit") {
+          // Navigate ONLY if type is 'chit'
+          navigation.navigate("EnrollCustomer", { 
+            user, 
+            newCustomer: response.data.customer || response.data.user
+          });
+        } else {
+          // For 'pigme' or 'loan', stay on screen and just reset type
+          setSelectedCustomerType("chit"); 
+        }
       }
     } catch (error) {
       console.error("Error adding customer:", error.message);
@@ -248,9 +243,6 @@ const AddCustomer = ({ route, navigation }) => {
               </Text>
             </TouchableOpacity>
             
-            
-            
-            
             {/* Full Name */}
             <InputField
               label="Full Name"
@@ -281,12 +273,10 @@ const AddCustomer = ({ route, navigation }) => {
               label="Password"
               icon="lock"
               required
-              // Pass the showPassword state and its toggle function to the InputField
               secureTextEntry={!showPassword} 
               isPassword
               onTogglePassword={() => setShowPassword(!showPassword)}
               showPassword={showPassword}
-              // End of new props
               value={customerInfo.password}
               onChangeText={(v) => handleInputChange("password", v)}
               focused={focusedInput === "password"}
@@ -294,7 +284,7 @@ const AddCustomer = ({ route, navigation }) => {
               onBlur={() => setFocusedInput(null)}
             />
 
-            {/* Customer Type - UPDATED PICKER */}
+            {/* Customer Type Picker */}
             <Text style={styles.label}>Customer Type *</Text>
             <View style={styles.pickerContainer}>
               <Picker
@@ -304,8 +294,6 @@ const AddCustomer = ({ route, navigation }) => {
                 itemStyle={styles.pickerItem} 
               >
                 <Picker.Item label="Chit" value="chit" />
-                <Picker.Item label="Gold Chit" value="goldChit" />
-                {/* 🎯 Added new customer types */}
                 <Picker.Item label="Pigme" value="pigme" />
                 <Picker.Item label="Loan" value="loan" />
               </Picker>
@@ -375,7 +363,7 @@ const AddCustomer = ({ route, navigation }) => {
   );
 };
 
-// Reusable input component (UPDATED to handle password visibility)
+// Reusable input component
 const InputField = ({
   label,
   icon,
@@ -384,9 +372,12 @@ const InputField = ({
   onChangeText,
   keyboardType,
   secureTextEntry,
-  isPassword, // New prop to identify password field
-  onTogglePassword, // New prop for eye icon press
-  showPassword, // New prop for current visibility state
+  isPassword,
+  onTogglePassword,
+  showPassword,
+  focused,
+  onFocus,
+  onBlur
 }) => (
   <View style={{ marginBottom: 15 }}>
     <Text style={styles.label}>
@@ -402,9 +393,10 @@ const InputField = ({
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         placeholderTextColor="#999"
+        onFocus={onFocus}
+        onBlur={onBlur}
       />
       
-      {/* Eye Icon for Password Field */}
       {isPassword && (
         <TouchableOpacity onPress={onTogglePassword} style={styles.passwordToggle}>
           <Feather 
@@ -497,22 +489,18 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginTop: 5,
     marginBottom: 15,
-    // *** MODIFIED *** Increased height on Android to prevent clipping
     height: Platform.OS === "android" ? 55 : undefined, 
   },
   picker: { 
-    // *** MODIFIED *** Increased height to match container on Android
     height: Platform.OS === "android" ? 55 : 100, 
     color: "#333", 
   },
   pickerItem: {
-    // Set item height to match the picker
     fontSize: 14, 
     height: 55, 
   },
-  // ✅ New style for the password eye icon
   passwordToggle: {
-    paddingLeft: 10, // Add some padding for better tap area
+    paddingLeft: 10,
   },
   addButton: {
     backgroundColor: "#1aa2ccff",

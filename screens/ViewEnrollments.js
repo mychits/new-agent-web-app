@@ -220,24 +220,7 @@ const ViewEnrollments = ({ route, navigation }) => {
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === "GOLD" && styles.activeTab]}
-                        onPress={() => setActiveTab("GOLD")}
-                    >
-                        <Icon
-                            name="money"
-                            size={18}
-                            color={activeTab === "GOLD" ? MODERN_PRIMARY : NEUTRAL_GREY}
-                        />
-                        <Text
-                            style={[
-                                styles.tabText,
-                                activeTab === "GOLD" && styles.activeTabText,
-                            ]}
-                        >
-                            Gold Chits ({goldCustomerLength || 0})
-                        </Text>
-                    </TouchableOpacity>
+                 
                 </View>
             </LinearGradient>
 

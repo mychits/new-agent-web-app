@@ -50,7 +50,7 @@ const ChitPayments = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [agent, setAgent] = useState({});
   const [fetchError, setFetchError] = useState(null); // renamed to avoid conflict
-
+  const [customerSearch, setCustomerSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -62,7 +62,7 @@ const ChitPayments = ({ route, navigation }) => {
   const [activeChitId, setActiveChitId] = useState(null);
   const [showTotalCollectionDetails, setShowTotalCollectionDetails] =
     useState(false);
-
+  const [groupSearch, setGroupSearch] = useState("");
   // --- HELPERS ---
   const formatDate = (date) => {
     if (!date) return "";
@@ -134,37 +134,104 @@ const ChitPayments = ({ route, navigation }) => {
   };
 
   // --- API CALLS ---
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        setLoading(true);
-        setFetchError(null);
-        const response = await axios.get(
-          `${baseUrl}/payment/get-payment-agent/${user.userId}`
-        );
-        if (response.data) {
-          // Ensure it's always an array
-          const data = Array.isArray(response.data) ? response.data : [];
-          setCustomers(data);
-        } else {
-          setCustomers([]);
-        }
-      } catch (error) {
-        console.error("Error fetching customer data:", error);
-        setFetchError("Failed to load payment data. Please try again.");
-        setCustomers([]); // prevent undefined crashes downstream
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchCustomers = async () => {
+  //     try {
+  //       setLoading(true);
+  //       setFetchError(null);
+  //       const response = await axios.get(
+  //         `${baseUrl}/payment/get-payment-agent/${user.userId}`
+  //       );
+  //       if (response.data) {
+  //         // Ensure it's always an array
+  //         const data = Array.isArray(response.data) ? response.data : [];
+  //         setCustomers(data);
+  //       } else {
+  //         setCustomers([]);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching customer data:", error);
+  //       setFetchError("Failed to load payment data. Please try again.");
+  //       setCustomers([]); // prevent undefined crashes downstream
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    if (user?.userId) {
-      fetchCustomers();
-    } else {
+  //   if (user?.userId) {
+  //     fetchCustomers();
+  //   } else {
+  //     setLoading(false);
+  //     setFetchError("User ID is missing.");
+  //   }
+  // }, [user?.userId]);
+
+  useEffect(() => {
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      setFetchError(null);
+
+      // format selected date => YYYY-MM-DD
+      const formattedDate = selectedDate
+        ? new Date(selectedDate).toISOString().split("T")[0]
+        : "";
+
+      const response = await axios.get(
+        `${baseUrl}/v1/mobile/payments/daily-report`,
+        {
+          params: {
+            collected_by: user?.userId,
+            groupId: selectedGroup || undefined,
+            userId: selectedCustomer || undefined,
+            pay_type: selectedPaymentMode || undefined,
+            from_date: formattedDate,
+            to_date: formattedDate,
+          },
+        }
+      );
+
+      console.log("========== API DEBUG ==========");
+      console.log("USER :", user);
+      console.log("SELECTED DATE :", formattedDate);
+    //  console.log("REQUEST PARAMS :", params);
+
+      if (response?.data && Array.isArray(response.data)) {
+         console.log(
+    "ALL PAYMENTS FROM API :",
+    JSON.stringify(response.data, null, 2)
+  );
+  const chitPayments = response.data.filter((item) => {
+  return (
+    item?.pay_for !== "Loan" &&
+    item?.pay_for !== "Pigme"
+  );
+});
+
+  console.log(
+    "ONLY CHIT PAYMENTS :",
+    JSON.stringify(chitPayments, null, 2)
+  );
+        setCustomers(chitPayments);
+      } else {
+        setCustomers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching customer data:", error);
+      setFetchError("Failed to load payment data. Please try again.");
+      setCustomers([]);
+    } finally {
       setLoading(false);
-      setFetchError("User ID is missing.");
     }
-  }, [user?.userId]);
+  };
+
+  if (user?.userId) {
+    fetchCustomers();
+  } else {
+    setLoading(false);
+    setFetchError("User ID is missing.");
+  }
+}, [user?.userId, selectedDate, selectedGroup, selectedCustomer]);
 
   useEffect(() => {
     const fetchCus = async () => {
@@ -218,28 +285,47 @@ const ChitPayments = ({ route, navigation }) => {
   }, [user?.userId]);
 
   // --- FILTERING LOGIC ---
+  // const filteredCustomers = Array.isArray(customers)
+  //   ? customers.filter((customer) => {
+  //       if (!customer) return false;
+
+  //       const nameMatch = customer?.user_id?.full_name
+  //         ?.toLowerCase()
+  //         .includes(search.toLowerCase()) ?? true;
+
+  //       const dateMatch = isSameDate(customer.pay_date, selectedDate);
+
+  //       const customerMatch =
+  //         !selectedCustomer || customer?.user_id?._id === selectedCustomer;
+
+  //       const groupMatch =
+  //         !selectedGroup || customer?.group_id?._id === selectedGroup;
+
+  //       const paymentModeMatch =
+  //         !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
+
+  //       return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
+  //     })
+  //   : [];
+
   const filteredCustomers = Array.isArray(customers)
-    ? customers.filter((customer) => {
-        if (!customer) return false;
+  ? customers.filter((customer) => {
+      if (!customer) return false;
 
-        const nameMatch = customer?.user_id?.full_name
+      return (
+        customer?.user_id?.full_name
           ?.toLowerCase()
-          .includes(search.toLowerCase()) ?? true;
+          .includes(search.toLowerCase()) ?? true
+      );
+    })
+  : [];
 
-        const dateMatch = isSameDate(customer.pay_date, selectedDate);
-
-        const customerMatch =
-          !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-
-        const groupMatch =
-          !selectedGroup || customer?.group_id?._id === selectedGroup;
-
-        const paymentModeMatch =
-          !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-
-        return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
-      })
-    : [];
+  useEffect(() => {
+  console.log(
+    "FILTERED CUSTOMERS :",
+    JSON.stringify(filteredCustomers, null, 2)
+  );
+}, [filteredCustomers]);
 
   const totalAmount = filteredCustomers.reduce((sum, customer) => {
     const amount = parseFloat(customer?.amount) || 0;
@@ -257,6 +343,69 @@ const ChitPayments = ({ route, navigation }) => {
   const renderPicker = () => {
     switch (selectedFilter) {
       case "date":
+  return (
+    <DateTimePicker
+      value={selectedDate}
+      mode="date"
+      display={Platform.OS === "ios" ? "spinner" : "default"}
+      onChange={(event, date) => {
+        console.log("DATE PICKER EVENT :", event);
+        console.log("SELECTED DATE RAW :", date);
+
+        if (Platform.OS === "android") {
+          setShowPicker(false);
+
+          if (event.type === "dismissed") {
+            console.log("DATE PICKER DISMISSED");
+            return;
+          }
+
+          if (date) {
+            console.log(
+              "FORMATTED DATE :",
+              new Date(date).toISOString().split("T")[0]
+            );
+
+            setSelectedDate(date);
+
+            updateFilterValue(
+              "date",
+              formatDate(date)
+            );
+          }
+        } else {
+          if (date) {
+            console.log(
+              "FORMATTED DATE :",
+              new Date(date).toISOString().split("T")[0]
+            );
+
+            setSelectedDate(date);
+
+            updateFilterValue(
+              "date",
+              formatDate(date)
+            );
+          }
+        }
+      }}
+      minimumDate={new Date(2000, 0, 1)}
+      maximumDate={new Date(2100, 11, 31)}
+    />
+  )
+  useEffect(() => {
+  console.log(
+    "UPDATED selectedDate :",
+    selectedDate
+  );
+
+  console.log(
+    "UPDATED formattedDate :",
+    selectedDate
+      ? new Date(selectedDate).toISOString().split("T")[0]
+      : ""
+  );
+}, [selectedDate]);
         return (
           <DateTimePicker
             value={selectedDate}
@@ -279,66 +428,335 @@ const ChitPayments = ({ route, navigation }) => {
           />
         );
 
+      // case "group":
+      //   return (
+      //     <View style={styles.pickerWrapper}>
+      //       <Picker
+      //         selectedValue={selectedGroup}
+      //         onValueChange={(value) => {
+      //           const selected = groups.find((g) => g._id === value);
+      //           setSelectedGroup(value);
+      //           setSelectedGroupName(selected?.group_name || "");
+      //           updateFilterValue("group", selected?.group_name || "All");
+      //           closePicker();
+      //         }}
+      //         style={{ color: MODERN_PRIMARY }}
+      //         itemStyle={{ color: MODERN_PRIMARY }}
+      //       >
+      //         <Picker.Item label="All Groups" value="" />
+      //         {groups.map((group) => (
+      //           <Picker.Item
+      //             key={group._id}
+      //             label={group.group_name || "Unknown"}
+      //             value={group._id}
+      //           />
+      //         ))}
+      //       </Picker>
+      //       <TouchableOpacity style={styles.pickerCancelButton} onPress={closePicker}>
+      //         <Text style={styles.pickerCancelText}>Cancel</Text>
+      //       </TouchableOpacity>
+      //     </View>
+      //   );
       case "group":
-        return (
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={selectedGroup}
-              onValueChange={(value) => {
-                const selected = groups.find((g) => g._id === value);
-                setSelectedGroup(value);
-                setSelectedGroupName(selected?.group_name || "");
-                updateFilterValue("group", selected?.group_name || "All");
-                closePicker();
-              }}
-              style={{ color: MODERN_PRIMARY }}
-              itemStyle={{ color: MODERN_PRIMARY }}
-            >
-              <Picker.Item label="All Groups" value="" />
-              {groups.map((group) => (
-                <Picker.Item
-                  key={group._id}
-                  label={group.group_name || "Unknown"}
-                  value={group._id}
-                />
-              ))}
-            </Picker>
-            <TouchableOpacity style={styles.pickerCancelButton} onPress={closePicker}>
-              <Text style={styles.pickerCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        );
+  const filteredGroups = groups.filter((group) =>
+    group?.group_name
+      ?.toLowerCase()
+      .includes(groupSearch.toLowerCase())
+  );
 
+  return (
+    <View style={styles.pickerWrapper}>
+      <View
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          marginBottom: 10,
+          borderWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <TextInput
+          value={groupSearch}
+          onChangeText={(text) => {
+            setGroupSearch(text);
+          }}
+          placeholder="Search group..."
+          placeholderTextColor="#999"
+          style={{
+            height: 40,
+            color: MODERN_PRIMARY,
+            fontSize: 14,
+          }}
+        />
+      </View>
+
+      <ScrollView
+        style={{
+          maxHeight: 350,
+          backgroundColor: "#fff",
+          borderRadius: 12,
+        }}
+      >
+        <TouchableOpacity
+          style={{
+            padding: 15,
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+          }}
+          onPress={() => {
+            setSelectedGroup("");
+            setSelectedGroupName("");
+
+            updateFilterValue("group", "All");
+
+            closePicker();
+          }}
+        >
+          <Text
+            style={{
+              color: MODERN_PRIMARY,
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            All Groups
+          </Text>
+        </TouchableOpacity>
+
+        {filteredGroups.map((group) => (
+          <TouchableOpacity
+            key={group._id}
+            style={{
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: "#eee",
+            }}
+            onPress={() => {
+              setSelectedGroup(group._id);
+
+              setSelectedGroupName(
+                group?.group_name || ""
+              );
+
+              updateFilterValue(
+                "group",
+                group?.group_name || "All"
+              );
+
+              setGroupSearch("");
+
+              closePicker();
+            }}
+          >
+            <Text
+              style={{
+                color: MODERN_PRIMARY,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              {group?.group_name || "Unknown"}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {filteredGroups.length === 0 && (
+          <View
+            style={{
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: TEXT_GREY }}>
+              No groups found
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.pickerCancelButton}
+        onPress={() => {
+          setGroupSearch("");
+          closePicker();
+        }}
+      >
+        <Text style={styles.pickerCancelText}>
+          Cancel
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+      // case "customer":
+      //   return (
+      //     <View style={styles.pickerWrapper}>
+      //       <Picker
+      //         selectedValue={selectedCustomer}
+      //         onValueChange={(value) => {
+      //           const selected = cus.find((c) => c._id === value);
+      //           setSelectedCustomer(value);
+      //           setSelectedCustomerName(selected?.full_name || "");
+      //           updateFilterValue("customer", selected?.full_name || "All");
+      //           closePicker();
+      //         }}
+      //         style={{ color: MODERN_PRIMARY }}
+      //         itemStyle={{ color: MODERN_PRIMARY }}
+      //       >
+      //         <Picker.Item label="All Customers" value="" />
+      //         {cus.map((customer) => (
+      //           <Picker.Item
+      //             key={customer._id}
+      //             label={`${customer.full_name || "Unknown"} - ${customer.phone_number || ""}`}
+      //             value={customer._id}
+      //           />
+      //         ))}
+      //       </Picker>
+      //       <TouchableOpacity style={styles.pickerCancelButton} onPress={closePicker}>
+      //         <Text style={styles.pickerCancelText}>Cancel</Text>
+      //       </TouchableOpacity>
+      //     </View>
+      //   );
       case "customer":
-        return (
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={selectedCustomer}
-              onValueChange={(value) => {
-                const selected = cus.find((c) => c._id === value);
-                setSelectedCustomer(value);
-                setSelectedCustomerName(selected?.full_name || "");
-                updateFilterValue("customer", selected?.full_name || "All");
-                closePicker();
-              }}
-              style={{ color: MODERN_PRIMARY }}
-              itemStyle={{ color: MODERN_PRIMARY }}
-            >
-              <Picker.Item label="All Customers" value="" />
-              {cus.map((customer) => (
-                <Picker.Item
-                  key={customer._id}
-                  label={`${customer.full_name || "Unknown"} - ${customer.phone_number || ""}`}
-                  value={customer._id}
-                />
-              ))}
-            </Picker>
-            <TouchableOpacity style={styles.pickerCancelButton} onPress={closePicker}>
-              <Text style={styles.pickerCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        );
+  const filteredCus = cus.filter((customer) => {
+    const searchText = customerSearch.toLowerCase();
 
+    return (
+      customer?.full_name
+        ?.toLowerCase()
+        .includes(searchText) ||
+      customer?.phone_number
+        ?.toLowerCase()
+        .includes(searchText)
+    );
+  });
+
+  return (
+    <View style={styles.pickerWrapper}>
+      <View
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          paddingHorizontal: 12,
+          marginBottom: 10,
+          borderWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <TextInput
+          value={customerSearch}
+          onChangeText={(text) => {
+            setCustomerSearch(text);
+          }}
+          placeholder="Search customer..."
+          placeholderTextColor="#999"
+          style={{
+            height: 40,
+            color: MODERN_PRIMARY,
+            fontSize: 13,
+          }}
+        />
+      </View>
+
+      <ScrollView
+        style={{
+          maxHeight: 350,
+          backgroundColor: "#fff",
+          borderRadius: 12,
+        }}
+      >
+        <TouchableOpacity
+          style={{
+            padding: 15,
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+          }}
+          onPress={() => {
+            setSelectedCustomer("");
+            setSelectedCustomerName("");
+            updateFilterValue("customer", "All");
+            closePicker();
+          }}
+        >
+          <Text
+            style={{
+              color: MODERN_PRIMARY,
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            All Customers
+          </Text>
+        </TouchableOpacity>
+
+        {filteredCus.map((customer) => (
+          <TouchableOpacity
+            key={customer._id}
+            style={{
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: "#eee",
+            }}
+            onPress={() => {
+              setSelectedCustomer(customer._id);
+              setSelectedCustomerName(customer?.full_name || "");
+
+              updateFilterValue(
+                "customer",
+                customer?.full_name || "All"
+              );
+
+              setCustomerSearch("");
+
+              closePicker();
+            }}
+          >
+            <Text
+              style={{
+                color: MODERN_PRIMARY,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              {customer?.full_name || "Unknown"}
+            </Text>
+
+            <Text
+              style={{
+                color: TEXT_GREY,
+                marginTop: 4,
+              }}
+            >
+              {customer?.phone_number || ""}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {filteredCus.length === 0 && (
+          <View
+            style={{
+              padding: 20,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: TEXT_GREY }}>
+              No customers found
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.pickerCancelButton}
+        onPress={() => {
+          setCustomerSearch("");
+          closePicker();
+        }}
+      >
+        <Text style={styles.pickerCancelText}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  );
       case "paymentMode":
         return (
           <View style={styles.pickerWrapper}>
@@ -530,7 +948,7 @@ const ChitPayments = ({ route, navigation }) => {
                 <View style={styles.searchContainer}>
                   <Icon
                     name="search"
-                    size={20}
+                    size={17}
                     color={TEXT_GREY}
                     style={styles.searchIcon}
                   />
@@ -937,15 +1355,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-    height: 50,
+    height: 40,
     marginHorizontal: 22,
   },
   searchIcon: { marginLeft: 15, color: TEXT_GREY },
+
   searchInput: {
     flex: 1,
     height: "100%",
     paddingHorizontal: 10,
-    fontSize: 16,
+    fontSize: 15,
     color: MODERN_PRIMARY,
   },
 
