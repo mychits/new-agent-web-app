@@ -1020,7 +1020,7 @@ useEffect(() => {
                     <View style={styles.searchContainer}>
                         <Icon
                             name="search"
-                            size={20}
+                            size={17}
                             color={TEXT_GREY}
                             style={styles.searchIcon}
                         />
@@ -1358,7 +1358,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 2,
         elevation: 1,
-        height: 50,
+        height: 40,
         marginHorizontal: 0, 
     },
     searchIcon: {
@@ -1369,7 +1369,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: '100%',
         paddingHorizontal: 10,
-        fontSize: 16,
+        fontSize: 15,
         color: MODERN_PRIMARY,
     },
 
