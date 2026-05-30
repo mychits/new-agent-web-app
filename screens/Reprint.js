@@ -5,7 +5,7 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import blePrinter from "../components/BluetoothPrinter";
 import Button from "../components/Button";
-import RNPrint from "react-native-print";
+import * as ExpoPrint from 'expo-print';
 import axios from "axios";
 import baseUrl from "../constants/baseUrl";
 
@@ -223,7 +223,9 @@ ${centerText("Duplicate Copy")}
   `;
 
     try {
-      await RNPrint.print({ html: htmlContent });
+          await ExpoPrint.printAsync({
+            html:htmlContent,
+          });
     } catch (error) {
       Alert.alert("Print Error", "Failed to print the document.");
     }
@@ -304,7 +306,9 @@ ${centerText("Duplicate Copy")}
     `;
 
     try {
-      await RNPrint.print({ html: htmlContent });
+         await ExpoPrint.printAsync({
+           html:htmlContent,
+         });
     } catch (error) {
       Alert.alert("Print Error", "Failed to print the document.");
     }
