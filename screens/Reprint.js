@@ -5,7 +5,7 @@ import COLORS from "../constants/color";
 import Header from "../components/Header";
 import blePrinter from "../components/BluetoothPrinter";
 import Button from "../components/Button";
-import RNPrint from "react-native-print";
+import * as RNPrint from 'expo-print';
 import axios from "axios";
 import baseUrl from "../constants/baseUrl";
 

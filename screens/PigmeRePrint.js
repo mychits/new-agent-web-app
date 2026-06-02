@@ -13,7 +13,7 @@ import COLORS from "../constants/color"; // Assuming this is defined
 import Header from "../components/Header"; // Assuming this is defined
 import blePrinter from "../components/BluetoothPrinter"; // Assuming this is defined
 import Button from "../components/Button"; // Assuming this is defined
-import RNPrint from "react-native-print";
+import * as RNPrint from 'expo-print';
 import axios from "axios";
 import baseUrl from "../constants/baseUrl";
 
