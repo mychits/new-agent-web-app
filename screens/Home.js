@@ -539,15 +539,8 @@ const Home = ({ route, navigation }) => {
       onPress: () => navigation.navigate("Commissions", { user }),
       isFullWidth: true, variant: 'overview'
     },
-    agentInfo?.designation_id?.permission?.collection === "true" && {
-      id: "collections", name: "Collections",
-      onPress: () => navigation.navigate("PaymentNavigator"),
-    },
-    {
-      id: "rewards", name: "My Rewards",
-      onPress: () => navigation.navigate("Rewards"),
-      isFullWidth: true, variant: 'reward'
-    },
+   
+   
     {
       id: "starPoints", name: "Star Points",
       onPress: () => navigation.navigate("StarPoints"),
@@ -557,10 +550,7 @@ const Home = ({ route, navigation }) => {
       id: "daybook", name: "Daybook",
       onPress: () => navigation.navigate("PayNavigation", { user }),
     },
-    {
-      id: "qrCode", name: "QR Code",
-      onPress: () => navigation.navigate("qrCode"),
-    },
+   
     agentInfo?.designation_id?.permission?.reports === "true" && {
       id: "reports", name: "Reports",
       onPress: () => navigation.navigate("PayNavigation", { screen: "Reports", params: { user } }),
@@ -573,10 +563,7 @@ const Home = ({ route, navigation }) => {
       id: "myLeads", name: "My Leads",
       onPress: () => navigation.navigate("PayNavigation", { screen: "ViewLeads", params: { user } }),
     },
-    {
-      id: "addCustomers", name: "Add Customer",
-      onPress: () => navigation.navigate("CustomerNavigation", { screen: "Customer", params: { user } }),
-    },
+   
     {
       id: "myCustomers", name: "My Customers",
       onPress: () => navigation.navigate("CustomerNavigation", { screen: "ViewEnrollments", params: { user } }),
@@ -589,10 +576,7 @@ const Home = ({ route, navigation }) => {
       id: "groups", name: "Groups",
       onPress: () => navigation.navigate("Enrollment", { screen: "Enrollment", params: { user } }),
     },
-    {
-      id: "attendanceBtn", name: "Attendance",
-      onPress: () => navigation.navigate("LogOut", { user }),
-    },
+   
     {
       id: "monthlyTurnover", name: "MIT",
       onPress: () => navigation.navigate("MonthlyTurnover"),
