@@ -940,7 +940,7 @@ const MonthlyTurnover = ({ navigation }) => {
       const year  = moment(selectedDate).year();
       const month = moment(selectedDate).month();
       const apiUrl = baseUrl + "/user/agent-monthly-turnover-by-id/" + agentId +
-        "?year=" + year + "&month=" + month;
+        "?year=" + year + "&month=" + (month +1);
 
       const response = await axios.get(apiUrl);
 
