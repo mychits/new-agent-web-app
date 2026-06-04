@@ -63,10 +63,9 @@ const RMReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
     // Financial Extraction
     const getFinancialValue = (value) =>
         Array.isArray(value) && value.length > 0 ? value[0] : value || 0;
-
-    const totalPayable = getFinancialValue(item.total_payable_amount);
+    const totalPayable = getFinancialValue(item.totalDue);
     const totalProfit = getFinancialValue(item.total_profit); // UNIQUE
-    const totalToBePaid = item?.total_to_be_paid || 0;
+    const totalPaid = item?.totalPaid || 0;
     const balance = item?.balance || item?.Balance || 0;
 
     const statusColor = balance > 0 ? COLORS.danger : COLORS.success;
@@ -112,7 +111,7 @@ const RMReportCard = ({ item, index, activeCallId, setActiveCallId }) => {
                 <View style={styles.gridDivider} />
                 <View style={styles.gridItem}>
                     <Text style={styles.gridLabel}>Paid</Text>
-                    <Text style={[styles.gridValue, {color: COLORS.success}]}>₹{Number(totalToBePaid).toLocaleString("en-IN")}</Text>
+                    <Text style={[styles.gridValue, {color: COLORS.success}]}>₹{Number(totalPaid).toLocaleString("en-IN")}</Text>
                 </View>
             </View>
 
