@@ -16,26 +16,27 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import baseUrl from "../constants/baseUrl";
 
 const { width } = Dimensions.get("window");
 
-// ─── PROJECT COLORS (unchanged) ──────────────────────────────────────────────
+// ─── PROJECT COLORS ──────────────────────────────────────────────
 const COLORS = {
-  primary: "#183A5D",
-  accent: "#f8c009",
-  bgBlue: "#1aa2cc",
-  success: "#27AE60",
-  cardBg: "rgba(255, 255, 255, 0.98)",
-  white: "#FFFFFF",
-  muted: "#8898AA",
+  primary:    "#183A5D",
+  accent:     "#f8c009",
+  bgBlue:     "#1aa2cc",
+  success:    "#27AE60",
+  cardBg:     "rgba(255, 255, 255, 0.98)",
+  white:      "#FFFFFF",
+  muted:      "#8898AA",
   background: "#0f2a44",
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+// ─── HELPERS ──────────────────────────────────────────────────────
 const formatDate = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -44,57 +45,22 @@ const formatDate = (date) => {
 };
 
 const formatDisplayDate = (date) =>
-  date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
-const capitalize = (str) =>
-  str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
+const capitalize  = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1) : "");
 const normalizeKey = (name) => name?.toLowerCase().replace(/\s+/g, "") ?? "";
 
-// ─── CHIP CONFIGS ─────────────────────────────────────────────────────────────
+// ─── CHIP CONFIGS ─────────────────────────────────────────────────
 const PAYMENT_FOR_CONFIG = {
-  Chit: {
-    icon: "cash-outline",
-    color: COLORS.bgBlue,
-    bg: "rgba(26,162,204,0.13)",
-    label: "Chit",
-  },
-  Loan: {
-    icon: "wallet-outline",
-    color: COLORS.accent,
-    bg: "rgba(248,192,9,0.13)",
-    label: "Loan",
-  },
-  Pigme: {
-    icon: "trending-up-outline",
-    color: COLORS.success,
-    bg: "rgba(39,174,96,0.13)",
-    label: "Pigme",
-  },
+  Chit:  { icon: "cash-outline",        color: COLORS.bgBlue,  bg: "rgba(26,162,204,0.13)",  label: "Chit"  },
+  Loan:  { icon: "wallet-outline",      color: COLORS.accent,  bg: "rgba(248,192,9,0.13)",   label: "Loan"  },
+  Pigme: { icon: "trending-up-outline", color: COLORS.success, bg: "rgba(39,174,96,0.13)",   label: "Pigme" },
 };
 
 const PAYMENT_TYPE_CONFIG = {
-  cash: {
-    icon: "cash-outline",
-    color: COLORS.success,
-    bg: "rgba(39,174,96,0.13)",
-    label: "Cash",
-  },
-  online: {
-    icon: "phone-portrait-outline",
-    color: COLORS.bgBlue,
-    bg: "rgba(26,162,204,0.13)",
-    label: "Online",
-  },
-  paymentlink: {
-    icon: "link-outline",
-    color: COLORS.accent,
-    bg: "rgba(248,192,9,0.13)",
-    label: "Pay Link",
-  },
+  cash:        { icon: "cash-outline",             color: COLORS.success, bg: "rgba(39,174,96,0.13)",   label: "Cash"     },
+  online:      { icon: "phone-portrait-outline",   color: COLORS.bgBlue,  bg: "rgba(26,162,204,0.13)",  label: "Online"   },
+  paymentlink: { icon: "link-outline",             color: COLORS.accent,  bg: "rgba(248,192,9,0.13)",   label: "Pay Link" },
 };
 
 const CARD_CONFIG = [
@@ -124,18 +90,12 @@ const CARD_CONFIG = [
   },
 ];
 
-// ─── ANIMATED ENTRANCE ────────────────────────────────────────────────────────
+// ─── ANIMATED ENTRANCE ────────────────────────────────────────────
 const AnimatedRow = ({ children, delay = 0 }) => {
   const translateY = useRef(new Animated.Value(18)).current;
 
   useEffect(() => {
-    Animated.spring(translateY, {
-      toValue: 0,
-      tension: 60,
-      friction: 11,
-      delay,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(translateY, { toValue: 0, tension: 60, friction: 11, delay, useNativeDriver: true }).start();
   }, []);
 
   return (
@@ -145,32 +105,22 @@ const AnimatedRow = ({ children, delay = 0 }) => {
   );
 };
 
-// ─── BREAKDOWN CHIP ───────────────────────────────────────────────────────────
+// ─── BREAKDOWN CHIP ───────────────────────────────────────────────
 const BreakdownChip = ({ name, total, configMap }) => {
   const key = normalizeKey(name);
-  const cfg = configMap[key] ??
-    configMap[name] ?? {
-      icon: "card-outline",
-      color: COLORS.bgBlue,
-      bg: "rgba(26,162,204,0.13)",
-      label: capitalize(name),
-    };
+  const cfg = configMap[key] ?? configMap[name] ?? {
+    icon: "card-outline", color: COLORS.bgBlue,
+    bg: "rgba(26,162,204,0.13)", label: capitalize(name),
+  };
   return (
-    <View
-      style={[
-        styles.chip,
-        {
-          backgroundColor: "rgba(0,0,0,0.2)",
-          borderColor: cfg.color + "40",
-          borderWidth: 1,
-        },
-      ]}
-    >
+    <View style={[styles.chip, { backgroundColor: 'rgba(0,0,0,0.2)', borderColor: cfg.color + "40", borderWidth: 1 }]}>
       <View style={[styles.chipIconWrap, { backgroundColor: cfg.color }]}>
         <Ionicons name={cfg.icon} size={11} color="#FFFFFF" />
       </View>
       <View>
-        <Text style={styles.chipLabel}>{cfg.label ?? capitalize(name)}</Text>
+        <Text style={styles.chipLabel}>
+          {cfg.label ?? capitalize(name)}
+        </Text>
         <Text style={styles.chipAmount}>
           ₹{total?.toLocaleString("en-IN") ?? "0"}
         </Text>
@@ -179,44 +129,29 @@ const BreakdownChip = ({ name, total, configMap }) => {
   );
 };
 
-// ─── SUMMARY CARD ─────────────────────────────────────────────────────────────
+// ─── SUMMARY CARD ─────────────────────────────────────────────────
 const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
   const blinkAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0.3,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]),
+        Animated.timing(blinkAnim, { toValue: 0.3, duration: 700, useNativeDriver: true }),
+        Animated.timing(blinkAnim, { toValue: 1,   duration: 700, useNativeDriver: true }),
+      ])
     ).start();
   }, []);
 
   return (
-    // BRIGHT GRADIENT BACKGROUND
     <LinearGradient
-      colors={["#4FACFE", "#00F2FE"]} // Bright Blue to Cyan
+      colors={["#4FACFE", "#00F2FE"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.summaryCard}
     >
-      {/* Header row */}
       <View style={styles.summaryHeader}>
         <View style={styles.summaryHeaderLeft}>
-          <View
-            style={[
-              styles.calendarIconBg,
-              { backgroundColor: "rgba(255,255,255,0.25)" },
-            ]}
-          >
+          <View style={[styles.calendarIconBg, { backgroundColor: 'rgba(255,255,255,0.25)' }]}>
             <Ionicons name="wallet" size={18} color={COLORS.white} />
           </View>
           <View>
@@ -229,22 +164,12 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
               />
             ) : (
               <Text style={styles.summaryAmount}>
-                ₹
-                {totalPayments != null
-                  ? totalPayments.toLocaleString("en-IN")
-                  : "—"}
+                ₹{totalPayments != null ? totalPayments.toLocaleString("en-IN") : "—"}
               </Text>
             )}
           </View>
         </View>
-
-        {/* Live pulse */}
-        <Animated.View
-          style={[
-            styles.liveDot,
-            { opacity: blinkAnim, backgroundColor: "#FFFFFF" },
-          ]}
-        />
+        <Animated.View style={[styles.liveDot, { opacity: blinkAnim, backgroundColor: '#FFFFFF' }]} />
       </View>
 
       {!loading && (paymentsFor?.length > 0 || paymentTypes?.length > 0) && (
@@ -253,51 +178,29 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
 
       {!loading && (
         <>
-          {/* By Category */}
           {paymentsFor?.length > 0 && (
             <View style={styles.chipSection}>
               <View style={styles.chipSectionRow}>
-                <View
-                  style={[
-                    styles.chipSectionPip,
-                    { backgroundColor: "rgba(255,255,255,0.6)" },
-                  ]}
-                />
+                <View style={[styles.chipSectionPip, { backgroundColor: 'rgba(255,255,255,0.6)' }]} />
                 <Text style={styles.chipSectionLabel}>BY CATEGORY</Text>
               </View>
               <View style={styles.chipRow}>
                 {paymentsFor.map((pt, i) => (
-                  <BreakdownChip
-                    key={i}
-                    name={pt.name}
-                    total={pt.total}
-                    configMap={PAYMENT_FOR_CONFIG}
-                  />
+                  <BreakdownChip key={i} name={pt.name} total={pt.total} configMap={PAYMENT_FOR_CONFIG} />
                 ))}
               </View>
             </View>
           )}
 
-          {/* By Mode */}
           {paymentTypes?.length > 0 && (
             <View style={styles.chipSection}>
               <View style={styles.chipSectionRow}>
-                <View
-                  style={[
-                    styles.chipSectionPip,
-                    { backgroundColor: "rgba(255,255,255,0.6)" },
-                  ]}
-                />
+                <View style={[styles.chipSectionPip, { backgroundColor: 'rgba(255,255,255,0.6)' }]} />
                 <Text style={styles.chipSectionLabel}>BY MODE</Text>
               </View>
               <View style={styles.chipRow}>
                 {paymentTypes.map((pt, i) => (
-                  <BreakdownChip
-                    key={i}
-                    name={pt.name}
-                    total={pt.total}
-                    configMap={PAYMENT_TYPE_CONFIG}
-                  />
+                  <BreakdownChip key={i} name={pt.name} total={pt.total} configMap={PAYMENT_TYPE_CONFIG} />
                 ))}
               </View>
             </View>
@@ -308,21 +211,11 @@ const SummaryCard = ({ totalPayments, paymentsFor, paymentTypes, loading }) => {
   );
 };
 
-// ─── PAYMENT CARD ─────────────────────────────────────────────────────────────
+// ─── PAYMENT CARD ─────────────────────────────────────────────────
 const PaymentCard = ({ name, icon, color, iconBg, onPress }) => {
   const pressAnim = useRef(new Animated.Value(1)).current;
-  const onPressIn = () =>
-    Animated.spring(pressAnim, {
-      toValue: 0.97,
-      useNativeDriver: true,
-      tension: 200,
-    }).start();
-  const onPressOut = () =>
-    Animated.spring(pressAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 200,
-    }).start();
+  const onPressIn  = () => Animated.spring(pressAnim, { toValue: 0.97, useNativeDriver: true, tension: 200 }).start();
+  const onPressOut = () => Animated.spring(pressAnim, { toValue: 1,    useNativeDriver: true, tension: 200 }).start();
 
   return (
     <Animated.View style={{ transform: [{ scale: pressAnim }] }}>
@@ -333,21 +226,14 @@ const PaymentCard = ({ name, icon, color, iconBg, onPress }) => {
         activeOpacity={1}
         style={styles.payCard}
       >
-        {/* Left accent bar */}
         <View style={[styles.payCardBar, { backgroundColor: color }]} />
-
-        {/* Icon */}
         <View style={[styles.payCardIconWrap, { backgroundColor: iconBg }]}>
           <Ionicons name={icon} size={24} color={color} />
         </View>
-
-        {/* Text */}
         <View style={styles.payCardText}>
           <Text style={styles.payCardName}>{name}</Text>
           <Text style={styles.payCardSub}>View Payment History</Text>
         </View>
-
-        {/* Arrow */}
         <View style={[styles.payCardArrow, { backgroundColor: color + "18" }]}>
           <Feather name="arrow-right" size={16} color={color} />
         </View>
@@ -356,64 +242,74 @@ const PaymentCard = ({ name, icon, color, iconBg, onPress }) => {
   );
 };
 
-// ─── SCREEN ───────────────────────────────────────────────────────────────────
+// ─── SCREEN ───────────────────────────────────────────────────────
 const PaymentList = ({ route, navigation }) => {
   const { user } = route.params;
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [summaryData, setSummaryData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const [isWeb, setIsWeb] = useState(false);
-
-  const blinkAnim = useRef(new Animated.Value(1)).current;
-
+  
+  // Console: Screen Load
   useEffect(() => {
-    // Detect if running on web
-    setIsWeb(typeof window !== "undefined" && window.document);
+    console.log("📍 Route: PaymentList (Mounted)");
+    console.log("👤 User Param:", user);
   }, []);
+
+  // --- Date State Updated ---
+  const [fromDate, setFromDate] = useState(new Date());
+  const [toDate, setToDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(null); // 'from', 'to', or null
+
+  const [summaryData,    setSummaryData]    = useState(null);
+  const [loading,        setLoading]        = useState(false);
+  const [refreshing,     setRefreshing]     = useState(false);
+  const [error,          setError]          = useState(null);
+
+  const blinkAnim  = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]),
+        Animated.timing(blinkAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
+        Animated.timing(blinkAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
     ).start();
   }, []);
 
-  const fetchDaybookSummary = useCallback(async (date, isRefresh = false) => {
+  const fetchDaybookSummary = useCallback(async (start, end, isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError(null);
 
     try {
-      const agentStr = await AsyncStorage.getItem("agentInfo");
+      const agentStr  = await AsyncStorage.getItem("agentInfo");
       const agentInfo = agentStr ? JSON.parse(agentStr) : null;
-      const agentId = agentInfo?._id;
+      const agentId   = agentInfo?._id;
 
-      if (!agentId) {
-        setError("Login required. Please log in again.");
-        return;
+      if (!agentId) { 
+        setError("Login required. Please log in again."); 
+        console.log("❌ Error: Agent ID missing in AsyncStorage");
+        return; 
       }
 
-      const dateStr = formatDate(date);
-      const url = `${baseUrl}/payment-collection-settlement/daybook-summary/agents/${agentId}?startDate=${dateStr}&endDate=${dateStr}`;
+      const startDateStr = formatDate(start);
+      const endDateStr = formatDate(end);
+      
+      // Updated URL to use both dates
+      const url = `${baseUrl}/payment-collection-settlement/daybook-summary/agents/${agentId}?startDate=${startDateStr}&endDate=${endDateStr}`;
 
-      const res = await fetch(url);
+      // Console: API Route Call
+      console.log("🚀 API Route Called:", url);
+
+      const res  = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
+      
+      // Console: API Success
+      console.log("✅ API Response Success:", json?.data);
+
       setSummaryData(json?.data ?? null);
-    } catch {
+    } catch (err) {
+      // Console: API Error
+      console.log("❌ API Response Error:", err);
+      
       setError("Failed to load summary. Pull down to retry.");
       setSummaryData(null);
     } finally {
@@ -422,33 +318,37 @@ const PaymentList = ({ route, navigation }) => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchDaybookSummary(selectedDate);
-  }, [selectedDate]);
+  // Effect depends on both dates now
+  useEffect(() => { 
+    console.log("📅 Date Filter Changed:", `From: ${formatDate(fromDate)} | To: ${formatDate(toDate)}`);
+    fetchDaybookSummary(fromDate, toDate); 
+  }, [fromDate, toDate]);
 
-  const onDateChange = (event, date) => {
-    if (isWeb) {
-      // Handle web date input
-      if (event.target) {
-        const newDate = new Date(event.target.value);
-        if (!isNaN(newDate.getTime())) {
-          setSelectedDate(newDate);
+  const onDateChange = (_, date) => {
+    setShowPicker(null); // Close picker first
+    if (date) {
+      if (showPicker === 'from') {
+        console.log("📅 From Date Selected:", date);
+        setFromDate(date);
+        if (date > toDate) {
+            setToDate(date);
         }
+      } else if (showPicker === 'to') {
+        console.log("📅 To Date Selected:", date);
+        setToDate(date);
       }
-      setShowDatePicker(false);
-    } else {
-      // Handle native picker
-      setShowDatePicker(false);
-      if (date) setSelectedDate(date);
     }
   };
 
-  const handleWebDateChange = (e) => {
-    const newDate = new Date(e.target.value);
-    if (!isNaN(newDate.getTime())) {
-      setSelectedDate(newDate);
-    }
-    setShowDatePicker(false);
+  // Console: Navigation Handlers
+  const handleGoBack = () => {
+    console.log("👈 Navigating Back");
+    navigation.goBack();
+  };
+
+  const handleCardPress = (card) => {
+    console.log(`👉 Navigating to Route: ${card.route}`, { user, areaId: card.areaId });
+    navigation.navigate(card.route, { user, areaId: card.areaId });
   };
 
   return (
@@ -465,98 +365,101 @@ const PaymentList = ({ route, navigation }) => {
         {/* ── HEADER ── */}
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.iconCircle}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity onPress={handleGoBack} style={styles.iconCircle} activeOpacity={0.7}>
               <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
             </TouchableOpacity>
             <View style={{ flex: 1, alignItems: "flex-end" }}>
-              <Image
-                source={require("../assets/hero1.jpg")}
-                style={styles.heroThumb}
-              />
+              <Image source={require("../assets/hero1.jpg")} style={styles.heroThumb} />
             </View>
           </View>
 
           <Text style={styles.headerTitle}>Payments</Text>
-          <Text style={styles.headerSubTitle}>Daily collection overview</Text>
+          <Text style={styles.headerSubTitle}>Filter by date range</Text>
 
-          {/* Date pill */}
-          <TouchableOpacity
-            style={styles.dateCard}
-            onPress={() => setShowDatePicker(true)}
-            activeOpacity={0.9}
-          >
-            <View style={styles.dateInfo}>
-              <View style={styles.calendarIconBg}>
-                <Ionicons name="calendar" size={16} color={COLORS.white} />
-              </View>
-              <View>
-                <Text style={styles.dateLabel}>SELECTED DATE</Text>
-                <Text style={styles.dateText}>
-                  {formatDisplayDate(selectedDate)}
-                </Text>
-              </View>
-            </View>
-            <Animated.View style={{ opacity: blinkAnim }}>
-              <View style={styles.editIconBg}>
-                <Feather name="edit-3" size={13} color={COLORS.primary} />
-              </View>
-            </Animated.View>
-          </TouchableOpacity>
-
-          {/* Date Picker - Platform specific */}
-          {showDatePicker &&
-            (isWeb ? (
-              // Web: Use HTML5 date input in a modal
-              <View style={styles.webDateModal}>
-                <View style={styles.webDatePickerContainer}>
-                  <View style={styles.webDateHeader}>
-                    <Text style={styles.webDateTitle}>Select Date</Text>
-                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                      <Ionicons name="close" size={24} color={COLORS.text} />
-                    </TouchableOpacity>
-                  </View>
-                  <input
-                    type="date"
-                    value={selectedDate.toISOString().split("T")[0]}
-                    onChange={handleWebDateChange}
-                    max={new Date().toISOString().split("T")[0]}
-                    style={{
-                      width: "100%",
-                      height: 50,
-                      borderRadius: 14,
-                      border: "1px solid #dbeafe",
-                   
-                      fontSize: 15,
-                      fontWeight: "500",
-                      backgroundColor: "#f8fbff",
-                      color: "#0f172a",
-                      outline: "none",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                      cursor: "pointer",
-                    }}
-                  />
-                  <TouchableOpacity
-                    style={styles.webDateButton}
-                    onPress={() => setShowDatePicker(false)}
-                  >
-                    <Text style={styles.webDateButtonText}>Cancel</Text>
-                  </TouchableOpacity>
+          {/* ── DATE FILTER CARD (FROM & TO) ── */}
+          <View style={styles.dateCardContainer}>
+            {/* From Date */}
+            <TouchableOpacity 
+              style={styles.dateHalfCard} 
+              onPress={() => setShowPicker('from')}
+              activeOpacity={0.9}
+            >
+              <View style={styles.dateInfo}>
+                <View style={styles.calendarIconBg}>
+                  <Ionicons name="calendar-outline" size={16} color={COLORS.white} />
+                </View>
+                <View>
+                  <Text style={styles.dateLabel}>FROM DATE</Text>
+                  <Text style={styles.dateText}>{formatDisplayDate(fromDate)}</Text>
                 </View>
               </View>
-            ) : (
-              // Native: Use DateTimePicker
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="default"
-                maximumDate={new Date()}
-                onChange={onDateChange}
-              />
-            ))}
+              <Animated.View style={{ opacity: blinkAnim }}>
+                <Feather name="edit-3" size={13} color={COLORS.muted} />
+              </Animated.View>
+            </TouchableOpacity>
+
+            {/* Separator Arrow */}
+            <View style={styles.dateSeparator}>
+              <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+            </View>
+
+            {/* To Date */}
+            <TouchableOpacity 
+              style={styles.dateHalfCard} 
+              onPress={() => setShowPicker('to')}
+              activeOpacity={0.9}
+            >
+              <View style={styles.dateInfo}>
+                <View style={[styles.calendarIconBg, { backgroundColor: COLORS.accent }]}>
+                  <Ionicons name="calendar-outline" size={16} color={COLORS.white} />
+                </View>
+                <View>
+                  <Text style={styles.dateLabel}>TO DATE</Text>
+                  <Text style={styles.dateText}>{formatDisplayDate(toDate)}</Text>
+                </View>
+              </View>
+              <Animated.View style={{ opacity: blinkAnim }}>
+                <Feather name="edit-3" size={13} color={COLORS.muted} />
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Single Picker Logic */}
+          {Platform.OS === "web" ? (
+  <>
+    {showPicker === "from" && (
+      <DatePicker
+        selected={fromDate}
+        onChange={(date) => {
+          setFromDate(date);
+          setShowPicker(null);
+        }}
+        inline
+      />
+    )}
+
+    {showPicker === "to" && (
+      <DatePicker
+        selected={toDate}
+        onChange={(date) => {
+          setToDate(date);
+          setShowPicker(null);
+        }}
+        inline
+      />
+    )}
+  </>
+) : (
+  showPicker && (
+    <DateTimePicker
+      value={showPicker === "from" ? fromDate : toDate}
+      mode="date"
+      display="default"
+      maximumDate={new Date()}
+      onChange={onDateChange}
+    />
+  )
+)}
         </View>
 
         {/* ── CONTENT ── */}
@@ -573,13 +476,15 @@ const PaymentList = ({ route, navigation }) => {
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
-                  onRefresh={() => fetchDaybookSummary(selectedDate, true)}
+                  onRefresh={() => {
+                    console.log("🔄 Refreshing Data...");
+                    fetchDaybookSummary(fromDate, toDate, true)
+                  }}
                   tintColor={COLORS.accent}
                   colors={[COLORS.accent]}
                 />
               }
             >
-              {/* Error */}
               {error && (
                 <AnimatedRow delay={0}>
                   <View style={styles.errorBox}>
@@ -589,7 +494,6 @@ const PaymentList = ({ route, navigation }) => {
                 </AnimatedRow>
               )}
 
-              {/* Summary Card */}
               <AnimatedRow delay={60}>
                 <SummaryCard
                   totalPayments={summaryData?.total_payments}
@@ -599,7 +503,6 @@ const PaymentList = ({ route, navigation }) => {
                 />
               </AnimatedRow>
 
-              {/* Section heading */}
               <AnimatedRow delay={140}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Payment Types</Text>
@@ -609,7 +512,6 @@ const PaymentList = ({ route, navigation }) => {
                 </View>
               </AnimatedRow>
 
-              {/* Payment Cards */}
               {CARD_CONFIG.map((card, i) => (
                 <AnimatedRow key={card.name} delay={200 + i * 70}>
                   <PaymentCard
@@ -617,12 +519,7 @@ const PaymentList = ({ route, navigation }) => {
                     icon={card.icon}
                     color={card.color}
                     iconBg={card.iconBg}
-                    onPress={() =>
-                      navigation.navigate(card.route, {
-                        user,
-                        areaId: card.areaId,
-                      })
-                    }
+                    onPress={() => handleCardPress(card)}
                   />
                 </AnimatedRow>
               ))}
@@ -634,7 +531,7 @@ const PaymentList = ({ route, navigation }) => {
   );
 };
 
-// ─── STYLES ───────────────────────────────────────────────────────────────────
+// ─── STYLES ───────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: COLORS.primary },
 
@@ -678,94 +575,42 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // Date card
-  dateCard: {
+  // ── Date Range Card Styles ──
+  dateCardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: 16,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
+    overflow: 'hidden',
   },
-  dateInfo: { flexDirection: "row", alignItems: "center" },
-  calendarIconBg: {
-    backgroundColor: COLORS.bgBlue,
-    padding: 8,
-    borderRadius: 10,
-    marginRight: 12,
+  dateHalfCard: {
+    flex: 1,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  dateLabel: {
-    fontSize: 10,
-    color: COLORS.muted,
-    fontWeight: "800",
-    letterSpacing: 1,
+  dateSeparator: {
+    width: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  dateText: { fontSize: 17, fontWeight: "900", color: COLORS.primary },
-  editIconBg: { backgroundColor: "#F5F7FA", padding: 8, borderRadius: 10 },
+  dateInfo:       { flexDirection: "row", alignItems: "center" },
+  calendarIconBg: { backgroundColor: COLORS.bgBlue, padding: 8, borderRadius: 10, marginRight: 12 },
+  dateLabel:      { fontSize: 10, color: COLORS.muted, fontWeight: "800", letterSpacing: 1 },
+  dateText:       { fontSize: 15, fontWeight: "900", color: COLORS.primary },
 
   // ── Content ──
   contentContainer: { paddingHorizontal: 16, flex: 1 },
-  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: {
-    color: COLORS.white,
-    marginTop: 10,
-    fontWeight: "600",
-    opacity: 0.8,
-  },
+  loaderContainer:  { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText:      { color: COLORS.white, marginTop: 10, fontWeight: "600", opacity: 0.8 },
 
-  webDateModal: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  webDatePickerContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 15,
-    padding: 20,
-    width: "20%",
-
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  webDateHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    marginLeft: 50,
-  },
-  webDateTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.text,
-  },
-  webDateButton: {
-    marginTop: 16,
-    padding: 18,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  webDateButtonText: {
-    color: COLORS.white,
-    fontWeight: "600",
-  },
-
-  // ── Summary Card (UPDATED STYLES) ──
+  // ── Summary Card ──
   summaryCard: {
     borderRadius: 20,
     padding: 16,
@@ -788,17 +633,17 @@ const styles = StyleSheet.create({
   },
   summaryMicroLabel: {
     fontSize: 10,
-    color: "rgba(255,255,255,0.9)", // White with opacity
+    color: "rgba(255,255,255,0.9)", 
     fontWeight: "800",
     letterSpacing: 1,
   },
   summaryAmount: {
     fontSize: 30,
     fontWeight: "900",
-    color: COLORS.white, // Bright White
+    color: COLORS.white, 
     marginTop: -6,
     letterSpacing: -0.5,
-    textShadowColor: "rgba(0,0,0,0.1)",
+    textShadowColor: 'rgba(0,0,0,0.1)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
@@ -812,7 +657,7 @@ const styles = StyleSheet.create({
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.25)", // White transparent divider
+    backgroundColor: "rgba(255,255,255,0.25)", 
     marginVertical: 14,
   },
 
@@ -831,7 +676,7 @@ const styles = StyleSheet.create({
   chipSectionLabel: {
     fontSize: 9,
     fontWeight: "800",
-    color: "rgba(255,255,255,0.9)", // White
+    color: "rgba(255,255,255,0.9)",
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
@@ -849,7 +694,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flex: 1,
     minWidth: 80,
-    // Background is now set dynamically in BreakdownChip component for glass effect
   },
   chipIconWrap: {
     width: 22,
@@ -863,13 +707,13 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.6,
     textTransform: "uppercase",
-    color: "#FFFFFF", // White text
+    color: "#FFFFFF",
   },
   chipAmount: {
     fontSize: 11,
     fontWeight: "900",
     marginTop: 1,
-    color: "#FFFFFF", // White text
+    color: "#FFFFFF",
   },
 
   // ── Section heading ──

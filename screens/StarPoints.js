@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions,
@@ -15,6 +14,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import baseUrl from "../constants/baseUrl";
 
+// Web-specific imports
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -23,6 +26,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 const { width, height } = Dimensions.get("window");
 
 // Design Constants
+const MODERN_PRIMARY = "#102A43";
 const TOP_GRADIENT = ['#24C6DC', '#183A5D']; 
 const ACCENT_TEAL = "#00d2ff";
 const CARD_BG = "#ffffff";
@@ -35,6 +39,10 @@ const StarPoints = ({ navigation, route }) => {
   const [filterMode, setFilterMode] = useState('day'); 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCustomPicker, setShowCustomPicker] = useState(false);
+  
+  // Web date picker states
+  const [showWebDatePicker, setShowWebDatePicker] = useState(false);
+  const [showWebMonthYearPicker, setShowWebMonthYearPicker] = useState(false);
   
   // Custom Picker State
   const [pickerView, setPickerView] = useState('MONTHS'); // 'MONTHS' or 'YEARS'
@@ -95,8 +103,12 @@ const StarPoints = ({ navigation, route }) => {
 
   const formatDateDisplay = (date, mode) => {
     const options = { year: 'numeric' };
-    if (mode === 'day') { options.day = '2-digit'; options.month = 'short'; } 
-    else if (mode === 'month') { options.month = 'long'; }
+    if (mode === 'day') { 
+      options.day = '2-digit'; 
+      options.month = 'short'; 
+    } else if (mode === 'month') { 
+      options.month = 'long'; 
+    }
     return date.toLocaleDateString('en-IN', options);
   };
 
@@ -161,18 +173,24 @@ const StarPoints = ({ navigation, route }) => {
   // --- Picker Handlers ---
 
   const handleDatePress = () => {
-    if (filterMode === 'day') {
-      setShowDatePicker(true);
-    } else {
-      setTempMonth(selectedDate.getMonth());
-      setTempYear(selectedDate.getFullYear());
-      
-      if (filterMode === 'month') {
-        setPickerView('MONTHS'); 
+    if (Platform.OS === "web") {
+      if (filterMode === 'day') {
+        setShowWebDatePicker(true);
       } else {
-        setPickerView('YEARS'); 
+        setTempMonth(selectedDate.getMonth());
+        setTempYear(selectedDate.getFullYear());
+        setPickerView(filterMode === 'month' ? 'MONTHS' : 'YEARS');
+        setShowWebMonthYearPicker(true);
       }
-      setShowCustomPicker(true);
+    } else {
+      if (filterMode === 'day') {
+        setShowDatePicker(true);
+      } else {
+        setTempMonth(selectedDate.getMonth());
+        setTempYear(selectedDate.getFullYear());
+        setPickerView(filterMode === 'month' ? 'MONTHS' : 'YEARS');
+        setShowCustomPicker(true);
+      }
     }
   };
 
@@ -181,29 +199,40 @@ const StarPoints = ({ navigation, route }) => {
     if (date) setSelectedDate(date);
   };
 
+  const handleWebDateChange = (date) => {
+    if (date) {
+      setSelectedDate(date);
+      setShowWebDatePicker(false);
+    }
+  };
+
   const handleCustomConfirm = () => {
-    // Use the current temp state directly here if this function is called manually
     setSelectedDate(new Date(tempYear, tempMonth, 1));
     setShowCustomPicker(false);
   };
 
   const handleMonthSelect = (monthIndex) => {
     setTempMonth(monthIndex);
-    // FIX: Use monthIndex directly instead of 'tempMonth' state to avoid async delay issues
     setSelectedDate(new Date(tempYear, monthIndex, 1));
-    setShowCustomPicker(false);
+    if (Platform.OS === "web") {
+      setShowWebMonthYearPicker(false);
+    } else {
+      setShowCustomPicker(false);
+    }
   };
 
   const handleYearSelect = (year) => {
     setTempYear(year);
     
     if (filterMode === 'month') {
-      // If in month mode, go back to month selection
       setPickerView('MONTHS');
     } else if (filterMode === 'year') {
-      // FIX: Use 'year' directly instead of 'tempYear' state
       setSelectedDate(new Date(year, 0, 1));
-      setShowCustomPicker(false);
+      if (Platform.OS === "web") {
+        setShowWebMonthYearPicker(false);
+      } else {
+        setShowCustomPicker(false);
+      }
     }
   };
 
@@ -224,15 +253,27 @@ const StarPoints = ({ navigation, route }) => {
               setTempMonth(newDate.getMonth());
               setTempYear(newDate.getFullYear());
               setPickerView('MONTHS');
-              setShowCustomPicker(true); 
+              if (Platform.OS === "web") {
+                setShowWebMonthYearPicker(true);
+              } else {
+                setShowCustomPicker(true);
+              }
             } else if (mode === 'year') {
               newDate = new Date(now.getFullYear(), 0, 1);
               setTempYear(newDate.getFullYear());
               setPickerView('YEARS');
-              setShowCustomPicker(true);
+              if (Platform.OS === "web") {
+                setShowWebMonthYearPicker(true);
+              } else {
+                setShowCustomPicker(true);
+              }
             } else {
               newDate = now;
-              setShowDatePicker(true);
+              if (Platform.OS === "web") {
+                setShowWebDatePicker(true);
+              } else {
+                setShowDatePicker(true);
+              }
             }
 
             setFilterMode(mode);
@@ -333,6 +374,92 @@ const StarPoints = ({ navigation, route }) => {
     { label: "Enrollments Chit Value", value: formatCurrency(item.enrollments_chit_value), icon: "currency-rupee", color: "#FFC107" },
   ];
 
+  // Web Month/Year Picker Component
+  const WebMonthYearPicker = () => (
+    <Modal
+      visible={showWebMonthYearPicker}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowWebMonthYearPicker(false)}
+    >
+      <View style={styles.webModalOverlay}>
+        <View style={styles.webDatePickerContainer}>
+          <View style={styles.webDatePickerHeader}>
+            <Text style={styles.webDatePickerTitle}>
+              {filterMode === 'year' ? 'Select Year' : (pickerView === 'MONTHS' ? `Select Month (${tempYear})` : 'Select Year')}
+            </Text>
+            <TouchableOpacity onPress={() => setShowWebMonthYearPicker(false)}>
+             <MaterialIcons name="close" size={24} color={TEXT_MAIN} />
+            </TouchableOpacity>
+          </View>
+          
+          {pickerView === 'MONTHS' ? (
+            <View style={styles.webMonthGrid}>
+              <View style={styles.webYearNav}>
+                <TouchableOpacity onPress={() => setTempYear(tempYear - 1)}>
+                  <MaterialIcons name="chevron-left" size={24} color={ACCENT_TEAL} />
+                </TouchableOpacity>
+                <Text style={styles.webYearText}>{tempYear}</Text>
+                <TouchableOpacity onPress={() => setTempYear(tempYear + 1)}>
+                  <MaterialIcons name="chevron-right" size={24} color={ACCENT_TEAL} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.webMonthGridItems}>
+                {MONTHS.map((month, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.webMonthItem,
+                      tempMonth === index && styles.webMonthItemActive
+                    ]}
+                    onPress={() => handleMonthSelect(index)}
+                  >
+                    <Text style={[
+                      styles.webMonthText,
+                      tempMonth === index && styles.webMonthTextActive
+                    ]}>
+                      {month.substring(0, 3)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <ScrollView style={styles.webYearList}>
+              {yearList.map((year) => (
+                <TouchableOpacity
+                  key={year}
+                  style={[
+                    styles.webYearItem,
+                    tempYear === year && styles.webYearItemActive
+                  ]}
+                  onPress={() => handleYearSelect(year)}
+                >
+                  <Text style={[
+                    styles.webYearItemText,
+                    tempYear === year && styles.webYearItemTextActive
+                  ]}>
+                    {year}
+                  </Text>
+                  {tempYear === year && (
+                    <MaterialIcons name="check" size={20} color={ACCENT_TEAL} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+          
+          <TouchableOpacity
+            style={styles.webDatePickerDoneButton}
+            onPress={() => setShowWebMonthYearPicker(false)}
+          >
+            <Text style={styles.webDatePickerDoneText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <LinearGradient colors={TOP_GRADIENT} style={{ flex: 1 }}>
       <View style={styles.mainContainer}>
@@ -395,7 +522,7 @@ const StarPoints = ({ navigation, route }) => {
                                   <Text style={styles.agentName}>{item.name || "Agent Name"}</Text>
                                   <Text style={styles.agentRole}>Executive Performance</Text>
                                   
-                                  {/* Report Date Badge (Static for the selected period) */}
+                                  {/* Report Date Badge */}
                                   <View style={styles.dateBadge}>
                                       <MaterialIcons name="event" size={18} color="#00d2ff" style={{marginRight: 5}} />
                                       <Text style={styles.dateBadgeText}>Report Date: {formatDateDisplay(selectedDate, filterMode)}</Text>
@@ -424,15 +551,12 @@ const StarPoints = ({ navigation, route }) => {
 
                           <View style={styles.receiptFooter}>
                               <View style={styles.dashedLine} />
-                              
-                              {/* PRESENT DATE / GENERATED DATE */}
                               <Text style={styles.generatedAtText}>
                                 Generated: {new Date().toLocaleString('en-IN', { 
                                   day: '2-digit', month: 'short', year: 'numeric', 
                                   hour: '2-digit', minute: '2-digit' 
                                 })}
                               </Text>
-
                               <Text style={styles.brandName}>STAR POINTS PRO</Text>
                           </View>
                         </View>
@@ -524,8 +648,46 @@ const StarPoints = ({ navigation, route }) => {
           )}
         </ScrollView>
 
-        {/* Standard Date Picker for DAY Mode */}
-        {showDatePicker && (
+        {/* Web Date Picker for DAY Mode */}
+        {Platform.OS === "web" && showWebDatePicker && (
+          <Modal
+            visible={showWebDatePicker}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowWebDatePicker(false)}
+          >
+            <View style={styles.webModalOverlay}>
+              <View style={styles.webDatePickerContainer}>
+                <View style={styles.webDatePickerHeader}>
+                  <Text style={styles.webDatePickerTitle}>Select Date</Text>
+                  <TouchableOpacity onPress={() => setShowWebDatePicker(false)}>
+                    <MaterialIcons name="close" size={24} color={TEXT_MAIN} />
+                  </TouchableOpacity>
+                </View>
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={handleWebDateChange}
+                  inline
+                  maxDate={new Date()}
+                  minDate={new Date(2000, 0, 1)}
+                  dateFormat="dd/MM/yyyy"
+                />
+                <TouchableOpacity
+                  style={styles.webDatePickerDoneButton}
+                  onPress={() => setShowWebDatePicker(false)}
+                >
+                  <Text style={styles.webDatePickerDoneText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {/* Web Month/Year Picker */}
+        {Platform.OS === "web" && showWebMonthYearPicker && <WebMonthYearPicker />}
+
+        {/* Native Date Picker for DAY Mode (Mobile) */}
+        {Platform.OS !== "web" && showDatePicker && (
           <DateTimePicker 
             value={selectedDate} 
             mode="date" 
@@ -534,98 +696,92 @@ const StarPoints = ({ navigation, route }) => {
           />
         )}
 
-        {/* Custom Modal for MONTH and YEAR Modes */}
-        <Modal
-          transparent={true}
-          visible={showCustomPicker}
-          animationType="slide"
-          onRequestClose={() => setShowCustomPicker(false)}
-        >
-          <TouchableWithoutFeedback onPress={() => setShowCustomPicker(false)}>
-            <View style={styles.modalOverlay}>
-              <TouchableWithoutFeedback onPress={() => {}}>
-                <View style={styles.modalContainer}>
-                  <View style={styles.modalHeader}>
-                    <View style={{ width: 50, justifyContent: 'center' }}> 
-                       {/* Dynamic Left Button Logic */}
-                       {filterMode === 'month' && pickerView === 'MONTHS' ? (
-                         // User is on Month Grid: Button to go change Year
-                         <TouchableOpacity onPress={() => setPickerView('YEARS')} style={{flexDirection: 'row', alignItems: 'center'}}>
+        {/* Native Custom Modal for MONTH and YEAR Modes (Mobile) */}
+        {Platform.OS !== "web" && (
+          <Modal
+            transparent={true}
+            visible={showCustomPicker}
+            animationType="slide"
+            onRequestClose={() => setShowCustomPicker(false)}
+          >
+            <TouchableWithoutFeedback onPress={() => setShowCustomPicker(false)}>
+              <View style={styles.modalOverlay}>
+                <TouchableWithoutFeedback onPress={() => {}}>
+                  <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                      <View style={{ width: 50, justifyContent: 'center' }}> 
+                        {filterMode === 'month' && pickerView === 'MONTHS' ? (
+                          <TouchableOpacity onPress={() => setPickerView('YEARS')} style={{flexDirection: 'row', alignItems: 'center'}}>
                             <Text style={styles.modalNavText}>Select Year</Text>
                             <MaterialIcons name="arrow-drop-down" size={20} color="#00d2ff" />
-                         </TouchableOpacity>
-                       ) : filterMode === 'month' && pickerView === 'YEARS' ? (
-                         // User is on Year List (came from Month mode): Button to go Back to Months
-                         <TouchableOpacity onPress={() => setPickerView('MONTHS')}>
+                          </TouchableOpacity>
+                        ) : filterMode === 'month' && pickerView === 'YEARS' ? (
+                          <TouchableOpacity onPress={() => setPickerView('MONTHS')}>
                             <MaterialIcons name="arrow-back" size={24} color="#666" />
-                         </TouchableOpacity>
-                       ) : (
-                         // User is in Year Mode: Standard Cancel
-                         <TouchableOpacity onPress={() => setShowCustomPicker(false)}>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity onPress={() => setShowCustomPicker(false)}>
                             <Text style={styles.modalCancelText}>Cancel</Text>
-                         </TouchableOpacity>
-                       )}
-                    </View>
-                    <Text style={styles.modalTitle}>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                      <Text style={styles.modalTitle}>
                         {filterMode === 'year' ? 'Select Year' : (pickerView === 'MONTHS' ? `Select Month (${tempYear})` : 'Select Year')}
-                    </Text>
-                    <View style={{ width: 50, alignItems: 'flex-end', justifyContent: 'center' }}>
-                       {/* DONE BUTTON REMOVED */}
+                      </Text>
+                      <View style={{ width: 50, alignItems: 'flex-end', justifyContent: 'center' }} />
+                    </View>
+
+                    <View style={styles.modalContent}>
+                      {pickerView === 'MONTHS' ? (
+                        <FlatList
+                          key="monthGrid"
+                          data={MONTHS}
+                          keyExtractor={(item, index) => index.toString()}
+                          numColumns={3}
+                          contentContainerStyle={styles.gridContent}
+                          columnWrapperStyle={styles.gridRow}
+                          renderItem={({ item, index }) => (
+                            <TouchableOpacity 
+                              style={[styles.monthGridItem, tempMonth === index && styles.monthGridItemActive]} 
+                              onPress={() => handleMonthSelect(index)}
+                            >
+                              <Text style={[styles.monthGridText, tempMonth === index && styles.monthGridTextActive]}>
+                                {item.substring(0,3)} {tempYear}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        />
+                      ) : (
+                        <FlatList
+                          ref={flatListRef}
+                          key="yearList"
+                          data={yearList}
+                          keyExtractor={(item) => item.toString()}
+                          contentContainerStyle={styles.listContent}
+                          decelerationRate="fast"
+                          snapToInterval={50}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity 
+                              style={[styles.listRow, tempYear === item && styles.listRowActive]} 
+                              onPress={() => handleYearSelect(item)}
+                            >
+                              <Text style={[styles.listRowText, tempYear === item && styles.listRowTextActive]}>
+                                {item}
+                              </Text>
+                              {tempYear === item && <MaterialIcons name="check" size={20} color={ACCENT_TEAL} />}
+                            </TouchableOpacity>
+                          )}
+                          initialScrollIndex={yearList.indexOf(tempYear)}
+                          getItemLayout={(data, index) => ({ length: 50, offset: 50 * index, index })}
+                        />
+                      )}
                     </View>
                   </View>
-
-                  <View style={styles.modalContent}>
-                    {pickerView === 'MONTHS' ? (
-                      // MONTH LIST VIEW
-                      <FlatList
-                        key="monthGrid"
-                        data={MONTHS}
-                        keyExtractor={(item, index) => index.toString()}
-                        numColumns={3}
-                        contentContainerStyle={styles.gridContent}
-                        columnWrapperStyle={styles.gridRow}
-                        renderItem={({ item, index }) => (
-                          <TouchableOpacity 
-                            style={[styles.monthGridItem, tempMonth === index && styles.monthGridItemActive]} 
-                            onPress={() => handleMonthSelect(index)}
-                          >
-                            <Text style={[styles.monthGridText, tempMonth === index && styles.monthGridTextActive]}>
-                              {item.substring(0,3)} {tempYear}
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                      />
-                    ) : (
-                      // YEAR LIST VIEW
-                      <FlatList
-                        ref={flatListRef}
-                        key="yearList"
-                        data={yearList}
-                        keyExtractor={(item) => item.toString()}
-                        contentContainerStyle={styles.listContent}
-                        decelerationRate="fast"
-                        snapToInterval={50}
-                        renderItem={({ item }) => (
-                          <TouchableOpacity 
-                            style={[styles.listRow, tempYear === item && styles.listRowActive]} 
-                            onPress={() => handleYearSelect(item)}
-                          >
-                            <Text style={[styles.listRowText, tempYear === item && styles.listRowTextActive]}>
-                              {item}
-                            </Text>
-                            {tempYear === item && <MaterialIcons name="check" size={20} color={ACCENT_TEAL} />}
-                          </TouchableOpacity>
-                        )}
-                        initialScrollIndex={yearList.indexOf(tempYear)}
-                        getItemLayout={(data, index) => ({ length: 50, offset: 50 * index, index })}
-                      />
-                    )}
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+        )}
       </View>
     </LinearGradient>
   );
@@ -660,7 +816,6 @@ const styles = StyleSheet.create({
   avatarText: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
   agentName: { fontSize: 20, fontWeight: '800', color: TEXT_MAIN },
   agentRole: { fontSize: 12, color: '#829AB1', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 },
-  // Date Badge Style
   dateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -689,7 +844,6 @@ const styles = StyleSheet.create({
   
   receiptFooter: { marginTop: 20, alignItems: 'center', paddingTop: 15 },
   dashedLine: { width: '100%', height: 1, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', borderStyle: 'dashed', marginBottom: 12 },
-  // New Style for Generated Date
   generatedAtText: { 
     fontSize: 10, 
     color: '#829AB1', 
@@ -721,7 +875,7 @@ const styles = StyleSheet.create({
   listItemCard: { backgroundColor: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   listItemHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
   serialBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: ACCENT_TEAL, justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' },
-  serialText: { color: '#fff', fontSize: 11, fontWeight: '800', },
+  serialText: { color: '#fff', fontSize: 11, fontWeight: '800' },
   listItemName: { color: '#fff', fontSize: 16, fontWeight: '700' },
   listItemSub: { color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
@@ -731,7 +885,29 @@ const styles = StyleSheet.create({
   emptyBox: { alignItems: 'center', marginTop: 100 },
   emptyText: { color: '#fff', marginTop: 20, fontSize: 16, opacity: 0.6 },
 
-  // --- Custom Picker Styles ---
+  // Web Picker Styles
+  webModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  webDatePickerContainer: { backgroundColor: '#fff', borderRadius: 20, padding: 20, width: '90%', maxWidth: 400, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
+  webDatePickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  webDatePickerTitle: { fontSize: 18, fontWeight: 'bold', color: TEXT_MAIN },
+  webDatePickerDoneButton: { backgroundColor: ACCENT_TEAL, padding: 12, borderRadius: 10, alignItems: 'center', marginTop: 20 },
+  webDatePickerDoneText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  
+  webMonthGrid: { padding: 10 },
+  webYearNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 },
+  webYearText: { fontSize: 20, fontWeight: 'bold', color: TEXT_MAIN },
+  webMonthGridItems: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  webMonthItem: { width: '30%', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 10, backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#eee' },
+  webMonthItemActive: { backgroundColor: ACCENT_TEAL, borderColor: ACCENT_TEAL },
+  webMonthText: { fontSize: 14, color: '#555', fontWeight: '600' },
+  webMonthTextActive: { color: '#fff', fontWeight: '700' },
+  webYearList: { maxHeight: 300 },
+  webYearItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  webYearItemActive: { backgroundColor: '#f0fdff', borderLeftWidth: 4, borderLeftColor: ACCENT_TEAL },
+  webYearItemText: { fontSize: 16, color: '#333' },
+  webYearItemTextActive: { color: ACCENT_TEAL, fontWeight: '700' },
+
+  // Mobile Picker Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContainer: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 30, maxHeight: height * 0.65 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
@@ -739,8 +915,6 @@ const styles = StyleSheet.create({
   modalNavText: { fontSize: 16, color: '#00d2ff', fontWeight: '600' },
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#333' },
   modalContent: { padding: 10, height: 350 },
-
-  // Month Grid Styles
   gridContent: { paddingVertical: 10 },
   gridRow: { justifyContent: 'space-between' },
   monthGridItem: {
@@ -773,8 +947,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center'
   },
-
-  // Year List Styles
   listContent: { paddingVertical: 5 },
   listRow: {
     flexDirection: 'row',
@@ -784,7 +956,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    height: 50 // Fixed height for snapping
+    height: 50
   },
   listRowActive: {
     backgroundColor: '#f0fdff',

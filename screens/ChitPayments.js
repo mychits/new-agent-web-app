@@ -10,14 +10,20 @@ import {
   ActivityIndicator,
   Image,
   Platform,
+  RefreshControl,
 } from "react-native";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Icon from "react-native-vector-icons/FontAwesome";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import * as ExpoPrint from "expo-print";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import DateTimePicker from "@react-native-community/datetimepicker";
+
+// Web-specific imports
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 import COLORS from "../constants/color";
 import Header from "../components/Header";
@@ -27,7 +33,6 @@ import axios from "axios";
 import PaymentChitList from "../components/PaymentChitList";
 
 const noImage = require("../assets/no.png");
-const isWeb = Platform.OS === 'web';  
 
 // --- DESIGN CONSTANTS ---
 const TOP_GRADIENT = ["#24C6DC", "#183A5D"];
@@ -49,9 +54,10 @@ const ChitPayments = ({ route, navigation }) => {
   const [cus, setCus] = useState([]);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [agent, setAgent] = useState({});
-  const [fetchError, setFetchError] = useState(null); // renamed to avoid conflict
-
+  const [fetchError, setFetchError] = useState(null);
+  const [customerSearch, setCustomerSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -61,9 +67,12 @@ const ChitPayments = ({ route, navigation }) => {
   const [selectedCustomerName, setSelectedCustomerName] = useState("");
   const [selectedGroupName, setSelectedGroupName] = useState("");
   const [activeChitId, setActiveChitId] = useState(null);
-  const [showTotalCollectionDetails, setShowTotalCollectionDetails] =
-    useState(false);
-
+  const [showTotalCollectionDetails, setShowTotalCollectionDetails] = useState(false);
+  const [groupSearch, setGroupSearch] = useState("");
+  
+  // Web date picker state
+  const [showWebDatePicker, setShowWebDatePicker] = useState(false);
+  
   // --- HELPERS ---
   const formatDate = (date) => {
     if (!date) return "";
@@ -80,25 +89,30 @@ const ChitPayments = ({ route, navigation }) => {
     }
   };
 
-  const isSameDate = (date1, date2) => {
-    if (!date1 || !date2) return false;
+  const formatDateForAPI = (date) => {
+    if (!date) return "";
     try {
-      const d1 = new Date(date1);
-      const d2 = new Date(date2);
-      if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return false;
-      return (
-        d1.getDate() === d2.getDate() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getFullYear() === d2.getFullYear()
-      );
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     } catch {
-      return false;
+      return "";
     }
+  };
+
+  const formatDisplayDate = (date) => {
+    if (!date) return "";
+    return date.toLocaleDateString("en-IN", { 
+      day: "2-digit", 
+      month: "short", 
+      year: "numeric" 
+    });
   };
 
   // --- FILTERS STATE ---
   const [filters, setFilters] = useState([
-    { id: "date", title: "Date", value: formatDate(new Date()), icon: "calendar" },
+    { id: "date", title: "Date", value: formatDisplayDate(new Date()), icon: "calendar" },
     { id: "customer", title: "Customer", value: "All", icon: "user" },
     { id: "group", title: "Group", value: "All", icon: "users" },
     { id: "paymentMode", title: "Payment Mode", value: "All", icon: "money" },
@@ -111,6 +125,13 @@ const ChitPayments = ({ route, navigation }) => {
     if (filterId === "totalCollection") {
       setSelectedFilter(filterId);
       setShowTotalCollectionDetails(true);
+    } else if (filterId === "date") {
+      if (Platform.OS === "web") {
+        setShowWebDatePicker(true);
+      } else {
+        setSelectedFilter(filterId);
+        setShowPicker(true);
+      }
     } else {
       setSelectedFilter(filterId);
       setShowPicker(true);
@@ -134,38 +155,79 @@ const ChitPayments = ({ route, navigation }) => {
     setSelectedFilter(null);
   };
 
-  // --- API CALLS ---
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        setLoading(true);
-        setFetchError(null);
-        const response = await axios.get(
-          `${baseUrl}/payment/get-payment-agent/${user.userId}`
-        );
-        if (response.data) {
-          // Ensure it's always an array
-          const data = Array.isArray(response.data) ? response.data : [];
-          setCustomers(data);
-        } else {
-          setCustomers([]);
-        }
-      } catch (error) {
-        console.error("Error fetching customer data:", error);
-        setFetchError("Failed to load payment data. Please try again.");
-        setCustomers([]); // prevent undefined crashes downstream
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleDateChange = (date) => {
+    if (date) {
+      console.log("📅 Date Selected:", date);
+      setSelectedDate(date);
+      updateFilterValue("date", formatDisplayDate(date));
+      setShowWebDatePicker(false);
+    }
+  };
 
+  // --- API CALLS ---
+  const fetchCustomers = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setFetchError(null);
+
+      const formattedDate = formatDateForAPI(selectedDate);
+      
+      console.log("========== API DEBUG ==========");
+      console.log("Selected Date:", selectedDate);
+      console.log("Formatted Date:", formattedDate);
+      console.log("User ID:", user?.userId);
+      console.log("Selected Group:", selectedGroup);
+      console.log("Selected Customer:", selectedCustomer);
+      console.log("Selected Payment Mode:", selectedPaymentMode);
+
+      const response = await axios.get(
+        `${baseUrl}/v1/mobile/payments/daily-report`,
+        {
+          params: {
+            collected_by: user?.userId,
+            groupId: selectedGroup || undefined,
+            userId: selectedCustomer || undefined,
+            pay_type: selectedPaymentMode || undefined,
+            from_date: formattedDate,
+            to_date: formattedDate,
+          },
+        }
+      );
+
+      console.log("API Response Status:", response.status);
+
+      if (response?.data && Array.isArray(response.data)) {
+        console.log("Total payments received:", response.data.length);
+        const chitPayments = response.data.filter(
+          (item) => !["Loan", "Pigme"].includes(item?.pay_for)
+        );
+        console.log("Chit payments filtered:", chitPayments.length);
+        setCustomers(chitPayments);
+      } else {
+        setCustomers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching customer data:", error);
+      setFetchError("Failed to load payment data. Please try again.");
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.userId, selectedDate, selectedGroup, selectedCustomer, selectedPaymentMode]);
+
+  useEffect(() => {
     if (user?.userId) {
       fetchCustomers();
     } else {
       setLoading(false);
       setFetchError("User ID is missing.");
     }
-  }, [user?.userId]);
+  }, [fetchCustomers, user?.userId]);
 
   useEffect(() => {
     const fetchCus = async () => {
@@ -222,30 +284,18 @@ const ChitPayments = ({ route, navigation }) => {
   const filteredCustomers = Array.isArray(customers)
     ? customers.filter((customer) => {
         if (!customer) return false;
-
-        const nameMatch = customer?.user_id?.full_name
-          ?.toLowerCase()
-          .includes(search.toLowerCase()) ?? true;
-
-        const dateMatch = isSameDate(customer.pay_date, selectedDate);
-
-        const customerMatch =
-          !selectedCustomer || customer?.user_id?._id === selectedCustomer;
-
-        const groupMatch =
-          !selectedGroup || customer?.group_id?._id === selectedGroup;
-
-        const paymentModeMatch =
-          !selectedPaymentMode || customer.pay_type === selectedPaymentMode;
-
-        return nameMatch && dateMatch && customerMatch && groupMatch && paymentModeMatch;
+        return (
+          customer?.user_id?.full_name
+            ?.toLowerCase()
+            ?.includes(search.toLowerCase()) || false
+        );
       })
     : [];
 
-  const totalAmount = filteredCustomers.reduce((sum, customer) => {
-    const amount = parseFloat(customer?.amount) || 0;
-    return sum + amount;
-  }, 0);
+  const totalAmount = filteredCustomers.reduce(
+    (sum, item) => sum + Number(item?.amount || 0),
+    0
+  );
 
   // Update total collection filter value whenever totalAmount changes
   useEffect(() => {
@@ -255,98 +305,63 @@ const ChitPayments = ({ route, navigation }) => {
   }, [totalAmount, loading, updateFilterValue]);
 
   // --- PICKER RENDERER ---
- const renderPicker = () => {
-  switch (selectedFilter) {
-    case "date":
-      if (isWeb) {
-        // Web: Use HTML5 date input
-        return (
-          <View style={styles.webDatePickerContainer}>
-            <Text style={styles.webDatePickerLabel}>Select Date</Text>
-            <input
-              type="date"
-              value={selectedDate.toISOString().split('T')[0]}
-              onChange={(e) => {
-                const newDate = new Date(e.target.value);
-                if (!isNaN(newDate.getTime())) {
-                  setSelectedDate(newDate);
-                  updateFilterValue("date", formatDate(newDate));
-                }
-                closePicker();
-              }}
-              max={new Date().toISOString().split('T')[0]}
-              min="2000-01-01"
-               style={{
-                      width: "100%",
-                      height: 50,
-                      borderRadius: 14,
-                      border: "1px solid #dbeafe",
-                   
-                      fontSize: 15,
-                      fontWeight: "500",
-                      backgroundColor: "#f8fbff",
-                      color: "#0f172a",
-                      outline: "none",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                      cursor: "pointer",
-                    }}
-            />
-            <TouchableOpacity 
-              style={styles.webDateCloseButton} 
-              onPress={closePicker}
-            >
-              <Text style={styles.webDateCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      }
-      return (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(event, date) => {
-            if (Platform.OS === "android") {
-              if (date) {
-                setSelectedDate(date);
-                updateFilterValue("date", formatDate(date));
-              }
-              closePicker();
-            } else if (date) {
-              setSelectedDate(date);
-              updateFilterValue("date", formatDate(date));
-            } 
-          }}
-          minimumDate={new Date(2000, 0, 1)}
-          maximumDate={new Date(2100, 11, 31)}
-        />
-      );
-
-
+  const renderPicker = () => {
+    switch (selectedFilter) {
       case "group":
+        const filteredGroups = groups.filter((group) =>
+          group?.group_name?.toLowerCase().includes(groupSearch.toLowerCase())
+        );
+
         return (
           <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={selectedGroup}
-              onValueChange={(value) => {
-                const selected = groups.find((g) => g._id === value);
-                setSelectedGroup(value);
-                setSelectedGroupName(selected?.group_name || "");
-                updateFilterValue("group", selected?.group_name || "All");
-                closePicker();
-              }}
-              style={{ color: MODERN_PRIMARY }}
-              itemStyle={{ color: MODERN_PRIMARY }}
-            >
-              <Picker.Item label="All Groups" value="" />
-              {groups.map((group) => (
-                <Picker.Item
+            <View style={styles.searchInputWrapper}>
+              <TextInput
+                value={groupSearch}
+                onChangeText={setGroupSearch}
+                placeholder="Search group..."
+                placeholderTextColor="#999"
+                style={styles.pickerSearchInput}
+              />
+            </View>
+
+            <ScrollView style={styles.pickerScrollView}>
+              <TouchableOpacity
+                style={styles.pickerItem}
+                onPress={() => {
+                  setSelectedGroup("");
+                  setSelectedGroupName("");
+                  updateFilterValue("group", "All");
+                  closePicker();
+                }}
+              >
+                <Text style={styles.pickerItemText}>All Groups</Text>
+              </TouchableOpacity>
+
+              {filteredGroups.map((group) => (
+                <TouchableOpacity
                   key={group._id}
-                  label={group.group_name || "Unknown"}
-                  value={group._id}
-                />
+                  style={styles.pickerItem}
+                  onPress={() => {
+                    setSelectedGroup(group._id);
+                    setSelectedGroupName(group?.group_name || "");
+                    updateFilterValue("group", group?.group_name || "All");
+                    setGroupSearch("");
+                    closePicker();
+                  }}
+                >
+                  <Text style={styles.pickerItemText}>
+                    {group?.group_name || "Unknown"}
+                  </Text>
+                </TouchableOpacity>
               ))}
-            </Picker>
+
+              {filteredGroups.length === 0 && (
+                <View style={styles.noResultsContainer}>
+                  <Text style={styles.noResultsText}>No groups found</Text>
+                </View>
+              )}
+            </ScrollView>
+
             <TouchableOpacity style={styles.pickerCancelButton} onPress={closePicker}>
               <Text style={styles.pickerCancelText}>Cancel</Text>
             </TouchableOpacity>
@@ -354,29 +369,67 @@ const ChitPayments = ({ route, navigation }) => {
         );
 
       case "customer":
+        const filteredCus = cus.filter((customer) => {
+          const searchText = customerSearch.toLowerCase();
+          return (
+            customer?.full_name?.toLowerCase().includes(searchText) ||
+            String(customer?.phone_number || "").toLowerCase().includes(searchText)
+          );
+        });
+
         return (
           <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={selectedCustomer}
-              onValueChange={(value) => {
-                const selected = cus.find((c) => c._id === value);
-                setSelectedCustomer(value);
-                setSelectedCustomerName(selected?.full_name || "");
-                updateFilterValue("customer", selected?.full_name || "All");
-                closePicker();
-              }}
-              style={{ color: MODERN_PRIMARY }}
-              itemStyle={{ color: MODERN_PRIMARY }}
-            >
-              <Picker.Item label="All Customers" value="" />
-              {cus.map((customer) => (
-                <Picker.Item
+            <View style={styles.searchInputWrapper}>
+              <TextInput
+                value={customerSearch}
+                onChangeText={setCustomerSearch}
+                placeholder="Search customer..."
+                placeholderTextColor="#999"
+                style={styles.pickerSearchInput}
+              />
+            </View>
+
+            <ScrollView style={styles.pickerScrollView}>
+              <TouchableOpacity
+                style={styles.pickerItem}
+                onPress={() => {
+                  setSelectedCustomer("");
+                  setSelectedCustomerName("");
+                  updateFilterValue("customer", "All");
+                  closePicker();
+                }}
+              >
+                <Text style={styles.pickerItemText}>All Customers</Text>
+              </TouchableOpacity>
+
+              {filteredCus.map((customer) => (
+                <TouchableOpacity
                   key={customer._id}
-                  label={`${customer.full_name || "Unknown"} - ${customer.phone_number || ""}`}
-                  value={customer._id}
-                />
+                  style={styles.pickerItem}
+                  onPress={() => {
+                    setSelectedCustomer(customer._id);
+                    setSelectedCustomerName(customer?.full_name || "");
+                    updateFilterValue("customer", customer?.full_name || "All");
+                    setCustomerSearch("");
+                    closePicker();
+                  }}
+                >
+                  <Text style={styles.pickerItemText}>
+                    {customer?.full_name || "Unknown"}
+                  </Text>
+                  <Text style={styles.pickerItemSubText}>
+                    {customer?.phone_number || ""}
+                  </Text>
+                </TouchableOpacity>
               ))}
-            </Picker>
+
+              {filteredCus.length === 0 && (
+                <View style={styles.noResultsContainer}>
+                  <Text style={styles.noResultsText}>No customers found</Text>
+                </View>
+              )}
+            </ScrollView>
+
             <TouchableOpacity style={styles.pickerCancelButton} onPress={closePicker}>
               <Text style={styles.pickerCancelText}>Cancel</Text>
             </TouchableOpacity>
@@ -454,7 +507,7 @@ const ChitPayments = ({ route, navigation }) => {
           <div class="container">
             <h1>Chit Payment Collection Report</h1>
             <p><strong>Agent:</strong> ${agent?.name || "N/A"}</p>
-            <p><strong>Date:</strong> ${selectedDate.toDateString()}</p>
+            <p><strong>Date:</strong> ${formatDisplayDate(selectedDate)}</p>
             <table class="table">
               <thead>
                 <tr>
@@ -506,7 +559,7 @@ const ChitPayments = ({ route, navigation }) => {
             <h1>Total Collection Summary</h1>
             <p class="amount">₹ ${totalAmount.toFixed(2)}</p>
             <p>Agent: ${agent?.name || "N/A"}</p>
-            <p>Date: ${formatDate(selectedDate)}</p>
+            <p>Date: ${formatDisplayDate(selectedDate)}</p>
             <div class="footer">
               <p>Generated by Chit Payments App</p>
             </div>
@@ -521,6 +574,10 @@ const ChitPayments = ({ route, navigation }) => {
     }
   };
 
+  const onRefresh = useCallback(() => {
+    fetchCustomers(true);
+  }, [fetchCustomers]);
+
   // --- RENDER ---
   return (
     <View style={{ flex: 1, backgroundColor: TOP_GRADIENT[0] }}>
@@ -530,7 +587,7 @@ const ChitPayments = ({ route, navigation }) => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {loading ? (
+        {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
             <TouchableOpacity
               style={styles.loadingBackButton}
@@ -547,12 +604,7 @@ const ChitPayments = ({ route, navigation }) => {
           <View style={styles.screenContainer}>
             {/* Fixed Blue Header */}
             <View style={styles.fixedHeaderArea}>
-              <View
-                style={{
-                  marginHorizontal: 22,
-                  marginTop: Platform.OS === "android" ? 0 : 22,
-                }}
-              >
+              <View style={styles.headerContainer}>
                 <Header />
                 <View style={styles.titleCollectionContainer}>
                   <View style={{ alignItems: "center" }}>
@@ -574,7 +626,7 @@ const ChitPayments = ({ route, navigation }) => {
                 <View style={styles.searchContainer}>
                   <Icon
                     name="search"
-                    size={20}
+                    size={17}
                     color={TEXT_GREY}
                     style={styles.searchIcon}
                   />
@@ -604,8 +656,7 @@ const ChitPayments = ({ route, navigation }) => {
                       style={[
                         styles.card,
                         selectedFilter === filter.id && styles.activeCard,
-                        filter.id === "totalCollection" &&
-                          styles.totalCollectionCard,
+                        filter.id === "totalCollection" && styles.totalCollectionCard,
                       ]}
                       onPress={() => handleFilterPress(filter.id)}
                     >
@@ -626,8 +677,7 @@ const ChitPayments = ({ route, navigation }) => {
                           <Text
                             style={[
                               styles.cardValue,
-                              filter.id === "totalCollection" &&
-                                styles.totalCollectionValue,
+                              filter.id === "totalCollection" && styles.totalCollectionValue,
                             ]}
                           >
                             {filter.value}
@@ -654,6 +704,14 @@ const ChitPayments = ({ route, navigation }) => {
                 style={styles.listScrollView}
                 contentContainerStyle={{ paddingBottom: 80 }}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor={ACCENT_BLUE}
+                    colors={[ACCENT_BLUE]}
+                  />
+                }
               >
                 {filteredCustomers.length === 0 ? (
                   <View style={styles.noDataContainer}>
@@ -665,7 +723,7 @@ const ChitPayments = ({ route, navigation }) => {
                 ) : (
                   filteredCustomers.map((customer, index) => (
                     <PaymentChitList
-                      key={customer._id ? customer._id.toString() : `item-${index}`}
+                      key={customer?._id || index}
                       idx={index}
                       name={customer?.user_id?.full_name || "N/A"}
                       cus_id={customer._id}
@@ -689,104 +747,114 @@ const ChitPayments = ({ route, navigation }) => {
 
             {/* ---- MODALS ---- */}
 
-            {/* Non-date filter modal */}
-            {showPicker &&
-              selectedFilter &&
-              selectedFilter !== "date" && (
-                <Modal
-                  visible={showPicker}
-                  transparent
-                  animationType="fade"
-                  onRequestClose={closePicker}
-                >
-                  <View style={styles.modalContainer}>
-                    <View style={styles.pickerContainer}>
-                      <TouchableOpacity
-                        onPress={closePicker}
-                        style={styles.pickerCloseButton}
-                      >
-                        <Ionicons
-                          name="close-circle-outline"
-                          size={30}
-                          color={TEXT_GREY}
-                        />
+            {/* Web Date Picker Modal */}
+            {Platform.OS === "web" && showWebDatePicker && (
+              <Modal
+                visible={showWebDatePicker}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowWebDatePicker(false)}
+              >
+                <View style={styles.webModalOverlay}>
+                  <View style={styles.webDatePickerContainer}>
+                    <View style={styles.webDatePickerHeader}>
+                      <Text style={styles.webDatePickerTitle}>Select Date</Text>
+                      <TouchableOpacity onPress={() => setShowWebDatePicker(false)}>
+                        <Ionicons name="close" size={24} color={MODERN_PRIMARY} />
                       </TouchableOpacity>
-                      {renderPicker()}
                     </View>
+                    <DatePicker
+                      selected={selectedDate}
+                      onChange={handleDateChange}
+                      inline
+                      maxDate={new Date()}
+                      minDate={new Date(2000, 0, 1)}
+                      dateFormat="dd/MM/yyyy"
+                    />
+                    <TouchableOpacity
+                      style={styles.webDatePickerDoneButton}
+                      onPress={() => setShowWebDatePicker(false)}
+                    >
+                      <Text style={styles.webDatePickerDoneText}>Done</Text>
+                    </TouchableOpacity>
                   </View>
-                </Modal>
-              )}
+                </View>
+              </Modal>
+            )}
 
-            {/* iOS Date Picker Modal */}
-           {/* iOS Date Picker Modal */}
-{showPicker &&
-  selectedFilter === "date" &&
-  Platform.OS === "ios" && (
-    <Modal
-      visible={showPicker}
-      transparent
-      animationType="slide"
-      onRequestClose={closePicker}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.pickerContainer}>
-          <View style={styles.datePickerHeader}>
-            <Text style={styles.datePickerTitle}>Select Date</Text>
-            <TouchableOpacity
-              onPress={closePicker}
-              style={styles.pickerCloseButton}
-            >
-              <Ionicons
-                name="close-circle-outline"
-                size={30}
-                color={TEXT_GREY}
+            {/* Mobile Date Picker - Android */}
+            {Platform.OS !== "web" && showPicker && selectedFilter === "date" && Platform.OS === "android" && (
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="default"
+                onChange={(event, date) => {
+                  setShowPicker(false);
+                  if (date) {
+                    setSelectedDate(date);
+                    updateFilterValue("date", formatDisplayDate(date));
+                  }
+                }}
+                minimumDate={new Date(2000, 0, 1)}
+                maximumDate={new Date(2100, 11, 31)}
               />
-            </TouchableOpacity>
-          </View>
-          {renderPicker()}
-          <TouchableOpacity
-            style={styles.datePickerDoneButton}
-            onPress={closePicker}
-          >
-            <Text style={styles.datePickerDoneText}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  )}
+            )}
 
-{/* Android & Web Date Picker - renders natively or custom modal */}
-{showPicker &&
-  selectedFilter === "date" &&
-  (Platform.OS === "android" || isWeb) && (
-    isWeb ? (
-      <Modal
-        visible={showPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={closePicker}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.pickerContainer}>
-            {renderPicker()}
-          </View>
-        </View>
-      </Modal>
-    ) : (
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 100,
-        }}
-      >
-        {renderPicker()}
-      </View>
-    )
-  )}
+            {/* Mobile Date Picker - iOS Modal */}
+            {Platform.OS !== "web" && showPicker && selectedFilter === "date" && Platform.OS === "ios" && (
+              <Modal
+                visible={showPicker}
+                transparent
+                animationType="slide"
+                onRequestClose={closePicker}
+              >
+                <View style={styles.modalContainer}>
+                  <View style={styles.pickerContainer}>
+                    <View style={styles.datePickerHeader}>
+                      <Text style={styles.datePickerTitle}>Select Date</Text>
+                      <TouchableOpacity onPress={closePicker}>
+                        <Ionicons name="close" size={24} color={TEXT_GREY} />
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={selectedDate}
+                      mode="date"
+                      display="spinner"
+                      onChange={(event, date) => {
+                        if (date) {
+                          setSelectedDate(date);
+                          updateFilterValue("date", formatDisplayDate(date));
+                        }
+                      }}
+                      minimumDate={new Date(2000, 0, 1)}
+                      maximumDate={new Date(2100, 11, 31)}
+                    />
+                    <TouchableOpacity style={styles.datePickerDoneButton} onPress={closePicker}>
+                      <Text style={styles.datePickerDoneText}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
+            )}
+
+            {/* Other Filters Modal (non-date) */}
+            {!Platform.OS === "web" && showPicker && selectedFilter && selectedFilter !== "date" && (
+              <Modal
+                visible={showPicker}
+                transparent
+                animationType="fade"
+                onRequestClose={closePicker}
+              >
+                <View style={styles.modalContainer}>
+                  <View style={styles.pickerContainer}>
+                    <TouchableOpacity onPress={closePicker} style={styles.pickerCloseButton}>
+                      <Ionicons name="close-circle-outline" size={30} color={TEXT_GREY} />
+                    </TouchableOpacity>
+                    {renderPicker()}
+                  </View>
+                </View>
+              </Modal>
+            )}
 
             {/* Total Collection Details Modal */}
             <Modal
@@ -816,9 +884,7 @@ const ChitPayments = ({ route, navigation }) => {
                   </TouchableOpacity>
 
                   <View style={styles.totalDetailsCard}>
-                    <Text style={styles.totalDetailsTitle}>
-                      Collection Summary
-                    </Text>
+                    <Text style={styles.totalDetailsTitle}>Collection Summary</Text>
                     <Text style={styles.totalDetailsAmount}>
                       ₹ {totalAmount.toFixed(2)}
                     </Text>
@@ -827,7 +893,7 @@ const ChitPayments = ({ route, navigation }) => {
                         Agent: {agent?.name || "N/A"}
                       </Text>
                       <Text style={styles.totalDetailsDate}>
-                        Date: {formatDate(selectedDate)}
+                        Date: {formatDisplayDate(selectedDate)}
                       </Text>
                     </View>
 
@@ -840,29 +906,21 @@ const ChitPayments = ({ route, navigation }) => {
                         filteredCustomers.map((customer, index) => (
                           <View key={`detail-${customer._id || index}`} style={styles.paymentDetailItem}>
                             <Text style={styles.paymentDetailText}>
-                              <Text style={styles.paymentDetailLabel}>
-                                Customer:{" "}
-                              </Text>
+                              <Text style={styles.paymentDetailLabel}>Customer: </Text>
                               {customer?.user_id?.full_name || "N/A"}
                             </Text>
                             <Text style={styles.paymentDetailText}>
-                              <Text style={styles.paymentDetailLabel}>
-                                Group:{" "}
-                              </Text>
+                              <Text style={styles.paymentDetailLabel}>Group: </Text>
                               {customer?.group_id?.group_name || "N/A"}
                             </Text>
                             <Text style={styles.paymentDetailText}>
-                              <Text style={styles.paymentDetailLabel}>
-                                Amount:{" "}
-                              </Text>
+                              <Text style={styles.paymentDetailLabel}>Amount: </Text>
                               <Text style={{ fontWeight: "bold", color: SUCCESS_GREEN }}>
                                 ₹ {parseFloat(customer?.amount || 0).toFixed(2)}
                               </Text>
                             </Text>
                             <Text style={styles.paymentDetailText}>
-                              <Text style={styles.paymentDetailLabel}>
-                                Mode:{" "}
-                              </Text>
+                              <Text style={styles.paymentDetailLabel}>Mode: </Text>
                               {customer?.pay_type || "N/A"}
                             </Text>
                           </View>
@@ -884,9 +942,7 @@ const ChitPayments = ({ route, navigation }) => {
                         color={MODERN_PRIMARY}
                         style={{ marginRight: 5 }}
                       />
-                      <Text style={styles.printDetailsButtonText}>
-                        Print Summary
-                      </Text>
+                      <Text style={styles.printDetailsButtonText}>Print Summary</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -907,6 +963,10 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     zIndex: 10,
   },
+  headerContainer: {
+    marginHorizontal: 22,
+    marginTop: Platform.OS === "android" ? 0 : 22,
+  },
   mainContentArea: {
     flex: 1,
     backgroundColor: SUBTLE_BG_GREY,
@@ -919,30 +979,6 @@ const styles = StyleSheet.create({
   listScrollView: {
     flex: 1,
     marginHorizontal: 22,
-  },
-
-  webDatePickerContainer: {
-    padding: 10,
-    width: '100%',
-  },
-  webDatePickerLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: MODERN_PRIMARY,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  webDateCloseButton: {
-    backgroundColor: MODERN_PRIMARY,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  webDateCloseButtonText: {
-    color: CARD_BG,
-    fontWeight: '600',
-    fontSize: 14,
   },
 
   // Loading
@@ -1021,15 +1057,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-    height: 50,
-    marginHorizontal: 22,
+    height: 40,
   },
   searchIcon: { marginLeft: 15, color: TEXT_GREY },
   searchInput: {
     flex: 1,
     height: "100%",
     paddingHorizontal: 10,
-    fontSize: 16,
+    fontSize: 15,
     color: MODERN_PRIMARY,
   },
 
@@ -1113,6 +1148,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
     width: "90%",
+    maxWidth: 400,
   },
   pickerCloseButton: { alignSelf: "flex-end", marginBottom: 10 },
   datePickerHeader: {
@@ -1140,9 +1176,47 @@ const styles = StyleSheet.create({
   pickerWrapper: {
     backgroundColor: "white",
     borderRadius: 10,
-    padding: 10,
-    width: "90%",
-    alignSelf: "center",
+    width: "100%",
+  },
+  searchInputWrapper: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  pickerSearchInput: {
+    height: 40,
+    color: MODERN_PRIMARY,
+    fontSize: 14,
+  },
+  pickerScrollView: {
+    maxHeight: 350,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+  },
+  pickerItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  pickerItemText: {
+    color: MODERN_PRIMARY,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  pickerItemSubText: {
+    color: TEXT_GREY,
+    marginTop: 4,
+    fontSize: 12,
+  },
+  noResultsContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+  noResultsText: {
+    color: TEXT_GREY,
   },
   pickerCancelButton: {
     backgroundColor: MODERN_PRIMARY,
@@ -1152,6 +1226,53 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   pickerCancelText: { color: "white", fontWeight: "bold" },
+
+  // Web Date Picker Styles
+  webModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  webDatePickerContainer: {
+    backgroundColor: CARD_BG,
+    borderRadius: 20,
+    padding: 20,
+    width: "90%",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  webDatePickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER_COLOR,
+  },
+  webDatePickerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: MODERN_PRIMARY,
+  },
+  webDatePickerDoneButton: {
+    backgroundColor: ACCENT_BLUE,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  webDatePickerDoneText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 
   // Total Collection Modal
   fullScreenModalGradient: { flex: 1 },

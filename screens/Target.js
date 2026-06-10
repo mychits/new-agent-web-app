@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -146,7 +145,6 @@ const Target = ({ navigation }) => {
   const incentiveEarned = Math.floor(extraBusiness / 100000) * 1000; 
 
   // --- DYNAMIC WIDTH LOGIC ---
-  // If extraBusiness exists, we have 3 cards (31% width). If not, 2 cards (48% width).
   const cardWidth = extraBusiness > 0 ? "31%" : "48%";
 
   return (
@@ -160,10 +158,10 @@ const Target = ({ navigation }) => {
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconCircle} activeOpacity={0.7}>
-              <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
+              <Ionicons name="chevron-back" size={17} color={COLORS.primary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={fetchTargetDetails} style={styles.refreshBtn} activeOpacity={0.7}>
-              <Feather name="refresh-cw" size={20} color={COLORS.primary} />
+              <Feather name="refresh-cw" size={17} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
           <Text style={styles.headerTitle}>Target Performance</Text>
@@ -323,6 +321,15 @@ const Target = ({ navigation }) => {
                         <Text style={styles.emailText} numberOfLines={1}>
                           {item.user_id?.email || 'No email registered'}
                         </Text>
+
+                        {/* --- NEW: Enrollment Date --- */}
+                        <View style={styles.dateRow}>
+                           <Ionicons name="calendar-outline" size={12} color={COLORS.muted} />
+                           <Text style={styles.enrollDateText}>
+                             {moment(item.user_id?.createdAt).format("DD MMM YYYY")}
+                           </Text>
+                        </View>
+                      
                       </View>
                       
                       <View style={styles.amountPill}>
@@ -393,14 +400,14 @@ const styles = StyleSheet.create({
   
   header: { 
     paddingHorizontal: 20, 
-    paddingTop: Platform.OS === "android" ? 50 : 20,
+    paddingTop: Platform.OS === "android" ? 40 : 60,
     paddingBottom: 10,
   },
   headerTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    marginBottom: 15
+    marginBottom: 10
   },
   headerTitle: { fontSize: 24, fontWeight: "900", color: "#fff", textAlign: 'center', marginTop: 5 },
   headerSubTitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: 2 },
@@ -432,7 +439,7 @@ const styles = StyleSheet.create({
   dateText: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
   editIconBg: { backgroundColor: '#F5F7FA', padding: 8, borderRadius: 10 },
 
-  // Main Progress Card - COMPACT STYLES
+  // Main Progress Card
   mainCard: { 
     backgroundColor: COLORS.cardBg, 
     borderRadius: 20, 
@@ -490,7 +497,6 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center', 
     elevation: 4,
-    // Width is now handled dynamically via props
   },
   iconBox: { padding: 6, borderRadius: 12, marginBottom: 6 }, 
   textCol: { justifyContent: 'center', alignItems: 'center' }, 
@@ -535,6 +541,10 @@ const styles = StyleSheet.create({
   contactText: { fontSize: 12, color: COLORS.bgBlue, fontWeight: '700' },
   emailText: { fontSize: 11, color: COLORS.muted, marginTop: 2, marginRight: 10 },
   
+  // New Enrollment Date Styles
+  dateRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  enrollDateText: { fontSize: 11, color: COLORS.muted, marginLeft: 4, fontWeight: '600' },
+
   amountPill: { backgroundColor: '#F0F9F4', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10 },
   amountText: { fontSize: 13, fontWeight: "900", color: COLORS.success },
   
